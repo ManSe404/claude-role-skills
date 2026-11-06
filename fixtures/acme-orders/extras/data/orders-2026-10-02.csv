@@ -1,0 +1,9 @@
+order_id;customer_email;created_at;sku;quantity;unit_price;discount_code
+A-1041;mia.k@example.com;2026-10-01T08:12:00+02:00;TEA-01;2;4.50;
+A-1041;mia.k@example.com;2026-10-01T08:12:00+02:00;MUG-02;1;8.00;
+A-1042;jon@example.net;2026-10-01T09:40:00+02:00;TEA-07;1;6.20;WELCOME10
+A-1043;petra@example.org;2026-10-01T11:05:00+02:00;POT-01;1;24.00;
+A-1044;luka@example.com;2026-10-01T14:31:00+02:00;TEA-01;3;4.50;STAFF25
+A-1045;ivana@example.hr;2026-10-01T16:02:00+02:00;TEA-12;1;12,50;
+A-1045;ivana@example.hr;2026-10-01T16:02:00+02:00;MUG-02;2;8,00;
+A-1046;sam@example.com;2026-10-01T20:47:00+02:00;TEA-07;2;6.20;

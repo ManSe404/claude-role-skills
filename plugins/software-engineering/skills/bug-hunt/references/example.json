@@ -1,0 +1,129 @@
+{
+  "skill": "bug-hunt",
+  "title": "acme-orders: the nightly import has failed since 2 October",
+  "subtitle": "From the InvalidOperation in the cron log to the commit that caused it, with a reproduction, a regression test and two fix options.",
+  "meta": {"repo": "acme-orders", "commit": "f36ec1c", "date": "2026-11-06"},
+  "verdict": {
+    "text": "Commit `49bc16d` (\"importer: simplify amount parsing\") removed decimal-comma handling from `parse_amount` and deleted the test that covered it. The first export after the 1 October deploy prices order A-1045 as `12,50`, so `Decimal(\"12,50\")` raises and the whole import exits 1. [high]",
+    "tone": "bad"
+  },
+  "stats": [
+    {"label": "First failure", "value": "2026-10-02 06:00", "note": "first run after the 1 Oct 18:05 deploy", "tone": "bad"},
+    {"label": "Failed runs in the log", "value": 2, "note": "2 and 3 Oct, both on orders-2026-10-02.csv; log ends 3 Oct", "tone": "bad"},
+    {"label": "Caused by", "value": "49bc16d", "note": "importer: simplify amount parsing (30 Sep)", "tone": "warn"},
+    {"label": "Same weakness elsewhere", "value": 2, "note": "report.py:23 fails on the real file; config.py:28", "tone": "warn"},
+    {"label": "Orders saved from the failing file", "value": 0, "note": "parsing happens before any save; no partial day", "tone": "info"}
+  ],
+  "sections": [
+    {
+      "id": "symptom",
+      "title": "Symptom",
+      "blocks": [
+        {"type": "text", "text": "**Your words:** the nightly order import has failed since 2 October.\n\n**The log's words:** `ERROR cron acme-orders import exited with 1`, then `decimal.InvalidOperation: [<class 'decimal.ConversionSyntax'>]` raised at `src/acme_orders/importer.py:28` in `parse_amount`."},
+        {"type": "kv", "items": [
+          ["Last good run", "2026-10-01 06:00, imported 37 orders, deployed `d22ee8f`"],
+          ["Deploy in between", "2026-10-01 18:05, `c376ea1` (brings `49bc16d` and `c376ea1`)"],
+          ["First failure", "2026-10-02 06:00, `orders-2026-10-02.csv`, deployed `c376ea1`"],
+          ["Second failure", "2026-10-03 06:00, the same file `orders-2026-10-02.csv` again"],
+          ["Last log line", "2026-10-03 06:00. The log has nothing for 4 Oct to 6 Nov"]
+        ]},
+        {"type": "callout", "tone": "warn", "text": "Both failed runs read `orders-2026-10-02.csv`, so the cron seems to retry the oldest file that has not been imported. If it has done that every night since, nothing after the 1 October export has reached the database. Finance sums `orders.total_cents` per day straight from the SQLite copy (`docs/finance-export.md`), so its October totals would be short. [med] The log stops on 3 October, so I cannot see the nights after that."}
+      ]
+    },
+    {
+      "id": "reproduction",
+      "title": "Reproduction",
+      "intro": "Scratch copies made with `git archive`, a fresh temporary SQLite file through `ACME_DB_PATH`, and the repo's local copy of the failing export. Nothing ran against `/srv` or a shared database.",
+      "blocks": [
+        {"type": "code", "title": "The command, run in each scratch copy", "code": "ACME_DB_PATH=$SCRATCH/head.db PYTHONPATH=src python3 -m acme_orders import data/orders-2026-10-02.csv\n# Python 3.14.3"},
+        {"type": "table", "title": "Same file, three versions of the code", "columns": ["Code", "Result", "Orders saved"], "rows": [
+          ["HEAD `f36ec1c` (the deployed `c376ea1` plus a docs commit)", "`decimal.InvalidOperation`, exit 1", 0],
+          ["`d22ee8f` (the last good deploy)", "imported 6 orders, exit 0", 6],
+          ["HEAD with only `49bc16d`'s importer change reverted", "imported 6 orders, exit 0", 6]
+        ]},
+        {"type": "text", "text": "The values that fail are file line 7, `A-1045;…;TEA-12;1;12,50;`, and file line 8, `A-1045;…;MUG-02;2;8,00;`. The file has no BOM, no bytes above 127 and no CR, so encoding is not involved. [high] With the old code, A-1045 is stored as 3420 cents (12.50 + 2 × 8.00 = 28.50, plus 20% VAT), so the comma prices are real euro amounts and not corrupt data."}
+      ]
+    },
+    {
+      "id": "trace",
+      "title": "The trace",
+      "intro": "The stack maps line for line onto HEAD (`code_moved: false`), so the code read here is the code that ran. The frames below run from the innermost out.",
+      "blocks": [
+        {"type": "code", "title": "Innermost frame: parse_amount, where Decimal(\"12,50\") raises", "where": "src/acme_orders/importer.py:28", "start": 27, "highlight": [28, 35], "code": "def parse_amount(value):\n    return Decimal(value.strip())\n\n\ndef parse_line(row):\n    return Line(\n        sku=row[\"sku\"].strip(),\n        quantity=int(row[\"quantity\"]),\n        unit_price=parse_amount(row[\"unit_price\"]),\n    )"},
+        {"type": "code", "title": "read_orders parses the whole file before import_file saves anything", "where": "src/acme_orders/importer.py:52", "start": 39, "highlight": [52, 58], "code": "def read_orders(path):\n    orders = {}\n    with open(path, newline=\"\", encoding=\"utf-8\") as fh:\n        for row in csv.DictReader(fh, delimiter=\";\"):\n            order = orders.get(row[\"order_id\"])\n            if order is None:\n                order = Order(\n                    order_id=row[\"order_id\"],\n                    customer_email=row[\"customer_email\"].strip().lower(),\n                    created_at=datetime.fromisoformat(row[\"created_at\"]),\n                    discount_code=(row.get(\"discount_code\") or \"\").strip().upper() or None,\n                )\n                orders[order.order_id] = order\n            order.lines.append(parse_line(row))\n    return list(orders.values())\n\n\ndef import_file(path, db):\n    count = 0\n    for order in read_orders(path):\n        storage.save_order(db, order, pricing.order_total(order))\n        count += 1\n    return count"},
+        {"type": "text", "text": "How the value travels: `csv.DictReader` yields the row from line 7 with `row[\"unit_price\"] == \"12,50\"`. `parse_line` (line 35) passes it to `parse_amount`, and `Decimal(\"12,50\")` (line 28) raises `ConversionSyntax`. `read_orders` builds the full list before `import_file` (line 58) saves anything. As a result, one bad row aborts the whole night and saves 0 orders, and the error does not name the row, the order or the value."},
+        {"type": "code", "title": "The commit that changed line 28", "where": "49bc16d", "highlight": [6, 7, 15, 16, 17], "code": "--- a/src/acme_orders/importer.py\n+++ b/src/acme_orders/importer.py\n@@ -25,7 +25,7 @@\n def parse_amount(value):\n-    return Decimal(value.strip().replace(\",\", \".\"))\n+    return Decimal(value.strip())\n\n--- a/tests/test_importer.py\n+++ b/tests/test_importer.py\n@@ -15,9 +15,6 @@\n     def test_strips_spaces(self):\n         self.assertEqual(importer.parse_amount(\" 3.00 \"), Decimal(\"3.00\"))\n\n-    def test_decimal_comma(self):\n-        self.assertEqual(importer.parse_amount(\"12,50\"), Decimal(\"12.50\"))\n-"}
+      ]
+    },
+    {
+      "id": "what-changed",
+      "title": "What changed",
+      "blocks": [
+        {"type": "steps", "items": [
+          {"title": "2026-05-04 · 0b4eca9", "text": "Initial importer: `parse_amount` turns `,` into `.`, and `test_decimal_comma` covers `12,50`. The comma was an expected input from the first day.", "where": "src/acme_orders/importer.py"},
+          {"title": "2026-09-30 06:00 · run OK", "text": "41 orders imported on `d22ee8f`."},
+          {"title": "2026-09-30 17:42 · 49bc16d", "text": "\"importer: simplify amount parsing\" removes `.replace(\",\", \".\")` **and deletes `test_decimal_comma`**. The suite stays green (7 tests pass on HEAD) because the one test that would fail is gone.", "where": "src/acme_orders/importer.py:28"},
+          {"title": "2026-10-01 06:00 · run OK", "text": "37 orders imported, still on `d22ee8f`."},
+          {"title": "2026-10-01 09:05 · c376ea1", "text": "\"report: add the manual adjustments file\" adds `report.read_adjustments` with the same bare `Decimal(...)`. In `cli.py` it changes only the `report` branch, not the import path.", "where": "src/acme_orders/report.py:23"},
+          {"title": "2026-10-01 18:05 · deploy c376ea1", "text": "The first deploy that includes `49bc16d`."},
+          {"title": "2026-10-02 06:00 · run FAILS", "text": "The first run on the new code. `orders-2026-10-02.csv` has `12,50` and `8,00` on order A-1045."},
+          {"title": "2026-10-03 06:00 · run FAILS", "text": "Retries the same file `orders-2026-10-02.csv` and fails the same way. The log ends here."},
+          {"title": "2026-10-03 08:20 · f36ec1c", "text": "Docs only (`docs/finance-export.md`); not deployed according to the log."}
+        ]},
+        {"type": "text", "text": "**Input data:** only the failing export (`data/orders-2026-10-02.csv`) is in the repo. The 30 September and 1 October exports are not, so I cannot say whether they also had decimal commas. [guess] This does not change the verdict: the old code reads the failing file, and the new code does not."}
+      ]
+    },
+    {
+      "id": "hypotheses",
+      "title": "Hypotheses",
+      "blocks": [
+        {"type": "table", "columns": ["Hypothesis", "For", "Against", "Check", "Result"], "rows": [
+          ["H1: `49bc16d` dropped decimal-comma handling, and the 2 Oct export has `12,50`.", "The innermost line was last changed by `49bc16d`. The first failure is the first run after that commit was deployed. Both failing values have a comma.", "None found.", "Import the same file at `d22ee8f`, and at HEAD with only that change reverted.", "Both import 6 orders; HEAD fails. **Confirmed** [high]"],
+          ["H2: the shop's export changed format on 2 Oct (the data, not the code).", "The failing rows are in the 2 Oct file. The earlier files are not available to compare.", "Comma handling and its test existed from the first commit, so the comma was an expected format. The old code reads this exact file.", "Run `d22ee8f` on the 2 Oct file.", "Imports 6 orders, so the data alone does not break the importer. **Rejected** as the cause. Whether commas are new in this export is unknown [guess]."],
+          ["H3: something else in the 1 Oct deploy (`c376ea1`'s `cli.py` change) or the environment (Python version, locale, encoding).", "`c376ea1` changed `cli.py`, which is a frame in the trace.", "That change is only in the `report` branch. `Decimal` ignores locale. The file is plain ASCII with no BOM or CR.", "Run HEAD with only `49bc16d`'s importer change reverted; scan the file's bytes.", "Imports 6 orders; the file is clean. **Rejected** [high]"]
+        ]}
+      ]
+    },
+    {
+      "id": "root-cause",
+      "title": "Root cause",
+      "blocks": [
+        {"type": "text", "text": "`parse_amount` (`src/acme_orders/importer.py:28`) passes the raw CSV text straight to `Decimal`. Since `49bc16d` it no longer turns a decimal comma into a point, so `Decimal(\"12,50\")` raises `InvalidOperation`. The shop's export uses a decimal comma for at least some orders (A-1045 in the 2 Oct file). The importer accepted that from `0b4eca9` onwards and tested for it until `49bc16d` deleted the test. Because `read_orders` parses the whole file before saving, that one order aborts the import and the cron run exits 1. [high]"},
+        {"type": "callout", "tone": "warn", "text": "**Why CI did not catch it:** the same commit that removed the behaviour also removed `test_decimal_comma`. The 7 remaining tests pass on HEAD."}
+      ]
+    },
+    {
+      "id": "regression-test",
+      "title": "Regression test",
+      "intro": "Proposed and **not added yet**. It uses the repo's own style (`unittest`, the existing `HEADER` and temp-file pattern). On HEAD, both tests should error with `decimal.InvalidOperation` raised from `importer.py:28`, which is exactly the root cause. After your yes I add them and run them to show that failure.",
+      "blocks": [
+        {"type": "code", "where": "tests/test_importer.py", "code": "class ParseAmountTest(unittest.TestCase):\n    ...\n\n    def test_decimal_comma(self):\n        self.assertEqual(importer.parse_amount(\"12,50\"), Decimal(\"12.50\"))\n\n\nclass ReadOrdersTest(unittest.TestCase):\n    ...\n\n    def test_reads_prices_with_decimal_comma(self):\n        # Regression: the 2026-10-02 export priced order A-1045 as \"12,50\" and \"8,00\";\n        # 49bc16d stopped accepting the comma and the nightly import crashed.\n        rows = (\n            HEADER\n            + \"A-1045;ana@example.com;2026-10-01T16:02:00+02:00;TEA-12;1;12,50;\\n\"\n            + \"A-1045;ana@example.com;2026-10-01T16:02:00+02:00;MUG-02;2;8,00;\\n\"\n        )\n        with tempfile.TemporaryDirectory() as tmp:\n            path = Path(tmp) / \"orders.csv\"\n            path.write_text(rows, encoding=\"utf-8\")\n            orders = importer.read_orders(path)\n        self.assertEqual([line.unit_price for line in orders[0].lines], [Decimal(\"12.50\"), Decimal(\"8.00\")])"}
+      ]
+    },
+    {
+      "id": "same-weakness",
+      "title": "Same weakness elsewhere",
+      "intro": "The assumption: a money or number string from outside goes straight into `Decimal(...)` (or `int`, `fromisoformat`) with no tolerance for the decimal comma and no error naming the value.",
+      "blocks": [
+        {"type": "findings", "items": [
+          {"severity": "high", "title": "`report.read_adjustments` crashes on the real October adjustments file", "where": "src/acme_orders/report.py:23", "evidence": "`total += Decimal(row[\"amount\"].strip())`. `data/adjustments-2026-10.csv` has `-8,40`, and calling `read_adjustments` on it raises `decimal.InvalidOperation`. I ran it. [high] Added in `c376ea1`, the same deploy, so `report --adjustments` has never worked on this file.", "fix": "Use the importer's amount parser (option B), and add a test that reads `-8,40`.", "status": "open"},
+          {"severity": "low", "title": "`ACME_VAT_RATE=0,20` would crash every command at startup", "where": "src/acme_orders/config.py:28", "evidence": "`Decimal(os.environ.get(\"ACME_VAT_RATE\", ...))`. `settings.vat_rate` is never read anywhere (grep), because `pricing.py:5` hard-codes `VAT_RATE`. So its only possible effect is this crash. [high]", "fix": "Use the same parser here, or drop the unused setting in a separate change.", "status": "open"},
+          {"severity": "info", "title": "One bad row aborts the whole night, and the error does not say which row", "where": "src/acme_orders/importer.py:52", "evidence": "`read_orders` raises on the first bad row, and `import_file` (line 58) has saved nothing yet. The traceback names neither the file line, the order nor the value, so the log alone could not tell which order broke the run.", "fix": "Re-raise parse errors with the file line, `order_id` and the raw value (part of option B).", "status": "open"},
+          {"severity": "info", "title": "Other export fields are parsed with no format tolerance", "where": "src/acme_orders/importer.py:34", "evidence": "`int(row[\"quantity\"])` (line 34) and `datetime.fromisoformat(row[\"created_at\"])` (line 48). There is no evidence that the export varies in these fields. [guess]", "fix": "Nothing now. The error wrapping from option B would at least name the value if one of them breaks.", "status": "open"}
+        ]}
+      ]
+    },
+    {
+      "id": "fix-options",
+      "title": "Fix options",
+      "blocks": [
+        {"type": "table", "columns": ["Option", "What", "Effort", "Risk"], "rows": [
+          ["A: restore the one-liner", "Put back `Decimal(value.strip().replace(\",\", \".\"))` in `importer.parse_amount`, plus the regression tests.", "~10 min", "Low: this is the code that ran from May to 1 Oct. But `report.py:23` stays broken, and `1,234` is still silently read as 1.234 (as before)."],
+          ["B: one strict amount parser (recommended)", "`parse_amount` accepts `12.50`, `12,50` and `-8,40`, and rejects anything else (`1,234`, `1.234,50`, `1,234.50`) with a `ValueError` that names the value. `report.read_adjustments` uses it too. `read_orders` adds the file line and `order_id` to parse errors. Tests: the regression tests above, adjustments with `-8,40`, and one rejected thousands-separator case.", "~45 min", "Low to medium: it is stricter than before. An amount with three or more decimals, or with a thousands separator, now stops the import with a clear message instead of being misread. I cannot check past exports here, so run `python -m acme_orders check` on a few old exports before deploying."]
+        ]},
+        {"type": "callout", "tone": "info", "text": "**Recommendation: B.** It fixes the import and the adjustments report, which is broken on real data in the same deploy, in one place. It also makes the next bad value show up in the log by row and value instead of as a bare `ConversionSyntax`."},
+        {"type": "callout", "tone": "warn", "text": "**After the fix (operations, not done here):** deploy, then make sure `orders-2026-10-02.csv` and every day's export since are imported. The cron appears to retry the oldest file [med]. Check the cron's flags first: if it runs with `--notify`, a backfill would send a month of late receipts. Tell finance (owner in `docs/finance-export.md`) that October's daily totals were missing until the backfill."}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "name": "claude-role-skills",
+  "description": "Claude Code skills by role. Each skill does one repeated job, counts with its own scripts, and ends in one self-contained web page.",
+  "owner": {
+    "name": "Stefan Seman"
+  },
+  "plugins": [
+    {
+      "name": "software-engineering",
+      "source": "./plugins/software-engineering",
+      "description": "Five skills for software engineers: codebase-map, impact, bug-hunt, test-gap and dependency-audit.",
+      "version": "0.1.0"
+    }
+  ]
+}

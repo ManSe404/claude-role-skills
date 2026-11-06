@@ -1,0 +1,159 @@
+{
+  "skill": "test-gap",
+  "title": "acme-orders: where a missing test hurts most",
+  "subtitle": "Which code to test first, the cases no test covers with their expected results, and what the existing tests miss.",
+  "meta": {"repo": "acme-orders", "commit": "f36ec1c", "date": "2026-11-06"},
+  "verdict": {
+    "text": "Test `src/acme_orders/importer.py` first. A test for decimal commas (`12,50`) was deleted in `49bc16d`, the real export uses them, and the production log shows the nightly import exiting with `decimal.InvalidOperation` at `importer.py:28` since 2026-10-02 [high]. Next is `report.py`: no tests, and it has three likely bugs in the finance report [med].",
+    "tone": "bad"
+  },
+  "stats": [
+    {"label": "Source files", "value": 10, "note": "src/acme_orders", "tone": "info"},
+    {"label": "Untested files", "value": 6, "note": "no test file names them; no coverage report", "tone": "warn"},
+    {"label": "Tests", "value": 7, "note": "all 7 pass (unittest, Python 3.14)", "tone": "info"},
+    {"label": "Tests without an assertion", "value": 0, "tone": "ok"},
+    {"label": "Skipped tests", "value": 0, "tone": "ok"},
+    {"label": "Deleted tests", "value": 1, "note": "test_decimal_comma, case still matters", "tone": "bad"}
+  ],
+  "sections": [
+    {
+      "id": "coverage",
+      "title": "Coverage",
+      "blocks": [
+        {"type": "callout", "tone": "warn", "text": "The repo has no coverage report (no coverage.py JSON, Cobertura or lcov). The ranking uses the weaker signal \"a test file names the module\". This overstates `importer.py` and `pricing.py`: both are named, but the decimal-comma path and `STAFF25` have no test. It also counts `__init__`/`__main__` as tested only because the tests import the package."},
+        {"type": "kv", "items": [
+          ["Test runner", "`unittest`, as in CI: `PYTHONPATH=src python -m unittest discover -s tests`"],
+          ["Run today", "7 tests, all pass [high]"],
+          ["Churn window", "180 days before the last commit (13 commits, 2026-05-04 → 2026-10-03)"],
+          ["Score", "risk × change rate × gap × size, from `gaps.py`; my re-ranking is in the next section"],
+          ["Production evidence", "`logs/acme-orders.log`: I read only the error and cron lines, with e-mail addresses masked. `data/`: I read only the headers, plus counts of which values contain a comma. No row content went into this page or into any test."],
+          ["To strengthen it", "Run `coverage run -m unittest discover -s tests && coverage json`, then re-rank with `--coverage coverage.json` (not run yet: waiting for your yes)."]
+        ]}
+      ]
+    },
+    {
+      "id": "ranking",
+      "title": "Ranking",
+      "intro": "Script rank and score next to my rank after reading the code. I confirmed each risk family against the code, and the 'why' column says what moved a file.",
+      "blocks": [
+        {"type": "table",
+         "columns": ["#", "File", "Script #", "Score", "Risk (confirmed)", "Commits", "Covered or named by", "Why"],
+         "rows": [
+           [1, "`importer.py`", 5, 35.9, "parsing, money, time", 3, "named by test_importer, test_pricing", "**Moved up 4.** Every total starts here. `49bc16d` removed decimal-comma parsing and its test. The real export has commas in 2 of 8 rows, and the log shows the import exiting 1 on 2026-10-02 and 2026-10-03 [high]."],
+           [2, "`report.py`", 3, 44.2, "money, parsing, HTML output", 2, "none", "**Moved up 1.** Finance reads it, and it has no tests. It sums every row of the monthly adjustments file whatever the `day` column says. It shows discount and VAT unrounded since `7a9f245`. It renders CSV values into HTML with autoescape off. Its adjustment parser also rejects decimal commas, and one of the two real adjustment rows has one [med]."],
+           [3, "`storage.py`", 2, 57.8, "money, sql (parameterised), deletion", 1, "none", "**Moved down 1.** `total_cents` is finance's contract (`docs/finance-export.md`), and nothing tests it. The code is simple, though, and changed once. `totals_by_day` is called nowhere in `src` [high]."],
+           [4, "`pricing.py`", 7, 27.1, "money", 4, "named by test_pricing (4 tests)", "**Moved up 3.** It is the core money logic and changes often. `STAFF25` shipped without a test, no test covers the half-up rounding boundary, and the `ACME_VAT_RATE` setting is ignored (hard-coded `0.20`) [high]."],
+           [5, "`cli.py`", 1, 94.5, "outside calls (via notify); money hit is only a call to `order_total`", 5, "none", "**Moved down 4.** Its churn comes from adding a subcommand five times, and the dispatch is glue. One real risk: `import --notify` sends a receipt for every order on every run, so a re-import re-sends them. One failed send also stops the rest [high]."],
+           [6, "`config.py`", 4, 41.8, "parsing (YAML); 'money' is the unused `vat_rate`", 2, "none", "**Moved down 2.** The `money` hits are `vat_rate`, which nothing reads. Env-over-YAML precedence has no test. `yaml.load(FullLoader)` with PyYAML 5.3.1 belongs to dependency-audit [med]."],
+           [7, "`notify.py`", 8, 22.2, "outside calls, personal data", 1, "none", "Sends e-mail to customers. `requests.post` has no timeout, so the import can hang [high]. It is small (11 lines)."],
+           [8, "`server.py`", 6, 30.0, "outside surface (HTTP)", 1, "none", "**Moved down 2.** It is read-only, and the `money` hit is only `cents / 100`. A query string is treated as part of the order id. It has no auth and binds `0.0.0.0` while serving customer e-mails: that is a security question, not a test gap [med]."],
+           [null, "`__init__.py`, `__main__.py`", "9–10", 1.6, "none", 1, "named (by import)", "Dropped: two lines each, nothing to test."]
+         ]}
+      ]
+    },
+    {
+      "id": "deleted-weak",
+      "title": "Deleted and weak tests",
+      "blocks": [
+        {"type": "findings", "items": [
+          {"severity": "high", "title": "Deleted test `test_decimal_comma` covered a case production still sends", "where": "tests/test_importer.py (removed in 49bc16d, 2026-09-30)",
+           "evidence": "`49bc16d` \"importer: simplify amount parsing\" changed `parse_amount` from `Decimal(value.strip().replace(\",\", \".\"))` to `Decimal(value.strip())` and deleted `assertEqual(parse_amount(\"12,50\"), Decimal(\"12.50\"))`. In `data/orders-2026-10-02.csv`, 2 of 8 `unit_price` values contain a comma. `logs/acme-orders.log` shows the first cron run after the deploy of `c376ea1` exiting 1 with `decimal.InvalidOperation` at `importer.py:28`, on 2026-10-02 and again on 2026-10-03. The run on 2026-10-01 (deployed `d22ee8f`) imported 37 orders [high].",
+           "fix": "Restore the test as a regression test (first tests, step 1). It will fail today, so the fix goes to bug-hunt. Finance's `total_cents` has probably been missing orders since 2026-10-02: check that the production import is still failing [med].", "status": "open"},
+          {"severity": "medium", "title": "Three behaviour changes shipped without a test", "where": "d22ee8f, c376ea1, 7a9f245",
+           "evidence": "`d22ee8f` added the `STAFF25` discount with no test. `c376ea1` added the adjustments file to the report with no test. `7a9f245` moved rounding from `vat_total` to `order_total`; it tested the total but not the report, which still prints `vat_total` and `discount_total` unrounded [high].",
+           "fix": "Covered by the first tests below (pricing and report).", "status": "open"},
+          {"severity": "info", "title": "No empty, skipped or mock-only tests", "where": "tests/",
+           "evidence": "All 7 tests assert real values on real objects. None are skipped, none are marked expected-to-fail, and none use mocks. The script's count agrees with my reading [high]. They cover only the happy path: no test feeds bad input.",
+           "fix": "None needed: the gap is in what the tests cover, not in how they assert.", "status": "open"},
+          {"severity": "info", "title": "Outside this skill: old pinned dependencies", "where": "pyproject.toml",
+           "evidence": "`requests==2.19.1`, `PyYAML==5.3.1` (with `yaml.load(..., FullLoader)` in config.py) and `Jinja2<3` [med].",
+           "fix": "Run the dependency-audit skill; no test change.", "status": "open"}
+        ]}
+      ]
+    },
+    {
+      "id": "missing-cases",
+      "title": "Missing cases per file",
+      "intro": "I wrote each expected result before writing any test code, and none of them copies current behaviour without a check. **Question:** marks a case where the right answer is not mine to decide; it needs a yes from you or finance before it becomes a test.",
+      "blocks": [
+        {"type": "table", "title": "importer.py",
+         "columns": ["Case", "Input", "Expected result"],
+         "rows": [
+           ["Decimal comma", "`parse_amount(\"12,50\")`", "`Decimal(\"12.50\")`. The real export uses this format, and a test asserted it until 49bc16d [high]. Fails today."],
+           ["Decimal comma through the reader", "made-up row `A-1;…;TEA-01;2;4,50;`", "one order whose line has `unit_price == Decimal(\"4.50\")`, priced at `10.80`. Fails today."],
+           ["Thousands separator", "`\"1.234,50\"`", "**Question:** does the shop export ever write thousands separators? If yes, `Decimal(\"1234.50\")`; if not, a clear error naming the row."],
+           ["Empty amount", "`unit_price` = `\"\"`", "Import fails before any order is saved. It does today, because `read_orders` parses the whole file before `import_file` saves. The error should name the order and column; it does not today [med]."],
+           ["Header only", "file with just the header", "`read_orders` → `[]`, `import_file` → `0`."],
+           ["UTF-8 BOM", "header starting `\\ufefforder_id`", "**Question:** if the export can come out of Excel, orders should read normally. Today the file is opened as `utf-8`, so this raises `KeyError: 'order_id'`. The current export has no BOM [high]."],
+           ["Older export without `discount_code` column", "header without the column", "orders get `discount_code is None` (`row.get` handles it)."],
+           ["Lines of one order not adjacent", "rows A-1, B-2, A-1", "A-1 has 2 lines, B-2 has 1."],
+           ["Code only on a later line", "A-1 line 1 no code, line 2 `WELCOME10`", "**Question:** should the order get the code? Today it is lost; only the first row is read."],
+           ["Zero or negative quantity", "`quantity` = `0` / `-1`", "**Question:** reject the row, or accept it as a return? Today both are accepted, and `-1` gives a negative total."],
+           ["Timestamp without offset", "`created_at` = `2026-10-01T09:00:00`", "**Question:** which zone is it in? Today it is stored without an offset, next to rows that have `+02:00`."],
+           ["Timestamp with `Z`", "`2026-10-01T07:00:00Z`", "timezone-aware UTC datetime (Python ≥ 3.11)."]
+         ]},
+        {"type": "table", "title": "report.py",
+         "columns": ["Case", "Input", "Expected result"],
+         "rows": [
+           ["Adjustments for one day only", "adjustments rows `2026-10-01;…;-5.00` and `2026-10-02;…;7.00`, `day=2026-10-01`", "`Adjustments: -5.00` [med: the file is monthly and has a `day` column]. Today it shows `2.00`. Confirm with finance."],
+           ["Adjustment with a decimal comma", "`2026-10-01;…;-12,50`", "`Decimal(\"-12.50\")`, the same format as the export [med]. Today it raises `InvalidOperation`, and one of the two real adjustment rows has a comma."],
+           ["HTML in a CSV value", "order_id `<b>A-1</b>`", "rendered as `&lt;b&gt;A-1&lt;/b&gt;` [high: an HTML report built from file input must escape it]. Today `Template()` has autoescape off, so it fails."],
+           ["VAT and discount rounding", "1 order, 3 × `3.33`, no code", "**Question:** should VAT show as `2.00`, rounded to the cent, with the columns adding up to the `11.99` total? Today VAT shows `1.9980` (checked by running `pricing.vat_total`) [high]."],
+           ["Orders from another day in the file", "export with orders on 10-01 and 10-02, `day=2026-10-01`", "**Question:** only 10-01 orders, or every order in the file? Today `day` is only the heading."],
+           ["No orders, no adjustments file", "`[]`, `adjustments_path=None`", "an empty table and `Adjustments: 0`."],
+           ["Adjustments file missing", "path that does not exist", "raises `FileNotFoundError`; no partial report."]
+         ]},
+        {"type": "table", "title": "storage.py",
+         "columns": ["Case", "Input", "Expected result"],
+         "rows": [
+           ["Round trip", "save order A-1 with total `Decimal(\"10.80\")`, then `get_order`", "same fields, `total_cents == 1080`, lines with `unit_price` `\"4.50\"` [high: docs/finance-export.md]."],
+           ["Cents boundary", "total `Decimal(\"0.29\")`", "`total_cents == 29` (guards against a switch to float, where `int(0.29*100)` is 28)."],
+           ["Re-import", "save A-1 with 2 lines, then again with 1 line", "one `orders` row, 1 line, latest total."],
+           ["Unknown id", "`get_order(db, \"NOPE\")`", "`None`."],
+           ["Unrounded total", "`save_order(..., Decimal(\"10.805\"))`", "**Question:** reject it or round half-up to `1081`? Today it truncates to `1080`. The only caller passes rounded totals."],
+           ["Day boundary", "order at `2026-10-01T23:30:00-01:00`", "**Question:** which day does finance count it on? `totals_by_day` uses the local date, and nothing calls it [high]."]
+         ]},
+        {"type": "table", "title": "pricing.py",
+         "columns": ["Case", "Input", "Expected result"],
+         "rows": [
+           ["STAFF25", "1 × `10.00`, `STAFF25`", "`9.00` (10.00 − 25% = 7.50, + 20% VAT) [high: from d22ee8f's intent]."],
+           ["Half-up boundary", "1 × `1.45`, `STAFF25`", "`1.31` (exact total 1.305, rounded half-up; banker's rounding would give 1.30) [high: the code says `ROUND_HALF_UP`]."],
+           ["Lower-case code", "1 × `10.00`, `staff25`", "`9.00`."],
+           ["Empty order", "no lines", "`0.00`."],
+           ["Configured VAT rate", "`ACME_VAT_RATE=0.10`", "**Question:** the README documents the setting, but `pricing` always uses `0.20`. Should totals follow the setting?"]
+         ]},
+        {"type": "table", "title": "cli.py, config.py, notify.py, server.py",
+         "columns": ["Case", "Input", "Expected result"],
+         "rows": [
+           ["cli: re-import with `--notify`", "same file twice", "**Question:** one receipt per order? Today every run sends again."],
+           ["cli: mail API fails on order 2 of 3", "send raises on the second order", "**Question:** keep sending the rest, list the failures and exit non-zero? Today it stops after order 1, and the orders are already saved."],
+           ["config: env over YAML", "YAML `db_path: a.db`, env `ACME_DB_PATH=b.db`", "`db_path == \"b.db\"`."],
+           ["config: no file, no env", "nothing set", "`acme.db`, `\"\"`, `\"\"`, `Decimal(\"0.20\")`."],
+           ["config: key in YAML", "YAML `mail_api_key: x`", "ignored; the key comes from the environment only [med: looks deliberate]."],
+           ["notify: mail API never answers", "server accepts and never replies", "the call times out within a set number of seconds [high: every outbound call needs a timeout]. Today it hangs, so the test would fail."],
+           ["notify: payload", "order A-1, total `Decimal(\"10.80\")`", "POST with `to`, `template: receipt`, `order_id`, `total: \"10.80\"` and a Bearer header."],
+           ["server: found", "GET `/orders/A-1` (1080 cents stored)", "200, `total: 10.8`."],
+           ["server: query string", "GET `/orders/A-1?x=1`", "**Question:** should it return 200 for A-1? Today it returns 404."]
+         ]}
+      ]
+    },
+    {
+      "id": "first-tests",
+      "title": "First tests",
+      "intro": "Four steps, highest value for the effort first. All are `unittest`, matching the repo's tests and CI. The data is made up; nothing comes from `data/`. I will write and run them after your yes, and leave the **Question** cases out until they are answered.",
+      "blocks": [
+        {"type": "steps", "items": [
+          {"title": "1. Restore the decimal-comma regression test", "where": "tests/test_importer.py",
+           "text": "`ParseAmountTest.test_decimal_comma`: `parse_amount(\"12,50\")` → `Decimal(\"12.50\")`. `ReadOrdersTest.test_decimal_comma_in_export`: made-up row with `4,50` × 2 → line `Decimal(\"4.50\")`, `order_total` `10.80`. **Both fail today.** That failure is the bug: I will hand it to bug-hunt, not soften the expectation."},
+          {"title": "2. New report tests", "where": "tests/test_report.py",
+           "text": "With 2 made-up adjustment rows (10-01: `-5.00`, 10-02: `7.00`) and `day=2026-10-01`, the report shows `Adjustments: -5.00`. A `-12,50` amount reads as `-12.50`. An order_id `<b>A-1</b>` comes out escaped. Each of these three is expected to fail today. Only the empty-input case (`Adjustments: 0`) should pass. The day filter needs a quick yes from finance first. Jinja2 is not installed in the local Python, so these tests need the project's dependencies installed first."},
+          {"title": "3. New storage tests", "where": "tests/test_storage.py",
+           "text": "These run against `sqlite3` `:memory:`. Round trip gives `total_cents` `1080`. `0.29` gives `29`. A re-save with fewer lines leaves 1 order row and 1 line. An unknown id gives `None`. All should pass today; they guard finance's contract."},
+          {"title": "4. Pricing gaps", "where": "tests/test_pricing.py",
+           "text": "`STAFF25` on `10.00` gives `9.00`. The half-up boundary, `1.45` with `STAFF25`, gives `1.31`. Lower-case `staff25` gives `9.00`. An empty order gives `0.00`. All should pass today."}
+        ]},
+        {"type": "callout", "tone": "info", "text": "Questions to settle before they become tests: report VAT/discount rounding and the day filter, a discount code on a later line, timestamps without an offset, `ACME_VAT_RATE`, and re-sent receipts. Finance owns `total_cents` (docs/finance-export.md)."}
+      ]
+    }
+  ]
+}

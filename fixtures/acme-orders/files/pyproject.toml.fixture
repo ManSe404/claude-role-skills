@@ -1,0 +1,21 @@
+[project]
+name = "acme-orders"
+version = "0.4.0"
+description = "Order intake for the Acme tea shop."
+requires-python = ">=3.11"
+dependencies = [
+    "python-dateutil",
+    "Jinja2>=2.10,<3",
+    "requests==2.19.1",
+    "PyYAML==5.3.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==7.1.0"]
+
+[project.scripts]
+acme-orders = "acme_orders.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"

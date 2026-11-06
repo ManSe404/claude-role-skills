@@ -1,0 +1,205 @@
+{
+  "skill": "dependency-audit",
+  "title": "acme-orders: dependency audit",
+  "subtitle": "What each dependency costs to keep as it is, and the order to upgrade them.",
+  "meta": {"repo": "acme-orders", "commit": "f36ec1c", "date": "2026-11-06"},
+  "verdict": {
+    "tone": "bad",
+    "text": "**This week:** move `requests` 2.19.1 → 2.34.2 and `PyYAML` 5.3.1 → 6.0.3 with `yaml.safe_load`. Both are reached. The mail API key can leak on an https→http redirect, and `acme.yaml` can run code through `FullLoader`. The pinned `requests` probably does not even import on the Python 3.12 that Docker and CI use [med]. Nothing tests `notify`, `config` or `report`, so write those tests before you change anything."
+  },
+  "stats": [
+    {"label": "Direct dependencies", "value": 5, "note": "4 runtime, 1 dev", "tone": "info"},
+    {"label": "Transitive dependencies", "value": 5, "note": "no lock; resolved from PyPI metadata", "tone": "warn"},
+    {"label": "Vulnerabilities", "value": 27, "note": "13 direct, 14 transitive", "tone": "bad"},
+    {"label": "Reached", "value": 5, "note": "2 [high] direct, 3 [med] transitive", "tone": "bad"},
+    {"label": "Majors behind", "value": 4, "note": "Jinja2 1, PyYAML 1, pytest 2", "tone": "warn"},
+    {"label": "Unpinned", "value": 2, "note": "plus every transitive; no lock file", "tone": "warn"}
+  ],
+  "sections": [
+    {
+      "id": "inventory",
+      "title": "Inventory",
+      "intro": "One manifest (`pyproject.toml`), no lock file. Nothing locks the transitive rows. They are what `pip install .` resolves today, worked out from each package's `requires_dist` on PyPI [high]. The upper bounds in `requests` 2.19.1 hold urllib3, idna and chardet at old versions.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["package", "scope", "declared", "locked", "latest", "imported in"],
+          "rows": [
+            ["requests", "runtime", "==2.19.1", null, "2.34.2", "src/acme_orders/notify.py:7"],
+            ["PyYAML", "runtime", "==5.3.1", null, "6.0.3", "src/acme_orders/config.py:20"],
+            ["Jinja2", "runtime", ">=2.10,<3", null, "3.1.6", "src/acme_orders/report.py:28"],
+            ["python-dateutil", "runtime", "(none)", null, "4.0.0", "never"],
+            ["pytest", "dev extra", "==7.1.0", null, "9.2.0", "never (tests use unittest)"],
+            ["urllib3", "via requests", ">=1.21.1,<1.24 → 1.23", null, "2.8.0", "—"],
+            ["idna", "via requests", ">=2.5,<2.8 → 2.7", null, "3.20", "—"],
+            ["chardet", "via requests", ">=3.0.2,<3.1.0 → 3.0.4", null, "7.7.0", "—"],
+            ["certifi", "via requests", ">=2017.4.17", null, "2026.10.23", "—"],
+            ["MarkupSafe", "via Jinja2", ">=0.23", null, "3.0.4", "—"]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "text": "The Jinja2 range was checked at **2.10**, the lowest version it allows. A fresh install gets **2.11.3** instead, the last 2.x release. That version fixes the first two Jinja2 advisories below, but not the other four."
+        }
+      ]
+    },
+    {
+      "id": "vulnerabilities",
+      "title": "Vulnerabilities",
+      "intro": "These come from OSV, checked on 2026-11-06. Each advisory was matched against the code that would run it. **Reached** means this repo calls the affected function with the affected setup.",
+      "blocks": [
+        {
+          "type": "findings",
+          "title": "Direct dependencies",
+          "items": [
+            {"severity": "high", "status": "open", "title": "PyYAML 5.3.1: CVE-2020-14343 (critical), code execution through FullLoader. **Reached**", "where": "src/acme_orders/config.py:23", "evidence": "[high] `yaml.load(fh, Loader=yaml.FullLoader)` reads `acme.yaml`. `load_settings()` runs on every CLI command (`cli.py:25`) and for every receipt (`notify.py:9`). Anyone who can write `acme.yaml` can run code as the service.", "fix": "6.0.3 (5.4 is the in-major fix, see the upgrade plan), and `yaml.safe_load(fh)`. The file only holds scalars."},
+            {"severity": "high", "status": "open", "title": "requests 2.19.1: CVE-2018-18074 (high), Authorization header kept on an https→http redirect. **Reached**", "where": "src/acme_orders/notify.py:10", "evidence": "[high] `requests.post(settings.mail_api_url, headers={\"Authorization\": f\"Bearer {settings.mail_api_key}\"})` follows redirects by default. If the mail API ever redirects to plain http, the API key goes out in clear text.", "fix": "2.20.0; take 2.34.2"},
+            {"severity": "medium", "status": "open", "title": "Jinja2 2.10: CVE-2020-28493 (medium), ReDoS in `urlize`. Called, but only on an empty string", "where": "src/acme_orders/report.py:13", "evidence": "[high] The template applies `note|urlize`, but `cli.py:39` never passes `note`, so it is always `\"\"`. It becomes exploitable as soon as anyone feeds it user text. A fresh install (2.11.3) already has the fix.", "fix": "2.11.3; take 3.1.6"},
+            {"severity": "low", "status": "open", "title": "Jinja2 2.10: CVE-2019-10906 (high), sandbox escape via str.format. Not reached", "where": "src/acme_orders/report.py:37", "evidence": "[med] Only `SandboxedEnvironment` is affected. The repo uses a plain `Template` on a constant template string, and no sandbox appears anywhere.", "fix": "2.10.1"},
+            {"severity": "low", "status": "open", "title": "Jinja2: CVE-2024-22195 (medium), xmlattr attribute injection. Not reached", "where": "src/acme_orders/report.py:8", "evidence": "[med] No template uses `xmlattr`.", "fix": "3.1.3"},
+            {"severity": "low", "status": "open", "title": "Jinja2: CVE-2024-34064 (medium), xmlattr attribute injection. Not reached", "where": "src/acme_orders/report.py:8", "evidence": "[med] No template uses `xmlattr`.", "fix": "3.1.4"},
+            {"severity": "low", "status": "open", "title": "Jinja2: CVE-2024-56326 (medium), sandbox breakout via an indirect reference to format. Not reached", "where": "src/acme_orders/report.py:37", "evidence": "[med] No sandbox, and the template is a constant in the code.", "fix": "3.1.5"},
+            {"severity": "low", "status": "open", "title": "Jinja2: CVE-2025-27516 (medium), sandbox breakout via the attr filter. Not reached", "where": "src/acme_orders/report.py:37", "evidence": "[med] No sandbox, and no `attr` filter.", "fix": "3.1.6"},
+            {"severity": "low", "status": "open", "title": "requests: CVE-2023-32681 (medium), Proxy-Authorization leak. Not reached from the code", "where": "src/acme_orders/notify.py:10", "evidence": "[med] The code sets no proxies. It would apply only if the host environment sets `HTTPS_PROXY` with credentials in it.", "fix": "2.31.0"},
+            {"severity": "low", "status": "open", "title": "requests: CVE-2024-35195 (medium), Session keeps verify=False. Not reached", "where": "src/acme_orders/notify.py:10", "evidence": "[med] No `Session` and no `verify=` anywhere in `src/`.", "fix": "2.32.0"},
+            {"severity": "low", "status": "open", "title": "requests: CVE-2024-47081 (medium), .netrc credentials leak via crafted URLs. Not reached", "where": "src/acme_orders/notify.py:11", "evidence": "[med] .netrc is consulted, but the only URL comes from `ACME_MAIL_API_URL` or `acme.yaml`, never from a user.", "fix": "2.32.4"},
+            {"severity": "low", "status": "open", "title": "requests: CVE-2026-25645 (medium), insecure temp file in `extract_zipped_paths()`. Not reached", "where": "src/acme_orders/notify.py:7", "evidence": "[med] The advisory says standard usage is not affected. The repo never calls `extract_zipped_paths`.", "fix": "2.33.0"},
+            {"severity": "low", "status": "open", "title": "pytest 7.1.0: CVE-2025-71176 (medium), predictable `/tmp/pytest-of-user`. Not reached", "where": "pyproject.toml:14", "evidence": "[high] CI and the README run `unittest`, and CI never installs the `dev` extra (`ci.yml:11-12`). It would only matter if someone ran pytest locally on a shared machine.", "fix": "9.0.3"}
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Transitive, held back by requests 2.19.1 (every row is fixed by upgrading requests)",
+          "columns": ["package", "advisory", "severity", "reached", "fixed in"],
+          "rows": [
+            ["urllib3 1.23", "CVE-2019-11324 improper certificate validation", "high", "yes [med]: requests passes the certifi bundle, the case the advisory covers", "1.24.2"],
+            ["urllib3 1.23", "CVE-2025-66471 compressed-data bomb in streaming", "high", "yes [med]: the mail API response body is read and decoded; the server is trusted", "2.6.0"],
+            ["urllib3 1.23", "CVE-2026-97689 unbounded chunk-size line", "high", "yes [med]: same response path; the server is trusted", "2.8.0"],
+            ["urllib3 1.23", "CVE-2026-21441 decompression guard bypass on redirects", "high", "no [med]: requests turns off urllib3's own redirects", "2.6.3"],
+            ["urllib3 1.23", "CVE-2026-44431 headers forwarded in proxied redirects", "high", "no [med]: no proxy, and requests handles redirects itself", "2.7.0"],
+            ["urllib3 1.23", "CVE-2023-43804 Cookie kept on cross-origin redirect", "high", "no [med]: no cookies; requests redirects", "1.26.17"],
+            ["urllib3 1.23", "CVE-2018-25091 Authorization forwarded on redirect", "medium", "no [med]: requests redirects (its own bug is the reached CVE-2018-18074)", "1.24.2"],
+            ["urllib3 1.23", "CVE-2024-37891 Proxy-Authorization on cross-origin redirect", "medium", "no [med]", "1.26.19"],
+            ["urllib3 1.23", "CVE-2023-45803 body kept after 303", "medium", "no [med]", "1.26.18"],
+            ["urllib3 1.23", "CVE-2025-50181 redirects not disabled via PoolManager", "medium", "no [med]", "2.5.0"],
+            ["urllib3 1.23", "CVE-2019-11236 CRLF injection", "medium", "no [med]: the URL comes from config", "1.24.3"],
+            ["urllib3 1.23", "CVE-2020-26137 CRLF injection via method", "medium", "no [med]: the method is always POST", "1.25.9"],
+            ["idna 2.7", "CVE-2024-3651 DoS in idna.encode", "medium", "no [med]: the host comes from config", "3.7"],
+            ["idna 2.7", "CVE-2026-45409 crafted input bypasses checks in idna.encode", "medium", "no [med]", "3.15"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "outdated",
+      "title": "Outdated and abandoned",
+      "intro": "Nothing is abandoned: every package released something in the last two years. The Jinja2 2.x line itself has not had a release since 2021.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["package", "in use", "released", "latest", "behind", "note"],
+          "rows": [
+            ["requests", "2.19.1", "2018-06-14", "2.34.2 (2026-05-14)", "15 minors", "8.4 years old. Caps urllib3, idna and chardet"],
+            ["PyYAML", "5.3.1", "2020-03-18", "6.0.3 (2025-09-25)", "1 major", "6.6 years old"],
+            ["Jinja2", "2.11.3 (resolved)", "2021-01 [med]", "3.1.6 (2025-03-05)", "1 major", "The `<3` cap holds it on a dead line"],
+            ["pytest", "7.1.0", "2022-03-13", "9.2.0 (2026-10-27)", "2 majors", "Unused (see below)"],
+            ["python-dateutil", "whatever is newest", "—", "4.0.0 (2026-11-01)", "—", "No constraint: builds since 1 Nov get a 5-day-old major"],
+            ["urllib3", "1.23", "2018 [med]", "2.8.0", "1 major", "Held back by requests"],
+            ["idna", "2.7", "2018 [med]", "3.20", "1 major", "Held back by requests"]
+          ]
+        },
+        {
+          "type": "findings",
+          "title": "The old pins probably no longer run on Python 3.12",
+          "items": [
+            {"severity": "high", "status": "open", "title": "`import requests` likely fails on Python 3.12, so `import --notify` is broken in the image", "where": "Dockerfile:1", "evidence": "[med] I inspected this statically and did not run it. urllib3 1.23 vendors `six` 1.10.0, which has only `find_module` and no `find_spec` (`urllib3/packages/six.py:184`). Python 3.12 dropped that import fallback, so `from .packages.six.moves import queue` (`connectionpool.py:28`) should fail. The image and CI both use Python 3.12. CI stays green because `notify.py` imports requests lazily and no test calls it.", "fix": "Wave 1: upgrade requests."},
+            {"severity": "medium", "status": "open", "title": "The `report` command likely fails on a fresh install: Jinja2 2.11.3 versus MarkupSafe 3", "where": "src/acme_orders/report.py:28", "evidence": "[high] Jinja2 2.11.3 does `from markupsafe import soft_unicode` (`jinja2/filters.py:13`, `runtime.py:9`) and only requires `MarkupSafe>=0.23`. [med] MarkupSafe 2.1 removed `soft_unicode`, and pip now resolves 3.0.4.", "fix": "Wave 2: Jinja2 3.1.6."}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "unused",
+      "title": "Unused",
+      "blocks": [
+        {
+          "type": "findings",
+          "items": [
+            {"severity": "medium", "status": "open", "title": "python-dateutil is declared but never imported", "where": "pyproject.toml:7", "evidence": "[med] No `dateutil` anywhere in `src/` or `tests/`. It came in with the first commit (0b4eca9), and no code has ever used it (`git log -S dateutil`). Dates are parsed with `datetime.fromisoformat` (`importer.py:48`). It is not a plugin, a command-line tool, a type package or an extra.", "fix": "Remove it from `dependencies`. It is also the only runtime dependency with no constraint at all."},
+            {"severity": "low", "status": "open", "title": "pytest is declared but not used by CI, the README or the tests", "where": "pyproject.toml:14", "evidence": "[med] The tests are `unittest.TestCase` (`tests/test_importer.py:2`, `tests/test_pricing.py:1`). CI and the README run `python -m unittest`, and CI never installs `.[dev]`. pytest is a command-line tool, so someone may still run it locally.", "fix": "Pick one: drop the `dev` extra, or switch CI to pytest ≥ 9.0.3."}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "licences",
+      "title": "Licences",
+      "intro": "acme-orders declares no licence: `pyproject.toml` has no `license` field and there is no LICENSE file [high]. It ships as a service in a Docker image for the shop's admin panel and finance, not as a distributed product. All of its dependencies are permissive or weak copyleft, so nothing clashes.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["package", "licence", "kind", "concern"],
+          "rows": [
+            ["requests", "Apache-2.0", "permissive", "none"],
+            ["PyYAML", "MIT", "permissive", "none"],
+            ["Jinja2", "BSD-3-Clause", "permissive", "none"],
+            ["python-dateutil", "BSD-3-Clause", "permissive", "none (and unused)"],
+            ["pytest", "MIT", "permissive", "none"],
+            ["urllib3", "MIT", "permissive", "none"],
+            ["idna", "BSD-3-Clause", "permissive", "none"],
+            ["MarkupSafe", "BSD-3-Clause", "permissive", "none"],
+            ["certifi", "MPL-2.0", "weak copyleft, file-level", "none while unmodified"],
+            ["chardet 3.0.4", "LGPL", "weak copyleft", "Fine for a service. It goes away after the upgrade: requests ≥ 2.26 uses charset_normalizer (MIT)"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pinning",
+      "title": "Pinning and locking",
+      "blocks": [
+        {
+          "type": "findings",
+          "items": [
+            {"severity": "high", "status": "open", "title": "No lock file: nobody can say what the image or CI actually installed", "where": "Dockerfile:4", "evidence": "[high] `pip install .` in the Dockerfile and `pip install -e .` in CI (`ci.yml:11`) resolve fresh on every build. Two builds a day apart can differ, as python-dateutil 4.0.0 on 1 Nov showed.", "fix": "Commit a lock file and install from it in both places, e.g. `uv lock` plus `uv sync --frozen`, or `pip-compile --generate-hashes` plus `pip install -r`."},
+            {"severity": "medium", "status": "open", "title": "python-dateutil has no constraint", "where": "pyproject.toml:7", "evidence": "[high] Declared as a bare `\"python-dateutil\"`.", "fix": "Remove it (unused)."},
+            {"severity": "medium", "status": "open", "title": "The Jinja2 range sits on a dead line and its MarkupSafe floats", "where": "pyproject.toml:8", "evidence": "[high] `>=2.10,<3` caps Jinja2 at 2.11.3, which has no fix for four advisories, and lets MarkupSafe float to 3.x.", "fix": "`Jinja2>=3.1.6,<4`, then lock."},
+            {"severity": "low", "status": "open", "title": "Exact pins on direct dependencies do not pin what they pull in", "where": "pyproject.toml:9", "evidence": "[high] `requests==2.19.1` is pinned, but certifi floats, while urllib3, idna and chardet are frozen by old caps rather than by a choice anyone made.", "fix": "The lock file covers this."}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "upgrade-plan",
+      "title": "Upgrade plan",
+      "intro": "One package per PR, in this order. No test covers `notify`, `config` or `report` today, so each step starts by writing the test that must pass before and after. Check each step with `PYTHONPATH=src python -m unittest discover -s tests` on Python 3.12, plus a `docker build`.",
+      "blocks": [
+        {
+          "type": "steps",
+          "title": "Wave 1: reached vulnerabilities (this week)",
+          "items": [
+            {"title": "requests 2.19.1 → 2.34.2 (same major)", "where": "pyproject.toml:9, src/acme_orders/notify.py:10", "text": "Fixes the reached CVE-2018-18074 and the other four requests advisories. It also lifts the caps, so urllib3 goes to 2.x and idna to 3.x (16 more advisories closed), and chardet is replaced by charset_normalizer. **Breaking:** urllib3 2 needs OpenSSL ≥ 1.1.1, which python:3.12-slim has, and drops APIs this code does not use [med]. **Test first:** `send_receipt` with `requests.post` mocked, asserting the URL, the Bearer header and the JSON body. Then run `import --notify` against a stub mail API in the image. While you're in this file: the call has no `timeout=`."},
+            {"title": "PyYAML 5.3.1 → 6.0.3, and `yaml.safe_load`", "where": "pyproject.toml:10, src/acme_orders/config.py:23", "text": "5.4 is the fix inside major 5, but it has no Python 3.12 wheel and its source build fails under Cython 3 [med]. So go straight to 6.0.3. **Breaking in 6.0:** `yaml.load` requires an explicit `Loader`, which the code already passes, and `FullLoader` is stricter. Neither matters once you switch to `safe_load`. **Test first:** `load_settings` on a copy of `acme.yaml.example` gives `vat_rate == Decimal(\"0.2\")` and the same `db_path` and `mail_api_url`. Add a regression test that a `!!python/object/new:` tag is rejected."}
+          ]
+        },
+        {
+          "type": "steps",
+          "title": "Wave 2: remaining security fixes (majors, one at a time)",
+          "items": [
+            {"title": "Jinja2 2.x → 3.1.6", "where": "pyproject.toml:8, src/acme_orders/report.py:28", "text": "There is no fix inside major 2, and a fresh 2.11.3 install likely breaks on MarkupSafe 3. **Breaking in 3.0:** Python 2 support and deprecated APIs are gone (`Markup` and `escape` moved to markupsafe, `contextfilter` became `pass_context`). This code uses only `Template(...).render` and `urlize` [med]. **Test first:** a golden-output test of `daily_report` on a two-order fixture plus an adjustments file. Separately, the template has no autoescape, so `order_id` and `note` go into finance's HTML unescaped."},
+            {"title": "pytest: drop it, or 7.1.0 → 9.2.0", "where": "pyproject.toml:14, .github/workflows/ci.yml:12", "text": "If CI moves to pytest, take ≥ 9.0.3 for CVE-2025-71176. The tests are unittest-style, so the 8.x and 9.x collection changes carry little risk [med]. **Test:** `pytest` collects the same number of tests as `unittest discover`."}
+          ]
+        },
+        {
+          "type": "steps",
+          "title": "Wave 3: clean up and lock",
+          "items": [
+            {"title": "Remove python-dateutil", "where": "pyproject.toml:7", "text": "**Check:** `grep -rn dateutil src tests` is empty and the tests pass."},
+            {"title": "Add a lock file and install from it", "where": "Dockerfile:4, .github/workflows/ci.yml:11", "text": "Generate the lock from the cleaned `pyproject.toml`, commit it, and make the Dockerfile and CI install from it, so an image rebuilt next month matches the one tested today. Re-run this audit against the lock: transitive dependencies will then be checked from the lock, not by hand."}
+          ]
+        }
+      ]
+    }
+  ]
+}

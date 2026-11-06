@@ -1,0 +1,3 @@
+db_path: /data/acme.db
+mail_api_url: https://mail.example.com/api/send
+vat_rate: 0.20

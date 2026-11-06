@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: root-cause-of-the-failed-import
+tags: [software-engineering, bug-hunt]
+context:
+  scaffold_script: fixture.sh

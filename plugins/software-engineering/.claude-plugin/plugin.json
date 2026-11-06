@@ -1,0 +1,10 @@
+{
+  "name": "software-engineering",
+  "description": "Five skills for software engineers: codebase-map, impact, bug-hunt, test-gap and dependency-audit. Each counts with its own scripts and ends in one self-contained web page.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Stefan Seman"
+  },
+  "license": "MIT",
+  "keywords": ["software-engineering", "codebase", "impact-analysis", "debugging", "testing", "dependencies", "skills"]
+}

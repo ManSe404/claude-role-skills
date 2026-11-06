@@ -1,0 +1,271 @@
+{
+  "skill": "impact",
+  "title": "Impact: order_total takes the VAT rate from settings",
+  "subtitle": "What changes when `pricing.order_total` stops using the `VAT_RATE` constant and takes `settings.vat_rate` (`ACME_VAT_RATE`) as a parameter, and the order to make it in.",
+  "meta": {"repo": "acme-orders", "commit": "f36ec1c", "date": "2026-11-06"},
+  "verdict": {
+    "text": "**Not safe as one step: it needs 4 deploys.** A required `vat_rate` breaks 3 static call sites, 1 dynamic one in `report.py` (it fails only when the report runs) and 4 tests. The bigger risk is the money: `settings.vat_rate` has been loaded since the first commit but **never read**. Wiring it in makes whatever value each environment holds live in the totals that finance sums, so check that value and tell finance before callers switch.",
+    "tone": "warn"
+  },
+  "stats": [
+    {"label": "Direct uses", "value": 8, "note": "4 in code (1 dynamic), 4 in tests", "tone": "warn"},
+    {"label": "Indirect uses", "value": 6, "note": "2 need a change, 3 safe, 1 unknown", "tone": "info"},
+    {"label": "Boundaries", "value": 7, "note": "3 CLI commands, HTTP, mail, table, package API", "tone": "info"},
+    {"label": "Outside consumers", "value": 4, "note": "named in the repo; more may exist", "tone": "warn"},
+    {"label": "Untested paths", "value": 5, "note": "only pricing at 0.20 is tested", "tone": "bad"}
+  ],
+  "sections": [
+    {
+      "id": "change",
+      "title": "The change",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "`pricing.order_total(order)` becomes `pricing.order_total(order, vat_rate)`. Callers pass `settings.vat_rate`, which `config.load_settings` reads from `ACME_VAT_RATE`, then `vat_rate` in `acme.yaml`, then the default `\"0.20\"`. The `VAT_RATE` constant in `pricing.py` goes away. [high]\n\n`order_total` never reads `VAT_RATE` itself: it calls `vat_total(order)`, and that function reads the constant. So `vat_total` must take the rate too. If it doesn't, the total uses the setting while the report's VAT column (`vat_total`) keeps 0.20, and the two disagree. [high]"
+        },
+        {
+          "type": "code",
+          "where": "src/acme_orders/pricing.py:31",
+          "start": 31,
+          "highlight": [32, 36],
+          "code": "def vat_total(order):\n    return (subtotal(order) - discount_total(order)) * VAT_RATE\n\n\ndef order_total(order):\n    return _round(subtotal(order) - discount_total(order) + vat_total(order))"
+        },
+        {
+          "type": "callout",
+          "tone": "warn",
+          "title": "The setting has never been read",
+          "text": "`Settings.vat_rate` (`config.py:14`, `:28`) has existed since `0b4eca9` (2026-05-04), and `acme.yaml` support since `4f04522` (2026-07-20). No code reads `settings.vat_rate` (grep finds no `.vat_rate` read). So until now, setting `ACME_VAT_RATE` has had no effect. After the change, any value other than 0.20 in an environment variable or an `acme.yaml` changes stored totals, receipts and reports from the next run. [high]"
+        }
+      ]
+    },
+    {
+      "id": "reach",
+      "title": "What it reaches",
+      "blocks": [
+        {
+          "type": "graph",
+          "nodes": [
+            {"id": "cfg", "label": "ACME_VAT_RATE / acme.yaml vat_rate", "note": "config.py:28, read but unused today", "group": "boundary"},
+            {"id": "ch", "label": "order_total(order, vat_rate)", "note": "pricing.py:35", "group": "changed"},
+            {"id": "vat", "label": "vat_total + VAT_RATE", "note": "pricing.py:5, :31", "group": "changed"},
+            {"id": "cli32", "label": "cli.main: import --notify", "note": "cli.py:32", "group": "affected"},
+            {"id": "cli36", "label": "cli.main: check", "note": "cli.py:36", "group": "affected"},
+            {"id": "imp", "label": "importer.import_file", "note": "importer.py:59", "group": "affected"},
+            {"id": "rep", "label": "report.daily_report (getattr)", "note": "report.py:34, dynamic", "group": "affected"},
+            {"id": "tests", "label": "test_pricing.py, 4 tests", "note": "lines 16, 20, 24, 28", "group": "affected"},
+            {"id": "cli29", "label": "cli.main → import_file", "note": "cli.py:29", "group": "affected"},
+            {"id": "cli39", "label": "cli.main → daily_report", "note": "cli.py:39", "group": "affected"},
+            {"id": "save", "label": "storage.save_order", "note": "storage.py:31, positional INSERT", "group": "safe"},
+            {"id": "notify", "label": "notify.send_receipt", "note": "notify.py:12", "group": "safe"},
+            {"id": "srv", "label": "server.Handler.do_GET", "note": "server.py:23", "group": "safe"},
+            {"id": "tbd", "label": "storage.totals_by_day", "note": "no caller in repo", "group": "unknown"},
+            {"id": "b_import", "label": "CLI import (cron 06:00)", "note": "scheduled job", "group": "boundary"},
+            {"id": "b_check", "label": "CLI check", "note": "stdout", "group": "boundary"},
+            {"id": "b_report", "label": "CLI report", "note": "HTML to stdout", "group": "boundary"},
+            {"id": "b_api", "label": "GET /orders/<id>", "note": "`total` field", "group": "boundary"},
+            {"id": "b_mail", "label": "Mail API receipt", "note": "outbound POST", "group": "boundary"},
+            {"id": "b_pkg", "label": "package API acme_orders.pricing", "note": "installable package", "group": "boundary"},
+            {"id": "d_orders", "label": "orders.total_cents", "note": "SQLite", "group": "data"},
+            {"id": "d_copy", "label": "nightly SQLite copy", "note": "finance share", "group": "data"},
+            {"id": "x_fin", "label": "Finance month-end job", "note": "finance-ops@example.com", "group": "external"},
+            {"id": "x_finrep", "label": "Finance (daily report)", "note": "report.py:1", "group": "external"},
+            {"id": "x_admin", "label": "Shop admin panel", "note": "docs/api.md:3", "group": "external"},
+            {"id": "x_cust", "label": "Customers (receipt email)", "note": "via mail API", "group": "external"},
+            {"id": "x_other", "label": "Other importers", "note": "unknown, ask", "group": "unknown"}
+          ],
+          "edges": [
+            {"from": "cfg", "to": "ch", "label": "new input"},
+            {"from": "vat", "to": "ch", "label": "called by"},
+            {"from": "ch", "to": "cli32", "label": "direct"},
+            {"from": "ch", "to": "cli36", "label": "direct"},
+            {"from": "ch", "to": "imp", "label": "direct"},
+            {"from": "ch", "to": "rep", "label": "getattr"},
+            {"from": "ch", "to": "tests", "label": "direct"},
+            {"from": "ch", "to": "b_pkg", "label": "public name"},
+            {"from": "imp", "to": "cli29", "label": "called by"},
+            {"from": "imp", "to": "save", "label": "total"},
+            {"from": "save", "to": "d_orders", "label": "INSERT OR REPLACE"},
+            {"from": "d_orders", "to": "srv", "label": "read"},
+            {"from": "srv", "to": "b_api"},
+            {"from": "b_api", "to": "x_admin"},
+            {"from": "d_orders", "to": "d_copy", "label": "copied nightly"},
+            {"from": "d_copy", "to": "x_fin", "label": "SUM per day"},
+            {"from": "d_orders", "to": "tbd", "label": "read"},
+            {"from": "cli29", "to": "b_import"},
+            {"from": "cli32", "to": "b_import"},
+            {"from": "cli32", "to": "notify", "label": "total"},
+            {"from": "notify", "to": "b_mail"},
+            {"from": "b_mail", "to": "x_cust"},
+            {"from": "cli36", "to": "b_check"},
+            {"from": "rep", "to": "cli39", "label": "called by"},
+            {"from": "cli39", "to": "b_report"},
+            {"from": "b_report", "to": "x_finrep"},
+            {"from": "b_pkg", "to": "x_other"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "title": "Every use",
+      "intro": "Found by `refs.py` for `order_total`, `vat_total`, `VAT_RATE`, `vat_rate` and `ACME_VAT_RATE`, then a second round for `import_file`, `daily_report`, `main`, `send_receipt` and `save_order`. I read every match.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["Where", "Kind", "Verdict", "Test"],
+          "rows": [
+            ["src/acme_orders/pricing.py:35", "definition of `order_total`", "**changes**: gains `vat_rate` and passes it to `vat_total`", "tests/test_pricing.py (4)"],
+            ["src/acme_orders/pricing.py:31", "`vat_total` reads `VAT_RATE`; `order_total` calls it at :36", "**needs a change**: take `vat_rate` too, or the total and the report's VAT column use different rates", "only through `order_total`"],
+            ["src/acme_orders/pricing.py:5", "the `VAT_RATE` constant", "**needs a change**: keep it as the default during the move, remove it last", "none"],
+            ["src/acme_orders/cli.py:32", "direct call, `import --notify`", "**breaks** once the parameter is required; pass `settings.vat_rate` (already loaded at cli.py:25)", "none"],
+            ["src/acme_orders/cli.py:36", "direct call, `check`", "**breaks**; pass `settings.vat_rate`", "none"],
+            ["src/acme_orders/importer.py:59", "direct call inside `import_file(path, db)`", "**breaks**; `import_file` has no settings, so it needs a `vat_rate` parameter", "none"],
+            ["src/acme_orders/report.py:34", "dynamic: `getattr(pricing, f\"{kind}_total\")(order)` for discount, vat and order", "**breaks** with a `TypeError` once the parameter is required. While the parameter has a default, the report keeps 0.20 without any error. Needs a change: call the three functions explicitly and give `daily_report` a `vat_rate` parameter", "none"],
+            ["tests/test_pricing.py:16, 20, 24, 28", "test calls", "**break** once the parameter is required; pass `Decimal(\"0.20\")`", "they are the tests"],
+            ["src/acme_orders/cli.py:29", "indirect: calls `import_file`", "**needs a change**: pass `settings.vat_rate`", "none"],
+            ["src/acme_orders/cli.py:39", "indirect: calls `daily_report`", "**needs a change**: pass `settings.vat_rate`", "none"],
+            ["src/acme_orders/storage.py:31", "indirect: `save_order` writes the total to `orders.total_cents`", "safe code; the stored value changes if the rate is not 0.20", "none"],
+            ["src/acme_orders/notify.py:12", "indirect: `send_receipt` posts the total to the mail API", "safe code; the receipt amount changes if the rate is not 0.20", "none"],
+            ["src/acme_orders/server.py:23", "indirect: reads `total_cents` for the `total` field", "safe: reads the stored value", "none"],
+            ["src/acme_orders/storage.py:59", "indirect: `totals_by_day` sums `total_cents`", "unknown: no caller in the repo, so someone outside may use it", "none"],
+            ["src/acme_orders/config.py:14, 28", "`Settings.vat_rate`, the new source", "**needs a change**: there is no range check, so `vat_rate: 20` would mean 2000% VAT", "none"],
+            ["acme.yaml.example:3, README.md:15", "docs for the setting", "safe; worth saying that the setting now drives totals", "none"],
+            ["pyproject.toml:17, src/acme_orders/__main__.py:3", "entry points into `cli.main`", "safe", "none"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "data",
+      "title": "Stored data",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "**`orders.total_cents`** is computed once at import time with the hard-coded 0.20 (`storage.py:31-32`). There is no schema change and no new field to read, so old rows stay readable. [high]",
+            "**Rows don't record the rate.** If an environment holds a rate other than 0.20, rows from before and after the deploy use different rates and nothing shows it. Finance's per-day `SUM(total_cents)` mixes them. [high]",
+            "**Re-imports rewrite history.** `INSERT OR REPLACE` recomputes an old order with the current rate. The cron re-ran the 2026-10-02 file on 2026-10-03 (`logs/acme-orders.log:28`), so re-runs do happen. If the rate ever changes, re-importing an old export silently changes old totals. [high]",
+            "**Writes by position.** `INSERT OR REPLACE INTO orders VALUES (?, ?, ?, ?, ?)` (`storage.py:31`) names no columns. If you later decide to store the rate per order, name the columns first. `CREATE TABLE IF NOT EXISTS` won't add a column to an existing file, so that also needs an `ALTER TABLE`. This change doesn't require it. [high]",
+            "**Configuration counts as stored data here.** `ACME_VAT_RATE` and `acme.yaml` (gitignored) live in each environment, not in the repo. Their values have never had any effect, so nobody has had a reason to keep them correct. [high] There is no `.dockerignore`, so the Dockerfile's `COPY . .` would bake a local `acme.yaml` into the image, and `load_settings` reads `acme.yaml` from the working directory `/srv/acme-orders`. [med]",
+            "YAML parses `vat_rate: 0.20` as the float 0.2. `str()` turns it into `\"0.2\"` and then `Decimal(\"0.2\")`, the same value, and `_round` quantizes the result, so there's no drift. [high]"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "consumers",
+      "title": "Outside consumers",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["Consumer", "What it reads", "Evidence", "Who to ask"],
+          "rows": [
+            ["Finance month-end job", "`orders.total_cents` from the nightly SQLite copy, summed per day", "docs/finance-export.md:3-7 says: \"Do not change what it means without telling finance first\" [high]", "finance-ops@example.com"],
+            ["Finance, daily report", "HTML from `acme-orders report`: discount, VAT and total columns", "report.py:1 \"for finance\", README.md:5 [med]", "finance-ops@example.com"],
+            ["Shop admin panel", "`total` from `GET /orders/<id>`", "docs/api.md:3, :11 [high]", "admin panel owners (not named in the repo)"],
+            ["Customers, by email", "`total` in the receipt sent through the mail API", "notify.py:12 [high]; whether cron uses `--notify` is not shown [guess]", "owner of the mail API and receipt template (not named)"],
+            ["Unknown importers", "`acme_orders.pricing.order_total`, `VAT_RATE`, `storage.totals_by_day`", "it's an installable package (pyproject.toml), and `totals_by_day` has no caller in the repo [med]", "the team; ops on the `/srv/acme-orders` host"]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "text": "The repo can't show that this list is complete. Anyone with read access to the SQLite file, the finance share or the API can depend on these totals. Ask finance-ops and the people who run the `/srv/acme-orders` host (the cron and deploys in the log) before the contract step."
+        }
+      ]
+    },
+    {
+      "id": "untested",
+      "title": "Untested paths",
+      "blocks": [
+        {
+          "type": "findings",
+          "items": [
+            {
+              "severity": "high",
+              "title": "The report's dynamic `getattr` call has no test",
+              "where": "src/acme_orders/report.py:34",
+              "evidence": "`daily_report` builds `discount_total`, `vat_total` and `order_total` by name and calls each with `(order)`. Once the parameter is required, it raises `TypeError` only when someone runs `report`. While the parameter has a default, it silently uses 0.20. No test calls `daily_report`.",
+              "fix": "Before moving the callers, add a test: with a given rate, the `vat` and `total` columns use that rate and `total = subtotal - discount + vat`, rounded.",
+              "status": "open"
+            },
+            {
+              "severity": "high",
+              "title": "Nothing tests the import path to `total_cents`, the value finance sums",
+              "where": "src/acme_orders/importer.py:56",
+              "evidence": "`cli import → import_file → save_order → orders.total_cents`. `test_importer.py` covers only `parse_amount` and `read_orders`.",
+              "fix": "Test `import_file(path, db, vat_rate)` against a temporary SQLite file and assert on `total_cents` for a known order at 0.20 and at another rate.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "No test covers `load_settings`'s order of precedence or checks its range",
+              "where": "src/acme_orders/config.py:28",
+              "evidence": "No test checks that the environment overrides `acme.yaml`, which overrides the default, or how a YAML float is parsed. Any `Decimal` is accepted, including `20` or a negative rate.",
+              "fix": "Add tests for the three sources, and reject rates outside 0 ≤ rate < 1 when loading.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "`cli.main` `check` and `import --notify` have no test",
+              "where": "src/acme_orders/cli.py:32",
+              "evidence": "Nothing proves that the CLI passes `settings.vat_rate` and not the default.",
+              "fix": "Test `main([\"check\", file])` with `ACME_VAT_RATE` set, and `--notify` with `requests.post` mocked, asserting on the total that is sent.",
+              "status": "open"
+            },
+            {
+              "severity": "low",
+              "title": "Pricing has only been tested at 0.20",
+              "where": "tests/test_pricing.py:13",
+              "evidence": "All 4 tests rely on the constant. No rate other than 0.20 has ever run through `order_total` or `vat_total`.",
+              "fix": "Add cases at 0.10 and at `Decimal(\"0.2\")` vs `Decimal(\"0.20\")`, including the case where rounding happens once per order.",
+              "status": "open"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "order",
+      "title": "Safe order",
+      "intro": "Expand, settle the setting, move the callers, then contract. Each step is one deploy and has a check that must pass before the next.",
+      "blocks": [
+        {
+          "type": "callout",
+          "tone": "bad",
+          "title": "The import is already failing",
+          "text": "Every 06:00 import since 2026-10-02 has exited with `decimal.InvalidOperation` (`logs/acme-orders.log:10`, `:29`). The cause is `49bc16d` (Jon Berg, 2026-09-30), which removed `.replace(\",\", \".\")` from `parse_amount`, while the export contains `12,50` (`data/orders-2026-10-02.csv:7`). `report.read_adjustments` has the same problem with `-8,40`. That's not part of this change, but the checks in step 3 need a working import, so fix it first and give the fix a regression test. [high]"
+        },
+        {
+          "type": "steps",
+          "items": [
+            {
+              "title": "1. Expand: add the parameter with the old value as its default",
+              "where": "src/acme_orders/pricing.py:31",
+              "text": "`vat_total(order, vat_rate=VAT_RATE)` and `order_total(order, vat_rate=VAT_RATE)`, with `order_total` passing the rate on to `vat_total`. Don't change any callers yet. Add the pricing tests at other rates. **Check:** the 4 existing tests pass unchanged, and `acme-orders check` on a sample export prints the same totals before and after."
+            },
+            {
+              "title": "2. Settle the setting and tell finance",
+              "where": "src/acme_orders/config.py:28",
+              "text": "Add the range check and the `load_settings` tests. On every environment (the `/srv/acme-orders` cron host, the Docker image, CI), find `ACME_VAT_RATE` and any `acme.yaml`, and confirm the value is 0.20 or agree on a different one. Tell finance-ops@example.com before step 3, as docs/finance-export.md asks. **Check:** on the production host, `python -c \"from acme_orders.config import load_settings; print(load_settings().vat_rate)\"` prints the agreed rate."
+            },
+            {
+              "title": "3. Move the callers",
+              "where": "src/acme_orders/cli.py:25",
+              "text": "`cli.py:32` and `:36` pass `settings.vat_rate`. `import_file(path, db, vat_rate)`, called from `cli.py:29`. `daily_report(..., vat_rate=...)`, called from `cli.py:39`, with the `getattr` loop replaced by explicit calls. Add the report, import and CLI tests. **Check:** after the next 06:00 import, `storage.totals_by_day` for the day equals the sum of the `check` output for that file. One order checked through `GET /orders/<id>` matches, and in the report, total = subtotal − discount + VAT."
+            },
+            {
+              "title": "4. Contract: make it required and remove the constant",
+              "where": "src/acme_orders/pricing.py:5",
+              "text": "Make `vat_rate` required on `order_total` and `vat_total`, delete `VAT_RATE`, and pass `Decimal(\"0.20\")` in `tests/test_pricing.py`. Do this only after the owners confirm nothing outside the repo imports `acme_orders.pricing`. From then on, a missed caller fails with a `TypeError` instead of silently using 0.20. **Check:** grep finds no `VAT_RATE`, the tests pass, and `import`, `check` and `report` each run once on a sample file."
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "Later, and only if the rate is expected to change: store the rate with each order (named-column `INSERT` first, then `ALTER TABLE`), or pick the rate by order date, so that re-importing an old export can't rewrite its totals. [med]"
+        }
+      ]
+    }
+  ]
+}

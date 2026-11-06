@@ -1,0 +1,389 @@
+{
+  "skill": "codebase-map",
+  "title": "acme-orders, mapped",
+  "subtitle": "What acme-orders does, where it starts, where its data goes, and what to know before changing it, read from the code at f36ec1c.",
+  "meta": {"repo": "acme-orders", "commit": "f36ec1c", "date": "2026-11-06"},
+  "verdict": {
+    "text": "acme-orders is a small Python CLI that imports the Acme tea shop's daily `;`-separated order export, prices each order, stores it in SQLite, can mail receipts and serves a read-only order API. Finance's month-end job reads `orders.total_cents` straight from the SQLite file. Before changing anything: since 2026-10-02 the daily import in the local log copy has exited with an error. Commit 49bc16d removed decimal-comma parsing and its test, and the shop's export contains prices like `12,50`. [high]",
+    "tone": "bad"
+  },
+  "stats": [
+    {"label": "Python lines", "value": 387, "note": "326 in src, 61 in tests", "tone": "info"},
+    {"label": "Test share", "value": "16%", "note": "of Python lines; 2 of 8 src modules tested", "tone": "warn"},
+    {"label": "Commits", "value": 13, "note": "2026-05-04 → 2026-10-03", "tone": "info"},
+    {"label": "Contributors", "value": 2, "note": "Mia Novak, Jon Berg", "tone": "info"},
+    {"label": "Entry points", "value": 4, "note": "counted by the inventory script; a host cron outside the repo is seen only in the log", "tone": "info"}
+  ],
+  "sections": [
+    {
+      "id": "purpose",
+      "title": "Purpose",
+      "blocks": [
+        {"type": "text", "text": "Order intake for the Acme tea shop. Every morning it imports the shop's order export (CSV, `;` separated), prices each order (discount code, then 20% VAT, rounded once per order) and stores it in SQLite. The shop's admin panel reads single orders over a read-only HTTP API. [high] The code does all of this (`importer.py`, `pricing.py`, `storage.py`, `server.py`); that the admin panel is the caller comes from `docs/api.md:3` only [med].\n\nUsers: the morning import job, the shop's admin panel, and finance. Finance's month-end job reads `orders.total_cents` from a nightly copy of the SQLite file and sums it per day (`docs/finance-export.md:3`). Only the docs say this [med]."}
+      ]
+    },
+    {
+      "id": "entry-points",
+      "title": "Entry points",
+      "intro": "Every entry point below was read. `serve` is the only long-running process; everything else is a one-shot CLI run.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["How it starts", "Where", "What it runs", "Confidence"],
+          "rows": [
+            ["console script `acme-orders`", "pyproject.toml:17 → src/acme_orders/cli.py:10", "`cli.main()`: argparse with subcommands import, check, report, serve", "[high]"],
+            ["`python -m acme_orders`", "src/acme_orders/__main__.py:3", "calls `cli.main()` at import time", "[high]"],
+            ["subcommand `import FILE [--notify]`", "src/acme_orders/cli.py:13, :27", "CSV → price → SQLite; optionally mails receipts", "[high]"],
+            ["subcommand `check FILE`", "src/acme_orders/cli.py:16, :34", "prints `order_id total` per order; no DB", "[high]"],
+            ["subcommand `report FILE --day D [--adjustments F]`", "src/acme_orders/cli.py:18, :37", "HTML totals to stdout, computed from the CSV, not the DB", "[high]"],
+            ["subcommand `serve --port N`", "src/acme_orders/cli.py:22, :40 → src/acme_orders/server.py:36", "`ThreadingHTTPServer` on `0.0.0.0:N`: `GET /health` (server.py:13), `GET /orders/<id>` (server.py:15)", "[high]"],
+            ["container command", "Dockerfile:7", "`python -m acme_orders serve --port 8080`, `ACME_DB_PATH=/data/acme.db` (Dockerfile:5)", "[high]"],
+            ["scheduled job, 06:00 daily", "outside the repo; seen in logs/acme-orders.log (git-ignored)", "`acme-orders import /srv/acme-orders/data/orders-<date>.csv`, run from a source checkout `/srv/acme-orders/src`, deployed by a `cron deploy` step", "[med]"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "modules",
+      "title": "Modules",
+      "intro": "One package, `acme_orders` (10 files, 326 lines). The import edges come from the import script. The edges to data and outside systems come from reading the code and docs.",
+      "blocks": [
+        {
+          "type": "table",
+          "title": "What each module owns",
+          "columns": ["Module", "Lines", "Owns"],
+          "rows": [
+            ["`cli`", 41, "argparse dispatch for the four subcommands; loads settings once per run [high]"],
+            ["`config`", 29, "`Settings` from env vars, else `acme.yaml` in the current directory, else defaults [high]"],
+            ["`importer`", 61, "`Line`/`Order` dataclasses, CSV parsing and grouping by `order_id`, `import_file` loop [high]"],
+            ["`pricing`", 36, "discount table (`WELCOME10`, `STAFF25`), hard-coded VAT 0.20, rounding once per order (HALF_UP) [high]"],
+            ["`storage`", 63, "SQLite schema (`orders`, `order_lines`), upsert, lookup by id, unused `totals_by_day` [high]"],
+            ["`report`", 37, "daily HTML report via Jinja2, manual adjustments file [high]"],
+            ["`notify`", 15, "one `requests.post` per receipt to the mail API [high]"],
+            ["`server`", 38, "stdlib HTTP handler for `/health` and `/orders/<id>` [high]"],
+            ["`__main__`, `__init__`", 6, "`python -m` hook; `__version__ = 0.4.0` [high]"],
+            ["`tests`", 61, "`test_importer` (parse_amount, read_orders), `test_pricing` (order_total) [high]"]
+          ]
+        },
+        {
+          "type": "graph",
+          "title": "Import graph and data edges",
+          "nodes": [
+            {"id": "cron", "label": "host cron 06:00", "note": "outside repo, seen in log", "group": "entry"},
+            {"id": "docker", "label": "Dockerfile CMD", "note": "serve --port 8080", "group": "entry"},
+            {"id": "main", "label": "__main__ / acme-orders", "note": "python -m, console script", "group": "entry"},
+            {"id": "cli", "label": "cli", "note": "import, check, report, serve", "group": "module"},
+            {"id": "config", "label": "config", "group": "module"},
+            {"id": "importer", "label": "importer", "group": "module"},
+            {"id": "pricing", "label": "pricing", "group": "module"},
+            {"id": "storage", "label": "storage", "group": "module"},
+            {"id": "report", "label": "report", "group": "module"},
+            {"id": "notify", "label": "notify", "group": "module"},
+            {"id": "server", "label": "server", "group": "module"},
+            {"id": "api", "label": "GET /orders/<id>, /health", "group": "boundary"},
+            {"id": "csv", "label": "order export CSV", "note": "path argument", "group": "data"},
+            {"id": "adj", "label": "adjustments CSV", "note": "--adjustments", "group": "data"},
+            {"id": "yaml", "label": "acme.yaml", "note": "relative to CWD", "group": "data"},
+            {"id": "db", "label": "SQLite acme.db", "note": "ACME_DB_PATH", "group": "data"},
+            {"id": "mail", "label": "Mail API", "note": "ACME_MAIL_API_URL", "group": "external"},
+            {"id": "admin", "label": "shop admin panel", "note": "docs only", "group": "external"},
+            {"id": "finance", "label": "finance month-end job", "note": "reads nightly DB copy; docs only", "group": "external"},
+            {"id": "tests", "label": "tests", "note": "2 files", "group": "test"}
+          ],
+          "edges": [
+            {"from": "cron", "to": "main", "label": "import"},
+            {"from": "docker", "to": "main", "label": "serve"},
+            {"from": "main", "to": "cli"},
+            {"from": "cli", "to": "config"},
+            {"from": "cli", "to": "importer"},
+            {"from": "cli", "to": "pricing"},
+            {"from": "cli", "to": "storage"},
+            {"from": "cli", "to": "report"},
+            {"from": "cli", "to": "notify"},
+            {"from": "cli", "to": "server"},
+            {"from": "importer", "to": "pricing"},
+            {"from": "importer", "to": "storage"},
+            {"from": "report", "to": "pricing", "label": "getattr by name"},
+            {"from": "notify", "to": "config", "label": "per receipt"},
+            {"from": "server", "to": "storage", "label": "per request"},
+            {"from": "importer", "to": "csv", "label": "reads"},
+            {"from": "report", "to": "adj", "label": "reads"},
+            {"from": "config", "to": "yaml", "label": "reads"},
+            {"from": "storage", "to": "db", "label": "reads/writes"},
+            {"from": "notify", "to": "mail", "label": "POST, no timeout"},
+            {"from": "server", "to": "api", "label": "serves"},
+            {"from": "admin", "to": "api", "label": "calls"},
+            {"from": "finance", "to": "db", "label": "reads total_cents"},
+            {"from": "tests", "to": "importer"},
+            {"from": "tests", "to": "pricing"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "flows",
+      "title": "Flows",
+      "intro": "I read every hop marked [high]. Hops marked [med] come from docs or the log, not from code.",
+      "blocks": [
+        {
+          "type": "steps",
+          "title": "1. Daily import: export CSV → SQLite → finance",
+          "items": [
+            {"title": "Cron starts the import", "text": "A host cron runs `acme-orders import` at 06:00 against `/srv/acme-orders/data/orders-<date>.csv`. The cron is not in the repo. [med]", "where": "logs/acme-orders.log:1"},
+            {"title": "CLI loads settings", "text": "`load_settings()` reads `acme.yaml` from the current directory if it exists, then env overrides; gives `db_path` (default `acme.db`). [high]", "where": "src/acme_orders/cli.py:25 → src/acme_orders/config.py:17"},
+            {"title": "Open SQLite", "text": "`sqlite3.connect(path, timeout=5)` then `CREATE TABLE IF NOT EXISTS` for `orders` and `order_lines`. [high]", "where": "src/acme_orders/cli.py:28 → src/acme_orders/storage.py:22"},
+            {"title": "Read the whole file first", "text": "`csv.DictReader(delimiter=\";\")`. Rows are grouped by `order_id`, email is lower-cased and the discount code is upper-cased. The function returns a list, so one bad row rejects the whole file before anything is saved. [high]", "where": "src/acme_orders/importer.py:39"},
+            {"title": "Parse amounts", "text": "`Decimal(value.strip())`. A decimal comma (`12,50`) raises `decimal.InvalidOperation`. Since 49bc16d the comma is no longer replaced. [high]", "where": "src/acme_orders/importer.py:27"},
+            {"title": "Price", "text": "subtotal − discount (`DISCOUNTS` table) + VAT at the hard-coded `VAT_RATE = 0.20`, rounded once with HALF_UP to the cent. [high]", "where": "src/acme_orders/pricing.py:35"},
+            {"title": "Upsert", "text": "One transaction per order: `INSERT OR REPLACE` into `orders` with `total_cents = int(total * 100)`, then delete and re-insert its `order_lines`. Re-importing a file overwrites the orders. [high]", "where": "src/acme_orders/storage.py:28"},
+            {"title": "Finance reads the file", "text": "The SQLite file is copied nightly to the finance share. Finance sums `orders.total_cents` per day. [med]", "where": "docs/finance-export.md:3"}
+          ]
+        },
+        {
+          "type": "steps",
+          "title": "2. Receipts: import --notify → Mail API",
+          "items": [
+            {"title": "After the DB write, read the file again", "text": "Once `import_file` finishes, the CLI parses the CSV a second time and sends one receipt per order in the file. It keeps no record of what was sent. [high]", "where": "src/acme_orders/cli.py:30"},
+            {"title": "Settings reloaded per receipt", "text": "`send_receipt` calls `load_settings()` again for every order. [high]", "where": "src/acme_orders/notify.py:9"},
+            {"title": "POST to the mail API", "text": "`requests.post(mail_api_url, json={to, template: receipt, order_id, total}, headers={Authorization: Bearer …})`. There is no `timeout`. [high]", "where": "src/acme_orders/notify.py:10"},
+            {"title": "First failure stops the loop", "text": "`raise_for_status()` raises. The remaining receipts are not sent, but the orders are already saved. [high]", "where": "src/acme_orders/notify.py:15"}
+          ]
+        },
+        {
+          "type": "steps",
+          "title": "3. Read API: GET /orders/<id> → SQLite → JSON",
+          "items": [
+            {"title": "Container starts the server", "text": "`serve --port 8080` → `Handler.db_path = db_path`; `ThreadingHTTPServer((\"0.0.0.0\", port))`. [high]", "where": "Dockerfile:7 → src/acme_orders/server.py:36"},
+            {"title": "Route by prefix, no auth", "text": "`/health` → `{status: ok}`. Any path starting with `/orders/` uses the rest of the path as the id, query string included. There is no authentication. [high]", "where": "src/acme_orders/server.py:12"},
+            {"title": "Connect per request", "text": "`storage.connect` runs the schema script on every request. If the file is missing, it creates an empty DB, so every lookup returns 404 instead of an error. [high]", "where": "src/acme_orders/server.py:16 → src/acme_orders/storage.py:22"},
+            {"title": "Two SELECTs", "text": "Order row plus its lines. [high]", "where": "src/acme_orders/storage.py:41"},
+            {"title": "Shape the response", "text": "`total = total_cents / 100` (a float). The JSON includes `customer_email`. [high]", "where": "src/acme_orders/server.py:23"}
+          ]
+        },
+        {
+          "type": "steps",
+          "title": "4. Finance report: CSV → HTML on stdout",
+          "items": [
+            {"title": "Read the CSV, not the DB", "text": "`report` parses the export file again. It never reads the SQLite totals that finance uses. [high]", "where": "src/acme_orders/cli.py:38"},
+            {"title": "Per-order columns by name", "text": "`getattr(pricing, f\"{kind}_total\")` for discount, vat and order. Discount and VAT are not rounded (e.g. `1.998`). [high]", "where": "src/acme_orders/report.py:34"},
+            {"title": "Adjustments", "text": "Sums every row's `amount` from the adjustments CSV. It ignores the file's `day` column and fails on a decimal comma. [high]", "where": "src/acme_orders/report.py:19"},
+            {"title": "Render", "text": "`jinja2.Template(TEMPLATE)` with no autoescape. `--day` only sets the heading; orders are not filtered by day. [high]", "where": "src/acme_orders/report.py:37"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "boundaries",
+      "title": "Boundaries",
+      "blocks": [
+        {
+          "type": "table",
+          "title": "Outside systems",
+          "columns": ["System", "Direction", "Where", "Confidence"],
+          "rows": [
+            ["Shop order export (CSV file)", "in", "src/acme_orders/importer.py:41", "[high]"],
+            ["Manual adjustments (CSV file)", "in", "src/acme_orders/report.py:21", "[high]"],
+            ["SQLite file at `ACME_DB_PATH`", "in/out", "src/acme_orders/storage.py:23", "[high]"],
+            ["Mail API (HTTP POST, Bearer key)", "out", "src/acme_orders/notify.py:10", "[high]"],
+            ["Shop admin panel → `GET /orders/<id>`", "in", "docs/api.md:3", "[med]"],
+            ["Finance month-end job ← nightly copy of the SQLite file", "out", "docs/finance-export.md:3", "[med]"],
+            ["Host cron (import + deploy)", "in", "logs/acme-orders.log:1, :7", "[med]"]
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Configuration it reads (names only)",
+          "columns": ["Name", "Where", "Note"],
+          "rows": [
+            ["`ACME_DB_PATH`", "src/acme_orders/config.py:25, Dockerfile:5", "also `db_path` in acme.yaml; default `acme.db` [high]"],
+            ["`ACME_MAIL_API_URL`", "src/acme_orders/config.py:26", "also `mail_api_url` in acme.yaml [high]"],
+            ["`ACME_MAIL_API_KEY`", "src/acme_orders/config.py:27", "env only, not read from acme.yaml [high]"],
+            ["`ACME_VAT_RATE`", "src/acme_orders/config.py:28", "also `vat_rate` in acme.yaml. **Read but never used**: pricing has its own constant [high]"],
+            ["`acme.yaml`", "src/acme_orders/config.py:17", "relative to the working directory; git-ignored; `acme.yaml.example` committed [high]"]
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Outside packages",
+          "columns": ["Package", "Pin", "Imported where", "Note"],
+          "rows": [
+            ["Jinja2", ">=2.10,<3", "src/acme_orders/report.py:28 (lazy)", "2.x line; see Surprises [med]"],
+            ["requests", "==2.19.1", "src/acme_orders/notify.py:7 (lazy)", "2018 release [high]"],
+            ["PyYAML", "==5.3.1", "src/acme_orders/config.py:20 (lazy)", "used with `FullLoader` [high]"],
+            ["python-dateutil", "unpinned", "never imported", "unused dependency [high]"],
+            ["pytest (dev)", "==7.1.0", "never used", "CI and README run `unittest` [high]"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "run-and-test",
+      "title": "Run and test",
+      "blocks": [
+        {
+          "type": "kv",
+          "items": [
+            ["Install (README)", "`pip install -e .` (README.md:9)"],
+            ["Run (README)", "`python -m acme_orders import|check|report|serve …` (README.md:10)"],
+            ["Test (README)", "`PYTHONPATH=src python -m unittest discover -s tests` (README.md:20)"],
+            ["CI (.github/workflows/ci.yml)", "on push and pull_request, Python 3.12: `pip install -e .` then the same unittest command (ci.yml:11). Matches the README."],
+            ["What CI does not do", "no lint, no type check, no coverage, no Docker build, no Python 3.11 run although `requires-python >=3.11`; never exercises `report`, `notify`, `server`, `config` or `storage`"],
+            ["Container", "`docker build` copies the whole context (`COPY . .`, Dockerfile:3). There is no `.dockerignore`."]
+          ]
+        },
+        {"type": "callout", "tone": "warn", "text": "The README's own example `python -m acme_orders import data/orders-2026-10-02.csv` fails against the file in this working copy's `data/`. Its prices `12,50` and `8,00` (order A-1045) raise `InvalidOperation` at `importer.py:28`. The production log shows the same traceback. [high] I read only the price columns of that file, not the customer emails. I did not run the tests."}
+      ]
+    },
+    {
+      "id": "health",
+      "title": "Health",
+      "blocks": [
+        {
+          "type": "table",
+          "title": "Tests against code",
+          "columns": ["Module", "Lines", "Tests", "Commits (180 d)"],
+          "rows": [
+            ["storage.py", 63, "none", 1],
+            ["importer.py", 61, "parse_amount ×2, read_orders ×1; the decimal-comma test was deleted in 49bc16d", 3],
+            ["cli.py", 41, "none", 5],
+            ["server.py", 38, "none", 1],
+            ["report.py", 37, "none", 2],
+            ["pricing.py", 36, "order_total ×4; `STAFF25` (d22ee8f) untested", 4],
+            ["config.py", 29, "none", 2],
+            ["notify.py", 15, "none", 1]
+          ]
+        },
+        {
+          "type": "kv",
+          "items": [
+            ["Churn hot spots", "cli.py 5 commits, pricing.py 4, pyproject.toml 4, importer.py 3"],
+            ["Largest files", "storage.py 63, importer.py 61, cli.py 41 lines"],
+            ["TODO / FIXME", "0 / 0"],
+            ["CI checks", "unit tests only (7 tests in 2 files)"],
+            ["Dead code", "`storage.totals_by_day` (storage.py:59) has no caller [high]"],
+            ["Hidden breakage", "all three outside packages are imported inside functions (config.py:20, notify.py:7, report.py:28), so a broken install only shows when that path runs [high]"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "surprises",
+      "title": "Surprises",
+      "intro": "Places where the code, the docs and the runtime evidence disagree.",
+      "blocks": [
+        {
+          "type": "findings",
+          "items": [
+            {
+              "severity": "high",
+              "title": "The daily import has failed since 2026-10-02: decimal commas no longer parse",
+              "where": "src/acme_orders/importer.py:28",
+              "evidence": "49bc16d (2026-09-30, \"simplify amount parsing\") dropped `.replace(\",\", \".\")` and deleted `test_decimal_comma`, so CI stayed green. The change was deployed with c376ea1 on 2026-10-01 18:05. The 06:00 runs on 2026-10-02 and 2026-10-03 exited with 1 on `decimal.InvalidOperation` (logs/acme-orders.log:10, :29). The export has `12,50` and `8,00` on order A-1045 and dots on other rows. `read_orders` builds the full list before saving, so the whole file is rejected. Orders from 2026-10-01 on are missing from the DB, from the API, and from finance's sums. [high] The log copy ends 2026-10-03, so the current state is unknown.",
+              "fix": "Restore comma handling in `parse_amount` and restore the deleted test. Re-import the missed files; the upsert makes this safe, but only without `--notify`. Alert on non-zero cron exit.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "VAT rate is configurable on paper only",
+              "where": "src/acme_orders/pricing.py:5",
+              "evidence": "README.md:15 and acme.yaml.example:3 offer `ACME_VAT_RATE` / `vat_rate`, and `config.py:28` reads it into `Settings.vat_rate`. Nothing reads that field. `pricing.vat_total` uses the constant `VAT_RATE = Decimal(\"0.20\")`. [high]",
+              "fix": "Either pass the setting into pricing or remove it from config and README. A rate change alters `total_cents`, so tell finance first (docs/finance-export.md:6).",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "The finance report ignores its day, sums a month of adjustments, and crashes on the adjustments file",
+              "where": "src/acme_orders/report.py:19",
+              "evidence": "`--day` is only rendered into the `<h1>` (report.py:8, :37). Every order in the CSV is listed. `read_adjustments` sums every row and never reads the `day` column of `data/adjustments-2026-10.csv`, which holds one month. That file has `-8,40`, so `Decimal()` raises. The report reads the CSV, not the DB totals finance uses. Discount and VAT columns are unrounded. [high]",
+              "fix": "Decide with finance whether the report or `total_cents` is the number of record. Filter orders and adjustments by day, and share one amount parser with the importer.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "Receipts: no timeout, no dedupe, partial sends",
+              "where": "src/acme_orders/notify.py:10",
+              "evidence": "`requests.post` has no `timeout`, so a hung mail API hangs the import job. `import --notify` re-sends a receipt for every order in the file on every run (cli.py:30). Re-importing to recover from the first finding would mail customers twice. The first HTTP error stops the loop after the DB is already written. [high]",
+              "fix": "Add a timeout, record sent receipts (e.g. a column or table), and make the notify loop continue and report failures.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "Order API is unauthenticated, binds all interfaces and returns customer emails",
+              "where": "src/acme_orders/server.py:38",
+              "evidence": "`ThreadingHTTPServer((\"0.0.0.0\", port))` with no auth check. The response includes `customer_email` (personal data). docs/api.md calls it read-only, but each request runs `CREATE TABLE IF NOT EXISTS`, and a wrong `ACME_DB_PATH` silently creates an empty DB. [high] Whether a proxy or network rule protects it is not in the repo.",
+              "fix": "Confirm what sits in front of it (open question). Otherwise add auth, and open the DB read-only (`file:…?mode=ro`, `uri=True`).",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "Old pins likely break on Python 3.12, and lazy imports hide it",
+              "where": "pyproject.toml:8",
+              "evidence": "Jinja2 2.x imports `soft_unicode`, which MarkupSafe ≥2.1 removed, and nothing pins MarkupSafe, so `report` likely fails with ImportError on a fresh install [med]. requests 2.19.1 pulls urllib3 1.23, whose vendored `six` may not import on 3.12 [guess]. Known advisories: PyYAML 5.3.1 `FullLoader` (CVE-2020-14343, used at config.py:23) and requests <2.20 keeping the `Authorization` header on https→http redirects (CVE-2018-18074) [med]. CI never imports these paths.",
+              "fix": "Run the dependency-audit skill. Bump to Jinja2 3, requests ≥2.32 and PyYAML ≥6 with `safe_load`. Add a smoke test that imports every module.",
+              "status": "open"
+            },
+            {
+              "severity": "low",
+              "title": "No .dockerignore: `COPY . .` bakes local data into the image",
+              "where": "Dockerfile:3",
+              "evidence": "`.gitignore` excludes `data/`, `logs/`, `*.db`, `acme.yaml`, but Docker does not read it. This working copy has `data/` (order CSVs with customer emails) and `logs/`. Both would end up in an image built here. [high]",
+              "fix": "Add a `.dockerignore` mirroring `.gitignore`.",
+              "status": "open"
+            },
+            {
+              "severity": "low",
+              "title": "Orders stored before 2026-08-05 may hold truncated cents",
+              "where": "src/acme_orders/storage.py:32",
+              "evidence": "Until 7a9f245 `order_total` was not rounded: VAT was rounded but a 10% discount could leave three decimals. `int(total * 100)` truncates rather than rounds. Rows from that period that were never re-imported can be one cent low. [med]",
+              "fix": "Round explicitly in `save_order` (`_round(total) * 100`), and ask finance whether old rows need a recompute.",
+              "status": "open"
+            },
+            {
+              "severity": "low",
+              "title": "Report HTML is rendered without autoescape",
+              "where": "src/acme_orders/report.py:37",
+              "evidence": "`jinja2.Template(...)` defaults to `autoescape=False`. `order_id` from the shop CSV goes into the HTML as-is. [high]",
+              "fix": "Use `Environment(autoescape=True)`.",
+              "status": "open"
+            },
+            {
+              "severity": "info",
+              "title": "Renaming a pricing function breaks the report without a grep hit",
+              "where": "src/acme_orders/report.py:34",
+              "evidence": "`getattr(pricing, f\"{kind}_total\")` reaches `discount_total`, `vat_total` and `order_total` through a built string, so a plain search for `vat_total(` misses this caller. [high]",
+              "fix": "Call the three functions directly, or keep the names fixed.",
+              "status": "open"
+            },
+            {
+              "severity": "info",
+              "title": "Production runs from a source checkout through a cron the repo does not contain",
+              "where": "logs/acme-orders.log:1",
+              "evidence": "The traceback paths are `/srv/acme-orders/src/acme_orders/…`, not site-packages, so the cron import does not use the Docker image (which runs `pip install .`). Deploys are logged as `cron deploy <sha>`. None of this is in the repo or the README. [med]",
+              "fix": "Document the scheduler and the deploy step in the README, or move them into the repo.",
+              "status": "open"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open-questions",
+      "title": "Open questions",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["Question", "Why the code cannot answer it", "Who could"],
+          "rows": [
+            ["Is the 06:00 import still failing after 2026-10-03, and which exports were missed?", "The log copy ends 2026-10-03; the host is outside the repo", "whoever runs the host cron; the log shows the deploys but not who ran them"],
+            ["Does the cron run `import --notify`?", "The log line does not show flags. If it does, a re-import mails customers again", "cron owner"],
+            ["Does the shop's export always use decimal commas, or mix them per product?", "The sample mixes `4.50` and `12,50`", "shop / admin-panel owner"],
+            ["Is the HTML report or `orders.total_cents` finance's number of record? Should adjustments reach the DB?", "Two separate totals paths; adjustments exist only in the report", "finance-ops@example.com (docs/finance-export.md:7)"],
+            ["Which day does finance sum by: the `created_at` date with its +02:00 offset, or the import date?", "Finance's job is not in the repo", "finance-ops@example.com"],
+            ["Is VAT meant to be configurable?", "The setting is read but never used", "Mia Novak (pricing author)"],
+            ["What sits in front of the API: network rule, proxy, auth? Do the container and the cron share `/data/acme.db`?", "No deploy config in the repo", "whoever runs the container"]
+          ]
+        }
+      ]
+    }
+  ]
+}

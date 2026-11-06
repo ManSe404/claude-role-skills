@@ -1,0 +1,45 @@
+2026-09-30T06:00:01+02:00 INFO cron start acme-orders import (deployed d22ee8f)
+2026-09-30T06:00:01+02:00 INFO acme_orders import file=/srv/acme-orders/data/orders-2026-09-30.csv
+2026-09-30T06:00:02+02:00 INFO acme_orders imported 41 orders
+2026-10-01T06:00:01+02:00 INFO cron start acme-orders import (deployed d22ee8f)
+2026-10-01T06:00:01+02:00 INFO acme_orders import file=/srv/acme-orders/data/orders-2026-10-01.csv
+2026-10-01T06:00:02+02:00 INFO acme_orders imported 37 orders
+2026-10-01T18:05:44+02:00 INFO cron deploy c376ea1
+2026-10-02T06:00:01+02:00 INFO cron start acme-orders import (deployed c376ea1)
+2026-10-02T06:00:01+02:00 INFO acme_orders import file=/srv/acme-orders/data/orders-2026-10-02.csv
+2026-10-02T06:00:01+02:00 ERROR cron acme-orders import exited with 1
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/srv/acme-orders/src/acme_orders/__main__.py", line 3, in <module>
+    main()
+  File "/srv/acme-orders/src/acme_orders/cli.py", line 29, in main
+    count = importer.import_file(args.file, db)
+  File "/srv/acme-orders/src/acme_orders/importer.py", line 58, in import_file
+    for order in read_orders(path):
+  File "/srv/acme-orders/src/acme_orders/importer.py", line 52, in read_orders
+    order.lines.append(parse_line(row))
+  File "/srv/acme-orders/src/acme_orders/importer.py", line 35, in parse_line
+    unit_price=parse_amount(row["unit_price"]),
+  File "/srv/acme-orders/src/acme_orders/importer.py", line 28, in parse_amount
+    return Decimal(value.strip())
+decimal.InvalidOperation: [<class 'decimal.ConversionSyntax'>]
+2026-10-03T06:00:01+02:00 INFO cron start acme-orders import (deployed c376ea1)
+2026-10-03T06:00:01+02:00 INFO acme_orders import file=/srv/acme-orders/data/orders-2026-10-02.csv
+2026-10-03T06:00:01+02:00 ERROR cron acme-orders import exited with 1
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/srv/acme-orders/src/acme_orders/__main__.py", line 3, in <module>
+    main()
+  File "/srv/acme-orders/src/acme_orders/cli.py", line 29, in main
+    count = importer.import_file(args.file, db)
+  File "/srv/acme-orders/src/acme_orders/importer.py", line 58, in import_file
+    for order in read_orders(path):
+  File "/srv/acme-orders/src/acme_orders/importer.py", line 52, in read_orders
+    order.lines.append(parse_line(row))
+  File "/srv/acme-orders/src/acme_orders/importer.py", line 35, in parse_line
+    unit_price=parse_amount(row["unit_price"]),
+  File "/srv/acme-orders/src/acme_orders/importer.py", line 28, in parse_amount
+    return Decimal(value.strip())
+decimal.InvalidOperation: [<class 'decimal.ConversionSyntax'>]
