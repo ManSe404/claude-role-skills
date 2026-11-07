@@ -3,7 +3,9 @@
 
 The skill decides the content and writes it as JSON (the format is in references/page-format.md).
 This script only draws it, so every page of every skill has the same layout, every value is
-escaped, and nothing in the page is fetched from the network. Standard library only.
+escaped, and nothing in the page is fetched from the network. A small inline script makes the graphs
+clickable and adds table filters and copy buttons; the page reads the same without it. Standard
+library only.
 
 Usage:
     python3 render_page.py PAGE.json -o PAGE.html   # write the page
@@ -440,13 +442,15 @@ def _graph_svg(block: Json, title: str) -> str:
             cls = f"edge {kind}"
         parts.append(
             f'<path class="{cls}" d="M{x1:.1f},{y1:.1f} C{c1[0]:.1f},{c1[1]:.1f} {c2[0]:.1f},{c2[1]:.1f} '
-            f'{x2:.1f},{y2:.1f}" marker-end="url(#arrow-{kind})"/>'
+            f'{x2:.1f},{y2:.1f}" marker-end="url(#arrow-{kind})" '
+            f'data-a="{_esc(edge["from"])}" data-b="{_esc(edge["to"])}"/>'
         )
         if edge.get("label"):
             mx = (x1 + 3 * c1[0] + 3 * c2[0] + x2) / 8
             my = (y1 + 3 * c1[1] + 3 * c2[1] + y2) / 8
             labels.append(
-                f'<text class="edge-label {kind}" x="{mx:.1f}" y="{my - 5:.1f}" text-anchor="middle">'
+                f'<text class="edge-label {kind}" x="{mx:.1f}" y="{my - 5:.1f}" text-anchor="middle" '
+                f'data-a="{_esc(edge["from"])}" data-b="{_esc(edge["to"])}">'
                 f"{_esc(_clip(edge['label'], 28))}</text>"
             )
     for node_id in ids:
@@ -454,7 +458,10 @@ def _graph_svg(block: Json, title: str) -> str:
         (x0, y0), (w, h) = pos[node_id], size[node_id]
         label = _clip(node["label"])
         note = _clip(node.get("note", ""), 44)
-        parts.append(f'<g class="node g-{groups[node_id]}"><title>{_esc(node["label"])}</title>')
+        parts.append(
+            f'<g class="node g-{groups[node_id]}" data-k="{_esc(node_id)}" data-label="{_esc(node["label"])}" '
+            f'tabindex="0" role="button" aria-pressed="false"><title>{_esc(node["label"])}</title>'
+        )
         parts.append(f'<rect class="plate" x="{x0:.1f}" y="{y0:.1f}" width="{w:.1f}" height="{h:.1f}" rx="7"/>')
         parts.append(
             f'<rect class="bar" x="{x0 + 1:.1f}" y="{y0 + 6:.1f}" width="3.5" height="{h - 12:.1f}" rx="1.5"/>'
@@ -815,7 +822,174 @@ letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
 .facts{grid-template-columns:1fr 1fr}.fact,.fact.mid{border-left:0;padding:16px 12px 16px 0}
 .fact.last{border-bottom:1px solid var(--line)}
 section{margin-top:56px}td{font-size:15.5px}dl.kv{grid-template-columns:1fr}dl.kv dt{border-bottom:0;padding-bottom:0}
-.verdict{padding:26px 20px 20px}.finding{padding:18px 18px 16px}.label{left:16px}ol.steps li{padding-left:48px}}
+.verdict{padding:26px 20px 20px}.finding{padding:18px 18px 16px}.label{left:16px}ol.steps li{padding-left:48px}
+.legend .hint{margin-left:0;width:100%}}
+"""
+
+CSS += """
+.graph .node{cursor:pointer;outline:none}.graph .node:focus-visible .plate{stroke:var(--gold);stroke-width:2.4}
+.graph .node,.graph .edge,.graph .edge-label{transition:opacity .18s}
+.graph.tracing .edge.off,.graph.tracing .edge-label.off{opacity:.07}.graph.tracing .node.off{opacity:.22}
+.graph.tracing .edge.on-up{stroke:var(--purple);stroke-width:2.2;opacity:1}
+.graph.tracing .edge.on-down{stroke:var(--orange);stroke-width:2.2;opacity:1}
+.graph.tracing .edge-label.on-up{fill:var(--purple-soft)}.graph.tracing .edge-label.on-down{fill:var(--orange)}
+.graph.tracing .node.on-up .plate{stroke:var(--purple);stroke-width:2;fill:rgba(138,99,242,.14)}
+.graph.tracing .node.on-up .bar{fill:var(--purple)}
+.graph.tracing .node.on-down .plate{stroke:var(--orange);stroke-width:2;fill:rgba(255,166,87,.11)}
+.graph.tracing .node.on-down .bar{fill:var(--orange)}
+.graph.tracing .node.sel .plate{fill:rgba(138,99,242,.45);stroke:var(--purple-soft);stroke-width:2.6}
+.graph.tracing .node.sel .bar{fill:var(--purple-soft)}.graph.tracing .node.sel .node-label{font-weight:700}
+.legend .hint{margin-left:auto;color:var(--purple-soft)}
+.filter{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-bottom:14px}
+.filter input{width:min(380px,100%);padding:9px 14px;background:rgba(8,5,19,.6);border:1px solid var(--plate-border);
+border-radius:8px;color:var(--ink);font:500 15px var(--mono)}
+.filter input::placeholder{color:var(--ink-3)}.filter input:focus{outline:none;border-color:var(--purple-soft)}
+.filter .count{font:600 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+figure.code .copy{position:absolute;right:28px;top:-15px;background:var(--bg);border:1px solid var(--line);
+border-radius:8px;padding:4px 12px;font:600 13px/1.35 var(--mono);letter-spacing:.14em;text-transform:uppercase;
+color:var(--ink-3);cursor:pointer}
+figure.code .copy:hover{color:var(--ink);border-color:var(--ink-3)}
+figure.code .copy.done{color:var(--green);border-color:rgba(126,224,168,.5)}
+figure.code:not(.labelled){margin-top:14px;padding-top:28px}
+"""
+
+# One small inline script, the same on every page. It only adds behaviour; the page reads the same
+# without it. Click a node to trace what leads to it (purple) and what it reaches (orange), Esc or a
+# click on the empty graph clears it, and #node=<id or label> in the link opens a page traced. Tables
+# with 8 or more rows get a filter box, code blocks a copy button. It reads text only through
+# textContent and builds elements with createElement, so page content never becomes markup.
+SCRIPT = """
+(function () {
+  "use strict";
+  function all(root, sel) { return Array.prototype.slice.call(root.querySelectorAll(sel)); }
+  function walk(start, map) {
+    var seen = {}, stack = [start];
+    while (stack.length) {
+      (map[stack.pop()] || []).forEach(function (k) {
+        if (!seen[k] && k !== start) { seen[k] = true; stack.push(k); }
+      });
+    }
+    return seen;
+  }
+  var wanted = /^#node=(.+)$/.exec(location.hash);
+  wanted = wanted ? decodeURIComponent(wanted[1]) : null;
+  all(document, "svg.graph").forEach(function (svg) {
+    var nodes = all(svg, ".node"), edges = all(svg, ".edge"), lines = edges.concat(all(svg, ".edge-label"));
+    var up = {}, down = {};
+    edges.forEach(function (e) {
+      e.dataset.m = e.getAttribute("marker-end");
+      (down[e.dataset.a] = down[e.dataset.a] || []).push(e.dataset.b);
+      (up[e.dataset.b] = up[e.dataset.b] || []).push(e.dataset.a);
+    });
+    function clear() {
+      svg.classList.remove("tracing");
+      nodes.forEach(function (n) {
+        n.classList.remove("sel", "on-up", "on-down", "off");
+        n.setAttribute("aria-pressed", "false");
+      });
+      lines.forEach(function (e) {
+        e.classList.remove("on-up", "on-down", "off");
+        if (e.dataset.m) { e.setAttribute("marker-end", e.dataset.m); }
+      });
+    }
+    function trace(key) {
+      clear();
+      var u = walk(key, up), d = walk(key, down);
+      svg.classList.add("tracing");
+      nodes.forEach(function (n) {
+        var k = n.dataset.k;
+        n.classList.add(k === key ? "sel" : u[k] ? "on-up" : d[k] ? "on-down" : "off");
+        n.setAttribute("aria-pressed", String(k === key));
+      });
+      lines.forEach(function (e) {
+        var a = e.dataset.a, b = e.dataset.b;
+        var cls = (b === key || u[b]) && u[a] ? "on-up" : (a === key || d[a]) && d[b] ? "on-down" : "off";
+        e.classList.add(cls);
+        var head = cls === "on-up" ? "up" : cls === "on-down" ? "down" : "dim";
+        if (e.dataset.m) { e.setAttribute("marker-end", "url(#arrow-" + head + ")"); }
+      });
+    }
+    function toggle(n) {
+      if (n.classList.contains("sel")) { clear(); history.replaceState(null, "", location.pathname + location.search); }
+      else { trace(n.dataset.k); history.replaceState(null, "", "#node=" + encodeURIComponent(n.dataset.k)); }
+    }
+    nodes.forEach(function (n) {
+      n.addEventListener("click", function (ev) { ev.stopPropagation(); toggle(n); });
+      n.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggle(n); }
+      });
+    });
+    svg.addEventListener("click", clear);
+    document.addEventListener("keydown", function (ev) { if (ev.key === "Escape") { clear(); } });
+    var legend = svg.parentNode.nextElementSibling;
+    if (legend && legend.classList.contains("legend")) {
+      var hint = document.createElement("span");
+      hint.className = "hint";
+      hint.textContent = "Click a node to trace it · Esc clears";
+      legend.appendChild(hint);
+    }
+    if (wanted) {
+      var hit = nodes.filter(function (n) { return n.dataset.k === wanted || n.dataset.label === wanted; })[0];
+      if (hit) { trace(hit.dataset.k); hit.scrollIntoView({ block: "center" }); }
+    }
+  });
+  all(document, ".table-wrap").forEach(function (wrap) {
+    var rows = all(wrap, "tbody tr");
+    if (rows.length < 8) { return; }
+    var bar = document.createElement("div");
+    var input = document.createElement("input");
+    var count = document.createElement("span");
+    bar.className = "filter";
+    input.type = "search";
+    input.placeholder = "Filter " + rows.length + " rows";
+    input.setAttribute("aria-label", "Filter the rows of this table");
+    count.className = "count";
+    bar.appendChild(input);
+    bar.appendChild(count);
+    wrap.parentNode.insertBefore(bar, wrap);
+    input.addEventListener("input", function () {
+      var text = input.value.trim().toLowerCase(), shown = 0;
+      rows.forEach(function (r) {
+        var hit = !text || r.textContent.toLowerCase().indexOf(text) >= 0;
+        r.hidden = !hit;
+        if (hit) { shown += 1; }
+      });
+      count.textContent = text ? shown + " of " + rows.length : "";
+    });
+  });
+  all(document, "figure.code").forEach(function (fig) {
+    var button = document.createElement("button");
+    button.type = "button";
+    button.className = "copy";
+    button.textContent = "Copy";
+    function done() {
+      button.textContent = "Copied";
+      button.classList.add("done");
+      setTimeout(function () { button.textContent = "Copy"; button.classList.remove("done"); }, 1600);
+    }
+    function fallback(text) {
+      var area = document.createElement("textarea");
+      area.value = text;
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      try { document.execCommand("copy"); done(); } catch (err) { button.textContent = "Select and copy"; }
+      area.remove();
+    }
+    button.addEventListener("click", function () {
+      var text = all(fig, ".ln").map(function (line) {
+        var copy = line.cloneNode(true), no = copy.querySelector(".no");
+        if (no) { no.remove(); }
+        return copy.textContent === " " ? "" : copy.textContent;
+      }).join("\\n");
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done, function () { fallback(text); });
+      } else { fallback(text); }
+    });
+    fig.appendChild(button);
+  });
+})();
 """
 
 
@@ -881,7 +1055,7 @@ def render(page: Json) -> str:
         + "".join(sections)
         + f"<footer>Written by the {_esc(skill)} skill{date} · numbers from the skill's scripts · "
         "claims tagged high (checked), med (likely), guess (not checked)</footer>"
-        "</main></body></html>\n"
+        f"</main><script>{SCRIPT}</script></body></html>\n"
     )
 
 

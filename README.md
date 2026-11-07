@@ -57,7 +57,9 @@ things are different:
 - **Claude writes the content, a script draws the page.** Claude fills a JSON file and
   `render_page.py` turns it into the HTML, so a skill reads a 3 KB format description and a 17–30 KB
   example, not a 250 KB reference page. Every value is escaped and nothing is fetched from the
-  network: the fonts are inlined, so a page is one file you can send to anyone.
+  network: the fonts are inlined, so a page is one file you can send to anyone. Graphs are
+  clickable: a node shows what leads to it and what it reaches, and `page.html#node=importer`
+  opens the page traced. Long tables get a filter box, code blocks a copy button.
 - **Scripts do the counting.** Inventory, import graph, references, stack-trace mapping, coverage
   ranking and dependency lookups are scripts with fixed output, so two runs give the same numbers.
 - **The skills are tested.** `fixtures/acme-orders` is a made-up order service with a git history,

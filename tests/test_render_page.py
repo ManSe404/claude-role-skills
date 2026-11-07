@@ -69,7 +69,8 @@ def test_everything_is_escaped_and_unsafe_links_are_dropped() -> None:
         {"type": "graph", "nodes": [{"id": "a", "label": "<svg onload=x>"}], "edges": []},
     ]
     html = render.render(page(title="<img src=x>", sections=[{"title": "<b>", "blocks": blocks}]))
-    assert "<script" not in html and "<img" not in html and "<svg onload" not in html
+    assert "<script>alert" not in html and "<img" not in html and "<svg onload" not in html
+    assert html.count("<script") == 1  # only the page's own script
     hrefs = re.findall(r'href="([^"]*)"', html)
     assert "https://example.com" in hrefs
     assert not any(h.lower().startswith("javascript") for h in hrefs)
@@ -122,7 +123,7 @@ def test_edges_follow_the_change() -> None:
 
 def test_the_page_fetches_nothing() -> None:
     html = render.render(page())
-    assert "<script" not in html and "<link" not in html
+    assert html.count("<script>") == 1 and " src=" not in html and "<link" not in html
     assert set(re.findall(r'https?://[^"\s)]+', html)) <= {"http://www.w3.org/2000/svg"}
 
 
@@ -145,3 +146,19 @@ def test_each_example_page_is_valid(skill: str, tmp_path: Path) -> None:
     out = tmp_path / "page.html"
     assert render.main([str(example), "-o", str(out)]) == 0
     assert out.stat().st_size < 400_000  # ~200 KB of it are the inlined fonts
+
+
+def test_the_script_never_turns_content_into_markup() -> None:
+    for unsafe in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval(", "new Function", "http"):
+        assert unsafe not in render.SCRIPT, unsafe
+
+
+def test_graph_elements_carry_their_keys() -> None:
+    graph = {
+        "type": "graph",
+        "nodes": [{"id": "a", "label": 'A "quoted"'}, {"id": "b", "label": "B"}],
+        "edges": [{"from": "a", "to": "b", "label": "calls"}],
+    }
+    html = render.render(page(sections=[{"title": "S", "blocks": [graph]}]))
+    assert 'data-k="a" data-label="A &quot;quoted&quot;" tabindex="0" role="button"' in html
+    assert html.count('data-a="a" data-b="b"') == 2  # the edge and its label

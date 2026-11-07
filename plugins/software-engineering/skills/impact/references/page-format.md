@@ -61,3 +61,10 @@ published API, message), `data` (database, file, queue), `external` (outside the
 `changed` (the change itself), `affected` (needs a change), `safe`, `unknown` (not checked).
 The graph is drawn left to right; edges that close a cycle are dashed. Keep it under ~40 nodes:
 group modules rather than draw every function. The page also lists the edges as a table.
+
+## What the reader can do
+
+A click on a node traces it: what leads to it turns purple, what it reaches orange, the rest
+fades; Esc clears. A link ending in `#node=<id or label>` opens the page traced, so give stable,
+readable node ids (`importer`, `order_total`) and name them when you point the user at a page.
+Tables with 8 or more rows get a filter box, and code blocks a copy button.
