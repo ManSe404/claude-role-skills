@@ -41,7 +41,7 @@ You need Claude Code, `git` and Python 3.11 or newer. The scripts use the standa
 As a plugin, inside Claude Code:
 
 ```text
-/plugin marketplace add ~/Projekti/Personal/claude-role-skills
+/plugin marketplace add ManSe404/claude-role-skills
 /plugin install software-engineering@claude-role-skills
 /plugin install ai-architect@claude-role-skills
 ```
@@ -53,8 +53,10 @@ Claude also picks a skill by itself when your request matches its description.
 Or copy the skills into one project:
 
 ```bash
-mkdir -p your-project/.claude/skills
-cp -r plugins/software-engineering/skills/* plugins/ai-architect/skills/* your-project/.claude/skills/
+git clone https://github.com/ManSe404/claude-role-skills
+cd claude-role-skills
+mkdir -p /path/to/your-project/.claude/skills
+cp -r plugins/software-engineering/skills/* plugins/ai-architect/skills/* /path/to/your-project/.claude/skills/
 ```
 
 The pages go outside your repository, to `$CLAUDE_PAGES_DIR/<repo>/`, or `~/claude-pages/<repo>/`

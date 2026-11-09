@@ -1,251 +1,263 @@
-# Plan: pack `ai-architect`
+# Plan: the `ai-architect` pack
 
-Status: predlog od 2026-11-07, ništa nije napravljeno. Na kraju su odluke koje čekaju Stefana.
+Status: built. This is the original plan from 2026-11-07, kept for its reasoning; the current state
+is in `plugins/ai-architect/`. The decisions that were open when it was written are at the end.
 
-## Cilj
+## Goal
 
-Pack za AI solutions architect-a. Pre nego što se bilo šta gradi, pack odlučuje šta rešenje treba da
-bude: bez LLM-a, jedan poziv modela, ceo korpus u kontekstu, RAG, agentic RAG, workflow, jedan agent
-ili orkestrator sa podagentima. Bira alate po slojevima, sa cenom na stvarnom obimu, crta
-interaktivnu arhitekturu i pregleda postojeća AI rešenja.
+A pack for AI solutions architects. Before anything is built, the pack decides what the solution
+should be: no LLM, one model call, the whole corpus in context, RAG, agentic RAG, a workflow, one
+agent, or an orchestrator with subagents. It picks tools layer by layer, with the cost at real
+volume, draws an interactive architecture and reviews existing AI solutions.
 
-Format je isti kao u packu software-engineering:
-- SKILL.md po kalupu (posao, ulaz, koraci, izlaz, čita, piše, nikad);
-- skripte broje;
-- stranica je JSON koji crta `render_page.py`.
+The format is the same as in the software-engineering pack:
+- SKILL.md follows the template (job, input, steps, output, reads, writes, never);
+- scripts do the counting;
+- a page is JSON drawn by `render_page.py`.
 
-Van obima su pokretanje evala, analiza grešaka, podešavanje retrievala i pregled trace-ova (Langfuse).
-To ide u kasniji pack `ai-engineering`.
+Out of scope are running evals, error analysis, retrieval tuning and trace review (Langfuse). Those
+go in a later `ai-engineering` pack.
 
-Javno ne postoji ništa što spaja odluku i stranicu (pretraga od 2026-11-06). Najbliži delovi:
-- bowen31337/claude-solution-architect (MIT): redosled odluka;
-- alirezarezvani/claude-skills, agent-designer i rag-architect (MIT): tabela obrazaca i provere za RAG;
-- konraddzbik/architecture-diagram-skill (MIT): klikabilan tok kroz dijagram.
+Nothing public combines the decision and the page (search from 2026-11-06). The closest pieces:
+- bowen31337/claude-solution-architect (MIT): the order of the decisions;
+- alirezarezvani/claude-skills, agent-designer and rag-architect (MIT): the pattern table and the
+  RAG checks;
+- konraddzbik/architecture-diagram-skill (MIT): a clickable flow through a diagram.
 
-Preuzimamo ideje, ne kod.
+We take ideas, not code.
 
-## Skillovi
+## Skills
 
-### 1. `ai-pattern`: koji obrazac
+### 1. `ai-pattern`: which pattern
 
-Kada: stigne nov AI slučaj ili brief klijenta, pre bilo kakve gradnje.
-Ulaz: brief (tekst ili fajl), a opciono i folder sa dokumentima ili repo.
+When: a new AI case or a client brief arrives, before anything is built.
+Input: the brief (text or a file), and optionally a folder of documents or a repo.
 
-Koraci:
-1. **Okvir:** korisnici, posao, obim, kriterijumi uspeha i ono o čemu se ne pregovara (regulativa,
-   gde podaci smeju da budu, SLA, budžet). Ako fale činjenice koje bi promenile odluku, pita za 2–4
-   najvažnije. Ako korisnik kaže „nastavi“, svaka pretpostavka ide na stranicu zajedno sa odlukom
-   koju pokreće.
-2. **Podela posla:** za svaki korak odluči da li ga radi model, postojeći sistem ili čovek, i zašto.
-3. **Dokumenti, ako ih ima:** `corpus_stats.py`. Staje li sve u kontekst? Koliko često se menja?
-4. **Tvrda pravila:** `decide.py`. Primeri: za živo stanje treba poziv alata, ne retrieval; kad je
-   greška skupa a čoveka nema, autonomni agent otpada.
-5. **Ostale opcije, po redu:** predvidljivost → cena greške → vidljivost → latencija → cena. Prvi
-   faktor koji isključi opciju odlučuje i dobija ime (vezujući uslov).
-6. **Lestvica:** kreće od najjednostavnije opcije i penje se samo kad niža padne na imenovanom zahtevu.
-7. **Šta bi promenilo odluku:** 3–5 uslova (obim 10×, upis u ERP, nov jezik…).
-8. **Kriterijumi prihvatanja:** 3–5 metrika, svaka sa pragom i načinom merenja.
-9. **ADR (Nygard):** nacrt kao blok koda za kopiranje; u repo ide samo uz „da“.
-10. **Stranica.**
+Steps:
+1. **Frame:** users, the job, volume, success criteria and what is not negotiable (regulation,
+   where data may live, SLA, budget). If facts that would change the decision are missing, it asks
+   for the 2–4 most important ones. If the user says "continue", every assumption goes on the page
+   together with the decision it drives.
+2. **Division of work:** for each step, decide whether a model, an existing system or a person does
+   it, and why.
+3. **Documents, if there are any:** `corpus_stats.py`. Does everything fit in context? How often
+   does it change?
+4. **Hard rules:** `decide.py`. Examples: live state needs a tool call, not retrieval; when an error
+   is expensive and no person is in the loop, an autonomous agent is out.
+5. **The remaining options, in order:** predictability → cost of an error → visibility → latency →
+   cost. The first factor that eliminates an option decides, and it gets a name (the binding
+   constraint).
+6. **Ladder:** start from the simplest option and climb only when a lower one fails on a named
+   requirement.
+7. **What would change the decision:** 3–5 conditions (10× the volume, writing to the ERP, a new
+   language…).
+8. **Acceptance criteria:** 3–5 metrics, each with a threshold and a way to measure it.
+9. **ADR (Nygard):** a draft as a code block to copy; it goes in the repo only after a "yes".
+10. **The page.**
 
-Na stranici:
-- verdict: izabrani obrazac i vezujući uslov;
-- `decision` blok: opcije × faktori, uz svaku odbačenu opciju i razlog;
-- graf podele posla;
-- pretpostavke, šta bi promenilo odluku, kriterijumi i ADR.
+On the page:
+- verdict: the chosen pattern and the binding constraint;
+- `decision` block: options × factors, with every rejected option and the reason;
+- a graph of the division of work;
+- assumptions, what would change the decision, criteria and the ADR.
 
-Nikad:
-- ne predlaže agenta kad workflow zadovoljava;
-- ne navodi cenu ili verziju modela bez datuma i izvora;
-- ne šalje brief van mašine.
+Never:
+- proposes an agent when a workflow is enough;
+- states a model's price or version without a date and a source;
+- sends the brief off the machine.
 
-### 2. `ai-stack`: kojim alatima
+### 2. `ai-stack`: which tools
 
-Kada: obrazac je izabran i treba izabrati alate.
-Ulaz: JSON stranice `ai-pattern` ili opis obrasca, plus ograničenja (oblak klijenta, gde podaci
-smeju da budu, on-prem).
+When: the pattern is chosen and the tools must be picked.
+Input: the JSON of the `ai-pattern` page or a description of the pattern, plus the constraints (the
+client's cloud, where data may live, on-prem).
 
-Koraci:
-1. **Slojevi:** model po koraku, embedding, vektorsko skladište, framework (ili bez njega), hosting,
-   tracing, eval i guardrails.
-2. **Kandidati:** za svaki sloj 2–3 kandidata po kriterijumima iz `references/stack.md`. Uz izbor ide
-   i šta smo time odbacili.
-3. **Varijante:** najviše dve, na primer Azure-native i lokalno/otvoreno.
-4. **Cena i latencija:** za svaku varijantu iz `cost_model.py`, uz tabelu cena sa datumom i izvorom.
-5. **Vezivanje za dobavljača:** rizici i šta bi koštao prelazak.
-6. **Pre ponude:** šta treba proveriti (kvote, region, dostupnost modela).
+Steps:
+1. **Layers:** model per step, embeddings, vector store, framework (or none), hosting, tracing,
+   evals and guardrails.
+2. **Candidates:** 2–3 per layer, judged by the criteria in `references/stack.md`. Each choice also
+   states what it rejected.
+3. **Variants:** two at most, for example Azure-native and local/open.
+4. **Cost and latency:** for each variant, from `cost_model.py`, with a price table that has a date
+   and a source.
+5. **Vendor lock-in:** the risks and what moving away would cost.
+6. **Before the offer:** what must be checked (quotas, region, model availability).
 
-Nikad:
-- cena iz memorije;
-- mrežni upit bez dozvole.
+Never:
+- a price from memory;
+- a network request without permission.
 
-### 3. `ai-architecture`: interaktivna stranica
+### 3. `ai-architecture`: the interactive page
 
-Kada: AI rešenje treba pokazati klijentu ili timu, iz dizajna ili iz repoa.
-Ulaz: JSON od `ai-pattern` i `ai-stack`, opis, ili repo (tada `ai_inventory.py`).
+When: an AI solution must be shown to a client or a team, from a design or from a repo.
+Input: the JSON from `ai-pattern` and `ai-stack`, a description, or a repo (then `ai_inventory.py`).
 
-Koraci:
-1. **Komponente po zonama:** korisnik i kanal, aplikacija, AI sloj, znanje, sistemi i alati, operacije.
-2. **Veze i tokovi:** veze među komponentama i 2–4 toka zahteva korak po korak.
-3. **Granice poverenja:** gde ulazi tekst kome ne verujemo (korisnik, dokumenti, izlaz alata) i do
-   kojih alata sa posledicama može da stigne.
-4. **Varijante:** na primer RAG ↔ agentic RAG, kao prekidač.
-5. **Detalji komponente:** tehnologija, odgovornost, podaci, šta se desi kad padne, udeo u ceni.
+Steps:
+1. **Components by zone:** user and channel, application, AI layer, knowledge, systems and tools,
+   operations.
+2. **Links and flows:** the links between components and 2–4 request flows, step by step.
+3. **Trust boundaries:** where untrusted text enters (user, documents, tool output) and which tools
+   with consequences it can reach.
+4. **Variants:** for example RAG ↔ agentic RAG, as a switch.
+5. **Component details:** technology, responsibility, data, what happens when it fails, share of the
+   cost.
 
-Nikad:
-- komponenta iz repoa koju nije pročitao dobija oznaku [guess];
-- ne prikazuje tajne ni vrednosti konfiguracije, samo imena.
+Never:
+- presents a component from a repo it has not read as known; it gets the [guess] tag;
+- shows secrets or configuration values, only their names.
 
-### 4. `ai-review`: pregled postojećeg AI rešenja
+### 4. `ai-review`: review of an existing AI solution
 
-Kada: pre releasea, pri preuzimanju projekta ili pre predaje klijentu.
-Ulaz: repo ili dizajn dokument.
+When: before a release, when taking over a project, or before handing one over to a client.
+Input: a repo or a design document.
 
-Koraci:
-1. Pokreni `ai_inventory.py` i iz njega rekonstruiši arhitekturu.
-2. Prođi listu iz `references/anti-patterns.md`:
-   - obrazac je prevelik za problem;
-   - živo stanje ide preko retrievala;
-   - agent nema limit koraka ni troška;
-   - izlaz alata ili dokumenta stiže do alata sa posledicama bez čoveka (prompt injection);
-   - ključ je u kodu;
-   - nema evala ni tracinga;
-   - pozivi modela nemaju timeout ni fallback;
-   - lični podaci idu ka spoljnom modelu;
-   - model nije zakucan;
-   - cena na obimu nije procenjena.
-3. Svaki nalaz dobija file:line i predlog.
-4. Na grafu se označe problematična mesta.
+Steps:
+1. Run `ai_inventory.py` and reconstruct the architecture from it.
+2. Go through the list in `references/anti-patterns.md`:
+   - the pattern is too big for the problem;
+   - live state goes through retrieval;
+   - the agent has no limit on steps or spend;
+   - tool or document output reaches a tool with consequences with no person in between (prompt
+     injection);
+   - a key is in the code;
+   - there are no evals or tracing;
+   - model calls have no timeout or fallback;
+   - personal data goes to an external model;
+   - the model is not pinned;
+   - the cost at volume has not been estimated.
+3. Every finding gets a file:line and a suggestion.
+4. The problem spots are marked on the graph.
 
-Nikad:
-- ne menja ništa;
-- ne pokreće aplikaciju;
-- ne zove modele.
+Never:
+- changes anything;
+- runs the application;
+- calls models.
 
-## Skripte
+## Scripts
 
-Sve skripte su Python stdlib, samo čitaju i pišu JSON na stdout.
+All scripts are Python stdlib, only read, and write JSON to stdout.
 
-| skripta | skill | šta radi |
+| script | skill | what it does |
 |---|---|---|
-| `corpus_stats.py` | ai-pattern | fajlovi po tipu, veličine, procena tokena (chars/4, uz napomenu), raspon izmena, duplikati po hešu, latinica ili ćirilica, gruba procena broja strana PDF-a |
-| `decide.py` | ai-pattern | ulaz su činjenice iz briefa kao JSON (živo stanje, poznati koraci, cena greške, čovek u petlji, budžet latencije, obim, tokeni korpusa, akcije sa posledicama); izlaz kaže koje opcije padaju i po kom pravilu. Samo tvrda pravila, težinu odlučuje Claude |
-| `cost_model.py` | ai-stack | koraci × pozivi × tokeni × cena × obim, udeo keša, p50 latencija za sekvencijalne i paralelne korake. Tabela cena je fajl sa datumom i izvorom; `prices.example.json` je označen kao primer koji treba proveriti |
-| `ai_inventory.py` | ai-architecture, ai-review | Python, C# i TypeScript: SDK-ovi (openai, anthropic, Azure.AI.OpenAI, langchain, langgraph, llama_index, semantic_kernel, ollama…), imena modela, vektorska skladišta, definicije alata, promptovi, limiti petlji, timeouti, tracing, evali. Za env promenljive samo imena, nikad vrednosti. Sve sa file:line |
+| `corpus_stats.py` | ai-pattern | files by type, sizes, token estimate (chars/4, with a note), range of changes, duplicates by hash, Latin or Cyrillic script, rough PDF page count |
+| `decide.py` | ai-pattern | the input is the facts from the brief as JSON (live state, known steps, cost of an error, person in the loop, latency budget, volume, corpus tokens, actions with consequences); the output says which options fall and by which rule. Hard rules only; Claude decides the weighing |
+| `cost_model.py` | ai-stack | steps × calls × tokens × price × volume, cache share, p50 latency for sequential and parallel steps. The price table is a file with a date and a source; `prices.example.json` is marked as an example to be checked |
+| `ai_inventory.py` | ai-architecture, ai-review | Python, C# and TypeScript: SDKs (openai, anthropic, Azure.AI.OpenAI, langchain, langgraph, llama_index, semantic_kernel, ollama…), model names, vector stores, tool definitions, prompts, loop limits, timeouts, tracing, evals. Names only for env variables, never values. All with file:line |
 
-## Renderer (`shared/`, menja stranice svih packova)
+## Renderer (`shared/`, changes the pages of every pack)
 
-Dva nova tipa bloka.
+Two new block types.
 
-**`decision`:** opcije × faktori.
-- Svaka ćelija je pass, weak ili fail, sa kratkim tekstom.
-- Svaka opcija ima status chosen, viable ili eliminated, uz `eliminated_by` i `why`.
-- Izabrana opcija je istaknuta, a odbačene su prigušene sa vidljivim razlogom.
+**`decision`:** options × factors.
+- Every cell is pass, weak or fail, with a short text.
+- Every option has the status chosen, viable or eliminated, with `eliminated_by` and `why`.
+- The chosen option stands out; rejected ones are dimmed with the reason visible.
 
 **`architecture`:**
-- Polja:
+- Fields:
   - `zones`;
   - `components` {id, label, zone, kind, tech, note, details, variants};
   - `links` {from, to, label, trust: trusted | untrusted, variants};
   - `flows` [{id, title, steps: [{from, to, text}]}];
   - `variants` [{id, label, note}].
-- Interakcija:
-  - klik na komponentu otvara panel sa detaljima i vezama;
-  - tok se pušta ili korača strelicama ←/→;
-  - prekidač menja varijantu;
-  - prikaz granica poverenja se uključuje i isključuje;
-  - linkovi `#component=`, `#flow=…&step=` i `#variant=` otvaraju stranicu u tom stanju.
-- Bez JS-a i pri štampi: tabela komponenti, tokovi kao `steps`, varijante kao liste.
-- Raspored:
-  - računa se u Pythonu i uvek je isti: zona je kolona u fiksnom redu, komponente su složene jedna
-    ispod druge;
-  - koristi postojeće helper-e za graf.
-- Ograničenja: bez biblioteka, ništa sa mreže, svaka vrednost je escapovana, stranica sa fontovima
-  ispod ~400 KB.
+- Interaction:
+  - clicking a component opens a panel with its details and links;
+  - a flow plays or steps with the ←/→ arrows;
+  - a switch changes the variant;
+  - the trust boundary view turns on and off;
+  - the links `#component=`, `#flow=…&step=` and `#variant=` open the page in that state.
+- Without JS and when printing: a table of components, flows as `steps`, variants as lists.
+- Layout:
+  - computed in Python and always the same: a zone is a column in a fixed order, components are
+    stacked one below the other;
+  - uses the existing graph helpers.
+- Limits: no libraries, nothing from the network, every value escaped, a page with fonts under
+  about 400 KB.
 
-Testovi:
-- greške validacije sa JSON putanjom;
-- escapovanje;
-- isti JSON daje isti HTML;
-- nijedan spoljni URL;
-- svaka veza, tok i varijanta pokazuje na postojeći id.
+Tests:
+- validation errors with the JSON path;
+- escaping;
+- the same JSON gives the same HTML;
+- no external URL;
+- every link, flow and variant points to an existing id.
 
-**Preduslov:** sinoćne nekomitovane izmene renderera (14 fajlova, +1144 linije, 2026-11-06 23:08)
-se prvo komituju, jer ovaj pack gradi na njima.
+**Precondition:** last night's uncommitted renderer changes (14 files, +1144 lines, 2026-11-06
+23:08) are committed first, because this pack builds on them.
 
-## Fixture: `fixtures/acme-assist/` (sve izmišljeno)
+## Fixture: `fixtures/acme-assist/` (all made up)
 
-**`brief-support.md`:** asistent za podršku izmišljenog proizvođača uređaja.
-- Priručnici i FAQ su stabilno znanje, a status porudžbine iz ERP-a je živo stanje.
-- Povraćaj robe ide po pravilima.
-- Srpski i engleski, 3.000 pitanja dnevno, a pogrešan odgovor o garanciji je skup.
-- Ispravan odgovor je workflow sa rutiranjem: RAG za priručnike, poziv alata za porudžbine, čovek
-  za povraćaj. Autonomni multi-agent otpada.
+**`brief-support.md`:** a support assistant for a made-up device manufacturer.
+- Manuals and the FAQ are stable knowledge; order status from the ERP is live state.
+- Product returns follow rules.
+- Serbian and English, 3,000 questions a day, and a wrong answer about the warranty is expensive.
+- The right answer is a workflow with routing: RAG for the manuals, a tool call for orders, a person
+  for returns. An autonomous multi-agent setup is out.
 
-**`brief-tagging.md`:** 200 mejlova dnevno u 6 kategorija. Ispravan odgovor je jedan poziv modela sa
-strukturiranim izlazom. Ovaj brief proverava da skill ne preteruje.
+**`brief-tagging.md`:** 200 emails a day in 6 categories. The right answer is one model call with
+structured output. This brief checks that the skill does not overbuild.
 
-**`corpus/`:** 15–25 malih dokumenata (md, txt, nekoliko minimalnih PDF-ova), latinicom i ćirilicom.
+**`corpus/`:** 15–25 small documents (md, txt, a few minimal PDFs), in Latin and Cyrillic script.
 
-**`files/` + `history.py`:** mala Python aplikacija sa 8 podmetnutih problema za `ai-review`:
-1. stanje zaliha čita iz vektorske baze, pa je zastarelo;
-2. petlja agenta nema limit;
-3. izlaz web alata ide u alat za slanje mejla bez potvrde;
-4. lažni podrazumevani ključ (`sk-example-…`) u `config.py`;
-5. nema evala;
-6. pozivi modela nemaju timeout;
-7. koristi alias modela umesto zakucane verzije;
-8. nema tracinga.
+**`files/` + `history.py`:** a small Python application with 8 planted problems for `ai-review`:
+1. it reads stock levels from the vector database, so they are stale;
+2. the agent loop has no limit;
+3. the output of the web tool goes to the email tool with no confirmation;
+4. a fake default key (`sk-example-…`) in `config.py`;
+5. no evals;
+6. model calls have no timeout;
+7. it uses a model alias instead of a pinned version;
+8. no tracing.
 
-Spisak ide i u test.
+The list goes in a test too.
 
-## Evali (`claude plugin eval`)
+## Evals (`claude plugin eval`)
 
-1. **pattern-does-not-overbuild:** za brief-tagging bira jedan poziv modela, bez agenta.
-2. **pattern-live-state:** za brief-support živo stanje ide preko alata, ne retrievala, i vezujući
-   uslov ima ime.
-3. **stack-cost-from-script:** brojevi na stranici su izlaz `cost_model.py`, a cene imaju datum.
-4. **architecture-page:** HTML postoji, ima tok i varijantu, nema spoljnih URL-ova, a nepoverljiv
-   ulaz je označen.
-5. **review-finds-planted:** nalazi bar 6 od 8 podmetnutih problema i ne menja nijedan fajl.
+1. **pattern-does-not-overbuild:** for brief-tagging it picks one model call, with no agent.
+2. **pattern-live-state:** for brief-support, live state goes through a tool, not retrieval, and the
+   binding constraint has a name.
+3. **stack-cost-from-script:** the numbers on the page are the output of `cost_model.py`, and the
+   prices have a date.
+4. **architecture-page:** the HTML exists, has a flow and a variant, has no external URLs, and
+   untrusted input is marked.
+5. **review-finds-planted:** it finds at least 6 of the 8 planted problems and changes no file.
 
-Svaki slučaj ima i grader `skill-fired`. Evali se pokreću samo na Stefanov zahtev. Za poređenje: pet
-headless pokretanja u packu software-engineering koštalo je $6.55.
+Every case also has a `skill-fired` grader. Evals run only on request. For comparison, five headless
+runs on the software-engineering pack cost $6.55.
 
-## Ostalo
+## Other
 
-- `roles/ai-architect.md`, CLAUDE.md starter:
-  - lestvica „najjednostavnije što zadovoljava“;
-  - oznake [high], [med] i [guess];
-  - promenljive činjenice (cene, modeli, kvote) uvek sa datumom i izvorom;
-  - podaci klijenta nikad u primerima.
-- `references/patterns.md`, `stack.md` i `anti-patterns.md`: kratko, bez cenovnika.
-  - Izvori: Anthropic „Building effective agents“, bowen31337 i alirezarezvani (MIT).
-  - Prilagođen tekst ide u THIRD-PARTY-NOTICES.
-- Opisi skillova ne smeju da preotmu zahteve od `engineering:architecture`,
-  `engineering:system-design`, `claude-api` i `langfuse`. Svaki opis kaže „AI/LLM rešenje“, kao i
-  „pre gradnje“ ili „pregled postojećeg“.
-- Stranica je na jeziku zahteva. Fontovi imaju Latin Extended, a ćirilicu nemaju, pa se srpske
-  stranice pišu latinicom.
-- Ažurirati README tabelu, unos u marketplace-u, `plugin.json` i CLAUDE.md repoa (tamo sada piše
-  „samo SWE pack“).
+- `roles/ai-architect.md`, a CLAUDE.md starter:
+  - the "simplest thing that works" ladder;
+  - the tags [high], [med] and [guess];
+  - changeable facts (prices, models, quotas) always with a date and a source;
+  - client data never in examples.
+- `references/patterns.md`, `stack.md` and `anti-patterns.md`: short, no price lists.
+  - Sources: Anthropic's "Building effective agents", bowen31337 and alirezarezvani (MIT).
+  - Adapted text goes in THIRD-PARTY-NOTICES.
+- Skill descriptions must not take requests away from `engineering:architecture`,
+  `engineering:system-design`, `claude-api` and `langfuse`. Every description says "AI/LLM solution",
+  and also "before building" or "review of an existing one".
+- A page is in the language of the request. The fonts have Latin Extended but no Cyrillic, so
+  Serbian pages are written in Latin script.
+- Update the README table, the marketplace entry, `plugin.json` and the repo's CLAUDE.md (which says
+  "SWE pack only" at the moment).
 
-## Redosled
+## Order
 
-- M0: komit postojećih izmena (Stefan).
-- M1: references, fixture i testovi fixture-a.
-- M2: renderer (`decision`, `architecture`), testovi, `tools/sync_shared.py`.
-- M3: četiri skripte i testovi na fixture-u.
-- M4: četiri SKILL.md i `references/example.json`, napravljeni headless pokretanjem na fixture-u i
-  ručno provereni (~$5–10).
-- M5: evali napisani; pokreću se samo na zahtev.
-- M6: README, marketplace, role starter i notices. Na kraju zeleno: pytest, ruff, mypy strict,
+- M0: commit the existing changes.
+- M1: references, the fixture and the fixture's tests.
+- M2: the renderer (`decision`, `architecture`), tests, `tools/sync_shared.py`.
+- M3: four scripts and their tests on the fixture.
+- M4: four SKILL.md files and `references/example.json`, produced by headless runs on the fixture
+  and checked by hand (about $5–10).
+- M5: evals written; they run only on request.
+- M6: README, marketplace, role starter and notices. Green at the end: pytest, ruff, mypy strict,
   `claude plugin validate .`.
 
-## Odluke koje čekaju Stefana
+## Decisions that were open when this was written
 
-1. Ime packa `ai-architect`?
-2. Četiri skilla, a evali, retrieval i trace review idu u kasniji pack `ai-engineering`?
-3. `decide.py` sa tvrdim pravilima: da ili ne?
-4. Stack podrazumevano neutralan, sa Azure-om i lokalnim Ollama-om kao dve varijante?
-5. Komit sinoćnih izmena pre početka.
+1. Is `ai-architect` the name of the pack?
+2. Four skills, with evals, retrieval and trace review going to a later `ai-engineering` pack?
+3. `decide.py` with hard rules: yes or no?
+4. A stack that is neutral by default, with Azure and local Ollama as two variants?
+5. Commit last night's changes before starting.
