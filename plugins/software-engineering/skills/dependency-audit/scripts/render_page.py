@@ -26,6 +26,7 @@ import html
 import json
 import re
 import sys
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -47,8 +48,37 @@ GROUPS = {
     "safe": "safe",
     "unknown": "not checked",
 }
-BLOCK_TYPES = ("text", "list", "table", "findings", "code", "graph", "steps", "kv", "callout")
+BLOCK_TYPES = (
+    "text",
+    "list",
+    "table",
+    "findings",
+    "code",
+    "graph",
+    "steps",
+    "kv",
+    "callout",
+    "decision",
+    "architecture",
+)
 CONFIDENCE = ("high", "med", "guess")
+RATINGS = ("pass", "weak", "fail")
+OPTION_STATUSES = ("chosen", "viable", "eliminated")
+KINDS = {
+    "user": "user",
+    "channel": "channel",
+    "service": "service",
+    "model": "model",
+    "retrieval": "retrieval",
+    "store": "data store",
+    "tool": "tool",
+    "system": "outside system",
+    "human": "human step",
+    "guard": "guardrail",
+    "ops": "operations",
+}
+TRUST = ("trusted", "untrusted")
+FLAGS = ("warn", "bad")
 
 
 # ---------------------------------------------------------------------------- validation
@@ -76,6 +106,169 @@ def _list(obj: Json, key: str, path: str, errs: list[str], *, required: bool = T
 
 def _cell_ok(value: Json) -> bool:
     return value is None or (isinstance(value, (str, int, float)) and not isinstance(value, bool))
+
+
+def _pairs_ok(value: Json) -> bool:
+    return isinstance(value, list) and all(
+        isinstance(p, list) and len(p) == 2 and all(_cell_ok(c) for c in p) for p in value
+    )
+
+
+def _validate_decision(block: Json, path: str, errs: list[str]) -> None:
+    factors = _list(block, "factors", path, errs)
+    if not factors or not all(isinstance(f, str) for f in factors):
+        errs.append(f"{path}.factors: must be a non-empty list of strings")
+    chosen = 0
+    options = _list(block, "options", path, errs)
+    if not options:
+        errs.append(f"{path}.options: at least one option")
+    for i, opt in enumerate(options):
+        opath = f"{path}.options[{i}]"
+        if not isinstance(opt, dict):
+            errs.append(f"{opath}: must be an object")
+            continue
+        _str(opt, "label", opath, errs)
+        for key in ("id", "why", "eliminated_by"):
+            _str(opt, key, opath, errs, required=False)
+        status = opt.get("status", "viable")
+        if status not in OPTION_STATUSES:
+            errs.append(f"{opath}.status: must be one of {', '.join(OPTION_STATUSES)}")
+        chosen += status == "chosen"
+        if status == "eliminated":
+            for key in ("eliminated_by", "why"):
+                if not opt.get(key):
+                    errs.append(f"{opath}.{key}: an eliminated option keeps what eliminated it and why")
+        cells = _list(opt, "cells", opath, errs)
+        if len(cells) != len(factors):
+            errs.append(f"{opath}.cells: must hold one cell per factor ({len(factors)})")
+        for j, cell in enumerate(cells):
+            cpath = f"{opath}.cells[{j}]"
+            if not isinstance(cell, dict):
+                errs.append(f"{cpath}: must be an object")
+                continue
+            if cell.get("rating") not in RATINGS:
+                errs.append(f"{cpath}.rating: must be one of {', '.join(RATINGS)}")
+            _str(cell, "text", cpath, errs, required=False)
+    if chosen > 1:
+        errs.append(f"{path}.options: at most one option is chosen")
+
+
+def _validate_architecture(block: Json, path: str, errs: list[str]) -> None:
+    variant_ids: list[str] = []
+    for i, var in enumerate(_list(block, "variants", path, errs, required=False)):
+        vpath = f"{path}.variants[{i}]"
+        if not isinstance(var, dict):
+            errs.append(f"{vpath}: must be an object")
+            continue
+        _str(var, "id", vpath, errs)
+        _str(var, "label", vpath, errs)
+        _str(var, "note", vpath, errs, required=False)
+        if isinstance(var.get("id"), str):
+            if var["id"] in variant_ids:
+                errs.append(f"{vpath}.id: duplicate id {var['id']!r}")
+            variant_ids.append(var["id"])
+    every = set(variant_ids) or {"_"}
+
+    def shown(obj: Json, opath: str) -> set[str]:
+        if "variants" not in obj:
+            return set(every)
+        names = obj["variants"]
+        if not isinstance(names, list) or not names or not all(isinstance(v, str) for v in names):
+            errs.append(f"{opath}.variants: must be a non-empty list of variant ids")
+            return set(every)
+        for name in names:
+            if name not in variant_ids:
+                errs.append(f"{opath}.variants: unknown variant id {name!r}")
+        return {v for v in names if v in variant_ids}
+
+    zone_ids: set[str] = set()
+    zones = _list(block, "zones", path, errs)
+    if not zones:
+        errs.append(f"{path}.zones: at least one zone")
+    for i, zone in enumerate(zones):
+        zpath = f"{path}.zones[{i}]"
+        if not isinstance(zone, dict):
+            errs.append(f"{zpath}: must be an object")
+            continue
+        _str(zone, "id", zpath, errs)
+        _str(zone, "label", zpath, errs)
+        if isinstance(zone.get("id"), str):
+            if zone["id"] in zone_ids:
+                errs.append(f"{zpath}.id: duplicate id {zone['id']!r}")
+            zone_ids.add(zone["id"])
+
+    comps: dict[str, set[str]] = {}
+    components = _list(block, "components", path, errs)
+    if not components:
+        errs.append(f"{path}.components: at least one component")
+    for i, comp in enumerate(components):
+        cpath = f"{path}.components[{i}]"
+        if not isinstance(comp, dict):
+            errs.append(f"{cpath}: must be an object")
+            continue
+        for key in ("id", "label", "zone"):
+            _str(comp, key, cpath, errs)
+        for key in ("tech", "note"):
+            _str(comp, key, cpath, errs, required=False)
+        if isinstance(comp.get("zone"), str) and comp["zone"] not in zone_ids:
+            errs.append(f"{cpath}.zone: unknown zone id {comp['zone']!r}")
+        if comp.get("kind", "service") not in KINDS:
+            errs.append(f"{cpath}.kind: must be one of {', '.join(KINDS)}")
+        if "flag" in comp and comp["flag"] not in FLAGS:
+            errs.append(f"{cpath}.flag: must be one of {', '.join(FLAGS)}")
+        if "side_effect" in comp and not isinstance(comp["side_effect"], bool):
+            errs.append(f"{cpath}.side_effect: must be true or false")
+        if "details" in comp and not _pairs_ok(comp["details"]):
+            errs.append(f"{cpath}.details: must be a list of [label, value] pairs")
+        if isinstance(comp.get("id"), str):
+            if comp["id"] in comps:
+                errs.append(f"{cpath}.id: duplicate id {comp['id']!r}")
+            comps[comp["id"]] = shown(comp, cpath)
+
+    def ends(obj: Json, opath: str, where: set[str]) -> None:
+        for key in ("from", "to"):
+            if obj.get(key) not in comps:
+                errs.append(f"{opath}.{key}: unknown component id {obj.get(key)!r}")
+                continue
+            missing = where - comps[obj[key]]
+            if missing:
+                errs.append(f"{opath}.{key}: {obj[key]!r} is not shown in variant {', '.join(sorted(missing))}")
+
+    for i, link in enumerate(_list(block, "links", path, errs, required=False)):
+        lpath = f"{path}.links[{i}]"
+        if not isinstance(link, dict):
+            errs.append(f"{lpath}: must be an object")
+            continue
+        _str(link, "label", lpath, errs, required=False)
+        if link.get("trust", "trusted") not in TRUST:
+            errs.append(f"{lpath}.trust: must be one of {', '.join(TRUST)}")
+        if "flag" in link and link["flag"] not in FLAGS:
+            errs.append(f"{lpath}.flag: must be one of {', '.join(FLAGS)}")
+        ends(link, lpath, shown(link, lpath))
+
+    flow_ids: set[str] = set()
+    for i, flow in enumerate(_list(block, "flows", path, errs, required=False)):
+        fpath = f"{path}.flows[{i}]"
+        if not isinstance(flow, dict):
+            errs.append(f"{fpath}: must be an object")
+            continue
+        _str(flow, "id", fpath, errs)
+        _str(flow, "title", fpath, errs)
+        if isinstance(flow.get("id"), str):
+            if flow["id"] in flow_ids:
+                errs.append(f"{fpath}.id: duplicate id {flow['id']!r}")
+            flow_ids.add(flow["id"])
+        where = shown(flow, fpath)
+        steps = _list(flow, "steps", fpath, errs)
+        if not steps:
+            errs.append(f"{fpath}.steps: at least one step")
+        for j, step in enumerate(steps):
+            spath = f"{fpath}.steps[{j}]"
+            if not isinstance(step, dict):
+                errs.append(f"{spath}: must be an object")
+                continue
+            _str(step, "text", spath, errs)
+            ends(step, spath, where)
 
 
 def _validate_block(block: Json, path: str, errs: list[str], node_ids: set[str]) -> None:
@@ -173,6 +366,10 @@ def _validate_block(block: Json, path: str, errs: list[str], node_ids: set[str])
         for i, item in enumerate(_list(block, "items", path, errs)):
             if not isinstance(item, list) or len(item) != 2 or not all(_cell_ok(c) for c in item):
                 errs.append(f"{path}.items[{i}]: must be a [label, value] pair")
+    elif kind == "decision":
+        _validate_decision(block, path, errs)
+    elif kind == "architecture":
+        _validate_architecture(block, path, errs)
     _str(block, "title", path, errs, required=False)
 
 
@@ -496,6 +693,420 @@ def _graph(block: Json) -> str:
     return f'<div class="graph-wrap">{_graph_svg(block, title)}</div><div class="legend">{legend}</div>{listing}'
 
 
+# ---------------------------------------------------------------------------- decision
+
+
+def _decision(block: Json) -> str:
+    """Options against factors: the chosen one stands out, an eliminated one keeps what eliminated it."""
+    head = (
+        '<th scope="col">Option</th>'
+        + "".join(f'<th scope="col">{_esc(f)}</th>' for f in block["factors"])
+        + '<th scope="col">Status</th>'
+    )
+    rows = []
+    for opt in block["options"]:
+        status = opt.get("status", "viable")
+        why = f'<div class="why">{_inline(opt["why"])}</div>' if opt.get("why") else ""
+        cells = "".join(
+            f'<td class="r-{c["rating"]}"><span class="mark">{c["rating"]}</span>{_inline(c.get("text", ""))}</td>'
+            for c in opt["cells"]
+        )
+        by = (
+            f'<div class="by">by {_inline(opt["eliminated_by"])}</div>'
+            if status == "eliminated" and opt.get("eliminated_by")
+            else ""
+        )
+        rows.append(
+            f'<tr class="o-{status}"><th scope="row"><span class="opt">{_inline(opt["label"])}</span>{why}</th>'
+            f'{cells}<td class="st"><span class="chip st-{status}">{status}</span>{by}</td></tr>'
+        )
+    table = f'<table class="dec"><thead><tr>{head}</tr></thead><tbody>{"".join(rows)}</tbody></table>'
+    return f'<div class="dec-wrap">{table}</div>'
+
+
+# ---------------------------------------------------------------------------- architecture
+
+ARCH_W = 176  # a component's width
+ARCH_ZPAD = 12  # zone padding around its components
+ARCH_ZGAP = 58  # the gap between zones, where the links and their labels run
+ARCH_HEAD = 46  # the zone label
+ARCH_GAP = 18  # between components in a zone
+ARCH_PAD = 18
+ARCH_BULGE = 34  # a link inside one zone bows out to the right
+STOPS = ("human", "user")  # people read text, they do not pass injected instructions on to a tool
+RETURNS = ("service", "model", "retrieval", "store", "tool", "system", "guard")  # answer their caller
+
+
+def _variant_ids(block: Json) -> list[str]:
+    """Every variant of the block, the default first; "_" stands for the only one when none are named."""
+    return [v["id"] for v in block.get("variants", [])] or ["_"]
+
+
+def _shown_in(obj: Json, every: list[str]) -> list[str]:
+    return [v for v in every if v in obj["variants"]] if "variants" in obj else list(every)
+
+
+def taint(block: Json, variant: str) -> tuple[set[str], list[tuple[Json, str, list[str]]]]:
+    """What untrusted text can reach in one variant: the components it touches, and the shortest path from
+    where it enters to every side effect it reaches. Text follows a link the way the request goes, and back
+    from a component that answers its caller (a service, model, retrieval, store, tool, outside system or
+    guard: the caller reads what it returns). It stops at a person: a human step or a user."""
+    every = _variant_ids(block)
+    comps = {c["id"]: c for c in block["components"] if variant in _shown_in(c, every)}
+    links = [
+        link
+        for link in block.get("links", [])
+        if variant in _shown_in(link, every) and link["from"] in comps and link["to"] in comps
+    ]
+    near: dict[str, list[str]] = {k: [] for k in comps}
+    for link in links:
+        near[link["from"]].append(link["to"])
+    for link in links:
+        if comps[link["to"]].get("kind", "service") in RETURNS:
+            near[link["to"]].append(link["from"])
+    touched: set[str] = set()
+    paths: list[tuple[Json, str, list[str]]] = []
+    for entry in (link for link in links if link.get("trust") == "untrusted"):
+        start = entry["to"]
+        prev: dict[str, str | None] = {start: None}
+        queue = [start]
+        while queue:
+            node = queue.pop(0)
+            if comps[node].get("kind", "service") in STOPS:
+                continue
+            for other in near[node]:
+                if other not in prev and other != entry["from"]:
+                    prev[other] = node
+                    queue.append(other)
+        touched.update(prev)
+        for node in prev:
+            if comps[node].get("side_effect"):
+                chain: list[str] = []
+                step: str | None = node
+                while step is not None:
+                    chain.append(step)
+                    step = prev[step]
+                paths.append((entry, node, [entry["from"], *reversed(chain)]))
+    return touched, paths
+
+
+def _arch_svg(
+    block: Json, variant: str, every: list[str], found: tuple[set[str], list[tuple[Json, str, list[str]]]]
+) -> str:
+    """One variant's diagram. Each variant is laid out on its own, so none leaves gaps for the others."""
+    zones = block["zones"]
+    comps = {c["id"]: c for c in block["components"] if variant in _shown_in(c, every)}
+    links = [link for link in block.get("links", []) if variant in _shown_in(link, every)]
+    zone_at = {z["id"]: i for i, z in enumerate(zones)}
+    columns = [[k for k, c in comps.items() if c["zone"] == z["id"]] for z in zones]
+    # Past six zones the boxes and gaps narrow, so the diagram still fits a laptop screen; labels clip sooner.
+    wide = len(zones) > 6
+    box_w, zpad, zgap = (156, 10, 42) if wide else (ARCH_W, ARCH_ZPAD, ARCH_ZGAP)
+    fits = {"label": (box_w - 24) // 8, "line": (box_w - 24) // 7, "zone": (box_w + 2 * zpad - 20) // 9}
+    _order(columns, links, set())
+
+    def box_h(comp: Json) -> int:
+        return 64 if comp.get("tech") or comp.get("note") else 48
+
+    col_h = [sum(box_h(comps[k]) for k in col) + ARCH_GAP * max(0, len(col) - 1) for col in columns]
+    inner = max([*col_h, 48])
+    zone_w = box_w + 2 * zpad
+    zone_h = ARCH_HEAD + inner + zpad
+    pos: dict[str, tuple[float, float, float, float]] = {}
+    for i, col in enumerate(columns):
+        x = float(ARCH_PAD + i * (zone_w + zgap) + zpad)
+        y = ARCH_PAD + ARCH_HEAD + (inner - col_h[i]) / 2
+        for k in col:
+            h = float(box_h(comps[k]))
+            pos[k] = (x, y, box_w, h)
+            y += h + ARCH_GAP
+    width = 2 * ARCH_PAD + len(zones) * zone_w + (len(zones) - 1) * zgap
+    height = 2 * ARCH_PAD + zone_h
+
+    # Ports: the links on one side of a box are spread along it, ordered by where their other end sits.
+    col_of = {k: zone_at[comps[k]["zone"]] for k in comps}
+    sides: dict[tuple[str, str], list[tuple[float, int, str]]] = {}
+    link_sides: list[tuple[str, str]] = []
+    for idx, link in enumerate(links):
+        a, b = link["from"], link["to"]
+        sa, sb = ("R", "L") if col_of[a] < col_of[b] else ("L", "R") if col_of[a] > col_of[b] else ("R", "R")
+        link_sides.append((sa, sb))
+        sides.setdefault((a, sa), []).append((pos[b][1] + pos[b][3] / 2, idx, "from"))
+        sides.setdefault((b, sb), []).append((pos[a][1] + pos[a][3] / 2, idx, "to"))
+    port: dict[tuple[int, str], tuple[float, float]] = {}
+    for (k, side), items in sides.items():
+        x, y, w, h = pos[k]
+        for n, (_, idx, end) in enumerate(sorted(items)):
+            port[(idx, end)] = (x + w if side == "R" else x, y + h * (n + 1) / (len(items) + 1))
+    if any(
+        sa == sb and col_of[link["from"]] == len(zones) - 1 for link, (sa, sb) in zip(links, link_sides, strict=True)
+    ):
+        width += ARCH_BULGE
+
+    touched, paths = found
+    risk = {target for _, target, _ in paths}
+    on_path = {pair for _, _, p in paths for pair in pairwise(p)}
+    v = _esc(variant)
+    parts = [
+        f'<svg class="arch-svg" data-variant="{v}" role="img" aria-label="{_esc(block.get("title", "Architecture"))}" '
+        f'viewBox="0 0 {width:.0f} {height:.0f}" style="width:100%;max-width:{width:.0f}px;'
+        f'min-width:{min(width, max(width * 0.72, 760)):.0f}px" xmlns="http://www.w3.org/2000/svg"><defs>'
+    ]
+    for kind in ("base", "red", "in", "out", "hot"):
+        parts.append(
+            f'<marker id="arch-arrow-{kind}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" '
+            f'orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah-{kind}"/></marker>'
+        )
+    parts.append("</defs>")
+    for i, zone in enumerate(zones):
+        zx = ARCH_PAD + i * (zone_w + zgap)
+        parts.append(
+            f'<g class="zone"><rect class="zone-bg" x="{zx:.1f}" y="{ARCH_PAD:.1f}" width="{zone_w:.1f}" '
+            f'height="{zone_h:.1f}" rx="12"/><text class="zone-label" x="{zx + 13:.1f}" y="{ARCH_PAD + 28:.1f}">'
+            f"{_esc(_clip(zone['label'].upper(), fits['zone']))}</text></g>"
+        )
+    labels: list[str] = []
+    for idx, link in enumerate(links):
+        a, b = link["from"], link["to"]
+        (x1, y1), (x2, y2) = port[(idx, "from")], port[(idx, "to")]
+        sa, sb = link_sides[idx]
+        if sa == sb:
+            c1, c2 = (x1 + ARCH_BULGE, y1), (x2 + ARCH_BULGE, y2)
+        else:
+            dx = max(28.0, abs(x2 - x1) / 2)
+            c1 = (x1 + dx if sa == "R" else x1 - dx, y1)
+            c2 = (x2 - dx if sb == "L" else x2 + dx, y2)
+        classes = ["link"]
+        if link.get("trust") == "untrusted":
+            classes.append("untrusted")
+        if link.get("flag"):
+            classes.append(f"f-{link['flag']}")
+        attrs = (
+            f'data-a="{_esc(a)}" data-b="{_esc(b)}" data-v="{v}" '
+            f'data-path="{v if (a, b) in on_path or (b, a) in on_path else ""}"'
+        )
+        parts.append(
+            f'<path class="{" ".join(classes)}" d="M{x1:.1f},{y1:.1f} C{c1[0]:.1f},{c1[1]:.1f} '
+            f'{c2[0]:.1f},{c2[1]:.1f} {x2:.1f},{y2:.1f}" {attrs}/>'
+        )
+        if link.get("label"):
+            # Beside the arrowhead, in the gap before the box it points at: a long link would put a
+            # midpoint label on top of the zones it crosses.
+            if sa == sb:
+                lx, ly, anchor = max(x1, x2) + ARCH_BULGE * 0.75 + 5, (y1 + y2) / 2 + 4, "start"
+            elif sb == "L":
+                lx, ly, anchor = x2 - 8, y2 - 6, "end"
+            else:
+                lx, ly, anchor = x2 + 8, y2 - 6, "start"
+            labels.append(
+                f'<text class="link-label{" untrusted" if "untrusted" in classes else ""}" x="{lx:.1f}" '
+                f'y="{ly:.1f}" text-anchor="{anchor}" {attrs}>{_esc(_clip(link["label"], 14))}</text>'
+            )
+    for k, comp in comps.items():
+        x, y, w, h = pos[k]
+        kind = comp.get("kind", "service")
+        classes = ["comp", f"k-{kind}"]
+        if comp.get("side_effect"):
+            classes.append("se")
+        if comp.get("flag"):
+            classes.append(f"f-{comp['flag']}")
+        if "variants" in comp and len(every) > 1:
+            classes.append("vonly")
+        caption = KINDS[kind] + (" · acts" if comp.get("side_effect") else "")
+        parts.append(
+            f'<g class="{" ".join(classes)}" data-k="{_esc(k)}" data-label="{_esc(comp["label"])}" '
+            f'data-v="{v}" data-taint="{v if k in touched else ""}" data-risk="{v if k in risk else ""}" '
+            f'tabindex="0" role="button" aria-pressed="false"><title>{_esc(comp["label"])}</title>'
+            f'<rect class="plate" x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="8"/>'
+            f'<rect class="bar" x="{x + 1:.1f}" y="{y + 7:.1f}" width="3.5" height="{h - 14:.1f}" rx="1.5"/>'
+            f'<text class="ck" x="{x + 16:.1f}" y="{y + 17:.1f}">{_esc(_clip(caption.upper(), fits["line"]))}</text>'
+            f'<text class="cl" x="{x + 16:.1f}" y="{y + 36:.1f}">{_esc(_clip(comp["label"], fits["label"]))}</text>'
+        )
+        line = comp.get("tech") or comp.get("note")
+        if line:
+            parts.append(f'<text class="ct" x="{x + 16:.1f}" y="{y + 53:.1f}">{_esc(_clip(line, fits["line"]))}</text>')
+        if comp.get("flag"):
+            parts.append(f'<circle class="flag" cx="{x + w - 13:.1f}" cy="{y + 13:.1f}" r="4.5"/>')
+        parts.append("</g>")
+    parts.extend(labels)
+    parts.append("</svg>")
+    return "".join(parts)
+
+
+def _arch_card(comp: Json, block: Json, names: dict[str, str], every: list[str], labels: dict[str, str]) -> str:
+    kind = comp.get("kind", "service")
+    zone = next(z["label"] for z in block["zones"] if z["id"] == comp["zone"])
+    chips = [f'<span class="chip">{_esc(zone)}</span>', f'<span class="chip">{_esc(KINDS[kind])}</span>']
+    if comp.get("side_effect"):
+        chips.append('<span class="chip se">side effect</span>')
+    if comp.get("flag"):
+        chips.append(
+            f'<span class="chip sev-{"high" if comp["flag"] == "bad" else "medium"}">'
+            f"{'risk' if comp['flag'] == 'bad' else 'watch'}</span>"
+        )
+    body = [f"<header>{''.join(chips)}</header><h4>{_inline(comp['label'])}</h4>"]
+    if comp.get("tech"):
+        body.append(f'<div class="where">{_esc(comp["tech"])}</div>')
+    if comp.get("note"):
+        body.append(f'<div class="evidence">{_paragraphs(comp["note"])}</div>')
+    if comp.get("details"):
+        rows = "".join(f"<dt>{_cell(k)}</dt><dd>{_cell(v)}</dd>" for k, v in comp["details"])
+        body.append(f'<dl class="kv">{rows}</dl>')
+
+    def listing(title: str, items: list[tuple[str, Json]]) -> str:
+        if not items:
+            return ""
+        lis = "".join(
+            f"<li>{_esc(names[other])}"
+            + (f" · {_inline(link['label'])}" if link.get("label") else "")
+            + (' <span class="chip untrusted">untrusted</span>' if link.get("trust") == "untrusted" else "")
+            + (
+                f' <span class="only">({_esc(", ".join(labels[v] for v in _shown_in(link, every)))})</span>'
+                if "variants" in link and len(every) > 1
+                else ""
+            )
+            + "</li>"
+            for other, link in items
+        )
+        return f'<div><span class="fix-label">{title}</span><ul>{lis}</ul></div>'
+
+    links = block.get("links", [])
+    io = listing("Sends to", [(link["to"], link) for link in links if link["from"] == comp["id"]]) + listing(
+        "Receives from", [(link["from"], link) for link in links if link["to"] == comp["id"]]
+    )
+    if io:
+        body.append(f'<div class="io">{io}</div>')
+    if "variants" in comp and len(every) > 1:
+        only = ", ".join(labels[v] for v in _shown_in(comp, every))
+        body.append(f'<p class="only">Only in: {_esc(only)}</p>')
+    return f'<article class="arch-card plate" data-k="{_esc(comp["id"])}">{"".join(body)}</article>'
+
+
+def _architecture(block: Json) -> str:
+    every = _variant_ids(block)
+    labels = {v["id"]: v["label"] for v in block.get("variants", [])} or {"_": ""}
+    names = {c["id"]: c["label"] for c in block["components"]}
+    tainted = {v: taint(block, v) for v in every}
+    links = block.get("links", [])
+    flows = block.get("flows", [])
+    variants = block.get("variants", [])
+    untrusted = any(link.get("trust") == "untrusted" for link in links)
+
+    controls = []
+    if len(variants) > 1:
+        buttons = "".join(
+            f'<button type="button" data-set-variant="{_esc(v["id"])}" aria-pressed="{"true" if i == 0 else "false"}"'
+            f">{_esc(v['label'])}</button>"
+            for i, v in enumerate(variants)
+        )
+        controls.append(f'<div class="seg" role="group" aria-label="Variant">{buttons}</div>')
+    if untrusted:
+        controls.append('<button type="button" class="arch-trust" aria-pressed="false">Trust boundaries</button>')
+    if flows:
+        buttons = "".join(
+            f'<button type="button" data-set-flow="{_esc(f["id"])}" aria-pressed="false">{_esc(f["title"])}</button>'
+            for f in flows
+        )
+        controls.append(f'<div class="seg" role="group" aria-label="Request flows">{buttons}</div>')
+        controls.append(
+            '<span class="stepper"><button type="button" class="prev" aria-label="Previous step">&#8249;</button>'
+            '<button type="button" class="play">Play</button>'
+            '<button type="button" class="next" aria-label="Next step">&#8250;</button>'
+            '<span class="count"></span></span>'
+        )
+    controls_html = f'<div class="arch-controls">{"".join(controls)}</div>' if controls else ""
+
+    kinds = [k for k in KINDS if any(c.get("kind", "service") == k for c in block["components"])]
+    legend = [f'<span class="legend-item"><i class="swatch k-{k}"></i>{_esc(KINDS[k])}</span>' for k in kinds]
+    if untrusted:
+        legend.append('<span class="legend-item"><i class="swatch untrusted"></i>untrusted text</span>')
+    if any(c.get("side_effect") for c in block["components"]):
+        legend.append('<span class="legend-item"><i class="swatch se"></i>side effect</span>')
+    if len(every) > 1 and any("variants" in c for c in block["components"]):
+        legend.append('<span class="legend-item"><i class="swatch vonly"></i>only in some variants</span>')
+
+    notes = "".join(
+        f'<p class="arch-vnote" data-variant="{_esc(v["id"])}"><strong>{_esc(v["label"])}:</strong> '
+        f"{_inline(v['note'])}</p>"
+        for v in variants
+        if v.get("note")
+    )
+    flows_html = ""
+    if flows:
+        items = []
+        for flow in flows:
+            steps = "".join(
+                f'<li data-a="{_esc(s["from"])}" data-b="{_esc(s["to"])}"><span class="who">'
+                f'{_esc(names[s["from"]])} → {_esc(names[s["to"]])}</span><span class="what">{_inline(s["text"])}'
+                "</span></li>"
+                for s in flow["steps"]
+            )
+            only = (
+                f' <span class="only">({_esc(", ".join(labels[v] for v in _shown_in(flow, every)))})</span>'
+                if "variants" in flow and len(every) > 1
+                else ""
+            )
+            items.append(
+                f'<div class="arch-flow" data-flow="{_esc(flow["id"])}" '
+                f'data-v="{_esc(" ".join(_shown_in(flow, every)))}"><h4>{_inline(flow["title"])}{only}</h4>'
+                f'<ol class="flow-steps">{steps}</ol></div>'
+            )
+        flows_html = (
+            '<div class="arch-flows"><p class="arch-hint flows-hint">Pick a flow above to walk a request '
+            f"through it, step by step, with the buttons or the arrow keys</p>{''.join(items)}</div>"
+        )
+    cards = "".join(_arch_card(c, block, names, every, labels) for c in block["components"])
+    cards_html = (
+        '<div class="arch-cards"><p class="arch-hint comp-hint">Click a component: what it does, what it uses, '
+        f"what happens when it fails</p>{cards}</div>"
+    )
+
+    trust_html = ""
+    if untrusted:
+        many = len(every) > 1
+        rows = []
+        for v in every:
+            # One row per side effect: every way in that reaches it, and the shortest path.
+            reached: dict[str, list[tuple[Json, list[str]]]] = {}
+            for entry, target, path in tainted[v][1]:
+                reached.setdefault(target, []).append((entry, path))
+            for target, ways in reached.items():
+                entries = list(dict.fromkeys(f"{names[e['from']]} → {names[e['to']]}" for e, _ in ways))
+                shortest = min((path for _, path in ways), key=len)
+                rows.append(
+                    ([labels[v]] if many else [])
+                    + [names[target], "; ".join(entries), " → ".join(names[p] for p in shortest)]
+                )
+        if rows:
+            columns = (["Variant"] if many else []) + ["Side effect", "Untrusted text enters at", "Shortest path"]
+            head = "".join(f"<th>{_esc(c)}</th>" for c in columns)
+            body = "".join("<tr>" + "".join(f"<td>{_esc(c)}</td>" for c in row) + "</tr>" for row in rows)
+            trust_body = (
+                f'<div class="table-wrap"><table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>'
+            )
+        else:
+            trust_body = (
+                '<div class="callout plate labelled c-ok"><span class="label">ok</span><p>No path from untrusted '
+                "text to a side effect that does not pass a person first.</p></div>"
+            )
+        trust_html = f'<div class="arch-trustlist"><h3>Where untrusted text can reach an action</h3>{trust_body}</div>'
+
+    # One diagram per variant. The script shows the chosen one; without it every variant is drawn,
+    # each under its name.
+    stage = "".join(
+        (f'<p class="arch-vlabel">{_esc(labels[v])}</p>' if len(every) > 1 else "")
+        + _arch_svg(block, v, every, tainted[v])
+        for v in every
+    )
+    return (
+        f'<div class="arch" data-default="{_esc(every[0])}">{controls_html}'
+        f'<div class="arch-stage">{stage}</div>'
+        f'<div class="arch-caption" aria-live="polite"></div><div class="legend">{"".join(legend)}</div>'
+        + (f'<div class="arch-vnotes">{notes}</div>' if notes else "")
+        + f"{cards_html}{flows_html}{trust_html}</div>"
+    )
+
+
 # ---------------------------------------------------------------------------- blocks
 
 TONE_LABEL = {"ok": "ok", "warn": "watch", "bad": "risk", "info": "note"}
@@ -599,6 +1210,10 @@ def _block(block: Json) -> str:
         body = _graph(block)
     elif kind == "steps":
         body = _steps(block)
+    elif kind == "decision":
+        body = _decision(block)
+    elif kind == "architecture":
+        body = _architecture(block)
     else:  # kv
         rows = "".join(f"<dt>{_cell(k)}</dt><dd>{_cell(v)}</dd>" for k, v in block["items"])
         body = f'<dl class="kv">{rows}</dl>'
@@ -853,6 +1468,161 @@ figure.code .copy.done{color:var(--green);border-color:rgba(126,224,168,.5)}
 figure.code:not(.labelled){margin-top:14px;padding-top:28px}
 """
 
+# The decision table and the architecture block. Without the script the architecture still reads: every
+# component card, every flow and every variant note is listed; the script turns them into a panel, a
+# step-through and a toggle (the html element gets the class "js").
+CSS += """
+.dec-wrap{overflow-x:auto}
+table.dec th[scope=row]{font:inherit;letter-spacing:0;text-transform:none;white-space:normal;color:var(--ink);
+padding:14px 24px 14px 14px;border-bottom:1px solid var(--line-2);vertical-align:top;min-width:230px}
+table.dec thead th:first-child{padding-left:14px}
+table.dec td{vertical-align:top;font-size:16px;line-height:1.45;min-width:150px}
+.dec .opt{font-size:18.5px;font-weight:700}
+.dec .why{margin-top:5px;font-size:15.5px;line-height:1.4;color:var(--ink-2)}
+.dec .mark{display:inline-block;margin-right:7px;padding:4px 6px 3px;border:1px solid;border-radius:5px;
+font:600 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;vertical-align:2px}
+.dec .r-pass .mark{color:var(--green);border-color:rgba(126,224,168,.45)}
+.dec .r-weak .mark{color:var(--gold);border-color:rgba(255,210,63,.45)}
+.dec .r-fail .mark{color:var(--red);border-color:rgba(255,138,115,.5)}
+.dec tr.o-chosen th,.dec tr.o-chosen td{background:rgba(138,99,242,.15)}
+.dec tr.o-chosen th{box-shadow:inset 4px 0 0 var(--purple-soft)}
+.dec tr.o-eliminated td:not(.st),.dec tr.o-eliminated .opt{opacity:.5}
+.dec td.st{white-space:nowrap}
+.dec .by{margin-top:7px;font:500 13px/1.4 var(--mono);color:var(--red);white-space:normal}
+.chip.st-chosen{color:var(--purple-soft);border-color:var(--purple);background:rgba(138,99,242,.18)}
+.chip.st-viable{color:var(--green);border-color:rgba(126,224,168,.45)}
+.chip.st-eliminated{color:var(--red);border-color:rgba(255,138,115,.5)}
+.arch-controls{display:none;flex-wrap:wrap;align-items:center;gap:10px 18px;margin-bottom:14px}
+.js .arch-controls{display:flex}
+.arch-controls button{background:rgba(8,5,19,.6);color:var(--ink-2);border:1px solid var(--plate-border);
+border-radius:9px;padding:9px 13px;font:600 12.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;
+cursor:pointer}
+.arch-controls button:hover{color:var(--ink)}
+.arch-controls button:disabled{opacity:.35;cursor:default}
+.arch-controls .seg{display:inline-flex;flex-wrap:wrap}
+.arch-controls .seg button{border-radius:0;margin-left:-1px}
+.arch-controls .seg button:first-child{border-radius:9px 0 0 9px;margin-left:0}
+.arch-controls .seg button:last-child{border-radius:0 9px 9px 0}
+.arch-controls .seg button:only-child{border-radius:9px}
+.arch-controls .seg button[hidden]{display:none}
+.arch-controls button[aria-pressed=true]{background:rgba(138,99,242,.34);color:var(--ink);border-color:var(--purple)}
+.arch-controls .arch-trust[aria-pressed=true]{background:rgba(255,138,115,.16);color:var(--red);
+border-color:rgba(255,138,115,.6)}
+.stepper{display:inline-flex;align-items:center;gap:6px}
+.stepper .count{margin-left:6px;font:600 12px var(--mono);letter-spacing:.12em;color:var(--ink-3)}
+.arch-vlabel{padding:16px 20px 0;font:600 13px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;
+color:var(--purple-soft)}
+.js .arch-vlabel,.js svg.arch-svg:not(.on){display:none}
+.arch-stage{width:min(1820px,calc(100vw - 48px));margin-left:calc(50% - min(910px,50vw - 24px));overflow-x:auto;
+border:1px solid var(--plate-border);border-radius:14px;
+background:linear-gradient(160deg,rgba(27,20,54,.7) 0%,rgba(17,12,36,.7) 100%)}
+svg.arch-svg{display:block;height:auto;font-family:var(--mono)}
+.zone-bg{fill:rgba(236,231,248,.022);stroke:rgba(173,150,255,.14);stroke-width:1}
+.zone-label{font-size:11.5px;font-weight:600;letter-spacing:.14em;fill:var(--ink-3)}
+.comp{cursor:pointer;outline:none;transition:opacity .18s}
+.comp .plate{fill:rgba(236,231,248,.045);stroke:rgba(173,150,255,.32);stroke-width:1.2}
+.comp .bar{fill:rgba(173,150,255,.42)}
+.comp .ck{font-size:10px;font-weight:600;letter-spacing:.12em;fill:var(--ink-3)}
+.comp .cl{font-family:var(--sans);font-size:15px;font-weight:700;fill:var(--ink)}
+.comp .ct{font-size:11.5px;fill:var(--purple-soft)}
+.comp:focus-visible .plate{stroke:var(--gold);stroke-width:2.4}
+.k-user .plate,.k-channel .plate{stroke:var(--purple-soft)}.k-user .bar,.k-channel .bar{fill:var(--purple-soft)}
+.k-model .plate{fill:rgba(138,99,242,.17);stroke:var(--purple)}.k-model .bar{fill:var(--purple)}
+.k-retrieval .plate,.k-store .plate{fill:rgba(255,210,63,.05);stroke:rgba(255,210,63,.5)}
+.k-retrieval .bar,.k-store .bar{fill:var(--gold)}
+.k-tool .bar{fill:var(--orange)}
+.k-system .plate{fill:none;stroke:rgba(236,231,248,.42);stroke-dasharray:5 4}.k-system .bar{fill:var(--ink-3)}
+.k-human .plate{fill:rgba(126,224,168,.06);stroke:rgba(126,224,168,.55)}.k-human .bar{fill:var(--green)}
+.k-guard .plate{stroke:rgba(126,224,168,.55)}.k-guard .bar{fill:var(--green)}
+.k-ops .plate{fill:none;stroke:var(--line)}.k-ops .cl{fill:var(--ink-2)}.k-ops .bar{fill:var(--ink-3)}
+.comp.se .plate{stroke:var(--orange);stroke-width:1.9}
+.comp.vonly .plate{stroke-dasharray:4 3}
+.comp.f-warn .plate{stroke:var(--gold);stroke-width:2.3}.comp.f-bad .plate{stroke:var(--red);stroke-width:2.4}
+.comp.f-warn .flag{fill:var(--gold)}.comp.f-bad .flag{fill:var(--red)}
+.link{fill:none;stroke:rgba(201,184,255,.42);stroke-width:1.5;marker-end:url(#arch-arrow-base);
+transition:opacity .18s}
+.link.untrusted{stroke:rgba(255,138,115,.8);stroke-dasharray:6 5;marker-end:url(#arch-arrow-red)}
+.link.f-warn{stroke:var(--gold)}.link.f-bad{stroke:var(--red)}
+.ah-base{fill:rgba(201,184,255,.55)}.ah-red{fill:var(--red)}.ah-in{fill:var(--purple)}.ah-out{fill:var(--orange)}
+.ah-hot{fill:var(--gold)}
+.link-label{font-size:11px;fill:var(--ink-2);paint-order:stroke;stroke:#0f0a1e;stroke-width:5px;
+stroke-linejoin:round;transition:opacity .18s}
+.link-label.untrusted{fill:var(--red)}
+.arch .comp.gone{opacity:.07;pointer-events:none}.arch .link.gone,.arch .link-label.gone{display:none}
+.arch.focus .comp:not(.sel):not(.near):not(.hot):not(.gone){opacity:.3}
+.arch.focus .link:not(.in):not(.out):not(.hot):not(.done),
+.arch.focus .link-label:not(.in):not(.out):not(.hot){opacity:.1}
+.comp.sel .plate{fill:rgba(138,99,242,.42);stroke:var(--purple-soft);stroke-width:2.4}
+.link.in{stroke:var(--purple);stroke-width:2.3;marker-end:url(#arch-arrow-in)}
+.link.out{stroke:var(--orange);stroke-width:2.3;marker-end:url(#arch-arrow-out)}
+.link-label.in{fill:var(--purple-soft)}.link-label.out,.link-label.hot{fill:var(--orange)}
+.link.hot{stroke:var(--gold);stroke-width:3;stroke-dasharray:8 6;marker-end:url(#arch-arrow-hot);
+animation:arch-dash 1s linear infinite}
+.link.done{stroke:rgba(255,210,63,.42);stroke-width:2;stroke-dasharray:none}
+.comp.hot .plate{fill:rgba(255,210,63,.1);stroke:var(--gold);stroke-width:2.4}
+@keyframes arch-dash{to{stroke-dashoffset:-28}}
+@media (prefers-reduced-motion:reduce){.link.hot{animation:none}}
+.arch.trust .comp:not(.taint):not(.gone){opacity:.32}
+.arch.trust .comp.taint .plate{stroke:rgba(255,138,115,.75)}
+.arch.trust .comp.risk .plate{fill:rgba(255,138,115,.2);stroke:var(--red);stroke-width:2.8}
+.arch.trust .link:not(.path):not(.untrusted),.arch.trust .link-label:not(.untrusted){opacity:.14}
+.arch.trust .link.path{stroke:var(--red);stroke-width:2.4;opacity:1;marker-end:url(#arch-arrow-red)}
+.arch-caption{display:none;margin-top:12px;padding:12px 18px;border:1px solid rgba(255,210,63,.4);border-radius:10px;
+background:rgba(255,210,63,.06);font-size:17px;color:var(--ink)}
+.js .arch-caption.on{display:block}
+.swatch.k-model{background:rgba(138,99,242,.25);border-color:var(--purple)}
+.swatch.k-user,.swatch.k-channel{border-color:var(--purple-soft)}
+.swatch.k-retrieval,.swatch.k-store{background:rgba(255,210,63,.08);border-color:rgba(255,210,63,.6)}
+.swatch.k-tool{border-color:var(--orange)}
+.swatch.k-system{border-style:dashed;border-color:rgba(236,231,248,.42);background:none}
+.swatch.k-human,.swatch.k-guard{border-color:rgba(126,224,168,.6)}
+.swatch.k-ops{background:none;border-color:var(--line)}
+.swatch.se{border-color:var(--orange);border-width:2px}
+.swatch.vonly{border-style:dashed}
+.swatch.untrusted{height:0;border-width:0;border-top:2px dashed var(--red);border-radius:0;background:none}
+.arch-vnotes{margin-top:14px;display:grid;gap:6px;color:var(--ink-2);font-size:17px}
+.js .arch-vnote{display:none}.js .arch-vnote.open{display:block}
+.arch-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px;margin-top:24px}
+.js .arch-cards{display:block}
+.arch-card{padding:20px 24px 18px}
+.js .arch-card{display:none}.js .arch-card.open{display:block}
+.arch-card header{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.arch-card h4{font-size:21px;font-weight:700;line-height:1.3}
+.arch-card dl.kv{margin-top:12px;grid-template-columns:minmax(120px,210px) 1fr}
+.arch-card dl.kv dd{font-size:16.5px}
+.arch-card .io{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px 28px;margin-top:14px}
+.arch-card .io ul{list-style:none;display:grid;gap:4px;font-size:16px;color:var(--ink-2)}
+.arch-card .only,.arch-flow .only,.arch-card .io .only{font:500 13px/1.5 var(--mono);color:var(--ink-3)}
+.arch-card .only{margin-top:12px}
+.chip.se{color:var(--orange);border-color:rgba(255,166,87,.5)}
+.chip.untrusted{color:var(--red);border-color:rgba(255,138,115,.5);font-size:10px;padding:3px 6px 2px}
+.arch-hint{display:none;font:600 12px/1.6 var(--mono);letter-spacing:.12em;text-transform:uppercase;
+color:var(--ink-3)}
+.js .arch-hint{display:block}.js .arch-hint.off{display:none}
+.arch-flows{margin-top:26px;display:grid;gap:22px}
+.js .arch-flows{display:block}
+.arch-flow h4{font:600 14px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);
+margin-bottom:12px}
+.js .arch-flow{display:none}.js .arch-flow.open{display:block}
+ol.flow-steps{list-style:none;counter-reset:fs;display:grid;gap:6px;max-width:1120px}
+ol.flow-steps li{counter-increment:fs;position:relative;padding:10px 14px 10px 54px;border:1px solid transparent;
+border-radius:10px;color:var(--ink-2);font-size:17px;line-height:1.45}
+ol.flow-steps li::before{content:counter(fs,decimal-leading-zero);position:absolute;left:16px;top:12px;
+font:600 14px var(--mono);color:var(--purple-soft)}
+ol.flow-steps .who{display:block;font:600 12.5px/1.5 var(--mono);letter-spacing:.04em;color:var(--purple-soft)}
+.js ol.flow-steps li{cursor:pointer}
+ol.flow-steps li.now{border-color:rgba(255,210,63,.5);background:rgba(255,210,63,.07);color:var(--ink)}
+ol.flow-steps li.now .who{color:var(--gold)}
+ol.flow-steps li.past{opacity:.62}
+.arch-trustlist{margin-top:30px}
+.arch-trustlist>h3{font:600 14px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);
+margin-bottom:16px}
+@media print{.arch-controls,.arch-hint,.arch-caption{display:none!important}
+.js .arch-vlabel,.js svg.arch-svg{display:block!important}
+.js .arch-card,.js .arch-flow,.js .arch-vnote{display:block}.js .arch-cards{display:grid}
+.arch .comp,.arch .link,.arch .link-label{opacity:1!important}}
+"""
+
 # One small inline script, the same on every page. It only adds behaviour; the page reads the same
 # without it. Click a node to trace what leads to it (purple) and what it reaches (orange), Esc or a
 # click on the empty graph clears it, and #node=<id or label> in the link opens a page traced. Tables
@@ -861,7 +1631,16 @@ figure.code:not(.labelled){margin-top:14px;padding-top:28px}
 SCRIPT = """
 (function () {
   "use strict";
+  document.documentElement.classList.add("js");
   function all(root, sel) { return Array.prototype.slice.call(root.querySelectorAll(sel)); }
+  function listed(el, name, word) { return (" " + (el.getAttribute(name) || "") + " ").indexOf(" " + word + " ") >= 0; }
+  var params = {};
+  location.hash.slice(1).split("&").forEach(function (part) {
+    var at = part.indexOf("=");
+    if (at > 0) {
+      try { params[part.slice(0, at)] = decodeURIComponent(part.slice(at + 1)); } catch (err) { /* a broken link */ }
+    }
+  });
   function walk(start, map) {
     var seen = {}, stack = [start];
     while (stack.length) {
@@ -932,6 +1711,177 @@ SCRIPT = """
       var hit = nodes.filter(function (n) { return n.dataset.k === wanted || n.dataset.label === wanted; })[0];
       if (hit) { trace(hit.dataset.k); hit.scrollIntoView({ block: "center" }); }
     }
+  });
+  // The architecture: click a component for its card, step a flow through, switch the variant, show
+  // where untrusted text can reach an action. #variant=, #component=, #flow=…&step= and #trust=1 open it so.
+  var archActive = null;
+  all(document, ".arch").forEach(function (root) {
+    var svgs = all(root, "svg.arch-svg");
+    if (!svgs.length) { return; }
+    var comps = all(root, "svg.arch-svg .comp"), links = all(root, "svg.arch-svg .link, svg.arch-svg .link-label");
+    var cards = all(root, ".arch-card"), flows = all(root, ".arch-flow"), notes = all(root, ".arch-vnote");
+    var vbuttons = all(root, "button[data-set-variant]"), fbuttons = all(root, "button[data-set-flow]");
+    var trustButton = root.querySelector(".arch-trust"), caption = root.querySelector(".arch-caption");
+    var compHint = root.querySelector(".comp-hint"), flowHint = root.querySelector(".flows-hint");
+    var prev = root.querySelector(".stepper .prev"), next = root.querySelector(".stepper .next");
+    var play = root.querySelector(".stepper .play"), count = root.querySelector(".stepper .count");
+    var first = root.getAttribute("data-default");
+    var st = { v: first, comp: null, flow: null, step: 0, trust: false }, timer = null;
+    function find(list, attr, key) {
+      return list.filter(function (el) { return el.getAttribute(attr) === key; })[0] || null;
+    }
+    function steps() { var f = find(flows, "data-flow", st.flow); return f ? all(f, "li") : []; }
+    function stop() { if (timer) { clearInterval(timer); timer = null; } }
+    function inVariant(key, v) {
+      return comps.some(function (c) { return c.getAttribute("data-k") === key && listed(c, "data-v", v); });
+    }
+    function setVariant(v) {
+      st.v = v;
+      var f = st.flow && find(flows, "data-flow", st.flow);
+      if (st.comp && !inVariant(st.comp, v)) { st.comp = null; }
+      if (f && !listed(f, "data-v", v)) { st.flow = null; stop(); }
+    }
+    function pick(key) { stop(); st.flow = null; st.comp = st.comp === key ? null : key; }
+    function pickFlow(id) {
+      stop();
+      var f = find(flows, "data-flow", id);
+      if (!f || st.flow === id) { st.flow = null; return; }
+      if (!listed(f, "data-v", st.v)) { setVariant(f.getAttribute("data-v").split(" ")[0]); }
+      st.flow = id; st.step = 0; st.comp = null;
+    }
+    function go(delta) {
+      var n = steps().length;
+      if (n) { st.step = Math.max(0, Math.min(n - 1, st.step + delta)); }
+    }
+    function writeHash() {
+      var parts = [];
+      if (st.v !== first) { parts.push("variant=" + encodeURIComponent(st.v)); }
+      if (st.comp) { parts.push("component=" + encodeURIComponent(st.comp)); }
+      if (st.flow) { parts.push("flow=" + encodeURIComponent(st.flow), "step=" + (st.step + 1)); }
+      if (st.trust) { parts.push("trust=1"); }
+      history.replaceState(null, "", parts.length ? "#" + parts.join("&") : location.pathname + location.search);
+    }
+    function paint() {
+      var v = st.v, list = steps(), now = list[st.step] || null, near = {}, done = {};
+      var a = now ? now.getAttribute("data-a") : null, b = now ? now.getAttribute("data-b") : null;
+      var shown = st.comp || b;
+      list.slice(0, st.step).forEach(function (li) {
+        done[li.getAttribute("data-a") + ">" + li.getAttribute("data-b")] = true;
+      });
+      svgs.forEach(function (s) { s.classList.toggle("on", s.getAttribute("data-variant") === v); });
+      root.classList.toggle("trust", st.trust);
+      root.classList.toggle("focus", !!(st.comp || now));
+      links.forEach(function (l) {
+        var la = l.getAttribute("data-a"), lb = l.getAttribute("data-b"), gone = !listed(l, "data-v", v);
+        var out = !gone && la === st.comp, inn = !gone && lb === st.comp;
+        var hot = !gone && !!now && ((la === a && lb === b) || (la === b && lb === a));
+        l.classList.toggle("gone", gone);
+        l.classList.toggle("path", listed(l, "data-path", v));
+        l.classList.toggle("out", out);
+        l.classList.toggle("in", inn);
+        l.classList.toggle("hot", hot);
+        l.classList.toggle("done", !gone && !hot && (done[la + ">" + lb] || done[lb + ">" + la]) === true);
+        if (out) { near[lb] = true; }
+        if (inn) { near[la] = true; }
+      });
+      comps.forEach(function (c) {
+        var k = c.getAttribute("data-k");
+        c.classList.toggle("gone", !listed(c, "data-v", v));
+        c.classList.toggle("sel", k === st.comp);
+        c.classList.toggle("near", near[k] === true);
+        c.classList.toggle("hot", !!now && (k === a || k === b));
+        c.classList.toggle("taint", listed(c, "data-taint", v));
+        c.classList.toggle("risk", listed(c, "data-risk", v));
+        c.setAttribute("aria-pressed", String(k === st.comp));
+      });
+      cards.forEach(function (card) { card.classList.toggle("open", card.getAttribute("data-k") === shown); });
+      flows.forEach(function (f) { f.classList.toggle("open", f.getAttribute("data-flow") === st.flow); });
+      list.forEach(function (li, i) {
+        li.classList.toggle("now", i === st.step);
+        li.classList.toggle("past", i < st.step);
+      });
+      notes.forEach(function (n) { n.classList.toggle("open", n.getAttribute("data-variant") === v); });
+      vbuttons.forEach(function (btn) {
+        btn.setAttribute("aria-pressed", String(btn.getAttribute("data-set-variant") === v));
+      });
+      fbuttons.forEach(function (btn) {
+        var id = btn.getAttribute("data-set-flow"), f = find(flows, "data-flow", id);
+        btn.hidden = !!f && !listed(f, "data-v", v);
+        btn.setAttribute("aria-pressed", String(id === st.flow));
+      });
+      if (compHint) { compHint.classList.toggle("off", !!shown); }
+      if (flowHint) { flowHint.classList.toggle("off", !!st.flow); }
+      if (trustButton) { trustButton.setAttribute("aria-pressed", String(st.trust)); }
+      if (count) { count.textContent = now ? (st.step + 1) + " / " + list.length : ""; }
+      if (prev) { prev.disabled = !now || st.step === 0; }
+      if (next) { next.disabled = !now || st.step >= list.length - 1; }
+      if (play) { play.disabled = !now; play.textContent = timer ? "Pause" : "Play"; }
+      if (caption) {
+        caption.textContent = now ? (st.step + 1) + ". " + now.querySelector(".who").textContent + " · " +
+          now.querySelector(".what").textContent : "";
+        caption.classList.toggle("on", !!now);
+      }
+    }
+    function update() { archActive = root; paint(); writeHash(); }
+    comps.forEach(function (c) {
+      function act(ev) { ev.stopPropagation(); pick(c.getAttribute("data-k")); update(); }
+      c.addEventListener("click", act);
+      c.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); act(ev); }
+      });
+    });
+    svgs.forEach(function (s) {
+      s.addEventListener("click", function () { stop(); st.comp = null; st.flow = null; update(); });
+    });
+    vbuttons.forEach(function (btn) {
+      btn.addEventListener("click", function () { setVariant(btn.getAttribute("data-set-variant")); update(); });
+    });
+    fbuttons.forEach(function (btn) {
+      btn.addEventListener("click", function () { pickFlow(btn.getAttribute("data-set-flow")); update(); });
+    });
+    flows.forEach(function (f) {
+      all(f, "li").forEach(function (li, i) {
+        li.addEventListener("click", function () {
+          stop(); st.flow = f.getAttribute("data-flow"); st.step = i; update();
+        });
+      });
+    });
+    if (trustButton) { trustButton.addEventListener("click", function () { st.trust = !st.trust; update(); }); }
+    if (prev) { prev.addEventListener("click", function () { stop(); go(-1); update(); }); }
+    if (next) { next.addEventListener("click", function () { stop(); go(1); update(); }); }
+    if (play) {
+      play.addEventListener("click", function () {
+        if (timer) { stop(); } else {
+          if (st.step >= steps().length - 1) { st.step = 0; }
+          timer = setInterval(function () {
+            if (st.step >= steps().length - 1) { stop(); } else { go(1); }
+            update();
+          }, 1800);
+        }
+        update();
+      });
+    }
+    document.addEventListener("keydown", function (ev) {
+      var tag = ev.target && ev.target.tagName;
+      if (archActive !== root || tag === "INPUT" || tag === "TEXTAREA") { return; }
+      if (ev.key === "Escape") { stop(); st.comp = null; st.flow = null; update(); }
+      else if (st.flow && (ev.key === "ArrowRight" || ev.key === "ArrowLeft")) {
+        ev.preventDefault(); stop(); go(ev.key === "ArrowRight" ? 1 : -1); update();
+      }
+    });
+    var linked = false;
+    if (params.variant && find(vbuttons, "data-set-variant", params.variant)) {
+      setVariant(params.variant); linked = true;
+    }
+    if (params.component && inVariant(params.component, st.v)) { pick(params.component); linked = true; }
+    if (params.flow && find(flows, "data-flow", params.flow)) {
+      pickFlow(params.flow);
+      go((parseInt(params.step, 10) || 1) - 1);
+      linked = true;
+    }
+    if (params.trust === "1" && trustButton) { st.trust = true; linked = true; }
+    paint();
+    if (linked) { archActive = root; params = {}; root.scrollIntoView({ block: "start" }); }
   });
   all(document, ".table-wrap").forEach(function (wrap) {
     var rows = all(wrap, "tbody tr");

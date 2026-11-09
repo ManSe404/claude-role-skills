@@ -1,0 +1,48 @@
+KESTREL ERROR CODES (K-200 AND K-300)
+Version 2026-06
+
+The display shows a code when the machine needs attention. E5 and E6 appear on the
+K-300 only. The MF-1 milk frother has no display and no error codes.
+
+E1  Water tank empty or not seated
+    Models: K-200, K-300
+    Fill the tank up to MAX and push it down until it clicks.
+
+E2  No water flow (air in the system)
+    Models: K-200, K-300
+    K-200: run hot water through the steam wand for 30 seconds.
+    K-300: choose Hot water and let it run for 30 seconds.
+    If E2 comes back, descale the machine.
+
+E3  Descaling needed
+    Models: K-200, K-300
+    Run the descaling programme (see the cleaning guide).
+
+E4  Drip tray full or missing
+    Models: K-200, K-300 (on the K-300 also the grounds container)
+    Empty the drip tray (and the grounds container) and put it back.
+
+E5  Brew unit missing or not locked
+    Models: K-300
+    Insert the brew unit until it locks and close the side door.
+
+E6  Grinder blocked
+    Models: K-300
+    Switch off, empty the bean hopper and remove foreign objects.
+    If E6 comes back, contact support.
+
+E7  Overheated
+    Models: K-200, K-300
+    Switch off and let the machine cool for 30 minutes.
+
+E8  Temperature sensor fault
+    Models: K-200, K-300
+    Switch off, unplug and contact support. Do not use the machine.
+
+E9  Pump or electronics fault
+    Models: K-200, K-300
+    Switch off, unplug and contact support. Do not use the machine.
+
+If a code comes back after you followed the steps, contact support with the model,
+the serial number and the code. E8 and E9 are always a service case: do not open the
+machine yourself.

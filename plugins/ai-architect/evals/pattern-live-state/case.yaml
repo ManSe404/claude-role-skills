@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: pattern-live-state
+tags: [ai-architect, ai-pattern]
+context:
+  scaffold_script: fixture.sh

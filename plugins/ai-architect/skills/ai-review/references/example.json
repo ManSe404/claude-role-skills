@@ -1,0 +1,1663 @@
+{
+ "skill": "ai-review",
+ "title": "acme-assist, AI review before handover",
+ "subtitle": "Is this repository fit to hand to Acme Devices as the support assistant v2 from the brief of 14 October 2026?",
+ "meta": {
+  "repo": "acme-assist",
+  "commit": "74dced7",
+  "date": "2026-11-08"
+ },
+ "verdict": {
+  "text": "**Not fit to hand over:** this is the September prototype the brief calls not ready, no code has changed since the brief, and it still makes the stock error Acme complained about. The one fix that matters most is to take `send_email` and `fetch_url` away from the model, because today anyone who reaches `/chat` can have any e-mail sent to any address from Acme's own mail account.",
+  "tone": "bad"
+ },
+ "stats": [
+  {
+   "label": "High findings",
+   "value": 9,
+   "tone": "bad"
+  },
+  {
+   "label": "Medium findings",
+   "value": 11,
+   "tone": "warn"
+  },
+  {
+   "label": "Low findings",
+   "value": 3,
+   "tone": "info"
+  },
+  {
+   "label": "Model calls without a timeout",
+   "value": "2 of 2",
+   "note": "read at llm.py:21",
+   "tone": "bad"
+  },
+  {
+   "label": "Tools with side effects",
+   "value": "1 of 4",
+   "note": "send_email; fetch_url can also carry data out in a URL",
+   "tone": "bad"
+  },
+  {
+   "label": "Tracing / evals",
+   "value": "none / none",
+   "tone": "bad"
+  }
+ ],
+ "sections": [
+  {
+   "id": "architecture",
+   "title": "Architecture as built",
+   "intro": "The solution as the code runs it, with the problem spots flagged. Switch to the fixed variant to see the routed workflow the findings lead to. Turn on the trust view to see where customer text and web pages can travel.",
+   "blocks": [
+    {
+     "type": "architecture",
+     "title": "Acme Assist",
+     "zones": [
+      {
+       "id": "people",
+       "label": "Customer"
+      },
+      {
+       "id": "app",
+       "label": "Application"
+      },
+      {
+       "id": "ai",
+       "label": "Models"
+      },
+      {
+       "id": "tools",
+       "label": "Tools"
+      },
+      {
+       "id": "knowledge",
+       "label": "Knowledge"
+      },
+      {
+       "id": "outside",
+       "label": "Outside systems and people"
+      },
+      {
+       "id": "ops",
+       "label": "Operations"
+      }
+     ],
+     "variants": [
+      {
+       "id": "built",
+       "label": "As built",
+       "note": "One agent with four tools, in a loop with no limit, on an open endpoint."
+      },
+      {
+       "id": "fixed",
+       "label": "Fixed: routed workflow",
+       "note": "Code picks the path per topic. No tool in this variant changes anything without a person."
+      }
+     ],
+     "components": [
+      {
+       "id": "customer",
+       "label": "Customer",
+       "zone": "people",
+       "kind": "user",
+       "note": "Anyone who can reach the endpoint, since nothing identifies the caller."
+      },
+      {
+       "id": "widget",
+       "label": "Shop chat widget",
+       "zone": "people",
+       "kind": "channel",
+       "note": "Named in the README. Its code is not in this repository."
+      },
+      {
+       "id": "api",
+       "label": "POST /chat",
+       "zone": "app",
+       "kind": "service",
+       "tech": "FastAPI",
+       "flag": "bad",
+       "variants": [
+        "built"
+       ],
+       "note": "No login and no rate limit. The client sends the whole history.",
+       "details": [
+        [
+         "Where",
+         "src/acme_assist/app.py:27"
+        ],
+        [
+         "Findings",
+         "Open endpoint, forged history, no size limits"
+        ]
+       ]
+      },
+      {
+       "id": "agent",
+       "label": "Agent loop",
+       "zone": "app",
+       "kind": "service",
+       "tech": "while True",
+       "flag": "bad",
+       "variants": [
+        "built"
+       ],
+       "note": "Calls the model and runs whatever tool it asks for, with no limit.",
+       "details": [
+        [
+         "Where",
+         "src/acme_assist/agent.py:17"
+        ],
+        [
+         "Fails how",
+         "An exception in any tool becomes HTTP 500"
+        ]
+       ]
+      },
+      {
+       "id": "indexer",
+       "label": "Indexer CLI",
+       "zone": "app",
+       "kind": "service",
+       "flag": "warn",
+       "variants": [
+        "built"
+       ],
+       "note": "Deletes the live index first, skips PDFs, includes the archive.",
+       "details": [
+        [
+         "Where",
+         "src/acme_assist/knowledge.py:41"
+        ]
+       ]
+      },
+      {
+       "id": "llm",
+       "label": "gpt-4o",
+       "zone": "ai",
+       "kind": "model",
+       "tech": "OpenAI SDK",
+       "flag": "bad",
+       "variants": [
+        "built"
+       ],
+       "note": "No timeout, no max_tokens, alias not pinned, EU endpoint not enforced.",
+       "details": [
+        [
+         "Where",
+         "src/acme_assist/llm.py:15, src/acme_assist/config.py:6"
+        ]
+       ]
+      },
+      {
+       "id": "embed",
+       "label": "Embeddings",
+       "zone": "ai",
+       "kind": "model",
+       "tech": "text-embedding-3-small",
+       "flag": "bad",
+       "variants": [
+        "built"
+       ],
+       "note": "Receives customer search text. Same endpoint and same EU gap as the chat model.",
+       "details": [
+        [
+         "Where",
+         "src/acme_assist/llm.py:29"
+        ]
+       ]
+      },
+      {
+       "id": "t_search",
+       "label": "search_manuals",
+       "zone": "tools",
+       "kind": "tool",
+       "variants": [
+        "built"
+       ],
+       "note": "Four nearest passages, no filter, no score threshold.",
+       "details": [
+        [
+         "Where",
+         "src/acme_assist/tools.py:54"
+        ]
+       ]
+      },
+      {
+       "id": "t_stock",
+       "label": "check_stock",
+       "zone": "tools",
+       "kind": "tool",
+       "flag": "bad",
+       "variants": [
+        "built"
+       ],
+       "note": "Nearest row from last night's file, one warehouse only.",
+       "details": [
+        [
+         "Where",
+         "src/acme_assist/stock.py:32"
+        ]
+       ]
+      },
+      {
+       "id": "t_fetch",
+       "label": "fetch_url",
+       "zone": "tools",
+       "kind": "tool",
+       "flag": "bad",
+       "variants": [
+        "built"
+       ],
+       "note": "Any URL, redirects followed, raw page text back to the model.",
+       "details": [
+        [
+         "Where",
+         "src/acme_assist/tools.py:63"
+        ]
+       ]
+      },
+      {
+       "id": "t_mail",
+       "label": "send_email",
+       "zone": "tools",
+       "kind": "tool",
+       "side_effect": true,
+       "flag": "bad",
+       "variants": [
+        "built"
+       ],
+       "note": "Any recipient, any text, no confirmation.",
+       "details": [
+        [
+         "Where",
+         "src/acme_assist/tools.py:68"
+        ]
+       ]
+      },
+      {
+       "id": "k_index",
+       "label": "Knowledge index",
+       "zone": "knowledge",
+       "kind": "retrieval",
+       "tech": "Qdrant",
+       "flag": "warn",
+       "variants": [
+        "built"
+       ],
+       "note": "No API key on the client. 35 chunks in the sample, 2 of them copies.",
+       "details": [
+        [
+         "Where",
+         "src/acme_assist/knowledge.py:18"
+        ]
+       ]
+      },
+      {
+       "id": "s_index",
+       "label": "Stock index",
+       "zone": "knowledge",
+       "kind": "retrieval",
+       "tech": "Qdrant",
+       "flag": "bad",
+       "variants": [
+        "built"
+       ],
+       "note": "Live state kept in a vector index, as old as the last nightly run.",
+       "details": [
+        [
+         "Where",
+         "src/acme_assist/stock.py:11"
+        ]
+       ]
+      },
+      {
+       "id": "docs",
+       "label": "knowledge/ files",
+       "zone": "knowledge",
+       "kind": "store",
+       "flag": "warn",
+       "variants": [
+        "built"
+       ],
+       "note": "18 text files indexed, 3 PDFs skipped, archive included."
+      },
+      {
+       "id": "csv",
+       "label": "Nightly stock CSV",
+       "zone": "knowledge",
+       "kind": "store",
+       "flag": "warn",
+       "variants": [
+        "built"
+       ],
+       "note": "Exported at 02:00. One row per SKU and warehouse."
+      },
+      {
+       "id": "web",
+       "label": "Any web page",
+       "zone": "outside",
+       "kind": "system",
+       "flag": "bad",
+       "variants": [
+        "built"
+       ],
+       "note": "Anything the URL points to, including internal addresses."
+      },
+      {
+       "id": "smtp",
+       "label": "SMTP server",
+       "zone": "outside",
+       "kind": "system",
+       "variants": [
+        "built"
+       ],
+       "note": "Sends from Acme's MAIL_FROM to whatever address the model chose."
+      },
+      {
+       "id": "orderdesk_gap",
+       "label": "OrderDesk unused",
+       "zone": "outside",
+       "kind": "system",
+       "flag": "bad",
+       "variants": [
+        "built"
+       ],
+       "note": "The brief's source for order status, about 25% of questions. No code calls it."
+      },
+      {
+       "id": "staff_gap",
+       "label": "Staff: no route",
+       "zone": "outside",
+       "kind": "human",
+       "flag": "bad",
+       "variants": [
+        "built"
+       ],
+       "note": "6 support agents, and no path in the code leads to them."
+      },
+      {
+       "id": "logs",
+       "label": "App logs",
+       "zone": "ops",
+       "kind": "ops",
+       "flag": "warn",
+       "variants": [
+        "built"
+       ],
+       "note": "Tool arguments in full, including e-mail addresses and bodies.",
+       "details": [
+        [
+         "Where",
+         "src/acme_assist/agent.py:23"
+        ]
+       ]
+      },
+      {
+       "id": "no_obs",
+       "label": "No tracing or evals",
+       "zone": "ops",
+       "kind": "ops",
+       "flag": "bad",
+       "variants": [
+        "built"
+       ],
+       "note": "No traces, no eval set, no record of deflection or CSAT."
+      },
+      {
+       "id": "mail_in",
+       "label": "E-mail intake",
+       "zone": "people",
+       "kind": "channel",
+       "variants": [
+        "fixed"
+       ],
+       "note": "The second channel the brief names."
+      },
+      {
+       "id": "gate",
+       "label": "Login, rate limit",
+       "zone": "app",
+       "kind": "guard",
+       "variants": [
+        "fixed"
+       ],
+       "note": "Signed widget token or shop login. Limits on size and rate."
+      },
+      {
+       "id": "router",
+       "label": "Router in code",
+       "zone": "app",
+       "kind": "service",
+       "variants": [
+        "fixed"
+       ],
+       "note": "One classification call, then a fixed path per topic. History kept on the server."
+      },
+      {
+       "id": "howto",
+       "label": "How-to path",
+       "zone": "app",
+       "kind": "service",
+       "variants": [
+        "fixed"
+       ],
+       "note": "Retrieve, one streamed call, sources shown."
+      },
+      {
+       "id": "orders",
+       "label": "Order path",
+       "zone": "app",
+       "kind": "service",
+       "variants": [
+        "fixed"
+       ],
+       "note": "Checks that the order belongs to this customer, then reads OrderDesk."
+      },
+      {
+       "id": "stock_f",
+       "label": "Stock lookup",
+       "zone": "app",
+       "kind": "service",
+       "variants": [
+        "fixed"
+       ],
+       "note": "Exact SKU or name, all warehouses, states how old the data is."
+      },
+      {
+       "id": "returns",
+       "label": "Returns path",
+       "zone": "app",
+       "kind": "service",
+       "variants": [
+        "fixed"
+       ],
+       "note": "Policy passage only, no decision, then a hand-off."
+      },
+      {
+       "id": "check",
+       "label": "Promise check",
+       "zone": "app",
+       "kind": "guard",
+       "variants": [
+        "fixed"
+       ],
+       "note": "Blocks promise wording in English, Latin and Cyrillic before the answer leaves."
+      },
+      {
+       "id": "llm_f",
+       "label": "Azure West Europe",
+       "zone": "ai",
+       "kind": "model",
+       "variants": [
+        "fixed"
+       ],
+       "note": "Regional, pinned deployment with timeout and max_tokens."
+      },
+      {
+       "id": "k_f",
+       "label": "Clean index",
+       "zone": "knowledge",
+       "kind": "retrieval",
+       "tech": "Qdrant",
+       "variants": [
+        "fixed"
+       ],
+       "note": "PDFs in, archive out, filters on language and product, alias swap on re-index."
+      },
+      {
+       "id": "orderdesk_f",
+       "label": "OrderDesk API",
+       "zone": "outside",
+       "kind": "system",
+       "variants": [
+        "fixed"
+       ],
+       "note": "Read-only REST API."
+      },
+      {
+       "id": "live_stock",
+       "label": "Live stock source",
+       "zone": "outside",
+       "kind": "system",
+       "variants": [
+        "fixed"
+       ],
+       "note": "To be confirmed with Acme. Until then, state the date of the data or stop answering availability."
+      },
+      {
+       "id": "staff_f",
+       "label": "Support staff",
+       "zone": "outside",
+       "kind": "human",
+       "variants": [
+        "fixed"
+       ],
+       "note": "Decide every return and issue RMA numbers."
+      },
+      {
+       "id": "traces",
+       "label": "Tracing, evals",
+       "zone": "ops",
+       "kind": "ops",
+       "variants": [
+        "fixed"
+       ],
+       "note": "EU-hosted traces with masked data, eval set as the launch gate, deflection and CSAT recorded."
+      }
+     ],
+     "links": [
+      {
+       "from": "customer",
+       "to": "widget",
+       "label": "question",
+       "trust": "untrusted"
+      },
+      {
+       "from": "widget",
+       "to": "api",
+       "label": "message, history",
+       "trust": "untrusted",
+       "variants": [
+        "built"
+       ]
+      },
+      {
+       "from": "api",
+       "to": "agent",
+       "label": "history",
+       "trust": "untrusted",
+       "variants": [
+        "built"
+       ]
+      },
+      {
+       "from": "agent",
+       "to": "llm",
+       "label": "prompt, tools",
+       "trust": "untrusted",
+       "variants": [
+        "built"
+       ]
+      },
+      {
+       "from": "agent",
+       "to": "t_search",
+       "label": "query",
+       "trust": "untrusted",
+       "variants": [
+        "built"
+       ]
+      },
+      {
+       "from": "agent",
+       "to": "t_stock",
+       "label": "product",
+       "trust": "untrusted",
+       "variants": [
+        "built"
+       ]
+      },
+      {
+       "from": "agent",
+       "to": "t_fetch",
+       "label": "URL",
+       "trust": "untrusted",
+       "variants": [
+        "built"
+       ]
+      },
+      {
+       "from": "agent",
+       "to": "t_mail",
+       "label": "to, body",
+       "trust": "untrusted",
+       "variants": [
+        "built"
+       ]
+      },
+      {
+       "from": "agent",
+       "to": "logs",
+       "label": "tool args",
+       "variants": [
+        "built"
+       ]
+      },
+      {
+       "from": "t_search",
+       "to": "embed",
+       "label": "query",
+       "variants": [
+        "built"
+       ]
+      },
+      {
+       "from": "t_search",
+       "to": "k_index",
+       "label": "nearest 4",
+       "variants": [
+        "built"
+       ]
+      },
+      {
+       "from": "t_stock",
+       "to": "s_index",
+       "label": "nearest 1",
+       "variants": [
+        "built"
+       ]
+      },
+      {
+       "from": "t_fetch",
+       "to": "web",
+       "label": "GET",
+       "trust": "untrusted",
+       "variants": [
+        "built"
+       ]
+      },
+      {
+       "from": "t_mail",
+       "to": "smtp",
+       "label": "send",
+       "variants": [
+        "built"
+       ]
+      },
+      {
+       "from": "indexer",
+       "to": "docs",
+       "label": "read",
+       "variants": [
+        "built"
+       ]
+      },
+      {
+       "from": "indexer",
+       "to": "csv",
+       "label": "read",
+       "variants": [
+        "built"
+       ]
+      },
+      {
+       "from": "indexer",
+       "to": "embed",
+       "label": "chunks",
+       "variants": [
+        "built"
+       ]
+      },
+      {
+       "from": "indexer",
+       "to": "k_index",
+       "label": "wipe, fill",
+       "variants": [
+        "built"
+       ]
+      },
+      {
+       "from": "indexer",
+       "to": "s_index",
+       "label": "wipe, fill",
+       "variants": [
+        "built"
+       ]
+      },
+      {
+       "from": "customer",
+       "to": "mail_in",
+       "label": "e-mail",
+       "trust": "untrusted",
+       "variants": [
+        "fixed"
+       ]
+      },
+      {
+       "from": "widget",
+       "to": "gate",
+       "label": "question",
+       "trust": "untrusted",
+       "variants": [
+        "fixed"
+       ]
+      },
+      {
+       "from": "mail_in",
+       "to": "gate",
+       "label": "e-mail text",
+       "trust": "untrusted",
+       "variants": [
+        "fixed"
+       ]
+      },
+      {
+       "from": "gate",
+       "to": "router",
+       "label": "question",
+       "trust": "untrusted",
+       "variants": [
+        "fixed"
+       ]
+      },
+      {
+       "from": "router",
+       "to": "llm_f",
+       "label": "classify",
+       "trust": "untrusted",
+       "variants": [
+        "fixed"
+       ]
+      },
+      {
+       "from": "router",
+       "to": "howto",
+       "label": "how-to",
+       "variants": [
+        "fixed"
+       ]
+      },
+      {
+       "from": "router",
+       "to": "orders",
+       "label": "order",
+       "variants": [
+        "fixed"
+       ]
+      },
+      {
+       "from": "router",
+       "to": "stock_f",
+       "label": "stock",
+       "variants": [
+        "fixed"
+       ]
+      },
+      {
+       "from": "router",
+       "to": "returns",
+       "label": "returns",
+       "variants": [
+        "fixed"
+       ]
+      },
+      {
+       "from": "router",
+       "to": "staff_f",
+       "label": "other",
+       "variants": [
+        "fixed"
+       ]
+      },
+      {
+       "from": "howto",
+       "to": "k_f",
+       "label": "search",
+       "variants": [
+        "fixed"
+       ]
+      },
+      {
+       "from": "howto",
+       "to": "llm_f",
+       "label": "write answer",
+       "variants": [
+        "fixed"
+       ]
+      },
+      {
+       "from": "howto",
+       "to": "check",
+       "label": "draft",
+       "variants": [
+        "fixed"
+       ]
+      },
+      {
+       "from": "orders",
+       "to": "orderdesk_f",
+       "label": "read status",
+       "variants": [
+        "fixed"
+       ]
+      },
+      {
+       "from": "stock_f",
+       "to": "live_stock",
+       "label": "exact SKU",
+       "variants": [
+        "fixed"
+       ]
+      },
+      {
+       "from": "returns",
+       "to": "k_f",
+       "label": "policy",
+       "variants": [
+        "fixed"
+       ]
+      },
+      {
+       "from": "returns",
+       "to": "check",
+       "label": "draft",
+       "variants": [
+        "fixed"
+       ]
+      },
+      {
+       "from": "returns",
+       "to": "staff_f",
+       "label": "hand-off",
+       "variants": [
+        "fixed"
+       ]
+      },
+      {
+       "from": "router",
+       "to": "traces",
+       "label": "spans",
+       "variants": [
+        "fixed"
+       ]
+      }
+     ],
+     "flows": [
+      {
+       "id": "howto",
+       "title": "How-to question",
+       "variants": [
+        "built"
+       ],
+       "steps": [
+        {
+         "from": "customer",
+         "to": "widget",
+         "text": "\"My K-200 shows E3.\""
+        },
+        {
+         "from": "widget",
+         "to": "api",
+         "text": "The widget posts the message and the whole conversation so far."
+        },
+        {
+         "from": "api",
+         "to": "agent",
+         "text": "No check of who is asking, and no limit on size."
+        },
+        {
+         "from": "agent",
+         "to": "llm",
+         "text": "First model call: the model decides to search."
+        },
+        {
+         "from": "agent",
+         "to": "t_search",
+         "text": "The tool gets the model's search text."
+        },
+        {
+         "from": "t_search",
+         "to": "embed",
+         "text": "The search text is embedded."
+        },
+        {
+         "from": "t_search",
+         "to": "k_index",
+         "text": "The four nearest passages come back, whatever their score."
+        },
+        {
+         "from": "agent",
+         "to": "llm",
+         "text": "Second model call: the answer is written, and nothing is streamed."
+        }
+       ]
+      },
+      {
+       "id": "stock",
+       "title": "Stock question",
+       "variants": [
+        "built"
+       ],
+       "steps": [
+        {
+         "from": "customer",
+         "to": "widget",
+         "text": "\"Is the black MF-1 in stock?\""
+        },
+        {
+         "from": "widget",
+         "to": "api",
+         "text": "The message arrives."
+        },
+        {
+         "from": "api",
+         "to": "agent",
+         "text": "The agent loop starts."
+        },
+        {
+         "from": "agent",
+         "to": "t_stock",
+         "text": "The model asks for a stock check."
+        },
+        {
+         "from": "t_stock",
+         "to": "s_index",
+         "text": "The nearest single row of last night's file comes back. The black model has 0 and the white one 22, and the two rows differ by one word."
+        },
+        {
+         "from": "agent",
+         "to": "llm",
+         "text": "The model states it as fact, with no date."
+        }
+       ]
+      },
+      {
+       "id": "injection",
+       "title": "A web page gives orders",
+       "variants": [
+        "built"
+       ],
+       "steps": [
+        {
+         "from": "customer",
+         "to": "widget",
+         "text": "\"Please read this link about my machine.\""
+        },
+        {
+         "from": "widget",
+         "to": "api",
+         "text": "The message arrives, with no login."
+        },
+        {
+         "from": "api",
+         "to": "agent",
+         "text": "The agent loop starts."
+        },
+        {
+         "from": "agent",
+         "to": "t_fetch",
+         "text": "The prompt tells the model to read every link."
+        },
+        {
+         "from": "t_fetch",
+         "to": "web",
+         "text": "The page holds hidden text that tells the model to send a message."
+        },
+        {
+         "from": "agent",
+         "to": "llm",
+         "text": "Up to 20,000 characters of the page go to the model as a tool result."
+        },
+        {
+         "from": "agent",
+         "to": "t_mail",
+         "text": "The model asks to send an e-mail to the attacker's address."
+        },
+        {
+         "from": "t_mail",
+         "to": "smtp",
+         "text": "It goes out from Acme's account, and no person sees it."
+        }
+       ]
+      },
+      {
+       "id": "order_f",
+       "title": "Order status",
+       "variants": [
+        "fixed"
+       ],
+       "steps": [
+        {
+         "from": "customer",
+         "to": "widget",
+         "text": "\"Where is my order?\""
+        },
+        {
+         "from": "widget",
+         "to": "gate",
+         "text": "The customer is identified."
+        },
+        {
+         "from": "gate",
+         "to": "router",
+         "text": "The question goes to the router."
+        },
+        {
+         "from": "router",
+         "to": "llm_f",
+         "text": "One call classifies the topic."
+        },
+        {
+         "from": "router",
+         "to": "orders",
+         "text": "Code chooses the order path."
+        },
+        {
+         "from": "orders",
+         "to": "orderdesk_f",
+         "text": "Code checks ownership and reads the live status."
+        }
+       ]
+      },
+      {
+       "id": "return_f",
+       "title": "Return request",
+       "variants": [
+        "fixed"
+       ],
+       "steps": [
+        {
+         "from": "customer",
+         "to": "widget",
+         "text": "\"I want to send my machine back.\""
+        },
+        {
+         "from": "widget",
+         "to": "gate",
+         "text": "The customer is identified."
+        },
+        {
+         "from": "gate",
+         "to": "router",
+         "text": "The question goes to the router."
+        },
+        {
+         "from": "router",
+         "to": "returns",
+         "text": "Code chooses the returns path."
+        },
+        {
+         "from": "returns",
+         "to": "k_f",
+         "text": "The current policy passage is retrieved."
+        },
+        {
+         "from": "returns",
+         "to": "check",
+         "text": "The answer is checked for any promise."
+        },
+        {
+         "from": "returns",
+         "to": "staff_f",
+         "text": "The case goes to a person, who decides and issues the RMA number."
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "findings",
+   "title": "Findings",
+   "intro": "Tags: [high] checked in the code or data, [med] likely, [guess] not checked. No model was called and the application was not run.",
+   "blocks": [
+    {
+     "type": "table",
+     "title": "Simplest pattern per topic: a routed workflow (rung 4 of the ladder)",
+     "columns": [
+      "Topic",
+      "Share",
+      "Simplest that passes",
+      "As built"
+     ],
+     "rows": [
+      [
+       "How-to and troubleshooting",
+       "~55%",
+       "RAG. 2,400 pages are too much for the prompt.",
+       "Agent with a search tool"
+      ],
+      [
+       "Order status",
+       "~25%",
+       "A lookup in OrderDesk, called by code",
+       "Not built"
+      ],
+      [
+       "Returns and warranty",
+       "~12%",
+       "Fixed path: policy passage, then staff",
+       "Agent with one prompt rule"
+      ],
+      [
+       "Other",
+       "~8%",
+       "Route to a person",
+       "Agent, no route"
+      ]
+     ]
+    },
+    {
+     "type": "callout",
+     "tone": "info",
+     "text": "The deciding constraint is the cost of an error. The brief wants zero wrong warranty or return promises, and nobody reads an answer before the customer does, which is where a single agent with tools breaks. [high]"
+    },
+    {
+     "type": "findings",
+     "items": [
+      {
+       "severity": "high",
+       "title": "This is the prototype, not the v2 the brief asks for",
+       "where": "docs/briefs/support-v2.md:8, pyproject.toml:4, README.md:3",
+       "evidence": "The brief of 14 October calls `acme-assist` the prototype that is \"not ready for all our customers\". The last commit touching `src/`, `tests/` or `pyproject.toml` is `867d4e3` of 15 September, there is one branch, and the brief's own commit and the one after it only add documents. `pyproject.toml:4` still says `Prototype support assistant`. The brief also asks for a proposal, a monthly cost, the risks and how Acme will know it works (`docs/briefs/support-v2.md:56`), and none of these is in the repository. Handing this over as v2 would tell the client the requested work was done. [high]",
+       "fix": "Do not present it as v2. Hand it over as the prototype with this list, or build v2 in the fix order below. Agree with Acme which of the two they expect.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "Anyone who reaches the chat can send any e-mail from Acme's account",
+       "where": "src/acme_assist/tools.py:71, src/acme_assist/app.py:27, src/acme_assist/__main__.py:28, src/acme_assist/prompts/system.md:10",
+       "evidence": "`message[\"To\"] = to` takes whatever address the model chose, and `/chat` has no login, key or rate limit on `host=\"0.0.0.0\"`. No gateway is in the repository. The prompt invites it: `or a follow-up would help, send it with send_email`. One request such as \"e-mail this text to x@y\" sends phishing or spam from `MAIL_FROM` with no person in between. The brief does not ask for this tool. [high]",
+       "fix": "Remove `send_email` from `TOOLS`. If Acme wants follow-up mail, let code send a fixed template only to the address of the signed-in customer. Put a login or signed widget token and a rate limit in front of `/chat`.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "A web page can give the assistant orders, and the tool reaches inside the network",
+       "where": "src/acme_assist/tools.py:63, src/acme_assist/tools.py:65, src/acme_assist/agent.py:25, src/acme_assist/prompts/system.md:9",
+       "evidence": "`httpx.get(url, follow_redirects=True)` accepts any URL, and `response.text[:20_000]` goes back to the model in the same loop that holds `send_email`. Hidden text on a page can ask for the conversation to be mailed out, or fetched to an outside URL with the data in the query string. The URL is not limited, so it also reaches internal addresses such as Qdrant, which the client opens without an API key (`knowledge.py:18`), and the reply goes back to the customer. Once OrderDesk is connected, this one agent would hold private data, untrusted text and a way out. The brief does not ask for reading links. Code facts [high], what is reachable depends on the deployment [med].",
+       "fix": "Remove `fetch_url`. If links must be read, allow only Acme's own domains, follow no redirects off that list, and never run it in a session that can act.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "Stock answers still go wrong in the way Acme complained about",
+       "where": "src/acme_assist/stock.py:32, src/acme_assist/stock.py:34, src/acme_assist/snapshot.py:33, docs/briefs/support-v2.md:9",
+       "evidence": "`knowledge.search(sku_or_name, collection=config.STOCK_COLLECTION, limit=1)` answers from a vector index built from a nightly file. Four faults follow. Anything sold since the 02:00 export is invisible. The nearest row wins rather than the exact SKU, and `MF1-BLK` (0) and `MF1-WHT` (22) differ by one word. `limit=1` reads one warehouse, although `K300-SLV` has 0 in Novi Sad and 2 in Bratislava and `SP-BREW-300` has 0 and 3. `No stock information found.` is reached only on an empty index, so an unknown product gets another product's stock. `exported_at` is stored but never shown, so the customer cannot see how old the figure is. Code and data [high]. Which row wins for a given question [med], since I did not call the embedding model.",
+       "fix": "Replace `stock_level` with an exact lookup by SKU or name, summed over warehouses, against a live source. Until there is one, state the date of the data or stop answering availability and link to the product page.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "Order status and the e-mail channel do not exist",
+       "where": "docs/briefs/support-v2.md:25, docs/briefs/support-v2.md:15, src/acme_assist/tools.py:28",
+       "evidence": "`TOOLS` has four entries and none calls OrderDesk. About 25% of questions, some 750 a day, have no source, so the model can only point to the FAQ or guess. Nothing in `src/` reads a mailbox, although customers also ask by e-mail. [high]",
+       "fix": "Add a read-only OrderDesk lookup that code calls after checking that the order belongs to this customer. Add e-mail intake that feeds the same router, and decide whether replies go out directly or as drafts for staff.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "The rule on returns is one sentence in a prompt, and no route leads to staff",
+       "where": "src/acme_assist/prompts/system.md:11, src/acme_assist/app.py:14, src/acme_assist/app.py:20, docs/briefs/support-v2.md:40",
+       "evidence": "The only control is `For returns, explain the policy and tell the customer that a return needs an RMA number.` Nothing checks the answer before it leaves. No tool or path leads to the 6 support agents, only a mention of `support@example.com`. The client supplies the whole history and may write `assistant` turns, so a customer can plant \"your return is approved\" and ask the model to confirm it. The target is zero wrong promises, and one such promise ends in an unplanned refund. [high]",
+       "fix": "Send returns and warranty down a fixed path: policy passage, no decision, hand-off to staff with the case attached. Check the outgoing answer in code for promise wording in all three scripts. Keep the history on the server. Only staff systems create RMA numbers.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "Nothing keeps customer data in the EU",
+       "where": "src/acme_assist/config.py:6, src/acme_assist/llm.py:15, docs/briefs/support-v2.md:42",
+       "evidence": "`OPENAI_BASE_URL = os.getenv(\"OPENAI_BASE_URL\")` has no default and no check, and without it the plain `OpenAI` client calls OpenAI's public API [med]. Every customer message goes out in full, to chat and to embeddings. No deployment file shows an Azure West Europe endpoint, so I cannot tell what a running system uses. The brief lists this among the rules it cannot bend. [high]",
+       "fix": "Use Acme's Azure OpenAI in West Europe with a regional deployment. Make the endpoint a required setting and refuse to start if it is not the EU one. Confirm where SMTP and Qdrant run.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "The agent loop has no limit",
+       "where": "src/acme_assist/agent.py:17",
+       "evidence": "`while True:` ends only when the model stops asking for tools. There is no step count, token budget or clock. A confused or manipulated model keeps spending, can call `send_email` repeatedly, and the customer waits. [high]",
+       "fix": "Cap the loop at 6 steps and 20,000 tokens, then hand over to a person. The routed workflow removes the loop altogether.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "Nobody can show that it answers correctly",
+       "where": "tests/test_snapshot.py:21, docs/briefs/support-v2.md:57",
+       "evidence": "The five tests cover CSV parsing and the stock sentence. There is no check of answers, retrieval, routing or refusals in any of the three scripts. The brief asks how Acme will know it works before switching it on, and zero wrong promises cannot be measured. [high]",
+       "fix": "Build a labelled set of at least 200 real questions from past tickets, in English, Latin and Cyrillic, with returns and warranty traps. Run it on every prompt or model change and make it the launch gate.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "An agent where a routed workflow would do",
+       "where": "src/acme_assist/agent.py:14, src/acme_assist/prompts/system.md:1",
+       "evidence": "The build is rung 6 of the ladder, one agent with tools, which breaks when errors are expensive and nobody reviews, or when tools change the world without a check. Both hold here. The steps are known per topic, so code can choose the path. One prompt does every job, so no route can be tested alone. Shape [high], recommendation [med].",
+       "fix": "Classify, then follow a fixed path per topic with one model call to write the answer. Keep RAG for the documents.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "No timeout, retry plan or fallback when something fails",
+       "where": "src/acme_assist/llm.py:15, src/acme_assist/llm.py:21, src/acme_assist/llm.py:29, src/acme_assist/tools.py:64, src/acme_assist/tools.py:91",
+       "evidence": "`_client = OpenAI(api_key=config.OPENAI_API_KEY, base_url=config.OPENAI_BASE_URL)` sets no timeout and the arguments at `llm.py:21` add none, so both model calls use the SDK default of 10 minutes with 2 retries [med]. With 40 worker threads, a hung provider would hold all of them after about 6 minutes of peak traffic [med]. `HANDLERS[name](**json.loads(arguments))` and `raise_for_status()` have no error handling, so a dead link pasted by a customer or a bad tool argument ends in HTTP 500 [high].",
+       "fix": "Set `timeout=15` and `max_retries=1` on the client. Catch tool and model errors and answer with a hand-off instead of a 500.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "A wrong answer cannot be explained, and the success targets cannot be measured",
+       "where": "src/acme_assist/agent.py:23, docs/briefs/support-v2.md:49",
+       "evidence": "The only record is one log line per tool call. No trace links a question to its passages, tool results, tokens or cost, and nothing records deflection or CSAT, the brief's measures of success. [high]",
+       "fix": "Trace every step with an EU-hosted tool and masked personal data. Record whether each chat reached a person and ask for a rating at the end.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "The model name can move under you",
+       "where": "src/acme_assist/config.py:7",
+       "evidence": "`CHAT_MODEL = \"gpt-4o\"` is an alias, so the provider can change what it points to with no deploy [high]. Whether this model is still offered today was not checked [guess].",
+       "fix": "Use a dated version or a pinned Azure deployment, and change it only after the eval set passes.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "Cost has no ceiling",
+       "where": "src/acme_assist/llm.py:21, src/acme_assist/app.py:19, src/acme_assist/app.py:20, src/acme_assist/tools.py:65",
+       "evidence": "There is no `max_tokens`, and `message` and `history` have no size limit, so one request can be arbitrarily large. A fetched page adds up to 20,000 characters to every later step [high]. At about 90,000 questions a month the normal path is two model calls with roughly 3,000 input and 300 output tokens per question [med]; nobody has priced that against the €1,500 budget, and nothing stops the abnormal path. Price it with the `ai-stack` skill from a dated price table, not from memory.",
+       "fix": "Set `max_tokens` to about 500, limit message and history length, add a budget per session and alert on monthly spend. Check the estimate against Azure's current price list.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "PDF manuals and the safety sheet are invisible to the assistant",
+       "where": "src/acme_assist/knowledge.py:11, src/acme_assist/knowledge.py:44, docs/briefs/support-v2.md:33",
+       "evidence": "`SUFFIXES = {\".md\", \".txt\"}` skips all 3 PDFs in the sample without a warning. The earthed-socket and child-safety warnings appear only in `safety/safety-sheet.pdf`. The brief says some manuals exist only as PDF, so questions on those manuals would find nothing. [high]",
+       "fix": "Extract text from PDFs, with OCR for scans, and report per run which files were skipped.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "The archive folder is indexed as if it were current",
+       "where": "src/acme_assist/knowledge.py:43, knowledge/archive/faq-en-old.md:1",
+       "evidence": "`Path(folder).rglob(\"*\")` takes every subfolder. `archive/faq-en-old.md` is byte-identical to `faq-en.md` today, so 2 of the 35 chunks are copies that take up result slots. Commit `1211824` keeps it as the copy from before a rewrite, so after the rewrite old answers will compete with new ones, including on warranty. [high]",
+       "fix": "Exclude `archive/`, drop duplicates by hash, and store a document date or version on each passage.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "Re-indexing wipes the live index first",
+       "where": "src/acme_assist/knowledge.py:23, src/acme_assist/knowledge.py:48",
+       "evidence": "`client.delete_collection(name)` runs before any embedding. During a monthly re-index of the full library, chat searches an empty or partial index, and an embedding failure halfway leaves it that way. [high]",
+       "fix": "Build a new collection, then switch a Qdrant alias to it.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "Personal data goes to the logs in full",
+       "where": "src/acme_assist/agent.py:23, src/acme_assist/__main__.py:15",
+       "evidence": "`log.info(\"tool call: %s %s\", call.function.name, call.function.arguments)` runs at level INFO and writes e-mail addresses and whole e-mail bodies. [high]",
+       "fix": "Log the tool name and an id, and mask the arguments.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "The 5-second target has no design behind it",
+       "where": "src/acme_assist/llm.py:24, src/acme_assist/app.py:31, docs/briefs/support-v2.md:47",
+       "evidence": "A how-to answer needs two model calls in a row, one embedding and one search, and nothing is streamed, so the customer sees nothing until the end [high]. I did not run it, so the real time is unknown [guess].",
+       "fix": "Stream the answer, remove the model's tool-choice call by routing in code, and measure p95 of the first token at 400 questions per hour.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "Retrieval cannot tell products, languages or \"no match\" apart",
+       "where": "src/acme_assist/knowledge.py:64",
+       "evidence": "`query_points(collection_name=collection, query=vector, limit=limit)` has no filter and no score threshold, so the 4 nearest passages come back even for a press or invoice question. A K-300 question can retrieve K-200 text, and the English, Latin and Cyrillic versions of a policy compete for the same slots. Coverage is uneven: the K-300 and MF-1 manuals, error codes and shipping are in English only, and returns have no Cyrillic version. Code and coverage [high], effect on answers [med], since no retrieval was run.",
+       "fix": "Store language, product and document type on each passage and filter on them. Add a score threshold that leads to \"I don't know\". Cover Cyrillic questions in the eval set.",
+       "status": "open"
+      },
+      {
+       "severity": "low",
+       "title": "A placeholder key hides a missing setting",
+       "where": "src/acme_assist/config.py:5",
+       "evidence": "`OPENAI_API_KEY` has a literal default: an OpenAI-style key of 43 characters that looks like a placeholder. It is the only such string in git history, and no `.env` file was ever committed. A deployment without the setting starts normally and fails on the first question. [high]",
+       "fix": "Remove the default and stop at startup if the key is missing.",
+       "status": "open"
+      },
+      {
+       "severity": "low",
+       "title": "The customer never sees a source",
+       "where": "src/acme_assist/app.py:24",
+       "evidence": "`ChatResponse` has only `answer: str`, although each passage carries its source (`knowledge.py:65`). Neither the customer nor staff can check a wrong answer. [high]",
+       "fix": "Return the sources with the answer and show them in the widget.",
+       "status": "open"
+      },
+      {
+       "severity": "low",
+       "title": "The repository cannot be deployed as handed over",
+       "where": "pyproject.toml:7, .gitignore:6, src/acme_assist/config.py:12, README.md:16",
+       "evidence": "Dependencies are unpinned with no lockfile, and there is no container, infrastructure or cron definition, though the README relies on a cron job. `data/` is git-ignored, so a fresh clone has no stock file, and data paths are relative to the working directory. `app.py:6` imports `pydantic` without declaring it. [high]",
+       "fix": "Add a lockfile, deployment files and the cron job, and make the paths settings.",
+       "status": "open"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "checklist",
+   "title": "Checklist",
+   "blocks": [
+    {
+     "type": "table",
+     "title": "Common failures",
+     "columns": [
+      "Item",
+      "Status",
+      "Where",
+      "Note"
+     ],
+     "rows": [
+      [
+       "1. Pattern too big",
+       "found",
+       "agent.py:14",
+       "Rung 6 where rung 4 passes"
+      ],
+      [
+       "2. Live state through retrieval",
+       "found",
+       "stock.py:32",
+       "Stock through a nightly vector index"
+      ],
+      [
+       "3. Agent loop without a limit",
+       "found",
+       "agent.py:17",
+       "`while True:`"
+      ],
+      [
+       "4. Untrusted text reaches an action",
+       "found",
+       "tools.py:63, tools.py:71",
+       "Customer text and fetched pages both reach `send_email`"
+      ],
+      [
+       "5. A key in the code",
+       "found",
+       "config.py:5",
+       "Looks like a placeholder"
+      ],
+      [
+       "6. No evals",
+       "found",
+       "tests/test_snapshot.py",
+       "CSV parsing tests only, not run"
+      ],
+      [
+       "7. No tracing",
+       "found",
+       "agent.py:23",
+       "One log line per tool call"
+      ],
+      [
+       "8. No timeout, retry or fallback",
+       "found",
+       "llm.py:15",
+       "2 of 2 model calls. `fetch_url` has the httpx default of 5 s, SMTP has 30 s."
+      ],
+      [
+       "9. Personal data to an outside model",
+       "found",
+       "config.py:6",
+       "EU rule not enforced, actual endpoint unknown"
+      ],
+      [
+       "10. Model not pinned",
+       "found",
+       "config.py:7",
+       "`gpt-4o` is an alias"
+      ],
+      [
+       "11. Cost never estimated",
+       "found",
+       "llm.py:21",
+       "No `max_tokens`, no caps, no estimate in the repository"
+      ],
+      [
+       "Open endpoint",
+       "found",
+       "app.py:27",
+       "No login or rate limit in the code"
+      ],
+      [
+       "Tool arguments logged",
+       "found",
+       "agent.py:23",
+       "In full, at INFO"
+      ],
+      [
+       "Documents skipped or indexed twice",
+       "found",
+       "knowledge.py:11, knowledge.py:43",
+       "3 PDFs skipped, FAQ indexed twice"
+      ],
+      [
+       "No source shown",
+       "found",
+       "app.py:24",
+       "Sources exist but are not returned"
+      ],
+      [
+       "One prompt, several jobs",
+       "found",
+       "prompts/system.md:1",
+       "Part of the pattern finding"
+      ],
+      [
+       "Other secrets in git history",
+       "not found",
+       "git history",
+       "Searched for key-shaped strings and password literals, and for committed `.env` files"
+      ],
+      [
+       "Instructions planted in the documents",
+       "not found",
+       "knowledge/",
+       "Pattern search of every md and txt file, and the 3 PDFs read in full"
+      ],
+      [
+       "Policies disagree across languages",
+       "not found",
+       "knowledge/policies/",
+       "The 2026 warranty change is in all three versions, and FAQs and manuals agree on 2 years"
+      ],
+      [
+       "Files the indexer cannot read",
+       "not found",
+       "knowledge/",
+       "All md and txt files are valid UTF-8"
+      ],
+      [
+       "Load at 400 questions per hour",
+       "not checked",
+       "",
+       "The review does not start the application"
+      ],
+      [
+       "Real retrieval quality and latency",
+       "not checked",
+       "",
+       "These need model calls, which this review does not make"
+      ],
+      [
+       "Current model price and availability",
+       "not checked",
+       "config.py:7",
+       "Web search was not permitted in this session"
+      ],
+      [
+       "The e-mail tagging brief",
+       "not checked",
+       "docs/briefs/email-tagging.md",
+       "A separate request, outside this review"
+      ]
+     ]
+    },
+    {
+     "type": "table",
+     "title": "Against the brief",
+     "columns": [
+      "Requirement",
+      "State",
+      "Note"
+     ],
+     "rows": [
+      [
+       "Web chat",
+       "partial",
+       "`POST /chat` exists, open to anyone"
+      ],
+      [
+       "E-mail channel",
+       "missing",
+       "No intake in the code"
+      ],
+      [
+       "English, Serbian Latin and Cyrillic",
+       "partial",
+       "Prompt only, and documents are uneven"
+      ],
+      [
+       "How-to answers, ~55%",
+       "partial",
+       "RAG works in the code, PDFs are skipped"
+      ],
+      [
+       "Order status, ~25%",
+       "missing",
+       "OrderDesk is not called"
+      ],
+      [
+       "Returns and warranty, ~12%",
+       "weak",
+       "One prompt line, no hand-off"
+      ],
+      [
+       "Other, ~8%",
+       "missing",
+       "No route to a person"
+      ],
+      [
+       "Never promise a return without an RMA number",
+       "weak",
+       "Prompt rule, nothing enforces it"
+      ],
+      [
+       "Customer data in the EU",
+       "not enforced",
+       "Endpoint is an optional setting"
+      ],
+      [
+       "First answer within 5 seconds",
+       "not measured",
+       "No streaming, two model calls in a row"
+      ],
+      [
+       "About €1,500 a month",
+       "likely, no cap",
+       "Never estimated; about 2 calls and 3,300 tokens per question [med], not priced"
+      ],
+      [
+       "50% deflection, CSAT 4.2, zero wrong promises",
+       "not measurable",
+       "Nothing records them"
+      ],
+      [
+       "Proposal, cost, risks, proof it works",
+       "missing",
+       "Only the briefs are in `docs/`"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "good",
+   "title": "What is good",
+   "intro": "Keep these so the fixes do not break them.",
+   "blocks": [
+    {
+     "type": "list",
+     "items": [
+      "RAG is the right base for the how-to questions, and every passage keeps its source (`src/acme_assist/knowledge.py:55`, `src/acme_assist/knowledge.py:65`). [high]",
+      "The three language versions of the warranty policy all carry the October 2026 change, and all say that staff issue RMA numbers (`knowledge/policies/warranty-en.md:37`). [high]",
+      "The prompt asks for an answer in the customer's script and states the RMA rule, both worth keeping in the new paths (`src/acme_assist/prompts/system.md:4`, `src/acme_assist/prompts/system.md:11`). [high]",
+      "The prompt lives in its own file, so it can be versioned and tested (`src/acme_assist/agent.py:11`). [high]",
+      "The role field accepts only `user` and `assistant`, so a client cannot add a system turn (`src/acme_assist/app.py:14`). [high]",
+      "Stock parsing is strict and tested: a bad quantity raises an error instead of becoming a wrong number (`src/acme_assist/snapshot.py:22`, `tests/test_snapshot.py:29`). [high]",
+      "`index_stock` embeds before it deletes, so a failed embedding leaves the old stock index in place (`src/acme_assist/stock.py:14`). [high]",
+      "Mail uses STARTTLS and a timeout (`src/acme_assist/tools.py:74`), and settings other than the key default come from the environment with no secret in them (`src/acme_assist/config.py:17`). [high]"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "fix-order",
+   "title": "Fix order",
+   "blocks": [
+    {
+     "type": "steps",
+     "items": [
+      {
+       "title": "Agree what is being handed over",
+       "text": "Tell Acme this is the prototype and settle whether they get it with this list or a built v2. Everything else depends on the answer.",
+       "where": "docs/briefs/support-v2.md:56"
+      },
+      {
+       "title": "Take away the dangerous tools and close the door",
+       "text": "Remove `send_email` and `fetch_url`, and add a login and a rate limit. This takes hours, closes the two worst risks, and neither tool is in the brief.",
+       "where": "src/acme_assist/tools.py:28"
+      },
+      {
+       "title": "Keep customer data in the EU",
+       "text": "Move to Azure OpenAI in West Europe as a required setting and stop logging tool arguments. Do this before any real customer text flows.",
+       "where": "src/acme_assist/config.py:6"
+      },
+      {
+       "title": "Stop the stock errors",
+       "text": "Use an exact lookup across warehouses from a live source, or state the date, or stop answering availability. This is the complaint that started the project.",
+       "where": "src/acme_assist/stock.py:32"
+      },
+      {
+       "title": "Put limits on everything",
+       "text": "Add the loop cap, timeouts, `max_tokens`, size limits and a hand-off on errors.",
+       "where": "src/acme_assist/agent.py:17"
+      },
+      {
+       "title": "Build the eval set",
+       "text": "Do this before reshaping the prompts, so the next step can be measured. Include returns and warranty traps in all three scripts.",
+       "where": "tests/"
+      },
+      {
+       "title": "Replace the agent with a router",
+       "text": "How-to through RAG, order status through OrderDesk, returns and warranty through a fixed path to staff, other topics to a person. This also adds e-mail intake and removes most of the 5-second risk.",
+       "where": "src/acme_assist/agent.py:14"
+      },
+      {
+       "title": "Clean up the library",
+       "text": "PDF extraction, no archive, alias swap on re-index, filters on language and product, a score threshold and sources in the answer.",
+       "where": "src/acme_assist/knowledge.py:11"
+      },
+      {
+       "title": "Add tracing, then pilot",
+       "text": "Add traces with masked data and record deflection and CSAT. Pin the model, add the lockfile and deployment files, then run a pilot on a share of traffic before opening to every customer.",
+       "where": "src/acme_assist/agent.py:23"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "open-questions",
+   "title": "Open questions",
+   "blocks": [
+    {
+     "type": "list",
+     "ordered": true,
+     "items": [
+      "Does Acme expect this prototype, a built v2, or the proposal the brief asks for? Does a proposal or newer code exist somewhere other than this repository?",
+      "Is there a live source for stock? The brief names OrderDesk only for orders, and the README describes only the nightly export.",
+      "In the current deployment, what is `OPENAI_BASE_URL` set to, and where do SMTP and Qdrant run?",
+      "Is the widget behind a login or a gateway that is not in this repository? That would narrow the open-endpoint risk, but not the risk from fetched pages.",
+      "How is a customer identified for order status: shop login, or order number with e-mail?",
+      "Should e-mail questions be answered directly, or drafted for staff?",
+      "Is `gpt-4o` still available on the endpoint Acme will use, and at what price? This could not be checked here."
+     ]
+    }
+   ]
+  }
+ ]
+}

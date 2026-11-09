@@ -1,0 +1,19 @@
+[project]
+name = "acme-assist"
+version = "0.2.0"
+description = "Prototype support assistant for the Kestrel coffee machines."
+requires-python = ">=3.11"
+dependencies = [
+    "openai>=1.40",
+    "qdrant-client",
+    "fastapi",
+    "uvicorn",
+    "httpx",
+]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+acme_assist = ["prompts/*.md"]

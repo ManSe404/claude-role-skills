@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: architecture-page
+tags: [ai-architect, ai-architecture]
+context:
+  scaffold_script: fixture.sh

@@ -1,0 +1,43 @@
+CLEANING AND DESCALING GUIDE
+Kestrel K-200, Kestrel K-300, MF-1 milk frother
+
+EVERY DAY
+- Empty and rinse the drip tray (E4 when it is full).
+- K-300: empty the grounds container.
+- K-200: rinse the portafilter and the baskets; wipe the steam wand after each use.
+- MF-1: wash the jug with a soft sponge after each use.
+
+EVERY WEEK
+- K-200: brush the group head and the shower screen.
+- K-300: take out the brew unit, rinse it under lukewarm water without detergent, let it
+  dry and push it back until it locks (E5 if it is not locked).
+- Wash the water tank.
+
+DESCALING: EVERY 3 MONTHS, OR WHEN THE DISPLAY SHOWS E3
+With hard water (above 18 dH on the test strip), descale every 2 months.
+Use Acme DS-100 descaler. One bottle (200 ml) is enough for two descalings.
+Do not use vinegar: it damages the seals, and scale damage is not covered by the warranty.
+
+K-200 (about 20 minutes)
+1. Remove the water filter from the tank.
+2. Pour 100 ml of DS-100 into the tank and add water up to 1 L.
+3. Put a large bowl under the group head and the steam wand.
+4. Hold the 1-cup and the steam button together for 3 seconds. The buttons blink.
+5. The machine pumps the solution in steps. Wait until the buttons stop blinking.
+6. Rinse the tank, fill it with fresh water up to MAX and press the 2-cup button
+   three times to rinse.
+7. Put the water filter back.
+
+K-300 (about 25 minutes)
+1. Choose Menu > Care > Descale.
+2. Follow the display: remove the filter, add 100 ml of DS-100 and water up to the
+   descaling mark, empty the drip tray when asked.
+3. After the rinse cycle the display returns to the drinks menu.
+
+CLEANING TABLET (K-300, ABOUT EVERY 200 DRINKS)
+Choose Menu > Care > Clean, put one CL-TAB tablet in the brew unit compartment when the
+display asks, and confirm.
+
+MF-1
+Never descale the MF-1 with DS-100. If milk has burnt on, fill the jug with warm water
+and a drop of washing-up liquid, wait 10 minutes, then wash it with a soft sponge.

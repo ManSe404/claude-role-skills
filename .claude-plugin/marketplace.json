@@ -10,6 +10,12 @@
       "source": "./plugins/software-engineering",
       "description": "Five skills for software engineers: codebase-map, impact, bug-hunt, test-gap and dependency-audit.",
       "version": "0.1.0"
+    },
+    {
+      "name": "ai-architect",
+      "source": "./plugins/ai-architect",
+      "description": "Four skills for AI solutions architects: ai-pattern, ai-stack, ai-architecture and ai-review.",
+      "version": "0.1.0"
     }
   ]
 }

@@ -1,0 +1,12 @@
+{
+  "example": true,
+  "currency": "USD",
+  "as_of": "2026-11-01",
+  "source": "EXAMPLE ONLY: made-up numbers that show the format. Replace them with the provider's price page and its date.",
+  "models": {
+    "example-large": {"input_per_mtok": 3.0, "output_per_mtok": 15.0, "cached_input_per_mtok": 0.3},
+    "example-small": {"input_per_mtok": 0.25, "output_per_mtok": 1.25, "cached_input_per_mtok": 0.03},
+    "example-embed": {"input_per_mtok": 0.02, "output_per_mtok": 0.0},
+    "local-8b": {"input_per_mtok": 0.0, "output_per_mtok": 0.0, "source": "runs on your own server: its cost is a fixed monthly item"}
+  }
+}

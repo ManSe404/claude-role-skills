@@ -12,6 +12,8 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 SKILLS = ROOT / "plugins" / "software-engineering" / "skills"
+AI_SKILLS = ROOT / "plugins" / "ai-architect" / "skills"
+ALL_SKILLS = sorted(p.parent for p in ROOT.glob("plugins/*/skills/*/SKILL.md"))
 sys.path.insert(0, str(ROOT / "fixtures"))
 
 import build_fixture  # noqa: E402
@@ -19,6 +21,10 @@ import build_fixture  # noqa: E402
 
 def script(skill: str, name: str) -> Path:
     return SKILLS / skill / "scripts" / name
+
+
+def ai_script(skill: str, name: str) -> Path:
+    return AI_SKILLS / skill / "scripts" / name
 
 
 def load(path: Path) -> ModuleType:
@@ -49,6 +55,14 @@ def acme(tmp_path_factory: pytest.TempPathFactory) -> Path:
     """The acme-orders fixture, built once per test run. Tests must not change it."""
     target = tmp_path_factory.mktemp("fixture") / "acme-orders"
     build_fixture.build("acme-orders", target)
+    return target
+
+
+@pytest.fixture(scope="session")
+def assist(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """The acme-assist fixture, built once per test run. Tests must not change it."""
+    target = tmp_path_factory.mktemp("fixture") / "acme-assist"
+    build_fixture.build("acme-assist", target)
     return target
 
 

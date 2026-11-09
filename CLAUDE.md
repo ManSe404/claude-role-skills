@@ -1,14 +1,15 @@
 # claude-role-skills
 
-Claude Code skills by role, one marketplace with one plugin per role. Only the software
-engineering pack exists so far.
+Claude Code skills by role, one marketplace with one plugin per role: `software-engineering` and
+`ai-architect` so far.
 
 ## Layout
 
 - `plugins/<role>/skills/<skill>/` holds `SKILL.md`, `scripts/` and `references/`. A skill must
   work on its own, because an installed plugin has nothing outside its own folder.
-- `shared/` is the single source of `render_page.py`, `page-format.md` and `fonts/`. Edit them
-  there, then run `python3 tools/sync_shared.py`. Never edit the copies under a skill.
+- `shared/` is the single source of `render_page.py`, `page-format.md`, `fonts/` and
+  `ai_inventory.py`. Edit them there, then run `python3 tools/sync_shared.py`; a skill gets a copy
+  when its SKILL.md names the file. Never edit the copies under a skill.
 - The page design is dark only, after Data With Baraa's skills; it lives in the CSS of
   `render_page.py`. Check a change by rendering an `example.json` and looking at it.
 - `fixtures/<name>/` is a made-up project: `files/` (state after the last commit, `.fixture`
