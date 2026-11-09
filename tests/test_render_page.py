@@ -325,3 +325,319 @@ def test_a_page_without_variants_still_toggles_nothing() -> None:
     assert render.validate(with_blocks(block)) == []
     html = render.render(with_blocks(block))
     assert 'class="arch" data-default="_"' in html and '<button type="button" data-set-variant' not in html
+
+
+def model_block() -> dict[str, Any]:
+    return {
+        "type": "model",
+        "title": "Sales",
+        "areas": [{"id": "sales", "label": "Sales"}, {"id": "stock", "label": "Stock"}],
+        "tables": [
+            {
+                "id": "fct",
+                "label": "fct_sales",
+                "kind": "fact",
+                "area": "sales",
+                "grain": "one row per order line",
+                "columns": [
+                    {"name": "order_id", "key": "pk", "type": "bigint"},
+                    {"name": "line_no", "key": "pk", "type": "int"},
+                    {"name": "customer_key", "key": "fk"},
+                    {"name": "amount", "type": "decimal(18,2)"},
+                ],
+            },
+            {
+                "id": "cust",
+                "label": "dim_customer",
+                "kind": "dimension",
+                "area": "sales",
+                "history": "new row on change",
+                "columns": [
+                    {"name": "customer_key", "key": "pk"},
+                    {"name": "email", "personal": True, "mask": "hashed in gold"},
+                ],
+            },
+            {"id": "snap", "label": "fct_stock", "kind": "fact", "area": "stock", "columns": [{"name": "sku"}]},
+        ],
+        "relations": [{"from": "fct", "to": "cust", "on": "customer_key", "cardinality": "n:1"}],
+    }
+
+
+def test_model_references_are_checked() -> None:
+    block = model_block()
+    block["tables"][0]["area"] = "nope"
+    block["tables"][0]["columns"].append({"name": "amount"})
+    block["tables"][1]["kind"] = "lake"
+    block["tables"][1]["columns"][1]["key"] = "secret"
+    block["relations"] = [
+        {"from": "fct", "to": "ghost"},
+        {"from": "fct", "to": "cust", "on": "customer_key=nothing", "cardinality": "many"},
+    ]
+    errors = render.validate(with_blocks(block))
+    start = "page.sections[0].blocks[0]"
+    assert f"{start}.tables[0].area: unknown area id 'nope'" in errors
+    assert f"{start}.tables[0].columns[4].name: duplicate column 'amount'" in errors
+    assert any(e.startswith(f"{start}.tables[1].kind") for e in errors)
+    assert any(e.startswith(f"{start}.tables[1].columns[1].key") for e in errors)
+    assert f"{start}.relations[0].to: unknown table id 'ghost'" in errors
+    assert f"{start}.relations[1].on: 'cust' has no column 'nothing'" in errors
+    assert any(e.startswith(f"{start}.relations[1].cardinality") for e in errors)
+
+
+def test_model_shows_keys_on_the_box_and_everything_on_the_card() -> None:
+    data = with_blocks(model_block())
+    assert render.validate(data) == []
+    html = render.render(data)
+    assert html == render.render(json.loads(json.dumps(data)))
+    assert html.count('<article class="arch-card model-card plate"') == 3
+    assert ">PK order_id</text>" in html and ">PK line_no</text>" in html
+    assert ">+ 2 more columns</text>" in html and "+ 1 more column · 1 personal" in html
+    assert ">no primary key</text>" in html
+    assert "one row per order line" in html and "mask: hashed in gold" in html
+    assert 'data-set-area="stock"' in html
+    # The many side stands left of the one side, whichever way the relation is written.
+    block = model_block()
+    block["relations"] = [{"from": "cust", "to": "fct", "on": "customer_key", "cardinality": "1:n"}]
+    flipped = render.render(with_blocks(block))
+    for page_html in (html, flipped):
+        xs = {
+            m["k"]: float(m["x"])
+            for m in re.finditer(r'data-k="(?P<k>fct|cust)"[^>]*>.*?<rect class="plate" x="(?P<x>[\d.]+)"', page_html)
+        }
+        assert xs["fct"] < xs["cust"]
+
+
+def test_model_is_escaped() -> None:
+    block = model_block()
+    block["tables"][0]["label"] = "<img src=x onerror=alert(1)>"
+    block["tables"][0]["columns"][0]["name"] = "<script>x</script>"
+    block["relations"] = []
+    html = render.render(with_blocks(block))
+    assert "<img" not in html and html.count("<script") == 1
+
+
+def reach_block() -> dict[str, Any]:
+    block = arch_block()
+    block["reach"] = {"label": "Personal data", "from": ["customer"], "stops": ["fetch"], "targets": ["mail", "fetch"]}
+    return block
+
+
+def test_reach_goes_the_way_the_links_point_and_stops_where_told() -> None:
+    block = reach_block()
+    touched, paths = render.reach(block, "now")
+    assert paths == [["customer", "agent", "mail"], ["customer", "agent", "fetch"]]
+    assert "web" not in touched  # against the arrow
+    block["reach"]["stops"] = ["agent"]
+    touched, paths = render.reach(block, "now")
+    assert paths == [] and "agent" in touched and "mail" not in touched
+    html = render.render(with_blocks(block))
+    assert "None of the listed targets is reached" in html
+
+
+def test_reach_ids_are_checked_and_shown_only_when_asked() -> None:
+    block = reach_block()
+    block["reach"]["from"] = ["ghost"]
+    block["reach"]["targets"] = []
+    errors = render.validate(with_blocks(block))
+    assert "page.sections[0].blocks[0].reach.from[0]: unknown component id 'ghost'" in errors
+    assert "page.sections[0].blocks[0].reach.targets: at least one component id" in errors
+    html = render.render(with_blocks(reach_block()))
+    assert 'class="arch-reach"' in html and "Personal data: what it reaches" in html
+    assert "<td>Customer → Agent loop → send_email</td>" in html
+    plain = render.render(with_blocks(arch_block()))
+    assert 'class="arch-reach"' not in plain and "data-reach=" not in plain and "data-rpath=" not in plain
+
+
+FACTS: dict[str, Any] = {
+    "version": 1,
+    "scope": "the platform",
+    "regions": [{"name": "EU", "why": "residency"}],
+    "data": [{"name": "contact", "class": "personal", "where": ["silver.customers"]}],
+    "components": [{"id": "lake", "label": "Lakehouse", "kind": "store"}],
+    "costs": [{"item": "x", "monthly": 420.0, "currency": "EUR", "as_of": "2026-11-09", "source": "price list"}],
+    "decisions": [{"title": "Platform", "chosen": "Lakehouse", "because": "files"}],
+    "assumptions": ["one"],
+    "open": ["two"],
+}
+
+
+def test_facts_are_checked_but_not_drawn() -> None:
+    data = page(facts=FACTS)
+    assert render.validate(data) == []
+    assert "Lakehouse" not in render.render(data)
+    broken = {
+        **FACTS,
+        "version": 2,
+        "costs": [{"item": "x", "monthly": "a lot", "currency": "EUR", "as_of": "last week", "source": "memory"}],
+        "decisions": [{"title": "no choice"}],
+        "open": [1],
+    }
+    errors = render.validate(page(facts=broken))
+    assert "page.facts.version: must be 1" in errors
+    assert "page.facts.costs[0].monthly: must be a number" in errors
+    assert "page.facts.costs[0].as_of: must be a date, YYYY-MM-DD" in errors
+    assert any(e.startswith("page.facts.decisions[0].chosen") for e in errors)
+    assert "page.facts.open[0]: must be a string" in errors
+
+
+def test_a_label_shared_by_links_into_one_box_is_drawn_once() -> None:
+    block = {
+        "type": "architecture",
+        "zones": [{"id": "a", "label": "A"}, {"id": "b", "label": "B"}],
+        "components": [
+            {"id": "one", "label": "One", "zone": "a"},
+            {"id": "two", "label": "Two", "zone": "a"},
+            {"id": "load", "label": "Load", "zone": "b"},
+        ],
+        "links": [{"from": "one", "to": "load", "label": "daily"}, {"from": "two", "to": "load", "label": "daily"}],
+    }
+    html = render.render(with_blocks(block))
+    assert html.count(">daily</text>") == 1 and html.count('<path class="link"') == 2
+
+
+def nested_block() -> dict[str, Any]:
+    return {
+        "type": "nested",
+        "title": "Acme",
+        "levels": [
+            {"id": "context", "label": "Context", "open": []},
+            {"id": "containers", "label": "Containers", "open": ["sys"]},
+            {"id": "inside", "label": "Inside the API", "open": ["sys", "api"]},
+        ],
+        "boxes": [
+            {"id": "user", "label": "Clerk", "kind": "user"},
+            {"id": "sys", "label": "System"},
+            {"id": "web", "label": "Web", "parent": "sys", "kind": "channel", "tech": "Angular"},
+            {"id": "api", "label": "API", "parent": "sys", "tech": ".NET", "flag": "warn"},
+            {"id": "db", "label": "Database", "parent": "sys", "kind": "store", "tech": "PostgreSQL"},
+            {"id": "ctrl", "label": "Controllers", "parent": "api"},
+            {"id": "repo", "label": "Repository", "parent": "api"},
+            {"id": "mail", "label": "Mail service", "kind": "system"},
+        ],
+        "links": [
+            {"from": "user", "to": "web", "label": "uses"},
+            {"from": "web", "to": "ctrl", "label": "JSON"},
+            {"from": "ctrl", "to": "repo", "label": "calls"},
+            {"from": "repo", "to": "db", "label": "SQL", "flag": "bad"},
+            {"from": "ctrl", "to": "mail", "label": "sends"},
+        ],
+        "flows": [
+            {
+                "id": "book",
+                "title": "Book",
+                "variants": ["containers"],
+                "steps": [
+                    {"from": "web", "to": "api", "text": "Books."},
+                    {"from": "api", "to": "db", "text": "Saves."},
+                ],
+            }
+        ],
+    }
+
+
+def svg_of(html: str, level: str) -> str:
+    match = re.search(rf'<svg class="arch-svg nested" data-variant="{level}".*?</svg>', html, re.S)
+    assert match
+    return match.group(0)
+
+
+def test_a_level_shows_only_what_is_open_and_moves_links_out() -> None:
+    block = nested_block()
+    assert render.validate(with_blocks(block)) == []
+    html = render.render(with_blocks(block))
+    context = svg_of(html, "context")
+    keys = set(re.findall(r'<g class="comp[^"]*" data-k="([^"]+)"', context))
+    assert keys == {"user", "sys", "mail"}
+    links = set(re.findall(r'<path class="link[^"]*"[^>]*data-a="([^"]+)" data-b="([^"]+)"', context))
+    assert links == {("user", "sys"), ("sys", "mail")}
+    containers = svg_of(html, "containers")
+    keys = set(re.findall(r'<g class="comp[^"]*" data-k="([^"]+)"', containers))
+    assert keys == {"user", "sys", "web", "api", "db", "mail"} and "open-box" in containers
+    links = set(re.findall(r'<path class="link[^"]*"[^>]*data-a="([^"]+)" data-b="([^"]+)"', containers))
+    assert links == {("user", "web"), ("web", "api"), ("api", "db"), ("api", "mail")}
+    inside = svg_of(html, "inside")
+    assert {"ctrl", "repo"} <= set(re.findall(r'data-k="([^"]+)"', inside))
+
+
+def test_a_lifted_link_keeps_the_worst_flag_and_counts_its_labels() -> None:
+    block = nested_block()
+    block["links"].append({"from": "ctrl", "to": "db", "label": "reads"})
+    lifted = render._nest_links(block, render._nest_visible(block, {"sys"}))
+    merged = next(link for link in lifted if (link["from"], link["to"]) == ("api", "db"))
+    assert merged["flag"] == "bad" and merged["label"] == "SQL +1"
+
+
+def test_children_sit_inside_their_open_box() -> None:
+    html = render.render(with_blocks(nested_block()))
+    inside = svg_of(html, "inside")
+    rect = {
+        m["k"]: tuple(float(m[f]) for f in ("x", "y", "w", "h"))
+        for m in re.finditer(
+            r'data-k="(?P<k>[^"]+)"[^>]*><title>[^<]*</title><rect class="plate" x="(?P<x>[\d.]+)" y="(?P<y>[\d.]+)" '
+            r'width="(?P<w>[\d.]+)" height="(?P<h>[\d.]+)"',
+            inside,
+        )
+    }
+    for child, parent in (("web", "sys"), ("api", "sys"), ("ctrl", "api"), ("repo", "api")):
+        x, y, w, h = rect[child]
+        px, py, pw, ph = rect[parent]
+        assert px < x and py < y and x + w < px + pw and y + h < py + ph
+
+
+def test_a_store_stands_under_its_writer_not_in_a_column_of_its_own() -> None:
+    block = nested_block()
+    block["levels"] = [{"id": "containers", "label": "C", "open": ["sys"]}]
+    html = render.render(with_blocks(block))
+    rect = dict(re.findall(r'data-k="(api|db)"[^>]*>(?:<title>[^<]*</title>)<rect class="plate" x="([\d.]+)"', html))
+    assert rect["api"] == rect["db"]
+
+
+def test_nested_shares_the_architecture_page() -> None:
+    html = render.render(with_blocks(nested_block()))
+    assert 'data-set-variant="containers"' in html and 'data-set-flow="book"' in html
+    assert html.count('<article class="arch-card plate"') == 8
+    assert "only in some variants" not in html
+    assert "Top level" in html
+
+
+def test_without_levels_everything_is_open_in_one_view() -> None:
+    block = nested_block()
+    del block["levels"]
+    block["flows"] = []
+    html = render.render(with_blocks(block))
+    assert '<button type="button" data-set-variant' not in html
+    assert {"ctrl", "repo", "db"} <= set(re.findall(r'data-k="([^"]+)"', html))
+
+
+def test_nested_references_are_checked() -> None:
+    block = nested_block()
+    block["boxes"][1]["parent"] = "api"  # sys inside api, api inside sys
+    errors = render.validate(with_blocks(block))
+    assert any("boxes contain each other" in e for e in errors)
+    block = nested_block()
+    block["boxes"][2]["parent"] = "ghost"
+    block["links"][0]["to"] = "nobody"
+    block["levels"][1]["open"] = ["ghost"]
+    errors = render.validate(with_blocks(block))
+    start = "page.sections[0].blocks[0]"
+    assert f"{start}.boxes[2].parent: unknown box id 'ghost'" in errors
+    assert f"{start}.links[0].to: unknown box id 'nobody'" in errors
+    assert f"{start}.levels[1].open[0]: unknown box id 'ghost'" in errors
+
+
+def test_a_flow_must_be_visible_at_its_levels() -> None:
+    block = nested_block()
+    block["flows"][0]["variants"] = ["context"]
+    errors = render.validate(with_blocks(block))
+    assert any("'web' is not visible at level context" in e for e in errors)
+
+
+def test_nested_is_escaped_deterministic_and_offline() -> None:
+    block = nested_block()
+    block["boxes"][1]["label"] = "<img src=x onerror=alert(1)>"
+    block["boxes"][3]["details"] = [["<b>", "<script>x</script>"]]
+    data = with_blocks(block)
+    html = render.render(data)
+    assert html == render.render(json.loads(json.dumps(data)))
+    assert "<img" not in html and html.count("<script") == 1
+    assert set(re.findall(r'https?://[^"\s)]+', html)) <= {"http://www.w3.org/2000/svg"}

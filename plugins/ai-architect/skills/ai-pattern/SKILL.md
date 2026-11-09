@@ -40,7 +40,7 @@ a repository. Default: ask for the brief.
 10. Acceptance criteria: three to five, each with a threshold and how it is measured before launch.
 11. ADR draft in Nygard's format as a code block. Offer to write it into the repo; write only after
     the yes.
-12. Write the page JSON, render it, and say where to open it.
+12. Write the page JSON, with `facts`, render it, and say where to open it.
 
 ## Output
 

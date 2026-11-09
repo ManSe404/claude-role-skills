@@ -1,0 +1,441 @@
+{
+  "skill": "data-platform",
+  "title": "Acme Foods: the next data platform",
+  "subtitle": "Which platform the brief of 19 October 2026 calls for, and which options it rules out.",
+  "meta": {"repo": "acme-data", "brief": "docs/briefs/new-platform.md", "date": "2026-11-09"},
+  "verdict": {
+    "text": "Build a lakehouse in layers with one streaming path, used only by the shelf-sensor stock feed, while the other 13 sources load daily. The binding constraint is who can run it: one central team of six, with no business unit that has its own engineers, rules out a data mesh, the only option above this one.",
+    "tone": "ok"
+  },
+  "stats": [
+    {"label": "Size after two years", "value": "59 TB", "note": "35 TB today, 1 TB a month", "tone": "info"},
+    {"label": "Sources", "value": 14, "note": "all named in the brief", "tone": "info"},
+    {"label": "Tightest freshness", "value": "2 min", "note": "one stock feed, the rest daily", "tone": "warn"},
+    {"label": "Options left after hard rules", "value": "1 of 6", "note": "platform_rules.py", "tone": "info"},
+    {"label": "Chosen", "value": "Lakehouse + stream", "note": "streaming for one feed only", "tone": "ok"}
+  ],
+  "sections": [
+    {
+      "id": "brief",
+      "title": "The brief",
+      "intro": "Each line names the section of the brief it came from.",
+      "blocks": [
+        {
+          "type": "kv",
+          "items": [
+            ["Consumers", "**Ordering team:** sees an empty shelf while it can still act (Freshness). **120 BI users:** read reports across head office and the stores (People). **Data scientists:** train a shelf-image model on original photos (Data science). [high]"],
+            ["Sources", "14: ERP, CRM, web events, shelf sensors, supplier PDFs, loyalty app, tills, delivery partner's files, shelf camera photos, HR roster, store energy meters, price comparison feed, returns desk, budget spreadsheets (Sources). [high]"],
+            ["Volume and growth", "35 TB today, growing about 1 TB a month (Sources). [high]"],
+            ["Freshness", "One stock feed from the shelf sensors under 2 minutes. Every other source daily (Freshness). [high]"],
+            ["Not negotiable", "All data stays in the EU, backups included (Rules). The CRM holds names, contact details and purchase history of loyalty customers (Rules). [high]"],
+            ["Team", "Six data engineers in one central team build and run everything. Business units have no engineers and none are planned (People). [high]"],
+            ["Not in the brief", "Retention, budget and cloud vendor. Also whether sources must be joined, keep history or can take the reporting load. Those last three stay unset in the rules, because they only bear on reports on the source, which photos and model training already rule out. [high]"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "assumptions",
+      "title": "Assumptions",
+      "intro": "You asked me not to stop for questions, so each gap is filled here, next to the decision it drives.",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "The 2 minutes run end to end, from the sensor reading to the ordering team's screen, and the team really acts inside that window [med]. **Drives:** the streaming path. At 5 minutes or more a scheduled load is enough and the path goes.",
+            "Personal data is not only in the CRM. The current repo has customer name, email, phone, national ID and birth date in the ERP (`models/staging/stg_customers.sql`) [high]. The HR roster, loyalty app, delivery files, web events, tills and returns desk probably hold some too [med]. **Drives:** one masking gate for every table source, not a rule for the CRM alone.",
+            "Shelf camera photos can show shoppers or staff [guess]. **Drives:** photos get their own restricted raw store, and the reach view below counts them as personal data.",
+            "EU-only covers storage, backups, processing, logs and the control planes of managed services, not only the main storage [med]. **Drives:** the residency acceptance test and the vendor shortlist.",
+            "Object storage, compute and the event log are managed services in an EU region, not self-hosted [guess; no vendor checked]. **Drives:** the team rating. Six engineers can carry one managed streaming path, and a self-hosted broker on top of 14 sources would be a different answer.",
+            "35 TB covers all 14 sources and grows in a straight line with nothing deleted [med]. **Drives:** the sizing only. Files, model training and the 2-minute feed rule out the smaller options at any size.",
+            "Retention in the Layers table is a proposal, because the brief sets none [guess]. **Drives:** storage volume and how far an erasure request has to reach.",
+            "Budget is not in the brief, so cost is compared only relatively [high]. **Drives:** the Cost column, which decides nothing here.",
+            "The marketing mailing in the current repo (`exports/marketing_contacts.sql`) stays out of scope, because the brief does not name it [med]. **Drives:** no contact export is drawn, and nothing leaves Cleaned except through the masking gate."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sizing",
+      "title": "Sizing",
+      "intro": "Computed by `platform_rules.py` from the brief's two numbers. The brief does not split the 35 TB by source. Volume alone rules out only the single database.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["Measure", "Value", "Basis"],
+          "align": ["left", "right", "left"],
+          "rows": [
+            ["Today", "35,000 GB", "35 TB, from the brief"],
+            ["After one year", "47,000 GB", "+1,000 GB a month"],
+            ["After two years", "59,000 GB", "+1,000 GB a month"],
+            ["Daily ingest", "33.33 GB", "1,000 GB a month over 30 days"],
+            ["Threshold: one database", "2,000 GB", "Rule `too-big`: 59,000 GB is about 30 times this"],
+            ["Threshold: streaming", "under 5 min", "Rule `needs-streaming`: the stock feed needs 2 min"],
+            ["Threshold: mesh", "3 domain teams", "Rule `too-few-domains`: the brief has 0"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "decision",
+      "title": "Decision",
+      "intro": "Every option on the ladder, simplest first. Rule names come from `platform_rules.py`. The ratings are my judgement [med].",
+      "blocks": [
+        {
+          "type": "decision",
+          "factors": ["Can this team run it?", "Freshness", "Cost of wrong data", "Governance", "Cost (relative)"],
+          "options": [
+            {
+              "label": "Reports on the source or a replica",
+              "status": "eliminated",
+              "eliminated_by": "Rules: needs-file-storage, ml-on-raw",
+              "why": "Photos and PDFs must be stored and processed, and the model trains on original photos. A report on a source can do neither.",
+              "cells": [
+                {"rating": "pass", "text": "Almost nothing to run"},
+                {"rating": "weak", "text": "Live where a source can report, but sensors have no report"},
+                {"rating": "fail", "text": "Each report computes its own numbers"},
+                {"rating": "fail", "text": "Reports read personal data at the source"},
+                {"rating": "pass", "text": "Lowest"}
+              ]
+            },
+            {
+              "label": "One database with scheduled SQL",
+              "status": "eliminated",
+              "eliminated_by": "Rules: too-big, needs-file-storage, ml-on-raw, needs-streaming",
+              "why": "59 TB after two years is about 30 times the 2 TB limit, and it can neither hold the photos nor reach 2 minutes.",
+              "cells": [
+                {"rating": "pass", "text": "SQL jobs, which the team runs today"},
+                {"rating": "fail", "text": "A scheduled load cannot reach 2 min"},
+                {"rating": "weak", "text": "One model, until the server is overloaded"},
+                {"rating": "weak", "text": "Masking in SQL, photos outside it"},
+                {"rating": "fail", "text": "59 TB on one server"}
+              ]
+            },
+            {
+              "label": "A managed warehouse",
+              "status": "eliminated",
+              "eliminated_by": "Rules: needs-file-storage, ml-on-raw, needs-streaming",
+              "why": "Warehouse tables do not hold original photos for training, and a scheduled load cannot reach 2 minutes.",
+              "cells": [
+                {"rating": "pass", "text": "ELT and SQL"},
+                {"rating": "fail", "text": "A scheduled load cannot reach 2 min"},
+                {"rating": "pass", "text": "One modelled store with tests"},
+                {"rating": "weak", "text": "Photos need a second store and access model"},
+                {"rating": "pass", "text": "Lower for tables alone"}
+              ]
+            },
+            {
+              "label": "A lakehouse in layers",
+              "status": "eliminated",
+              "eliminated_by": "Rule: needs-streaming",
+              "why": "It does everything else the brief asks, but its scheduled load cannot get the stock feed under 2 minutes.",
+              "cells": [
+                {"rating": "pass", "text": "Batch only, within six engineers' reach"},
+                {"rating": "fail", "text": "Daily is fine, the stock feed is not"},
+                {"rating": "pass", "text": "Layers, tests and replay"},
+                {"rating": "pass", "text": "Photos and tables under one access model"},
+                {"rating": "pass", "text": "No always-on path"}
+              ]
+            },
+            {
+              "label": "A lakehouse with a streaming path",
+              "status": "chosen",
+              "why": "The only option left after the hard rules. The stock feed streams and everything else stays daily.",
+              "cells": [
+                {"rating": "weak", "text": "Yes, if the path stays one feed on a managed event log"},
+                {"rating": "pass", "text": "Stock feed under 2 min, the rest daily"},
+                {"rating": "weak", "text": "Live and daily stock can disagree, so reconcile them daily"},
+                {"rating": "weak", "text": "Masking gate named, raw photos are the one exception"},
+                {"rating": "weak", "text": "An always-on path for one feed"}
+              ]
+            },
+            {
+              "label": "A data mesh on a shared platform",
+              "status": "eliminated",
+              "eliminated_by": "Rule: too-few-domains",
+              "why": "No business unit has its own engineers and none are planned. A mesh needs at least three domain teams.",
+              "cells": [
+                {"rating": "fail", "text": "No domain team to own a data product"},
+                {"rating": "pass", "text": "Same as the option below"},
+                {"rating": "weak", "text": "Ownership with nobody to hold it"},
+                {"rating": "weak", "text": "Federated rules, nobody to apply them"},
+                {"rating": "fail", "text": "A platform team plus domain teams"}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "title": "Why this one",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "**The binding constraint is who can run it.** The next option up, a data mesh, needs at least three domain teams with their own engineers. Acme has none and plans none (`too-few-domains`), so one central team of six means one shared platform owned in one place.\n\n**One feed and one model set the floor.** Original photos for training rule out everything below a lakehouse (`needs-file-storage`, `ml-on-raw`). The 2-minute stock feed then rules out a lakehouse without a streaming path (`needs-streaming`). Size matters less than it looks: the 59 TB rules out only the single database.\n\n**A warehouse with a bucket on the side is not a cheaper way out.** It would still need a store for the photos and a streaming path for the feed, and it would add a second access model for the same six people to govern [med].\n\n**The streaming path stays narrow on purpose.** It carries one feed, from 12 stores according to the repo README [med], so the load is small. The real cost is that it must run whenever the stores are open, and that is why the team rating is weak and not a pass."
+        }
+      ]
+    },
+    {
+      "id": "platform",
+      "title": "The platform",
+      "intro": "Data flows left to right. No technology is chosen yet, because the brief names no vendor. Personal data stops at the masking gate between Cleaned and Served.",
+      "blocks": [
+        {
+          "type": "architecture",
+          "title": "Acme Foods data platform",
+          "zones": [
+            {"id": "sources", "label": "Sources"},
+            {"id": "ingest", "label": "Ingest"},
+            {"id": "raw", "label": "Raw"},
+            {"id": "cleaned", "label": "Cleaned"},
+            {"id": "masking", "label": "Masking"},
+            {"id": "served", "label": "Served"},
+            {"id": "serving", "label": "Serving"},
+            {"id": "consumers", "label": "Consumers"},
+            {"id": "ops", "label": "Operations"}
+          ],
+          "components": [
+            {"id": "crm", "label": "CRM", "zone": "sources", "kind": "system", "note": "Names, contact details and purchase history of loyalty customers. Personal data, stated in the brief.", "details": [["Personal data", "Yes [high]"], ["Path", "Daily"]]},
+            {"id": "erp", "label": "ERP", "zone": "sources", "kind": "system", "note": "In the current repo it holds customer name, email, phone, national ID and birth date.", "details": [["Personal data", "Yes, from the repo [high]"], ["Path", "Daily"]]},
+            {"id": "loyalty", "label": "Loyalty app", "zone": "sources", "kind": "system", "note": "The same loyalty customers as the CRM.", "details": [["Personal data", "Likely [med]"], ["Path", "Daily"]]},
+            {"id": "tills_returns", "label": "Tills, returns", "zone": "sources", "kind": "system", "note": "Till systems and the returns desk: two sources, one box.", "details": [["Personal data", "Possibly loyalty IDs or names [guess]"], ["Path", "Daily"]]},
+            {"id": "web", "label": "Web events", "zone": "sources", "kind": "system", "note": "Events from the online shop. Daily, as the brief says.", "details": [["Personal data", "Likely identifiers [med]"], ["Path", "Daily"]]},
+            {"id": "delivery", "label": "Delivery files", "zone": "sources", "kind": "system", "note": "Files from the delivery partner.", "details": [["Personal data", "Likely addresses [med]"], ["Path", "Daily"]]},
+            {"id": "hr", "label": "HR roster", "zone": "sources", "kind": "system", "note": "Employee roster.", "details": [["Personal data", "Likely, it names staff [med]"], ["Path", "Daily"]]},
+            {"id": "cameras", "label": "Shelf cameras", "zone": "sources", "kind": "system", "flag": "warn", "note": "Shelf photos, for the shelf-image model. May show shoppers or staff.", "details": [["Personal data", "Treated as yes [guess]"], ["Path", "Daily file transfer"]]},
+            {"id": "sensors", "label": "Shelf sensors", "zone": "sources", "kind": "system", "note": "Source of the one stock feed that must be under 2 minutes.", "details": [["Personal data", "No [med]"], ["Path", "Streaming"]]},
+            {"id": "pdfs", "label": "Supplier PDFs", "zone": "sources", "kind": "system", "note": "Documents, stored as delivered.", "details": [["Path", "Daily"]]},
+            {"id": "other", "label": "Other daily feeds", "zone": "sources", "kind": "system", "note": "Store energy meters, price comparison feed and budget spreadsheets: three sources, one box.", "details": [["Path", "Daily"]]},
+
+            {"id": "batch", "label": "Daily batch load", "zone": "ingest", "kind": "service", "tech": "not chosen", "note": "Tables and files once a day. Idempotent, so a day can be rerun.", "details": [["Fails how", "That day's load retries, and the reports show the last good day"]]},
+            {"id": "photos_in", "label": "Photo transfer", "zone": "ingest", "kind": "service", "tech": "not chosen", "note": "Moves original photos, unchanged, into their restricted store."},
+            {"id": "stream", "label": "Event log", "zone": "ingest", "kind": "service", "tech": "managed, not chosen", "note": "The only streaming ingest on the platform. Carries the shelf-sensor stock feed.", "details": [["Retention", "7 days [guess]"], ["Fails how", "Live view shows its last update time, and the feed replays from the log"]]},
+            {"id": "stream_job", "label": "Stream job", "zone": "ingest", "kind": "service", "tech": "not chosen", "note": "Turns sensor events into the current state of each shelf.", "details": [["Budget", "Well inside the 2 minutes, about 30 to 60 seconds [guess]"]]},
+
+            {"id": "raw_store", "label": "Raw tables, files", "zone": "raw", "kind": "store", "note": "As delivered, append-only, kept so a load can be replayed. Includes the archive of the stock feed.", "details": [["Readers", "Platform engineers"]]},
+            {"id": "raw_photos", "label": "Raw photos", "zone": "raw", "kind": "store", "flag": "warn", "note": "Original photos, not masked, because the brief requires originals. Restricted, EU only.", "details": [["Readers", "Named data science group, platform engineers"]]},
+
+            {"id": "clean", "label": "Cleaned tables", "zone": "cleaned", "kind": "store", "note": "Typed, deduplicated, keys mapped, personal data classified.", "details": [["Readers", "Platform engineers"]]},
+
+            {"id": "mask", "label": "Masking gate", "zone": "masking", "kind": "guard", "note": "The one named point where personal data is masked or dropped. National ID and birth date are dropped, other identifiers are pseudonymised.", "details": [["Tested by", "Acceptance criterion: zero direct identifiers past this point"]]},
+
+            {"id": "marts", "label": "Served marts", "zone": "served", "kind": "store", "note": "Modelled for reports. No direct identifiers.", "details": [["Readers", "Through the BI layer"]]},
+
+            {"id": "bi_layer", "label": "BI layer", "zone": "serving", "kind": "service", "tech": "not chosen", "note": "Reports and shared definitions for the 120 BI users."},
+            {"id": "live", "label": "Live stock view", "zone": "serving", "kind": "store", "tech": "not chosen", "note": "Current shelf state for the ordering team. Served layer of the streaming path.", "details": [["Keeps", "Current state and 7 days [guess]"]]},
+            {"id": "train", "label": "Training workspace", "zone": "serving", "kind": "service", "tech": "not chosen, EU only", "note": "Where data scientists train on original photos. Compute and any training service stay in the EU."},
+
+            {"id": "bi", "label": "120 BI users", "zone": "consumers", "kind": "user", "note": "Head office and the stores."},
+            {"id": "ordering", "label": "Ordering team", "zone": "consumers", "kind": "user", "note": "Acts on an empty shelf while it still can."},
+            {"id": "ds", "label": "Data scientists", "zone": "consumers", "kind": "user", "note": "Train the shelf-image model on original photos."},
+
+            {"id": "sched", "label": "Scheduler, tests", "zone": "ops", "kind": "ops", "note": "Runs the daily load and data tests, and alerts on failure."},
+            {"id": "catalog", "label": "Catalog, access", "zone": "ops", "kind": "ops", "note": "Personal-data classification, role-based access and erasure requests."},
+            {"id": "monitor", "label": "Monitoring, alerts", "zone": "ops", "kind": "ops", "note": "Watches freshness of the stock feed. Logs stay in the EU."},
+            {"id": "backup", "label": "EU backups", "zone": "ops", "kind": "ops", "note": "Backups and any standby copy stay in EU regions, as the brief requires."}
+          ],
+          "links": [
+            {"from": "crm", "to": "batch", "label": "daily"},
+            {"from": "erp", "to": "batch", "label": "daily"},
+            {"from": "loyalty", "to": "batch", "label": "daily"},
+            {"from": "tills_returns", "to": "batch", "label": "daily"},
+            {"from": "web", "to": "batch", "label": "daily"},
+            {"from": "delivery", "to": "batch", "label": "daily"},
+            {"from": "hr", "to": "batch", "label": "daily"},
+            {"from": "pdfs", "to": "batch", "label": "daily"},
+            {"from": "other", "to": "batch", "label": "daily"},
+            {"from": "cameras", "to": "photos_in", "label": "photos"},
+            {"from": "sensors", "to": "stream", "label": "stock events"},
+            {"from": "batch", "to": "raw_store", "label": "as delivered"},
+            {"from": "photos_in", "to": "raw_photos", "label": "originals"},
+            {"from": "stream", "to": "stream_job", "label": "events"},
+            {"from": "stream", "to": "raw_store", "label": "archive"},
+            {"from": "stream_job", "to": "live", "label": "shelf state"},
+            {"from": "raw_store", "to": "clean", "label": "typed"},
+            {"from": "clean", "to": "mask", "label": "classified"},
+            {"from": "mask", "to": "marts", "label": "masked"},
+            {"from": "marts", "to": "bi_layer", "label": "marts"},
+            {"from": "bi_layer", "to": "bi", "label": "reports"},
+            {"from": "live", "to": "ordering", "label": "empty shelves"},
+            {"from": "raw_photos", "to": "train", "label": "originals"},
+            {"from": "train", "to": "ds", "label": "training"}
+          ],
+          "flows": [
+            {"id": "stock", "title": "Stock feed to the ordering team, under 2 minutes", "steps": [
+              {"from": "sensors", "to": "stream", "text": "A shelf sensor publishes a stock event."},
+              {"from": "stream", "to": "stream_job", "text": "The stream job reads events from the log."},
+              {"from": "stream_job", "to": "live", "text": "It updates the current state of the shelf."},
+              {"from": "live", "to": "ordering", "text": "The ordering team sees the empty shelf."}
+            ]},
+            {"id": "daily", "title": "Daily tables to reports", "steps": [
+              {"from": "crm", "to": "batch", "text": "The nightly load collects each source."},
+              {"from": "batch", "to": "raw_store", "text": "Data lands as delivered."},
+              {"from": "raw_store", "to": "clean", "text": "It is typed, deduplicated, keys mapped and personal data classified."},
+              {"from": "clean", "to": "mask", "text": "Classified data reaches the masking gate."},
+              {"from": "mask", "to": "marts", "text": "Direct identifiers are dropped or pseudonymised."},
+              {"from": "marts", "to": "bi_layer", "text": "Marts feed the shared report definitions."},
+              {"from": "bi_layer", "to": "bi", "text": "120 users read reports."}
+            ]},
+            {"id": "photos", "title": "Photos to model training", "steps": [
+              {"from": "cameras", "to": "photos_in", "text": "Original photos are collected."},
+              {"from": "photos_in", "to": "raw_photos", "text": "They land unchanged in a restricted store."},
+              {"from": "raw_photos", "to": "train", "text": "Only the named data science group can read them."},
+              {"from": "train", "to": "ds", "text": "Data scientists train the model in the EU."}
+            ]}
+          ],
+          "reach": {
+            "label": "Personal data",
+            "from": ["crm", "erp", "loyalty", "tills_returns", "web", "delivery", "hr", "cameras"],
+            "stops": ["mask"],
+            "targets": ["bi", "ordering", "ds"]
+          }
+        },
+        {
+          "type": "callout",
+          "tone": "warn",
+          "text": "The reach view finds one unmasked route: shelf cameras to data scientists, because the brief asks for original photos. If the photos can show people, it needs a data protection impact assessment before the first training run, and possibly person blurring at the photo transfer. Blurring would leave the shelf pixels original [guess]. The 120 BI users and the ordering team are not reached."
+        },
+        {
+          "type": "table",
+          "title": "Paths",
+          "columns": ["Path", "Sources", "Freshness", "Ends at"],
+          "rows": [
+            ["Streaming", "The shelf-sensor stock feed only", "Under 2 minutes", "Live stock view, ordering team"],
+            ["Daily, tables and files", "12 sources: ERP, CRM, web events, supplier PDFs, loyalty app, tills, delivery files, HR roster, energy meters, price feed, returns desk, budgets", "Daily", "Served marts, 120 BI users"],
+            ["Daily, photos", "Shelf camera photos", "Daily", "Raw photos, data scientists"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "layers",
+      "title": "Layers",
+      "intro": "Consumers read Served, and the live stock view is the served layer of the streaming path. Raw photos are the one exception, required by the brief. All retention values are proposals [guess].",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["Layer", "Keeps", "Retention", "Who reads it"],
+          "rows": [
+            ["Event log", "Stock-feed events, for replay", "7 days", "Platform engineers"],
+            ["Raw tables and files", "As delivered, append-only, including PDFs and the stock-feed archive", "90 days for sources with personal data, 13 months for the rest", "Platform engineers"],
+            ["Raw photos", "Original photos, unchanged", "12 months. Labelled training sets longer, by named approval", "Named data science group, platform engineers"],
+            ["Cleaned", "Typed, deduplicated, keys mapped, personal data classified", "24 months", "Platform engineers"],
+            ["Served", "Marts for reports, after the masking gate, no direct identifiers", "5 years", "120 BI users, through the BI layer"],
+            ["Live stock view", "Current shelf state and recent history", "7 days", "Ordering team"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "change",
+      "title": "What would change it",
+      "intro": "Each option named here comes from running the rules again with the changed fact.",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "**The ordering team can work with 5 minutes or more:** a lakehouse in layers, with no streaming path. This is the cheapest thing to confirm, so ask them first.",
+            "**Volume ×10 (590 TB after two years):** the same option. The rules do not move, and the work shifts to storage tiering for photos and compaction.",
+            "**A use that needs seconds, or more feeds under 5 minutes:** the same option with a wider streaming path. Past about three feeds it needs its own named owner [guess].",
+            "**Three or more business units hire their own engineers:** a data mesh becomes open, and the central team would become its platform team.",
+            "**Photos and PDFs leave scope, the model is dropped and the feed relaxes to 5 minutes:** a managed warehouse, provided sources must be joined, which the brief implies but does not state."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "acceptance",
+      "title": "Acceptance criteria",
+      "intro": "All measured before launch. The thresholds other than the 2 minutes are proposals [guess].",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["Criterion", "Threshold", "How it is measured"],
+          "rows": [
+            ["Stock feed freshness", "99th percentile under 120 seconds, sensor to screen", "14-day shadow run in all stores, comparing the sensor timestamp with the time shown in the live view"],
+            ["Empty-shelf accuracy", "At least 95% of checks match the live view", "200 shelf checks by store staff across stores, compared with what the view showed at that moment"],
+            ["Daily load and replay", "Served ready by 07:00 on at least 29 of 30 days, and a replay from Raw reproduces row counts and sums exactly", "30-day parallel run beside today's reports, with one forced replay per source"],
+            ["EU residency", "Zero storage, backup, log or processing endpoints outside the EU", "Inventory of every resource, a 30-day egress log review and a backup restore drill in an EU region"],
+            ["Personal data stops at the gate", "Zero direct identifiers readable by the BI role, and only the named group can read raw photos", "Automated scan of Served for classified columns, and a permission test run under each role"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "adr",
+      "title": "ADR draft",
+      "intro": "Not written to the repo.",
+      "blocks": [
+        {
+          "type": "code",
+          "code": "# ADR-001: A lakehouse in layers with one streaming path for the shelf stock feed\n\nDate: 2026-11-09\nStatus: Proposed\n\n## Context\nAcme Foods' reporting grew by hand around the store sales figures and no longer covers\nwhat the business asks for (brief, 19 October 2026). There are 14 sources, 35 TB today,\ngrowing about 1 TB a month, so 59 TB after two years. One stock feed from the shelf\nsensors must be under 2 minutes fresh so the ordering team can act on an empty shelf.\nEvery other source is daily. Data scientists train a shelf-image model on original\nphotos from the store cameras. All data must stay in the EU, including backups. The\nCRM holds personal data of loyalty customers. Six data engineers in one central team\nbuild and run everything, business units have no engineers of their own, and 120 BI\nusers read the reports.\n\n## Decision\nWe will build one lakehouse in raw, cleaned and served layers, in EU regions only,\nincluding backups, run by the central team.\nWe will load every source daily except the shelf-sensor stock feed, which takes a\nstreaming path ending in a live stock view for the ordering team. That feed is also\narchived to raw.\nWe will keep original photos in a separate restricted raw store, read only by a named\ndata science group.\nWe will mask or drop personal data at one point, between cleaned and served.\nWe will not build a data mesh, because no business unit has its own engineers.\n\n## Consequences\nEasier: tables, files and photos live under one access model, any load can be\nreplayed from raw, and new daily sources need no new infrastructure.\nHarder: six engineers carry an always-on path for one feed, which must be watched\nwhenever the stores are open. Live stock and daily stock must be reconciled.\nWe accept that data scientists read original photos unmasked, inside a restricted\nstore, until the data protection owner rules on whether the photos show people. We\naccept that the streaming path is cost for one feed, and it goes if the ordering team\ncan work with 5 minutes or more."
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "title": "Open questions",
+      "blocks": [
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "**Do the shelf cameras capture shoppers or staff?** If they do, the raw photo route needs a data protection impact assessment and a decision on blurring before the first training run.",
+            "**What does EU-only mean for people and stores outside the EU?** The repo README places Acme in Novi Sad, which is outside the EU [high]. The brief does not say whether the rule also covers store systems there, or engineers reading the data from there. Legal should answer this before a vendor is picked.",
+            "**Does the marketing mailing move to the new platform?** Today `exports/marketing_contacts.sql` hands names, email and national ID to a campaign tool by hand [high]. The brief does not mention it. If it moves, it needs its own consent-checked route, without the national ID.",
+            "**How fast does the ordering team really act, and during which hours?** This confirms the 2 minutes and sets the on-call hours for the streaming path.",
+            "**What retention applies to each source, and what is the budget?** Neither is in the brief. Prices should come from a costing pass once a vendor and EU region are named.",
+            "**How much of the 35 TB is photos?** It changes storage tiering and the cost of the raw layer, not the decision.",
+            "**What happens to the current warehouse?** The dbt models, the T-SQL procedures and the Spark stock notebook need a migration plan, and the brief does not cover one."
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "the next data platform of Acme Foods",
+    "regions": [{"name": "EU", "why": "residency: all data must stay in the EU, including backups (brief)"}],
+    "data": [
+      {"name": "loyalty customer contact details and purchase history", "class": "personal", "where": ["CRM", "raw", "cleaned"], "rule": "EU only; masked at the gate before served"},
+      {"name": "customer national ID and birth date", "class": "personal", "where": ["ERP", "raw", "cleaned"], "rule": "EU only; dropped at the gate before served"},
+      {"name": "employee roster", "class": "personal", "where": ["HR roster", "raw", "cleaned"], "rule": "EU only; masked at the gate before served"},
+      {"name": "shelf camera photos", "class": "personal if people are in frame", "where": ["shelf cameras", "raw photos", "training workspace"], "rule": "EU only; restricted to a named data science group; not masked"}
+    ],
+    "components": [
+      {"id": "raw_store", "label": "Raw tables, files", "tech": "not chosen", "kind": "store"},
+      {"id": "raw_photos", "label": "Raw photos", "tech": "not chosen", "kind": "store"},
+      {"id": "clean", "label": "Cleaned tables", "tech": "not chosen", "kind": "store"},
+      {"id": "mask", "label": "Masking gate", "tech": "not chosen", "kind": "guard"},
+      {"id": "marts", "label": "Served marts", "tech": "not chosen", "kind": "store"},
+      {"id": "stream", "label": "Event log", "tech": "managed, not chosen", "kind": "service"},
+      {"id": "live", "label": "Live stock view", "tech": "not chosen", "kind": "store"},
+      {"id": "train", "label": "Training workspace", "tech": "not chosen", "kind": "service"}
+    ],
+    "decisions": [
+      {"title": "Platform", "chosen": "A lakehouse with a streaming path", "because": "original photos and model training rule out everything below a lakehouse, the 2-minute feed rules out one without streaming, and no domain teams rule out a mesh"},
+      {"title": "Streaming scope", "chosen": "The shelf-sensor stock feed only", "because": "every other source is daily in the brief"},
+      {"title": "Masking point", "chosen": "One gate between cleaned and served", "because": "consumers must not read direct identifiers"}
+    ],
+    "assumptions": [
+      "The 2 minutes are end to end, and the ordering team acts within them.",
+      "Personal data sits in more sources than the CRM.",
+      "Shelf camera photos can show shoppers or staff.",
+      "EU-only covers storage, backups, processing, logs and control planes.",
+      "Storage, compute and the event log are managed services in an EU region.",
+      "35 TB covers all sources and grows linearly with nothing deleted.",
+      "Layer retention values are proposals.",
+      "The marketing mailing is out of scope."
+    ],
+    "open": [
+      "Do shelf cameras capture people?",
+      "Does EU-only cover store systems and engineers in Novi Sad?",
+      "Does the marketing mailing move to the new platform?",
+      "How fast does the ordering team act, and during which hours?",
+      "Retention per source and budget.",
+      "Share of photos in the 35 TB.",
+      "Migration of the current warehouse."
+    ]
+  }
+}

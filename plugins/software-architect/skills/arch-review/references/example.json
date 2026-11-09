@@ -1,0 +1,1096 @@
+{
+ "skill": "arch-review",
+ "title": "acme-logistics, architecture review",
+ "subtitle": "What makes this system hard to change, and what to fix first.",
+ "meta": {
+  "repo": "acme-logistics",
+  "commit": "432aa50",
+  "date": "2026-11-10"
+ },
+ "verdict": {
+  "text": "Not safely yet: there are no tests, pricing lives in two codebases, and the worker can mark a shipment delivered without the invoice that should follow. It most needs tests around delivery and the API as the only writer of shipments, which also removes the loop between the API and the worker.",
+  "tone": "warn"
+ },
+ "stats": [
+  {
+   "label": "Modules",
+   "value": 16,
+   "note": "C#, Python and TypeScript",
+   "tone": "info"
+  },
+  {
+   "label": "Cycles",
+   "value": 2,
+   "note": "both inside Acme.Logistics",
+   "tone": "bad"
+  },
+  {
+   "label": "Layer breaks",
+   "value": 1,
+   "note": "Domain to Infrastructure",
+   "tone": "warn"
+  },
+  {
+   "label": "Hidden couplings",
+   "value": 4,
+   "note": "all between API and web",
+   "tone": "warn"
+  }
+ ],
+ "sections": [
+  {
+   "id": "findings",
+   "title": "Findings",
+   "blocks": [
+    {
+     "type": "findings",
+     "items": [
+      {
+       "severity": "high",
+       "title": "Two writers for shipment status, and the worker's path skips the invoice",
+       "where": "worker/src/acme_worker/tracking.py:24, worker/src/acme_worker/db.py:11, src/Acme.Logistics/Shipments/ShipmentService.cs:107",
+       "evidence": "`tables_shared`: `shipments` is written by the API (`ShipmentRepository.cs:34`, `:68`) and the worker (`db.py:11`). When the carrier says delivered, the worker sets `Delivered` directly (`tracking.py:24`). [high]\n\nThe invoice is issued only in `MarkDeliveredAsync` (`ShipmentService.cs:118`), and `ApplyTrackingUpdateAsync` acts only on `in_transit` (`:133`). So that path issues no invoice and publishes no `shipment.delivered`. Nothing in this repo calls `POST /delivered`. [high]\n\nThe worker also skips the cancelled check at `:110`. Its literal `\"Delivered\"` has to match the C# enum, because `Enum.Parse` at `:225` throws on anything else. [high]",
+       "fix": "Make the API the only writer. The worker reports what the carrier said, and the API runs one delivery transition that issues the invoice once.\n\n**Safe when:** `MarkDeliveredAsync` is idempotent first and covered by a test (nothing in the code stops a second call from issuing a second invoice), the API ships before the worker, and someone counts delivered shipments with no invoice, because those need a business decision.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "A tracking request waits on itself through the worker",
+       "where": "src/Acme.Logistics/Shipments/ShipmentService.cs:124, worker/src/acme_worker/api_client.py:8",
+       "evidence": "`loops`: api and worker call each other. `GET /tracking` stays open while the API calls the worker (`:124`), and the worker calls the carrier and then calls back into the API (`tracking.py:26`). The first request finishes only after a second request to the same API has. [high] Under load, waiting requests compete with the callbacks they wait for. [med]\n\nAny failure becomes a 500: `do_POST` has no error handling (`__main__.py:20`), `TrackAsync` has no catch, and the `\"unknown\"` fallback at `:127` covers only an empty body. The worker's timeouts add up to 25 s (carrier 10, database 5, notice 5, API 5). The API's call sets none, so the .NET default of 100 s applies. [high]\n\nThe read also has side effects: each call on a delivered parcel writes the status again and sends the customer another notice (`tracking.py:23`-`25`). The `shipment.booked` consumer only logs (`tracking.py:38`), so this request is the only thing that ever asks the carrier, although the README says the worker follows parcels. [high]",
+       "fix": "Break the worker-to-API direction. The API already holds the answer at `:126`, so it applies it there, and `/track` becomes a read-only question to the carrier. Send the notice from a consumer of `shipment.delivered`, so it goes out once. Set a timeout just above the carrier's 10 s and return the last known status on failure.\n\n**Safe when:** a flow test with a fake carrier covers delivered, in transit and carrier down, and the worker ships after the API.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "A broker outage fails bookings after the row is saved",
+       "where": "src/Acme.Logistics/Shipments/ShipmentService.cs:73, src/Acme.Logistics/Infrastructure/MessageBus.cs:21, src/Acme.Logistics/Infrastructure/Database.cs:17",
+       "evidence": "Each `Database` call opens its own connection (`Database.cs:17`, `:23`, `:29`), and the repo has no `BeginTransaction` or `TransactionScope`, so no two writes can be atomic. [high]\n\n`BookAsync` saves (`:73`) then publishes (`:74`). `MarkDeliveredAsync` updates (`:116`), publishes (`:117`), then invoices (`:118`). If RabbitMQ is down, `CreateConnection` throws outside the `Retry` (`MessageBus.cs:21`, `:25`). The request fails with the row saved, and a second click books a second shipment. [high]\n\nThe queue buys little for this risk today: of four event types only `shipment.booked` has a consumer, and that consumer only logs. [high]",
+       "fix": "Add a transaction method to `Database` and an outbox table written in the same transaction as the state change. A small background loop publishes from it.\n\n**Safe when:** a flow test stops the broker during a booking and shows that the booking succeeds and the event arrives once the broker is back.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "No tests and no seams, so no fix on this page is safe yet",
+       "where": "src/Acme.Logistics/Shipments/ShipmentService.cs:35",
+       "evidence": "0 of 37 tracked files are tests, and there is no CI configuration. [high]\n\nThe C# code has 0 interfaces. `ShipmentService` takes five concrete classes (`:35`-`:40`), and the worker and API addresses are literals (`:124`, `api_client.py:8`), while every other address is a setting. A test therefore needs the whole stack. [high]",
+       "fix": "Start where the next changes land: a table of inputs and expected prices for `PricingRules` (a pure function, so no seam is needed) and one flow test from delivered to invoice under Docker Compose. Add an interface only where a test needs one.\n\n**Safe because:** tests only, no production code changes.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "Every pricing rule is written twice, in C# and TypeScript",
+       "where": "src/Acme.Logistics/Shipments/PricingRules.cs:7, web/src/app/shipments/pricing.ts:10",
+       "evidence": "`hidden_coupling`: the two files changed together in 6 of 6 commits (confidence 1.0), with no import between them. All 8 constants and the formula are copies. A rule with a new input touched 5 files (`1eb006b`, `d23225b`). [high]\n\nThe copies already disagree on rounding. A 0.1 kg parcel of 25x55x75 cm sent express is 2222.02 RSD from the API and 2222.03 RSD in the browser, because the raw price is exactly 2222.025 and .NET rounds a midpoint to even while `Math.round` rounds it up. I simulated 22.4 million inputs in Python, and about 0.4% differ by 0.01 RSD. [high]\n\n`book()` ignores the price the API returns (`shipments.ts:44`), so staff never see the difference. [high]",
+       "fix": "Add `POST /api/shipments/quote` that calls `PricingRules`, show its answer on the form, and delete `pricing.ts`.\n\n**Safe when:** the price table passes against the endpoint, the API ships first, and the form calls it on input change with a debounce, because `estimate()` at `shipments.ts:15` runs on every change detection.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "Shipments and Billing depend on each other",
+       "where": "src/Acme.Logistics/Billing/BillingService.cs:4, src/Acme.Logistics/Shipments/ShipmentService.cs:2",
+       "evidence": "`cycles`: Billing and Shipments. `ShipmentService` calls `IssueInvoiceAsync` (`:118`) and returns an `Invoice` (`:107`). `BillingService` takes a whole `Shipment` (`BillingService.cs:17`) but uses only its id, price and status (`:19`, `:25`, `:29`-`:30`). [high]\n\nNeither area can be tested without the other, and because both sit in one assembly the compiler allows it. [high]",
+       "fix": "Billing takes only what it needs: `IssueInvoiceAsync(Guid shipmentId, Money net)`. The delivered check moves to the caller, which already sets the status (`:115`). That removes `using Acme.Logistics.Shipments` from Billing and leaves one direction. Keep the call synchronous, because `POST /delivered` returns the invoice (`ShipmentsController.cs:51`).\n\n**Safe when:** the delivery flow test stays green, and a dependency test fails on any new cycle.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "The domain entity Parcel writes SQL",
+       "where": "src/Acme.Logistics/Domain/Parcel.cs:23",
+       "evidence": "`layer_breaks`: 1, Domain to Infrastructure. With `ShipmentRepository.cs:2` it closes the second cycle. `ReweighAsync` takes a `Database` and runs `UPDATE parcels` (`:23`-`:28`). [high]\n\nIt came in with the reweigh feature (`b76f90e`). It has one caller (`ShipmentService.cs:149`), which is also the only use of `_database` in that class. [high]",
+       "fix": "Make it `Reweigh(decimal)`, which only changes the object, add `UpdateParcelWeightAsync` to `ShipmentRepository`, and drop `_database` from `ShipmentService`.\n\n**Safe because:** one caller, and it removes a cycle and the only layer break.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "ShipmentService is where every kind of change lands (a risk to manage)",
+       "where": "src/Acme.Logistics/Shipments/ShipmentService.cs:24",
+       "evidence": "`hot_spots`: 9 of 16 commits, 230 lines, score 2070, which is 4.7 times the next file.\n\nIt is big because it does too much: booking and validation (`:49`, `:165`), delivery and invoicing (`:107`), tracking over HTTP (`:121`), depot reweighing (`:141`), label text (`:153`) and row mapping (`:200`). `LabelText` and `ListInTransitAsync` have no caller in this repo. [high]",
+       "fix": "Split along what has changed together: booking, tracking and depot, one group per change, with the controllers unchanged.\n\n**Safe when:** the tests and the Billing fix are in first. Splitting it before then only moves the risk.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "The database schema is not in this repository",
+       "where": "docker-compose.yml:32",
+       "evidence": "The code uses three tables and a sequence (`shipments`, `parcels`, `invoices`, `invoice_numbers`). The repo has no `CREATE` or `ALTER` statement and no migrations. [high]\n\nThe `db` service has no init script, so the stack the README starts has no tables. [high] Any new column needs a step nobody can review here, while two deployables depend on `shipments`. [med]",
+       "fix": "Export the current schema as a baseline migration and make every later change a migration in this repo, owned by the API.\n\n**Safe because:** a baseline changes nothing in production. Check it by creating a fresh database and running the flow test on it.",
+       "status": "open"
+      },
+      {
+       "severity": "low",
+       "title": "Helpers mixes tax, retries, dates and text",
+       "where": "src/Acme.Logistics/Common/Helpers.cs:18",
+       "evidence": "`modules`: fan-in 4, instability 0.0, and 3 commits by 3 authors on a 38-line file. The VAT rate is here (`:20`) with one caller (`BillingService.cs:25`), and `Retry` is here with one caller (`MessageBus.cs:25`). `FormatDate` and `CleanText` are general. Nothing is blocked today. [high]",
+       "fix": "Move `AddVat` into Billing and `Retry` into `MessageBus`, and leave the other two.\n\n**Safe because:** moves only, and the compiler finds every caller.",
+       "status": "open"
+      },
+      {
+       "severity": "low",
+       "title": "A source change can ship without reaching the API image",
+       "where": "src/Acme.Api/Dockerfile:3",
+       "evidence": "The image copies a `publish/` folder built beforehand (`Dockerfile:3`, `README.md:17`), and git ignores that folder. `docker compose up --build` packs whatever was published last, with no warning. [high]",
+       "fix": "Build inside the image with a multi-stage Dockerfile, and set the compose build context to `./src` so the library is included.\n\n**Safe when:** `docker compose up --build` after a source edit shows the edit.",
+       "status": "open"
+      },
+      {
+       "severity": "info",
+       "title": "Billing knowledge sits with one author (a risk to manage)",
+       "where": "src/Acme.Logistics/Billing/",
+       "evidence": "`owners`: 3 of 3 commits by one author, Dunja Petrak (`one_person`: true). VAT, invoice numbering and credit notes are not described in the README or the docs, and have no tests. [high]\n\nThe worker has one commit in all, by one author, which is too little history to call.",
+       "fix": "Have someone else pair on the next billing change, and write down the VAT, numbering and credit-note rules.",
+       "status": "open"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "where",
+   "title": "Where they sit",
+   "intro": "Flagged boxes and links are the problem spots. Click a box for its card, or step through a flow.",
+   "blocks": [
+    {
+     "type": "nested",
+     "title": "Containers, then inside the API",
+     "levels": [
+      {
+       "id": "containers",
+       "label": "Containers",
+       "open": [
+        "system"
+       ],
+       "note": "What runs, and who calls whom."
+      },
+      {
+       "id": "inside-api",
+       "label": "Inside the API",
+       "open": [
+        "system",
+        "api",
+        "lib"
+       ],
+       "note": "The modules of the API and the library."
+      }
+     ],
+     "boxes": [
+      {
+       "id": "staff",
+       "label": "Counter staff",
+       "kind": "user",
+       "note": "Use the web app."
+      },
+      {
+       "id": "client",
+       "label": "Other callers",
+       "kind": "user",
+       "note": "Whatever calls tracking, /delivered, /cancel, /reweigh and /credit. Nothing in this repo does. [guess]",
+       "flag": "warn",
+       "details": [
+        [
+         "Why flagged",
+         "The web app and the worker have no call to these endpoints, so the real path to an invoice is outside this repo."
+        ]
+       ]
+      },
+      {
+       "id": "system",
+       "label": "Acme Logistics",
+       "kind": "service",
+       "note": "Parcel delivery for businesses."
+      },
+      {
+       "id": "web",
+       "label": "Web app",
+       "parent": "system",
+       "kind": "channel",
+       "tech": "Angular 17",
+       "flag": "warn",
+       "note": "Booking form and lists.",
+       "details": [
+        [
+         "Why flagged",
+         "Holds a copy of the pricing rules (`pricing.ts`)."
+        ]
+       ]
+      },
+      {
+       "id": "api",
+       "label": "API",
+       "parent": "system",
+       "kind": "service",
+       "tech": ".NET 8",
+       "flag": "bad",
+       "note": "Controllers and the Acme.Logistics library.",
+       "details": [
+        [
+         "Why flagged",
+         "Half of the API and worker loop, and it writes state and events without a transaction."
+        ]
+       ]
+      },
+      {
+       "id": "worker",
+       "label": "Tracking worker",
+       "parent": "system",
+       "kind": "service",
+       "tech": "Python 3.12",
+       "flag": "bad",
+       "note": "Asks the carrier and sends delivery notices.",
+       "details": [
+        [
+         "Why flagged",
+         "Writes the API's table directly and calls back into the API."
+        ]
+       ]
+      },
+      {
+       "id": "db",
+       "label": "Database",
+       "parent": "system",
+       "kind": "store",
+       "tech": "PostgreSQL 16",
+       "flag": "bad",
+       "note": "shipments, parcels, invoices.",
+       "details": [
+        [
+         "Why flagged",
+         "`shipments` has two writers, and the schema is not in this repo."
+        ]
+       ]
+      },
+      {
+       "id": "queue",
+       "label": "Message broker",
+       "parent": "system",
+       "kind": "store",
+       "tech": "RabbitMQ 3",
+       "flag": "warn",
+       "note": "Topic exchange acme.events.",
+       "details": [
+        [
+         "Why flagged",
+         "Its outage fails the write path, and only one of four event types has a consumer."
+        ]
+       ]
+      },
+      {
+       "id": "carrier",
+       "label": "Carrier API",
+       "kind": "system",
+       "note": "Where a parcel is."
+      },
+      {
+       "id": "notify",
+       "label": "Notification API",
+       "kind": "system",
+       "note": "Sends the delivery notice."
+      },
+      {
+       "id": "controllers",
+       "label": "Controllers",
+       "parent": "api",
+       "kind": "service",
+       "note": "HTTP endpoints."
+      },
+      {
+       "id": "lib",
+       "label": "Acme.Logistics",
+       "parent": "api",
+       "kind": "service",
+       "note": "One assembly, used only by the API."
+      },
+      {
+       "id": "shipments",
+       "label": "Shipments",
+       "parent": "lib",
+       "kind": "service",
+       "flag": "bad",
+       "note": "295 lines, fan-in 2, fan-out 4.",
+       "details": [
+        [
+         "Why flagged",
+         "Cycle with Billing, and `ShipmentService` is the hot spot."
+        ]
+       ]
+      },
+      {
+       "id": "billing",
+       "label": "Billing",
+       "parent": "lib",
+       "kind": "service",
+       "flag": "bad",
+       "note": "93 lines, fan-in 2, fan-out 4.",
+       "details": [
+        [
+         "Why flagged",
+         "Cycle with Shipments, and one author so far."
+        ]
+       ]
+      },
+      {
+       "id": "domain",
+       "label": "Domain",
+       "parent": "lib",
+       "kind": "service",
+       "flag": "bad",
+       "note": "Money and Parcel.",
+       "details": [
+        [
+         "Why flagged",
+         "`Parcel` writes SQL: the one layer break and the second cycle."
+        ]
+       ]
+      },
+      {
+       "id": "infra",
+       "label": "Infrastructure",
+       "parent": "lib",
+       "kind": "service",
+       "flag": "warn",
+       "note": "Database, MessageBus, ShipmentRepository.",
+       "details": [
+        [
+         "Why flagged",
+         "Part of the Domain cycle, and `Database` offers no transaction."
+        ]
+       ]
+      },
+      {
+       "id": "common",
+       "label": "Common",
+       "parent": "lib",
+       "kind": "service",
+       "flag": "warn",
+       "note": "Helpers, fan-in 4.",
+       "details": [
+        [
+         "Why flagged",
+         "Four unrelated helpers, including the VAT rate."
+        ]
+       ]
+      }
+     ],
+     "links": [
+      {
+       "from": "staff",
+       "to": "web",
+       "label": "uses"
+      },
+      {
+       "from": "web",
+       "to": "controllers",
+       "label": "JSON/HTTP"
+      },
+      {
+       "from": "client",
+       "to": "controllers",
+       "label": "/delivered etc."
+      },
+      {
+       "from": "controllers",
+       "to": "shipments",
+       "label": "calls"
+      },
+      {
+       "from": "controllers",
+       "to": "billing",
+       "label": "calls"
+      },
+      {
+       "from": "shipments",
+       "to": "billing",
+       "label": "issues invoice",
+       "flag": "bad"
+      },
+      {
+       "from": "billing",
+       "to": "shipments",
+       "label": "reads Shipment",
+       "flag": "bad"
+      },
+      {
+       "from": "shipments",
+       "to": "infra",
+       "label": "saves"
+      },
+      {
+       "from": "billing",
+       "to": "infra",
+       "label": "raw SQL"
+      },
+      {
+       "from": "domain",
+       "to": "infra",
+       "label": "SQL in entity",
+       "flag": "bad"
+      },
+      {
+       "from": "infra",
+       "to": "domain",
+       "label": "row types",
+       "flag": "bad"
+      },
+      {
+       "from": "billing",
+       "to": "common",
+       "label": "VAT",
+       "flag": "warn"
+      },
+      {
+       "from": "infra",
+       "to": "db",
+       "label": "SQL"
+      },
+      {
+       "from": "infra",
+       "to": "queue",
+       "label": "publish",
+       "flag": "warn"
+      },
+      {
+       "from": "shipments",
+       "to": "worker",
+       "label": "POST /track",
+       "flag": "bad"
+      },
+      {
+       "from": "worker",
+       "to": "controllers",
+       "label": "POST /tracking",
+       "flag": "bad"
+      },
+      {
+       "from": "worker",
+       "to": "db",
+       "label": "UPDATE status",
+       "flag": "bad"
+      },
+      {
+       "from": "queue",
+       "to": "worker",
+       "label": "shipment.booked"
+      },
+      {
+       "from": "worker",
+       "to": "carrier",
+       "label": "GET status"
+      },
+      {
+       "from": "worker",
+       "to": "notify",
+       "label": "POST notice"
+      }
+     ],
+     "flows": [
+      {
+       "id": "track",
+       "title": "Open tracking: the request that waits on itself",
+       "variants": [
+        "containers"
+       ],
+       "steps": [
+        {
+         "from": "client",
+         "to": "api",
+         "text": "`GET /api/shipments/{id}/tracking`. The web app has no call for this, so the caller is outside the repo. [guess]"
+        },
+        {
+         "from": "api",
+         "to": "worker",
+         "text": "`POST http://worker:8081/track`, holding the first request open. No timeout is set."
+        },
+        {
+         "from": "worker",
+         "to": "carrier",
+         "text": "Asks the carrier, with a 10 s timeout."
+        },
+        {
+         "from": "worker",
+         "to": "db",
+         "text": "If delivered: `UPDATE shipments` directly. No invoice follows."
+        },
+        {
+         "from": "worker",
+         "to": "notify",
+         "text": "If delivered: a notice to the customer, every time this runs."
+        },
+        {
+         "from": "worker",
+         "to": "api",
+         "text": "`POST /api/shipments/{id}/tracking`: a second request to the same API while the first still waits."
+        },
+        {
+         "from": "api",
+         "to": "queue",
+         "text": "Publishes `shipment.tracked`, which nothing consumes."
+        }
+       ]
+      },
+      {
+       "id": "book",
+       "title": "Book a shipment: saved before it can fail",
+       "variants": [
+        "containers"
+       ],
+       "steps": [
+        {
+         "from": "web",
+         "to": "api",
+         "text": "`POST /api/shipments`."
+        },
+        {
+         "from": "api",
+         "to": "db",
+         "text": "Saves the shipment."
+        },
+        {
+         "from": "api",
+         "to": "queue",
+         "text": "Publishes `shipment.booked`. If the broker is down the request fails here, with the row already saved."
+        },
+        {
+         "from": "queue",
+         "to": "worker",
+         "text": "The worker logs one line. That is all it does with the event."
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "type": "list",
+     "title": "What the scripts could not see",
+     "items": [
+      "**Boundaries:** `Shipments` and `Billing` follow business areas, while `Domain`, `Infrastructure` and `Common` follow technical layers. It is mixed, but not the thing costing you today. [high]",
+      "**Shared library:** `Acme.Logistics` is referenced only by the API (`Acme.Api.csproj:10`). The API and the worker share the database and some strings instead, so that is where their coupling sits. [high]",
+      "**Failure handling:** a chain with no fallback and writes with no transaction, in the second and third findings. No unbounded retry exists: `Retry` stops at 3 attempts. [high]",
+      "**Deployment order:** the schema and the `publish/` step both have to happen outside what `docker compose up --build` does. [high]",
+      "**Tests:** there are none, so there are also none that need the whole stack running. [high]"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "measurements",
+   "title": "Measurements",
+   "intro": "Counted by the scripts over 24 source files and 16 commits. A number shows where to look, and the findings above are what the code showed there.",
+   "blocks": [
+    {
+     "type": "table",
+     "title": "Modules by fan-in, fan-out and instability",
+     "columns": [
+      "Module",
+      "Files",
+      "Lines",
+      "Fan-in",
+      "Fan-out",
+      "Instability"
+     ],
+     "rows": [
+      [
+       "Acme.Logistics.Common",
+       1,
+       39,
+       4,
+       0,
+       0.0
+      ],
+      [
+       "Acme.Logistics.Infrastructure",
+       3,
+       133,
+       3,
+       2,
+       0.4
+      ],
+      [
+       "Acme.Logistics.Domain",
+       2,
+       58,
+       3,
+       1,
+       0.25
+      ],
+      [
+       "Acme.Logistics.Billing",
+       2,
+       93,
+       2,
+       4,
+       0.67
+      ],
+      [
+       "Acme.Logistics.Shipments",
+       3,
+       295,
+       2,
+       4,
+       0.67
+      ],
+      [
+       "web/app/api",
+       1,
+       47,
+       2,
+       0,
+       0.0
+      ],
+      [
+       "acme_worker.tracking",
+       1,
+       43,
+       1,
+       3,
+       0.75
+      ],
+      [
+       "web/app/invoices",
+       1,
+       28,
+       1,
+       1,
+       0.5
+      ],
+      [
+       "web/app/shipments",
+       2,
+       86,
+       1,
+       1,
+       0.5
+      ],
+      [
+       "acme_worker.api_client",
+       1,
+       13,
+       1,
+       0,
+       0.0
+      ],
+      [
+       "acme_worker.db",
+       1,
+       14,
+       1,
+       0,
+       0.0
+      ],
+      [
+       "acme_worker.notifications",
+       1,
+       14,
+       1,
+       0,
+       0.0
+      ],
+      [
+       "Acme.Api.Controllers",
+       2,
+       126,
+       0,
+       3,
+       1.0
+      ],
+      [
+       "web/app",
+       1,
+       16,
+       0,
+       2,
+       1.0
+      ],
+      [
+       "acme_worker.__main__",
+       1,
+       35,
+       0,
+       1,
+       1.0
+      ],
+      [
+       "acme_worker",
+       1,
+       4,
+       0,
+       0,
+       null
+      ]
+     ]
+    },
+    {
+     "type": "text",
+     "text": "The dangerous case is a much-used module with high instability. The nearest here are Billing and Shipments (fan-in 2, instability 0.67), and they are the ones in a cycle."
+    },
+    {
+     "type": "table",
+     "title": "Hidden coupling: files that change together with no import between them",
+     "columns": [
+      "File",
+      "Changes with",
+      "Commits together",
+      "Confidence"
+     ],
+     "rows": [
+      [
+       "src/Acme.Logistics/Shipments/PricingRules.cs",
+       "web/src/app/shipments/pricing.ts",
+       6,
+       1.0
+      ],
+      [
+       "src/Acme.Logistics/Shipments/ShipmentService.cs",
+       "web/src/app/shipments/pricing.ts",
+       4,
+       0.67
+      ],
+      [
+       "src/Acme.Logistics/Shipments/PricingRules.cs",
+       "web/src/app/shipments/shipments.ts",
+       3,
+       0.75
+      ],
+      [
+       "src/Acme.Logistics/Shipments/ShipmentService.cs",
+       "web/src/app/shipments/shipments.ts",
+       3,
+       0.75
+      ]
+     ]
+    },
+    {
+     "type": "table",
+     "title": "Hot spots: top 8 of 15, by commits times lines",
+     "columns": [
+      "File",
+      "Commits",
+      "Lines",
+      "Score"
+     ],
+     "rows": [
+      [
+       "src/Acme.Logistics/Shipments/ShipmentService.cs",
+       9,
+       230,
+       2070
+      ],
+      [
+       "src/Acme.Api/Controllers/ShipmentsController.cs",
+       5,
+       88,
+       440
+      ],
+      [
+       "src/Acme.Logistics/Shipments/PricingRules.cs",
+       6,
+       40,
+       240
+      ],
+      [
+       "src/Acme.Logistics/Billing/BillingService.cs",
+       3,
+       78,
+       234
+      ],
+      [
+       "web/src/app/shipments/pricing.ts",
+       6,
+       35,
+       210
+      ],
+      [
+       "web/src/app/shipments/shipments.ts",
+       4,
+       51,
+       204
+      ],
+      [
+       "web/src/app/api/client.ts",
+       4,
+       47,
+       188
+      ],
+      [
+       "src/Acme.Logistics/Common/Helpers.cs",
+       3,
+       39,
+       117
+      ]
+     ]
+    },
+    {
+     "type": "table",
+     "title": "Owners: where knowledge is concentrated",
+     "columns": [
+      "Module",
+      "Commits",
+      "Authors",
+      "Top author",
+      "Top share",
+      "One person"
+     ],
+     "rows": [
+      [
+       "Acme.Logistics.Shipments",
+       11,
+       2,
+       "Tamara Brankov",
+       0.64,
+       "no"
+      ],
+      [
+       "Acme.Api.Controllers",
+       7,
+       3,
+       "Tamara Brankov",
+       0.57,
+       "no"
+      ],
+      [
+       "web/app/shipments",
+       7,
+       2,
+       "Aleksa Mirkov",
+       0.57,
+       "no"
+      ],
+      [
+       "web/app/api",
+       4,
+       3,
+       "Aleksa Mirkov",
+       0.5,
+       "no"
+      ],
+      [
+       "Acme.Logistics.Billing",
+       3,
+       1,
+       "Dunja Petrak",
+       1.0,
+       "yes"
+      ],
+      [
+       "Acme.Logistics.Common",
+       3,
+       3,
+       "Dunja Petrak",
+       0.33,
+       "no"
+      ],
+      [
+       "Acme.Logistics.Domain",
+       3,
+       2,
+       "Tamara Brankov",
+       0.67,
+       "no"
+      ],
+      [
+       "Acme.Logistics.Infrastructure",
+       2,
+       2,
+       "Aleksa Mirkov",
+       0.5,
+       "no"
+      ],
+      [
+       "web/app",
+       2,
+       2,
+       "Dunja Petrak",
+       0.5,
+       "no"
+      ],
+      [
+       "web/app/invoices",
+       1,
+       1,
+       "Dunja Petrak",
+       1.0,
+       "no"
+      ],
+      [
+       "acme_worker (6 modules)",
+       1,
+       1,
+       "Aleksa Mirkov",
+       1.0,
+       "too little history"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "scenarios",
+   "title": "Quality scenarios",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Scenario",
+      "What happens today",
+      "What stops it"
+     ],
+     "rows": [
+      [
+       "The next pricing rule (6 of the 16 commits so far were one)",
+       "The same change goes into `PricingRules.cs` and `pricing.ts`, and a rule with a new input touched 5 files. Web and API have to ship together. [high]",
+       "No quote endpoint, and no test comparing the two copies."
+      ],
+      [
+       "A release of billing with shipments unchanged",
+       "Not possible. Both compile into `Acme.Logistics` and ship in the one API image, and `BillingService.cs:17` takes a `Shipment`. [high]",
+       "The Billing and Shipments cycle. Separate release is not needed at this size, but one-way dependency is."
+      ],
+      [
+       "The carrier API is down and someone opens tracking",
+       "The worker's handler fails with no response, `TrackAsync` throws, and the caller gets a 500 after up to 10 s, although the last known status is in the database. Bookings keep working, because they never touch the carrier. [high]",
+       "The synchronous chain, and the fallback at `ShipmentService.cs:127` that only covers an empty body."
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "order",
+   "title": "Order of the fixes",
+   "intro": "What blocks everything else first, then what grows worse with time, then the rest.",
+   "blocks": [
+    {
+     "type": "list",
+     "ordered": true,
+     "items": [
+      "**Tests first.** A price table and one delivered-to-invoice flow test. Every fix below relies on them.",
+      "**The schema into the repo.** Idempotent invoicing and the outbox both need a schema change someone can review.",
+      "**One writer, one delivery path, no loop.** Three deploys: the API learns to apply `delivered` once and uses the answer it already holds, then the worker drops its database write and callback, then remove the worker's database setting.",
+      "**Transaction and outbox.** Removes partial writes and the broker's hold on the write path.",
+      "**Quote endpoint, then delete `pricing.ts`.** This cost grows with every rule, so it comes first among the things that are not failures.",
+      "**`Parcel` without SQL.** One caller. It can go earlier if someone is nearby.",
+      "**Billing stops importing Shipments.** Leaves one direction.",
+      "**Split `ShipmentService`.** Only after the tests and the step above.",
+      "**Tidy when nearby:** `Helpers` and the multi-stage Dockerfile.",
+      "**Alongside all of it:** pair on the next billing change and write down the billing rules."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leave-alone",
+   "title": "What to leave alone",
+   "blocks": [
+    {
+     "type": "list",
+     "items": [
+      "**One API, one worker, one repo.** Do not split into services for this: 3 authors, 16 commits, one database. Removing the cycles gives you the boundaries without the operating cost.",
+      "**`PricingRules.cs` as plain code.** It is 39 lines read top to bottom, and each rule was a small edit. It needs one home, not a rule engine.",
+      "**`Money.cs`.** Small, depends on nothing else in the repo, and changed once.",
+      "**The thin `Database` wrapper.** Add a transaction method to it. It does not need an ORM or a generic repository.",
+      "**The folder layout.** The mix of business and technical folders is costing nothing yet, so do not reshuffle it by itself.",
+      "**The web app's structure.** `web/app/api` is one clean entry point and there are no cycles.",
+      "**RabbitMQ.** Keep it. Once `shipment.delivered` has a real consumer it earns its place."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "not-covered",
+   "title": "What this review did not cover",
+   "blocks": [
+    {
+     "type": "list",
+     "items": [
+      "**Running it.** Nothing was built, run or load-tested. Flows are described as the code is written, and the failure behaviour comes from reading it.",
+      "**The database itself.** The schema is not in the repo, so I saw no columns, foreign keys, constraints or triggers. How many delivered shipments have no invoice is unknown.",
+      "**Line-level bugs.** Two seen in passing and not run, worth a `bug-hunt`: `BookAsync` saves no `parcels` row although every read inner-joins `parcels`, and `ShipmentRow` has 9 constructor parameters against 13 selected columns with no mapping code in the repo. Unless the database or something unseen covers these, a booked shipment cannot be read back. [med]",
+      "**Security.** `Program.cs` sets up no authentication, and I did not review further.",
+      "**The web app's build.** `angular.json` and the bootstrap files are not in the repo.",
+      "**Long-run history.** 16 commits from 2026-03-03 to 2026-10-15 is short, so the coupling numbers show direction rather than a settled pattern."
+     ]
+    },
+    {
+     "type": "list",
+     "title": "Assumptions I made instead of asking",
+     "items": [
+      "The next changes look like the past ones: more pricing rules and shipment features. I found no planned change for this repo.",
+      "The two briefs in `docs/briefs` are new systems that do not reuse this code. If the Acme Couriers app reuses `Acme.Logistics`, the missing transaction becomes blocking, because that brief needs a booking and its invoice saved together.",
+      "Something outside this repo calls `/delivered`, `/cancel`, `/reweigh`, `/credit` and the tracking endpoint, since neither the web app nor the worker does. [guess]",
+      "Layers are the script's default, from the inside out: domain, application, infrastructure, api. The folders match them.",
+      "Production runs the same way as `docker-compose.yml`."
+     ]
+    }
+   ]
+  }
+ ],
+ "facts": {
+  "version": 1,
+  "scope": "acme-logistics at commit 432aa50: API, Acme.Logistics library, web app and tracking worker",
+  "components": [
+   {
+    "id": "web",
+    "label": "Web app",
+    "tech": "Angular 17",
+    "kind": "channel"
+   },
+   {
+    "id": "api",
+    "label": "API",
+    "tech": ".NET 8 with the Acme.Logistics library",
+    "kind": "service"
+   },
+   {
+    "id": "worker",
+    "label": "Tracking worker",
+    "tech": "Python 3.12",
+    "kind": "service"
+   },
+   {
+    "id": "db",
+    "label": "Database",
+    "tech": "PostgreSQL 16",
+    "kind": "store"
+   },
+   {
+    "id": "queue",
+    "label": "Message broker",
+    "tech": "RabbitMQ 3",
+    "kind": "store"
+   }
+  ],
+  "decisions": [
+   {
+    "title": "Owner of the shipments table",
+    "chosen": "Recommended: the API is the only writer",
+    "because": "the worker's direct write skips the invoice and the cancelled check"
+   },
+   {
+    "title": "API and worker loop",
+    "chosen": "Recommended: remove the worker-to-API call",
+    "because": "the API already holds the carrier's answer"
+   },
+   {
+    "title": "Where pricing lives",
+    "chosen": "Recommended: the API only, behind a quote endpoint",
+    "because": "6 of 6 pricing commits had to change both copies"
+   },
+   {
+    "title": "Shape of the system",
+    "chosen": "Recommended: keep one API and one worker",
+    "because": "3 authors and one database do not justify more deployables"
+   }
+  ],
+  "assumptions": [
+   "The next changes look like the past ones: more pricing rules and shipment features. I found no planned change for this repo.",
+   "The two briefs in `docs/briefs` are new systems that do not reuse this code. If the Acme Couriers app reuses `Acme.Logistics`, the missing transaction becomes blocking, because that brief needs a booking and its invoice saved together.",
+   "Something outside this repo calls `/delivered`, `/cancel`, `/reweigh`, `/credit` and the tracking endpoint, since neither the web app nor the worker does.",
+   "Layers are the script's default, from the inside out: domain, application, infrastructure, api. The folders match them.",
+   "Production runs the same way as `docker-compose.yml`."
+  ],
+  "open": [
+   "How many delivered shipments have no invoice",
+   "Who calls /delivered, /cancel, /reweigh, /credit and the tracking endpoint",
+   "Where the database schema is kept today"
+  ]
+ }
+}

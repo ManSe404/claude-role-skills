@@ -34,7 +34,7 @@ the newest `ai-stack-*.json` or `ai-pattern-*.json` of this project, else the cu
    its share of the cost (from the `ai-stack` page when there is one), and for code, file:line.
 7. Trust: render once, read the page's table of untrusted text reaching a side effect, and say
    for each path what stops it (a person, an allow-list, a confirmation) or that nothing does.
-8. Write the page JSON, render it, and say where to open it, with a link that opens the main flow
+8. Write the page JSON, with `facts`, render it, and say where to open it, with a link that opens the main flow
    (`page.html#flow=<id>&step=1`).
 
 ## Output

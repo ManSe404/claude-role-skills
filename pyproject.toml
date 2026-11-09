@@ -22,7 +22,7 @@ addopts = "-q"
 [tool.ruff]
 line-length = 120
 target-version = "py311"
-extend-exclude = ["fixtures/acme-orders/files", "fixtures/acme-assist/files", "plugins/*/evals"]
+extend-exclude = ["fixtures/acme-orders/files", "fixtures/acme-assist/files", "fixtures/acme-data/files", "fixtures/acme-logistics/files", "plugins/*/evals"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
@@ -30,5 +30,5 @@ select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
 [tool.mypy]
 strict = true
 python_version = "3.11"
-files = ["shared", "tools", "fixtures/build_fixture.py", "plugins/software-engineering/skills", "plugins/ai-architect/skills"]
-exclude = ['plugins/.*/scripts/(render_page|ai_inventory)\.py$']
+files = ["shared", "tools", "fixtures/build_fixture.py", "plugins/software-engineering/skills", "plugins/ai-architect/skills", "plugins/data-architect/skills", "plugins/software-architect/skills"]
+exclude = ['plugins/.*/scripts/(render_page|ai_inventory|data_profile|sql_inventory|code_graph|containers)\.py$']

@@ -7,7 +7,7 @@ Usage: python3 tools/sync_shared.py          # write the copies
 A skill must be self-contained (an installed plugin only has its own folder), so each skill that
 draws a page carries its own copy of the renderer, the page format and the fonts, and each skill that
 inventories an AI codebase its own ai_inventory.py. shared/ is the single source; a skill takes a
-copy when its SKILL.md names the file that marks it (render_page.py, ai_inventory.py).
+copy when its SKILL.md names the file that marks it (a key of SHARED below).
 """
 
 from __future__ import annotations
@@ -25,6 +25,10 @@ SHARED = {
         **{f"shared/fonts/{f.name}": f"assets/fonts/{f.name}" for f in sorted((ROOT / "shared" / "fonts").iterdir())},
     },
     "ai_inventory.py": {"shared/ai_inventory.py": "scripts/ai_inventory.py"},
+    "data_profile.py": {"shared/data_profile.py": "scripts/data_profile.py"},
+    "sql_inventory.py": {"shared/sql_inventory.py": "scripts/sql_inventory.py"},
+    "code_graph.py": {"shared/code_graph.py": "scripts/code_graph.py"},
+    "containers.py": {"shared/containers.py": "scripts/containers.py"},
 }
 
 

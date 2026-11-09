@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: style-names-the-constraint
+tags: [software-architect, arch-style]
+context:
+  scaffold_script: fixture.sh

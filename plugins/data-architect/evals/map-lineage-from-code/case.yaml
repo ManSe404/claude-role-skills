@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: map-lineage-from-code
+tags: [data-architect, data-map]
+context:
+  scaffold_script: fixture.sh

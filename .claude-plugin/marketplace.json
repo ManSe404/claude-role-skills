@@ -16,6 +16,18 @@
       "source": "./plugins/ai-architect",
       "description": "Four skills for AI solutions architects: ai-pattern, ai-stack, ai-architecture and ai-review.",
       "version": "0.1.0"
+    },
+    {
+      "name": "data-architect",
+      "source": "./plugins/data-architect",
+      "description": "Four skills for data architects: data-platform, data-model, data-map and data-review.",
+      "version": "0.1.0"
+    },
+    {
+      "name": "software-architect",
+      "source": "./plugins/software-architect",
+      "description": "Four skills for software architects: arch-style, arch-c4, arch-review and arch-evolve.",
+      "version": "0.1.0"
     }
   ]
 }

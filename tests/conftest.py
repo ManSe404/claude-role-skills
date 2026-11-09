@@ -34,6 +34,7 @@ def load(path: Path) -> ModuleType:
     )
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module  # a dataclass looks its module up here while it is being defined
     spec.loader.exec_module(module)
     return module
 
@@ -63,6 +64,22 @@ def assist(tmp_path_factory: pytest.TempPathFactory) -> Path:
     """The acme-assist fixture, built once per test run. Tests must not change it."""
     target = tmp_path_factory.mktemp("fixture") / "acme-assist"
     build_fixture.build("acme-assist", target)
+    return target
+
+
+@pytest.fixture(scope="session")
+def data_repo(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """The acme-data fixture, built once per test run. Tests must not change it."""
+    target = tmp_path_factory.mktemp("fixture") / "acme-data"
+    build_fixture.build("acme-data", target)
+    return target
+
+
+@pytest.fixture(scope="session")
+def logistics_repo(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """The acme-logistics fixture, built once per test run. Tests must not change it."""
+    target = tmp_path_factory.mktemp("fixture") / "acme-logistics"
+    build_fixture.build("acme-logistics", target)
     return target
 
 

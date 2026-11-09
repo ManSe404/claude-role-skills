@@ -1,0 +1,55 @@
+version: 2
+
+sources:
+  - name: erp
+    description: Nightly copy of the ERP tables.
+    schema: erp
+    tables:
+      - name: orders
+      - name: order_lines
+      - name: customers
+      - name: products
+      - name: stores
+      - name: promotions
+
+models:
+  - name: stg_orders
+    columns:
+      - name: order_id
+        tests:
+          - unique
+          - not_null
+  - name: stg_order_lines
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+      - name: line_no
+        tests:
+          - not_null
+  - name: stg_customers
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+  - name: stg_products
+    columns:
+      - name: product_id
+        tests:
+          - unique
+          - not_null
+  - name: stg_stores
+    columns:
+      - name: store_id
+        tests:
+          - unique
+          - not_null
+  - name: stg_promotions
+    columns:
+      - name: promotion_id
+        tests:
+          - unique
+          - not_null
+      - name: product_id
+        tests:
+          - not_null

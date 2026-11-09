@@ -10,6 +10,7 @@ library only.
 Usage:
     python3 render_page.py PAGE.json -o PAGE.html   # write the page
     python3 render_page.py PAGE.json --check        # validate only
+    python3 render_page.py --site SITE.json         # write every page of a set, with a header linking them
 
 The fonts (Bricolage Grotesque, JetBrains Mono, SIL OFL 1.1) are read from ../assets/fonts and
 inlined, so the page is one file; without them it falls back to system fonts.
@@ -24,11 +25,13 @@ import argparse
 import base64
 import html
 import json
+import os
 import re
 import sys
 from itertools import pairwise
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 # JSON input is untyped by nature; validate() checks every shape before anything is rendered.
 Json = Any
@@ -60,6 +63,8 @@ BLOCK_TYPES = (
     "callout",
     "decision",
     "architecture",
+    "model",
+    "nested",
 )
 CONFIDENCE = ("high", "med", "guess")
 RATINGS = ("pass", "weak", "fail")
@@ -79,6 +84,9 @@ KINDS = {
 }
 TRUST = ("trusted", "untrusted")
 FLAGS = ("warn", "bad")
+TABLE_KINDS = ("fact", "dimension", "bridge", "hub", "link", "satellite", "staging", "table")
+COLUMN_KEYS = ("pk", "fk", "bk")
+CARDINALITIES = ("1:1", "1:n", "n:1", "n:n")
 
 
 # ---------------------------------------------------------------------------- validation
@@ -270,6 +278,248 @@ def _validate_architecture(block: Json, path: str, errs: list[str]) -> None:
             _str(step, "text", spath, errs)
             ends(step, spath, where)
 
+    if "reach" in block:
+        _validate_reach(block["reach"], f"{path}.reach", set(comps), errs)
+
+
+def _validate_reach(spec: Json, path: str, comps: set[str], errs: list[str]) -> None:
+    if not isinstance(spec, dict):
+        errs.append(f"{path}: must be an object")
+        return
+    _str(spec, "label", path, errs)
+    for key, required in (("from", True), ("targets", True), ("stops", False)):
+        ids = _list(spec, key, path, errs, required=required)
+        if required and not ids:
+            errs.append(f"{path}.{key}: at least one component id")
+        for i, name in enumerate(ids):
+            if name not in comps:
+                errs.append(f"{path}.{key}[{i}]: unknown component id {name!r}")
+
+
+def _validate_model(block: Json, path: str, errs: list[str]) -> None:
+    area_ids: set[str] = set()
+    for i, area in enumerate(_list(block, "areas", path, errs, required=False)):
+        apath = f"{path}.areas[{i}]"
+        if not isinstance(area, dict):
+            errs.append(f"{apath}: must be an object")
+            continue
+        _str(area, "id", apath, errs)
+        _str(area, "label", apath, errs)
+        if isinstance(area.get("id"), str):
+            if area["id"] in area_ids:
+                errs.append(f"{apath}.id: duplicate id {area['id']!r}")
+            area_ids.add(area["id"])
+    columns_of: dict[str, set[str]] = {}
+    tables = _list(block, "tables", path, errs)
+    if not tables:
+        errs.append(f"{path}.tables: at least one table")
+    for i, table in enumerate(tables):
+        tpath = f"{path}.tables[{i}]"
+        if not isinstance(table, dict):
+            errs.append(f"{tpath}: must be an object")
+            continue
+        _str(table, "id", tpath, errs)
+        _str(table, "label", tpath, errs)
+        for key in ("grain", "note", "history"):
+            _str(table, key, tpath, errs, required=False)
+        if table.get("kind", "table") not in TABLE_KINDS:
+            errs.append(f"{tpath}.kind: must be one of {', '.join(TABLE_KINDS)}")
+        if "area" in table and table["area"] not in area_ids:
+            errs.append(f"{tpath}.area: unknown area id {table['area']!r}")
+        if "flag" in table and table["flag"] not in FLAGS:
+            errs.append(f"{tpath}.flag: must be one of {', '.join(FLAGS)}")
+        names: set[str] = set()
+        for j, column in enumerate(_list(table, "columns", tpath, errs)):
+            cpath = f"{tpath}.columns[{j}]"
+            if not isinstance(column, dict):
+                errs.append(f"{cpath}: must be an object")
+                continue
+            _str(column, "name", cpath, errs)
+            for key in ("type", "note", "mask", "history"):
+                _str(column, key, cpath, errs, required=False)
+            if "key" in column and column["key"] not in COLUMN_KEYS:
+                errs.append(f"{cpath}.key: must be one of {', '.join(COLUMN_KEYS)}")
+            if "personal" in column and not isinstance(column["personal"], bool):
+                errs.append(f"{cpath}.personal: must be true or false")
+            if isinstance(column.get("name"), str):
+                if column["name"] in names:
+                    errs.append(f"{cpath}.name: duplicate column {column['name']!r}")
+                names.add(column["name"])
+        if isinstance(table.get("id"), str):
+            if table["id"] in columns_of:
+                errs.append(f"{tpath}.id: duplicate id {table['id']!r}")
+            columns_of[table["id"]] = names
+    for i, rel in enumerate(_list(block, "relations", path, errs, required=False)):
+        rpath = f"{path}.relations[{i}]"
+        if not isinstance(rel, dict):
+            errs.append(f"{rpath}: must be an object")
+            continue
+        for key in ("on", "label"):
+            _str(rel, key, rpath, errs, required=False)
+        if rel.get("cardinality", "n:1") not in CARDINALITIES:
+            errs.append(f"{rpath}.cardinality: must be one of {', '.join(CARDINALITIES)}")
+        known = True
+        for key in ("from", "to"):
+            if rel.get(key) not in columns_of:
+                errs.append(f"{rpath}.{key}: unknown table id {rel.get(key)!r}")
+                known = False
+        if known and isinstance(rel.get("on"), str):
+            for pair in rel["on"].split(","):
+                left, _, right = pair.strip().partition("=")
+                left, right = left.strip(), (right.strip() or left.strip())
+                if left not in columns_of[rel["from"]]:
+                    errs.append(f"{rpath}.on: {rel['from']!r} has no column {left!r}")
+                if right not in columns_of[rel["to"]]:
+                    errs.append(f"{rpath}.on: {rel['to']!r} has no column {right!r}")
+
+
+def _validate_nested(block: Json, path: str, errs: list[str]) -> None:
+    boxes: dict[str, Json] = {}
+    items = _list(block, "boxes", path, errs)
+    if not items:
+        errs.append(f"{path}.boxes: at least one box")
+    for i, box in enumerate(items):
+        bpath = f"{path}.boxes[{i}]"
+        if not isinstance(box, dict):
+            errs.append(f"{bpath}: must be an object")
+            continue
+        _str(box, "id", bpath, errs)
+        _str(box, "label", bpath, errs)
+        for key in ("tech", "note", "parent"):
+            _str(box, key, bpath, errs, required=False)
+        if box.get("kind", "service") not in KINDS:
+            errs.append(f"{bpath}.kind: must be one of {', '.join(KINDS)}")
+        if "flag" in box and box["flag"] not in FLAGS:
+            errs.append(f"{bpath}.flag: must be one of {', '.join(FLAGS)}")
+        if "side_effect" in box and not isinstance(box["side_effect"], bool):
+            errs.append(f"{bpath}.side_effect: must be true or false")
+        if "details" in box and not _pairs_ok(box["details"]):
+            errs.append(f"{bpath}.details: must be a list of [label, value] pairs")
+        if isinstance(box.get("id"), str):
+            if box["id"] in boxes:
+                errs.append(f"{bpath}.id: duplicate id {box['id']!r}")
+            boxes[box["id"]] = box
+    for i, box in enumerate(items):
+        if not isinstance(box, dict) or "parent" not in box:
+            continue
+        seen = {box.get("id")}
+        at = box["parent"]
+        while at is not None:
+            if at not in boxes:
+                errs.append(f"{path}.boxes[{i}].parent: unknown box id {at!r}")
+                break
+            if at in seen:
+                errs.append(f"{path}.boxes[{i}].parent: boxes contain each other")
+                break
+            seen.add(at)
+            at = boxes[at].get("parent")
+    level_ids: list[str] = []
+    for i, level in enumerate(_list(block, "levels", path, errs, required=False)):
+        lpath = f"{path}.levels[{i}]"
+        if not isinstance(level, dict):
+            errs.append(f"{lpath}: must be an object")
+            continue
+        _str(level, "id", lpath, errs)
+        _str(level, "label", lpath, errs)
+        _str(level, "note", lpath, errs, required=False)
+        for j, name in enumerate(_list(level, "open", lpath, errs)):
+            if name not in boxes:
+                errs.append(f"{lpath}.open[{j}]: unknown box id {name!r}")
+        if isinstance(level.get("id"), str):
+            if level["id"] in level_ids:
+                errs.append(f"{lpath}.id: duplicate id {level['id']!r}")
+            level_ids.append(level["id"])
+    for i, link in enumerate(_list(block, "links", path, errs, required=False)):
+        lpath = f"{path}.links[{i}]"
+        if not isinstance(link, dict):
+            errs.append(f"{lpath}: must be an object")
+            continue
+        _str(link, "label", lpath, errs, required=False)
+        if link.get("trust", "trusted") not in TRUST:
+            errs.append(f"{lpath}.trust: must be one of {', '.join(TRUST)}")
+        if "flag" in link and link["flag"] not in FLAGS:
+            errs.append(f"{lpath}.flag: must be one of {', '.join(FLAGS)}")
+        for key in ("from", "to"):
+            if link.get(key) not in boxes:
+                errs.append(f"{lpath}.{key}: unknown box id {link.get(key)!r}")
+    if errs and any(e.startswith(path) for e in errs):
+        return  # the rest needs a sound tree
+    views = _nest_views(block)
+    flow_ids: set[str] = set()
+    for i, flow in enumerate(_list(block, "flows", path, errs, required=False)):
+        fpath = f"{path}.flows[{i}]"
+        if not isinstance(flow, dict):
+            errs.append(f"{fpath}: must be an object")
+            continue
+        _str(flow, "id", fpath, errs)
+        _str(flow, "title", fpath, errs)
+        if isinstance(flow.get("id"), str):
+            if flow["id"] in flow_ids:
+                errs.append(f"{fpath}.id: duplicate id {flow['id']!r}")
+            flow_ids.add(flow["id"])
+        where = flow.get("variants", [v for v, _ in views])
+        if not isinstance(where, list) or not where:
+            errs.append(f"{fpath}.variants: must be a non-empty list of level ids")
+            continue
+        for name in where:
+            if name not in dict(views):
+                errs.append(f"{fpath}.variants: unknown level id {name!r}")
+        steps = _list(flow, "steps", fpath, errs)
+        if not steps:
+            errs.append(f"{fpath}.steps: at least one step")
+        for j, step in enumerate(steps):
+            spath = f"{fpath}.steps[{j}]"
+            if not isinstance(step, dict):
+                errs.append(f"{spath}: must be an object")
+                continue
+            _str(step, "text", spath, errs)
+            for key in ("from", "to"):
+                if step.get(key) not in boxes:
+                    errs.append(f"{spath}.{key}: unknown box id {step.get(key)!r}")
+                    continue
+                hidden = [
+                    v for v in where if v in dict(views) and step[key] not in _nest_visible(block, dict(views)[v])
+                ]
+                if hidden:
+                    errs.append(f"{spath}.{key}: {step[key]!r} is not visible at level {', '.join(hidden)}")
+    if "reach" in block:
+        _validate_reach(block["reach"], f"{path}.reach", set(boxes), errs)
+
+
+def _validate_facts(facts: Json, errs: list[str]) -> None:
+    """The part of a page that other skills read: not drawn, but its shape is checked."""
+    path = "page.facts"
+    if not isinstance(facts, dict):
+        errs.append(f"{path}: must be an object")
+        return
+    if facts.get("version") != 1:
+        errs.append(f"{path}.version: must be 1")
+    _str(facts, "scope", path, errs, required=False)
+    required: dict[str, tuple[str, ...]] = {
+        "regions": ("name",),
+        "data": ("name", "class"),
+        "components": ("id", "label"),
+        "costs": ("item", "currency", "as_of", "source"),
+        "decisions": ("title", "chosen"),
+    }
+    for key, fields in required.items():
+        for i, item in enumerate(_list(facts, key, path, errs, required=False)):
+            ipath = f"{path}.{key}[{i}]"
+            if not isinstance(item, dict):
+                errs.append(f"{ipath}: must be an object")
+                continue
+            for field in fields:
+                _str(item, field, ipath, errs)
+            if key == "costs":
+                if not isinstance(item.get("monthly"), int | float) or isinstance(item.get("monthly"), bool):
+                    errs.append(f"{ipath}.monthly: must be a number")
+                if isinstance(item.get("as_of"), str) and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", item["as_of"]):
+                    errs.append(f"{ipath}.as_of: must be a date, YYYY-MM-DD")
+    for key in ("assumptions", "open"):
+        for i, item in enumerate(_list(facts, key, path, errs, required=False)):
+            if not isinstance(item, str):
+                errs.append(f"{path}.{key}[{i}]: must be a string")
+
 
 def _validate_block(block: Json, path: str, errs: list[str], node_ids: set[str]) -> None:
     if not isinstance(block, dict):
@@ -370,6 +620,10 @@ def _validate_block(block: Json, path: str, errs: list[str], node_ids: set[str])
         _validate_decision(block, path, errs)
     elif kind == "architecture":
         _validate_architecture(block, path, errs)
+    elif kind == "model":
+        _validate_model(block, path, errs)
+    elif kind == "nested":
+        _validate_nested(block, path, errs)
     _str(block, "title", path, errs, required=False)
 
 
@@ -403,6 +657,8 @@ def validate(page: Json) -> list[str]:
         _str(stat, "note", spath, errs, required=False)
         if stat.get("tone", "info") not in TONES:
             errs.append(f"{spath}.tone: must be one of {', '.join(TONES)}")
+    if "facts" in page:
+        _validate_facts(page["facts"], errs)
     sections = _list(page, "sections", "page", errs)
     if not sections:
         errs.append("page.sections: at least one section")
@@ -421,6 +677,34 @@ def validate(page: Json) -> list[str]:
         seen.add(sid)
         for j, block in enumerate(_list(section, "blocks", spath, errs)):
             _validate_block(block, f"{spath}.blocks[{j}]", errs, node_ids)
+    return errs
+
+
+def validate_site(site: Json) -> list[str]:
+    """Return every problem with a site file; each page it lists is checked by validate()."""
+    errs: list[str] = []
+    if not isinstance(site, dict):
+        return ["site: must be a JSON object"]
+    _str(site, "title", "site", errs)
+    entries = _list(site, "pages", "site", errs)
+    if not entries:
+        errs.append("site.pages: at least one page")
+    seen: set[str] = set()
+    for i, entry in enumerate(entries):
+        path = f"site.pages[{i}]"
+        if not isinstance(entry, dict):
+            errs.append(f"{path}: must be an object")
+            continue
+        _str(entry, "label", path, errs)
+        _str(entry, "page", path, errs)
+        _str(entry, "group", path, errs, required=False)
+        name = entry.get("page")
+        if isinstance(name, str):
+            if not name.endswith(".json"):
+                errs.append(f"{path}.page: must be a page JSON, got {name!r}")
+            if name in seen:
+                errs.append(f"{path}.page: listed twice: {name!r}")
+            seen.add(name)
     return errs
 
 
@@ -790,8 +1074,46 @@ def taint(block: Json, variant: str) -> tuple[set[str], list[tuple[Json, str, li
     return touched, paths
 
 
+def reach(block: Json, variant: str) -> tuple[set[str], list[list[str]]]:
+    """What the block's `reach` starts can get to in one variant: the components touched, and the shortest
+    path to every listed target. Unlike untrusted text it only goes the way the links point, and a `stops`
+    component receives it but passes nothing on (masking, a firewall)."""
+    spec = block["reach"]
+    every = _variant_ids(block)
+    comps = {c["id"] for c in block["components"] if variant in _shown_in(c, every)}
+    near: dict[str, list[str]] = {k: [] for k in comps}
+    for link in block.get("links", []):
+        if variant in _shown_in(link, every) and link["from"] in comps and link["to"] in comps:
+            near[link["from"]].append(link["to"])
+    stops = set(spec.get("stops", []))
+    prev: dict[str, str | None] = {k: None for k in spec["from"] if k in comps}
+    queue = list(prev)
+    while queue:
+        node = queue.pop(0)
+        if node in stops:
+            continue
+        for other in near[node]:
+            if other not in prev:
+                prev[other] = node
+                queue.append(other)
+    paths: list[list[str]] = []
+    for target in spec["targets"]:
+        if target in prev:
+            chain: list[str] = []
+            step: str | None = target
+            while step is not None:
+                chain.append(step)
+                step = prev[step]
+            paths.append(list(reversed(chain)))
+    return set(prev), paths
+
+
 def _arch_svg(
-    block: Json, variant: str, every: list[str], found: tuple[set[str], list[tuple[Json, str, list[str]]]]
+    block: Json,
+    variant: str,
+    every: list[str],
+    found: tuple[set[str], list[tuple[Json, str, list[str]]]],
+    reached: tuple[set[str], list[list[str]]] | None = None,
 ) -> str:
     """One variant's diagram. Each variant is laid out on its own, so none leaves gaps for the others."""
     zones = block["zones"]
@@ -846,6 +1168,8 @@ def _arch_svg(
     touched, paths = found
     risk = {target for _, target, _ in paths}
     on_path = {pair for _, _, p in paths for pair in pairwise(p)}
+    reach_hit = {p[-1] for p in reached[1]} if reached else set()
+    reach_on = {pair for p in reached[1] for pair in pairwise(p)} if reached else set()
     v = _esc(variant)
     parts = [
         f'<svg class="arch-svg" data-variant="{v}" role="img" aria-label="{_esc(block.get("title", "Architecture"))}" '
@@ -866,6 +1190,7 @@ def _arch_svg(
             f"{_esc(_clip(zone['label'].upper(), fits['zone']))}</text></g>"
         )
     labels: list[str] = []
+    labelled: set[tuple[str, str]] = set()  # ten sources "daily" into one box need the word once
     for idx, link in enumerate(links):
         a, b = link["from"], link["to"]
         (x1, y1), (x2, y2) = port[(idx, "from")], port[(idx, "to")]
@@ -885,11 +1210,14 @@ def _arch_svg(
             f'data-a="{_esc(a)}" data-b="{_esc(b)}" data-v="{v}" '
             f'data-path="{v if (a, b) in on_path or (b, a) in on_path else ""}"'
         )
+        if reached:
+            attrs += f' data-rpath="{v if (a, b) in reach_on else ""}"'
         parts.append(
             f'<path class="{" ".join(classes)}" d="M{x1:.1f},{y1:.1f} C{c1[0]:.1f},{c1[1]:.1f} '
             f'{c2[0]:.1f},{c2[1]:.1f} {x2:.1f},{y2:.1f}" {attrs}/>'
         )
-        if link.get("label"):
+        if link.get("label") and (b, link["label"]) not in labelled:
+            labelled.add((b, link["label"]))
             # Beside the arrowhead, in the gap before the box it points at: a long link would put a
             # midpoint label on top of the zones it crosses.
             if sa == sb:
@@ -913,9 +1241,12 @@ def _arch_svg(
         if "variants" in comp and len(every) > 1:
             classes.append("vonly")
         caption = KINDS[kind] + (" · acts" if comp.get("side_effect") else "")
+        marks = (
+            f' data-reach="{v if k in reached[0] else ""}" data-rhit="{v if k in reach_hit else ""}"' if reached else ""
+        )
         parts.append(
             f'<g class="{" ".join(classes)}" data-k="{_esc(k)}" data-label="{_esc(comp["label"])}" '
-            f'data-v="{v}" data-taint="{v if k in touched else ""}" data-risk="{v if k in risk else ""}" '
+            f'data-v="{v}" data-taint="{v if k in touched else ""}" data-risk="{v if k in risk else ""}"{marks} '
             f'tabindex="0" role="button" aria-pressed="false"><title>{_esc(comp["label"])}</title>'
             f'<rect class="plate" x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="8"/>'
             f'<rect class="bar" x="{x + 1:.1f}" y="{y + 7:.1f}" width="3.5" height="{h - 14:.1f}" rx="1.5"/>'
@@ -982,11 +1313,16 @@ def _arch_card(comp: Json, block: Json, names: dict[str, str], every: list[str],
     return f'<article class="arch-card plate" data-k="{_esc(comp["id"])}">{"".join(body)}</article>'
 
 
-def _architecture(block: Json) -> str:
+def _architecture(block: Json, draw: Any = None, cards_from: Json | None = None) -> str:
+    """`draw` replaces the diagram and `cards_from` the block the cards are written from: the nested block
+    shares everything else, because a level of it is a variant."""
+    draw = draw or _arch_svg
     every = _variant_ids(block)
     labels = {v["id"]: v["label"] for v in block.get("variants", [])} or {"_": ""}
     names = {c["id"]: c["label"] for c in block["components"]}
     tainted = {v: taint(block, v) for v in every}
+    spec = block.get("reach")
+    reaches = {v: reach(block, v) for v in every} if spec else {}
     links = block.get("links", [])
     flows = block.get("flows", [])
     variants = block.get("variants", [])
@@ -1002,6 +1338,8 @@ def _architecture(block: Json) -> str:
         controls.append(f'<div class="seg" role="group" aria-label="Variant">{buttons}</div>')
     if untrusted:
         controls.append('<button type="button" class="arch-trust" aria-pressed="false">Trust boundaries</button>')
+    if spec:
+        controls.append(f'<button type="button" class="arch-reach" aria-pressed="false">{_esc(spec["label"])}</button>')
     if flows:
         buttons = "".join(
             f'<button type="button" data-set-flow="{_esc(f["id"])}" aria-pressed="false">{_esc(f["title"])}</button>'
@@ -1022,7 +1360,7 @@ def _architecture(block: Json) -> str:
         legend.append('<span class="legend-item"><i class="swatch untrusted"></i>untrusted text</span>')
     if any(c.get("side_effect") for c in block["components"]):
         legend.append('<span class="legend-item"><i class="swatch se"></i>side effect</span>')
-    if len(every) > 1 and any("variants" in c for c in block["components"]):
+    if cards_from is None and len(every) > 1 and any("variants" in c for c in block["components"]):
         legend.append('<span class="legend-item"><i class="swatch vonly"></i>only in some variants</span>')
 
     notes = "".join(
@@ -1055,7 +1393,8 @@ def _architecture(block: Json) -> str:
             '<div class="arch-flows"><p class="arch-hint flows-hint">Pick a flow above to walk a request '
             f"through it, step by step, with the buttons or the arrow keys</p>{''.join(items)}</div>"
         )
-    cards = "".join(_arch_card(c, block, names, every, labels) for c in block["components"])
+    source = cards_from or block
+    cards = "".join(_arch_card(c, source, names, every, labels) for c in source["components"])
     cards_html = (
         '<div class="arch-cards"><p class="arch-hint comp-hint">Click a component: what it does, what it uses, '
         f"what happens when it fails</p>{cards}</div>"
@@ -1091,11 +1430,33 @@ def _architecture(block: Json) -> str:
             )
         trust_html = f'<div class="arch-trustlist"><h3>Where untrusted text can reach an action</h3>{trust_body}</div>'
 
+    reach_html = ""
+    if spec:
+        many = len(every) > 1
+        rows = [
+            ([labels[v]] if many else []) + [names[p[-1]], names[p[0]], " → ".join(names[k] for k in p)]
+            for v in every
+            for p in reaches[v][1]
+        ]
+        if rows:
+            columns = (["Variant"] if many else []) + ["Reaches", "Starts at", "Shortest path"]
+            head = "".join(f"<th>{_esc(c)}</th>" for c in columns)
+            body = "".join("<tr>" + "".join(f"<td>{_esc(c)}</td>" for c in row) + "</tr>" for row in rows)
+            reach_body = (
+                f'<div class="table-wrap"><table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>'
+            )
+        else:
+            reach_body = (
+                '<div class="callout plate labelled c-ok"><span class="label">ok</span><p>None of the listed '
+                "targets is reached: every path stops first.</p></div>"
+            )
+        reach_html = f'<div class="arch-trustlist"><h3>{_inline(spec["label"])}: what it reaches</h3>{reach_body}</div>'
+
     # One diagram per variant. The script shows the chosen one; without it every variant is drawn,
     # each under its name.
     stage = "".join(
         (f'<p class="arch-vlabel">{_esc(labels[v])}</p>' if len(every) > 1 else "")
-        + _arch_svg(block, v, every, tainted[v])
+        + draw(block, v, every, tainted[v], reaches.get(v))
         for v in every
     )
     return (
@@ -1103,7 +1464,589 @@ def _architecture(block: Json) -> str:
         f'<div class="arch-stage">{stage}</div>'
         f'<div class="arch-caption" aria-live="polite"></div><div class="legend">{"".join(legend)}</div>'
         + (f'<div class="arch-vnotes">{notes}</div>' if notes else "")
-        + f"{cards_html}{flows_html}{trust_html}</div>"
+        + f"{cards_html}{flows_html}{trust_html}{reach_html}</div>"
+    )
+
+
+NEST_W = 180  # a closed box's width
+NEST_PAD = 18  # inside an open box
+NEST_HEAD = 50  # an open box's title
+NEST_GAP_X = 68  # between columns, where the links run
+NEST_GAP_Y = 18  # between boxes in a column
+NEST_MARGIN = 22
+NEST_MAX_COLUMNS = {1: 4}  # inside a box; deeper boxes get 3. Long chains fold, so a level still fits a screen
+
+
+def _nest_views(block: Json) -> list[tuple[str, set[str]]]:
+    """(level id, the boxes open at that level). Without levels, one view with everything open."""
+    if block.get("levels"):
+        return [(level["id"], set(level["open"])) for level in block["levels"]]
+    return [("_", {b["parent"] for b in block["boxes"] if b.get("parent")})]
+
+
+def _nest_visible(block: Json, opened: set[str]) -> set[str]:
+    """A box shows when every box around it is open."""
+    parent = {b["id"]: b.get("parent") for b in block["boxes"]}
+
+    def shows(key: str) -> bool:
+        at = parent[key]
+        while at is not None:
+            if at not in opened:
+                return False
+            at = parent[at]
+        return True
+
+    return {key for key in parent if shows(key)}
+
+
+def _nest_links(block: Json, visible: set[str]) -> list[Json]:
+    """The links as seen at one level: an end inside a closed box moves out to that box, and links that
+    end up joining the same two boxes become one."""
+    parent = {b["id"]: b.get("parent") for b in block["boxes"]}
+
+    def outward(key: str) -> str:
+        while key not in visible:
+            key = parent[key]
+        return key
+
+    def around(key: str) -> set[str]:
+        found: set[str] = set()
+        at = parent[key]
+        while at is not None:
+            found.add(at)
+            at = parent[at]
+        return found
+
+    merged: dict[tuple[str, str], list[Json]] = {}
+    for link in block.get("links", []):
+        a, b = outward(link["from"]), outward(link["to"])
+        if a != b and a not in around(b) and b not in around(a):
+            merged.setdefault((a, b), []).append(link)
+    result = []
+    for (a, b), group in merged.items():
+        lifted: Json = {"from": a, "to": b}
+        names = list(dict.fromkeys(item["label"] for item in group if item.get("label")))
+        if names:
+            lifted["label"] = names[0] + (f" +{len(names) - 1}" if len(names) > 1 else "")
+        if any(item.get("trust") == "untrusted" for item in group):
+            lifted["trust"] = "untrusted"
+        flags = {item.get("flag") for item in group}
+        if flags & set(FLAGS):
+            lifted["flag"] = "bad" if "bad" in flags else "warn"
+        result.append(lifted)
+    return result
+
+
+def _nest_as_architecture(block: Json) -> tuple[Json, Json]:
+    """The block as an architecture block whose variants are its levels, and the one its cards are written from."""
+    views = _nest_views(block)
+    has_levels = bool(block.get("levels"))
+    labels = {b["id"]: b["label"] for b in block["boxes"]}
+    parents = list(dict.fromkeys(b["parent"] for b in block["boxes"] if b.get("parent")))
+    zones = [{"id": "_top", "label": "Top level"}, *({"id": k, "label": labels[k]} for k in parents)]
+    arch: Json = {"type": "architecture", "zones": zones, "components": [], "links": []}
+    if block.get("title"):
+        arch["title"] = block["title"]
+    plain = []
+    for box in block["boxes"]:
+        comp = {**box, "zone": box.get("parent", "_top")}
+        plain.append(dict(comp))
+        if has_levels:
+            comp["variants"] = [v for v, opened in views if box["id"] in _nest_visible(block, opened)]
+        arch["components"].append(comp)
+    for name, opened in views:
+        for link in _nest_links(block, _nest_visible(block, opened)):
+            arch["links"].append({**link, "variants": [name]} if has_levels else link)
+    if has_levels:
+        arch["variants"] = [{k: level[k] for k in ("id", "label", "note") if k in level} for level in block["levels"]]
+    for key in ("flows", "reach"):
+        if key in block:
+            arch[key] = block[key]
+    raw_links = [{k: v for k, v in link.items() if k != "variants"} for link in block.get("links", [])]
+    return arch, {"zones": zones, "components": plain, "links": raw_links}
+
+
+def _nest_svg(
+    block: Json,
+    variant: str,
+    every: list[str],
+    found: tuple[set[str], list[tuple[Json, str, list[str]]]],
+    reached: tuple[set[str], list[list[str]]] | None = None,
+) -> str:
+    """One level: open boxes hold their children, laid out left to right with the graph helpers, recursively."""
+    comps = {c["id"]: c for c in block["components"] if variant in _shown_in(c, every)}
+    links = [link for link in block.get("links", []) if variant in _shown_in(link, every)]
+    children: dict[str | None, list[str]] = {}
+    for key, comp in comps.items():
+        children.setdefault(comp.get("parent"), []).append(key)
+
+    def inside(key: str, group: set[str]) -> str | None:
+        at: str | None = key
+        while at is not None and at not in group:
+            at = comps[at].get("parent")
+        return at
+
+    def closed_h(comp: Json) -> int:
+        return 64 if comp.get("tech") or comp.get("note") else 48
+
+    sizes: dict[str, tuple[float, float]] = {}
+    offsets: dict[str, tuple[float, float]] = {}
+
+    def place(kids: list[str], deep: int = 0) -> tuple[float, float]:
+        """Lay out siblings; return the width and height they take. Offsets are relative to their corner."""
+        group = set(kids)
+        pairs: dict[tuple[str, str], None] = {}
+        for link in links:
+            a, b = inside(link["from"], group), inside(link["to"], group)
+            if a and b and a != b:
+                pairs[(a, b)] = None
+        # A store takes no column of its own: whoever writes it and whoever reads it count as joined, and
+        # it stands under its last writer. Chains of service, queue, service, database stay short.
+        stores = {k for k in kids if comps[k].get("kind") == "store" and not children.get(k)}
+        into = {k: [a for a, b in pairs if b == k and a not in stores] for k in stores}
+        joined = {(a, b) for a, b in pairs if a not in stores and b not in stores}
+        for k in stores:
+            out_of = [b for a, b in pairs if a == k and b not in stores]
+            joined |= {(a, b) for a in into[k] for b in out_of if a != b}
+        edges = [{"from": a, "to": b} for a, b in sorted(joined)]
+        rest = [k for k in kids if k not in stores]
+        layer, back = _layers(rest, edges) if rest else ({}, set())
+        for k in stores:
+            near = into[k] or [b for a, b in pairs if a == k and b not in stores]
+            layer[k] = max((layer[n] for n in near), default=0)
+        count = max(layer.values()) + 1
+        most = NEST_MAX_COLUMNS.get(deep, 3) if deep else count
+        if count > most:
+            layer = {k: v * most // count for k, v in layer.items()}
+        columns: list[list[str]] = [[] for _ in range(max(layer.values()) + 1)]
+        for key in kids:
+            columns[layer[key]].append(key)
+        _order(columns, edges, back)
+        for col in columns:
+            col.sort(key=lambda k: k in stores)
+        for key in kids:
+            measure(key, deep + 1)
+        widths = [max(sizes[k][0] for k in col) for col in columns]
+        heights = [sum(sizes[k][1] for k in col) + NEST_GAP_Y * (len(col) - 1) for col in columns]
+        inner = max(heights)
+        x = 0.0
+        for c, col in enumerate(columns):
+            y = (inner - heights[c]) / 2
+            for key in col:
+                offsets[key] = (x + (widths[c] - sizes[key][0]) / 2, y)
+                y += sizes[key][1] + NEST_GAP_Y
+            x += widths[c] + NEST_GAP_X
+        return x - NEST_GAP_X, inner
+
+    def measure(key: str, deep: int) -> None:
+        kids = children.get(key)
+        if not kids:
+            sizes[key] = (float(NEST_W), float(closed_h(comps[key])))
+            return
+        w, h = place(kids, deep)
+        sizes[key] = (max(w, NEST_W) + 2 * NEST_PAD, h + NEST_HEAD + NEST_PAD)
+
+    roots = children.get(None, [])
+    total_w, total_h = place(roots)
+    pos: dict[str, tuple[float, float, float, float]] = {}
+
+    def settle(kids: list[str], ox: float, oy: float) -> None:
+        for key in kids:
+            x, y = ox + offsets[key][0], oy + offsets[key][1]
+            pos[key] = (x, y, *sizes[key])
+            if children.get(key):
+                settle(children[key], x + NEST_PAD, y + NEST_HEAD)
+
+    settle(roots, float(NEST_MARGIN), float(NEST_MARGIN))
+    width, height = total_w + 2 * NEST_MARGIN, total_h + 2 * NEST_MARGIN
+
+    def sides_of(a: str, b: str) -> tuple[str, str]:
+        ax, ay, aw, ah = pos[a]
+        bx, by, bw, _ = pos[b]
+        if ax + aw <= bx:
+            return "R", "L"
+        if bx + bw <= ax:
+            return "L", "R"
+        return ("B", "T") if ay + ah <= by else ("T", "B")
+
+    link_sides = [sides_of(link["from"], link["to"]) for link in links]
+
+    def in_the_way(a: str, b: str, sides: tuple[str, str]) -> float | None:
+        """The lowest bottom edge among the closed boxes a straight link would run through, if any."""
+        ax, ay, aw, ah = pos[a]
+        bx, by, bw, bh = pos[b]
+        x1, y1 = (ax + aw if sides[0] == "R" else ax), ay + ah / 2
+        x2, y2 = (bx + bw if sides[1] == "R" else bx), by + bh / 2
+        bottoms = []
+        for key, (x, y, w, h) in pos.items():
+            if key not in (a, b) and not children.get(key):
+                for t in (i / 40 for i in range(1, 40)):
+                    if x - 2 <= x1 + (x2 - x1) * t <= x + w + 2 and y - 2 <= y1 + (y2 - y1) * t <= y + h + 2:
+                        bottoms.append(y + h)
+                        break
+        return max(bottoms) if bottoms else None
+
+    # A link that would cross a box goes underneath it instead: out of the bottom, into the bottom.
+    arcs: dict[int, float] = {}
+    for idx, link in enumerate(links):
+        a, b = link["from"], link["to"]
+        if link_sides[idx][0] in "RL" and (low := in_the_way(a, b, link_sides[idx])) is not None:
+            base = max(pos[a][1] + pos[a][3], pos[b][1] + pos[b][3])
+            lowest = max(low, base) + 16 + 10 * len(arcs)
+            arcs[idx] = base + (lowest - base) / 0.75
+            height = max(height, lowest + NEST_MARGIN)
+            link_sides[idx] = ("B", "B")
+    at_side: dict[tuple[str, str], list[tuple[float, int, str]]] = {}
+    for idx, link in enumerate(links):
+        a, b = link["from"], link["to"]
+        sa, sb = link_sides[idx]
+        at_side.setdefault((a, sa), []).append((_nest_along(pos[b], sa), idx, "from"))
+        at_side.setdefault((b, sb), []).append((_nest_along(pos[a], sb), idx, "to"))
+    port: dict[tuple[int, str], tuple[float, float]] = {}
+    for (key, side), items in at_side.items():
+        x, y, w, h = pos[key]
+        for n, (_, idx, end) in enumerate(sorted(items)):
+            share = (n + 1) / (len(items) + 1)
+            port[(idx, end)] = {
+                "R": (x + w, y + h * share),
+                "L": (x, y + h * share),
+                "T": (x + w * share, y),
+                "B": (x + w * share, y + h),
+            }[side]
+
+    touched, paths = found
+    risk = {target for _, target, _ in paths}
+    on_path = {pair for _, _, p in paths for pair in pairwise(p)}
+    reach_hit = {p[-1] for p in reached[1]} if reached else set()
+    reach_on = {pair for p in reached[1] for pair in pairwise(p)} if reached else set()
+    v = _esc(variant)
+    parts = [
+        f'<svg class="arch-svg nested" data-variant="{v}" role="img" '
+        f'aria-label="{_esc(block.get("title", "Architecture"))}" viewBox="0 0 {width:.0f} {height:.0f}" '
+        f'style="width:100%;max-width:{width:.0f}px;min-width:{min(width, max(width * 0.72, 720)):.0f}px" '
+        'xmlns="http://www.w3.org/2000/svg"><defs>'
+    ]
+    for kind in ("base", "red", "in", "out", "hot"):
+        parts.append(
+            f'<marker id="arch-arrow-{kind}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" '
+            f'orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah-{kind}"/></marker>'
+        )
+    parts.append("</defs>")
+
+    def opening(key: str, comp: Json, extra: list[str]) -> str:
+        kind = comp.get("kind", "service")
+        classes = ["comp", f"k-{kind}", *extra]
+        if comp.get("side_effect"):
+            classes.append("se")
+        if comp.get("flag"):
+            classes.append(f"f-{comp['flag']}")
+        marks = (
+            f' data-reach="{v if key in reached[0] else ""}" data-rhit="{v if key in reach_hit else ""}"'
+            if reached
+            else ""
+        )
+        return (
+            f'<g class="{" ".join(classes)}" data-k="{_esc(key)}" data-label="{_esc(comp["label"])}" '
+            f'data-v="{v}" data-taint="{v if key in touched else ""}" data-risk="{v if key in risk else ""}"{marks} '
+            f'tabindex="0" role="button" aria-pressed="false"><title>{_esc(comp["label"])}</title>'
+        )
+
+    def depth(key: str) -> int:
+        count, at = 0, comps[key].get("parent")
+        while at is not None:
+            count, at = count + 1, comps[at].get("parent")
+        return count
+
+    for key in sorted((k for k in comps if children.get(k)), key=depth):
+        comp = comps[key]
+        x, y, w, h = pos[key]
+        parts.append(opening(key, comp, ["open-box"]))
+        parts.append(f'<rect class="plate" x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="12"/>')
+        caption = KINDS[comp.get("kind", "service")].upper()
+        parts.append(f'<text class="ck" x="{x + 14:.1f}" y="{y + 18:.1f}">{_esc(caption)}</text>')
+        title = _clip(comp["label"], int((w - 28) // 8))
+        parts.append(f'<text class="cl" x="{x + 14:.1f}" y="{y + 38:.1f}">{_esc(title)}</text>')
+        if comp.get("tech"):
+            parts.append(
+                f'<text class="ct" x="{x + w - 14:.1f}" y="{y + 18:.1f}" text-anchor="end">'
+                f"{_esc(_clip(comp['tech'], int((w - 28) // 14)))}</text>"
+            )
+        if comp.get("flag"):
+            parts.append(f'<circle class="flag" cx="{x + w - 13:.1f}" cy="{y + 34:.1f}" r="4.5"/>')
+        parts.append("</g>")
+    labels: list[str] = []
+    labelled: set[tuple[str, str]] = set()
+    pull = {"R": (1, 0), "L": (-1, 0), "T": (0, -1), "B": (0, 1)}
+    for idx, link in enumerate(links):
+        a, b = link["from"], link["to"]
+        (x1, y1), (x2, y2) = port[(idx, "from")], port[(idx, "to")]
+        sa, sb = link_sides[idx]
+        reach_x, reach_y = max(30.0, abs(x2 - x1) / 2), max(24.0, abs(y2 - y1) / 2)
+        c1 = (x1 + pull[sa][0] * reach_x, y1 + pull[sa][1] * reach_y)
+        c2 = (x2 + pull[sb][0] * reach_x, y2 + pull[sb][1] * reach_y)
+        if idx in arcs:
+            c1, c2 = (x1, arcs[idx]), (x2, arcs[idx])
+        classes = ["link"]
+        if link.get("trust") == "untrusted":
+            classes.append("untrusted")
+        if link.get("flag"):
+            classes.append(f"f-{link['flag']}")
+        attrs = (
+            f'data-a="{_esc(a)}" data-b="{_esc(b)}" data-v="{v}" '
+            f'data-path="{v if (a, b) in on_path or (b, a) in on_path else ""}"'
+        )
+        if reached:
+            attrs += f' data-rpath="{v if (a, b) in reach_on else ""}"'
+        parts.append(
+            f'<path class="{" ".join(classes)}" d="M{x1:.1f},{y1:.1f} C{c1[0]:.1f},{c1[1]:.1f} '
+            f'{c2[0]:.1f},{c2[1]:.1f} {x2:.1f},{y2:.1f}" {attrs}/>'
+        )
+        if link.get("label") and (b, link["label"]) not in labelled:
+            labelled.add((b, link["label"]))
+            lx, ly, anchor = {
+                "L": (x2 - 8, y2 - 6, "end"),
+                "R": (x2 + 8, y2 - 6, "start"),
+                "T": (x2 + 7, y2 - 9, "start"),
+                "B": (x2 + 7, y2 + 16, "start"),
+            }[sb]
+            labels.append(
+                f'<text class="link-label{" untrusted" if "untrusted" in classes else ""}" x="{lx:.1f}" '
+                f'y="{ly:.1f}" text-anchor="{anchor}" {attrs}>{_esc(_clip(link["label"], 16))}</text>'
+            )
+    for key, comp in comps.items():
+        if children.get(key):
+            continue
+        x, y, w, h = pos[key]
+        caption = KINDS[comp.get("kind", "service")] + (" · acts" if comp.get("side_effect") else "")
+        parts.append(opening(key, comp, []))
+        parts.append(
+            f'<rect class="plate" x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="8"/>'
+            f'<rect class="bar" x="{x + 1:.1f}" y="{y + 7:.1f}" width="3.5" height="{h - 14:.1f}" rx="1.5"/>'
+            f'<text class="ck" x="{x + 16:.1f}" y="{y + 17:.1f}">{_esc(_clip(caption.upper(), 22))}</text>'
+            f'<text class="cl" x="{x + 16:.1f}" y="{y + 36:.1f}">{_esc(_clip(comp["label"], 21))}</text>'
+        )
+        line = comp.get("tech") or comp.get("note")
+        if line:
+            parts.append(f'<text class="ct" x="{x + 16:.1f}" y="{y + 53:.1f}">{_esc(_clip(line, 24))}</text>')
+        if comp.get("flag"):
+            parts.append(f'<circle class="flag" cx="{x + w - 13:.1f}" cy="{y + 13:.1f}" r="4.5"/>')
+        parts.append("</g>")
+    parts.extend(labels)
+    parts.append("</svg>")
+    return "".join(parts)
+
+
+def _nest_along(rect: tuple[float, float, float, float], side: str) -> float:
+    """Where the other end sits along a side, so links leave a box without crossing each other."""
+    x, y, w, h = rect
+    return x + w / 2 if side in "TB" else y + h / 2
+
+
+def _nested(block: Json) -> str:
+    arch, cards = _nest_as_architecture(block)
+    return _architecture(arch, draw=_nest_svg, cards_from=cards)
+
+
+MODEL_W = 236  # a table's width
+MODEL_GAP_X = 108  # between columns, where the relations run
+MODEL_GAP_Y = 20  # between tables in a column
+MODEL_PAD = 24
+MODEL_KEYS = 3  # key columns shown on the box; the card lists them all
+MODEL_BULGE = 40  # a relation inside one column bows out to the right
+
+
+def _model_keys(table: Json) -> list[str]:
+    return [c["name"] for c in table["columns"] if c.get("key") == "pk"]
+
+
+def _model_h(table: Json) -> int:
+    return 66 + 17 * max(1, min(len(_model_keys(table)), MODEL_KEYS))
+
+
+def _model_svg(block: Json) -> str:
+    """Tables left to right: the many side of a relation stands left of the one side, so a star reads
+    fact, then dimensions, and a vault link, then its hubs."""
+    tables = {t["id"]: t for t in block["tables"]}
+    relations = block.get("relations", [])
+    flipped = [r.get("cardinality", "n:1") == "1:n" for r in relations]
+    edges = [
+        {"from": r["to"], "to": r["from"]} if flip else {"from": r["from"], "to": r["to"]}
+        for r, flip in zip(relations, flipped, strict=True)
+    ]
+    layer, back = _layers(list(tables), edges)
+    columns: list[list[str]] = [[] for _ in range(max(layer.values()) + 1)]
+    for key in tables:
+        columns[layer[key]].append(key)
+    _order(columns, edges, back)
+    heights = [sum(_model_h(tables[k]) for k in col) + MODEL_GAP_Y * max(0, len(col) - 1) for col in columns]
+    inner = max(heights)
+    pos: dict[str, tuple[float, float, float]] = {}
+    for i, col in enumerate(columns):
+        x = float(MODEL_PAD + i * (MODEL_W + MODEL_GAP_X))
+        y = MODEL_PAD + (inner - heights[i]) / 2
+        for key in col:
+            pos[key] = (x, y, float(_model_h(tables[key])))
+            y += _model_h(tables[key]) + MODEL_GAP_Y
+    width = 2 * MODEL_PAD + len(columns) * MODEL_W + (len(columns) - 1) * MODEL_GAP_X + MODEL_BULGE
+    height = 2 * MODEL_PAD + inner
+
+    sides: dict[tuple[str, str], list[tuple[float, int, str]]] = {}
+    side_of: list[tuple[str, str]] = []
+    for idx, edge in enumerate(edges):
+        a, b = edge["from"], edge["to"]
+        sa, sb = ("R", "L") if layer[a] < layer[b] else ("L", "R") if layer[a] > layer[b] else ("R", "R")
+        side_of.append((sa, sb))
+        sides.setdefault((a, sa), []).append((pos[b][1] + pos[b][2] / 2, idx, "from"))
+        sides.setdefault((b, sb), []).append((pos[a][1] + pos[a][2] / 2, idx, "to"))
+    port: dict[tuple[int, str], tuple[float, float]] = {}
+    for (key, side), items in sides.items():
+        x, y, h = pos[key]
+        for n, (_, idx, end) in enumerate(sorted(items)):
+            port[(idx, end)] = (x + MODEL_W if side == "R" else x, y + h * (n + 1) / (len(items) + 1))
+
+    parts = [
+        f'<svg class="model-svg" role="img" aria-label="{_esc(block.get("title", "Data model"))}" '
+        f'viewBox="0 0 {width:.0f} {height:.0f}" style="width:100%;max-width:{width:.0f}px;'
+        f'min-width:{min(width, max(width * 0.72, 720)):.0f}px" xmlns="http://www.w3.org/2000/svg"><defs>'
+    ]
+    for name in ("base", "on"):
+        parts.append(
+            f'<marker id="model-arrow-{name}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" '
+            f'orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mh-{name}"/></marker>'
+        )
+    parts.append("</defs>")
+    labels: list[str] = []
+    for idx, edge in enumerate(edges):
+        rel = relations[idx]
+        (x1, y1), (x2, y2) = port[(idx, "from")], port[(idx, "to")]
+        sa, sb = side_of[idx]
+        if sa == sb:
+            c1, c2 = (x1 + MODEL_BULGE, y1), (x2 + MODEL_BULGE, y2)
+        else:
+            dx = max(30.0, abs(x2 - x1) / 2)
+            c1 = (x1 + dx if sa == "R" else x1 - dx, y1)
+            c2 = (x2 - dx if sb == "L" else x2 + dx, y2)
+        cardinality = rel.get("cardinality", "n:1")
+        attrs = f'data-a="{_esc(edge["from"])}" data-b="{_esc(edge["to"])}"'
+        many = " many" if cardinality == "n:n" else ""
+        parts.append(
+            f'<path class="rel{many}" d="M{x1:.1f},{y1:.1f} C{c1[0]:.1f},{c1[1]:.1f} {c2[0]:.1f},{c2[1]:.1f} '
+            f'{x2:.1f},{y2:.1f}" {attrs}/>'
+        )
+        if sa == sb:
+            lx, ly, anchor = max(x1, x2) + MODEL_BULGE * 0.75 + 4, (y1 + y2) / 2 + 4, "start"
+        elif sb == "L":
+            lx, ly, anchor = x2 - 8, y2 - 6, "end"
+        else:
+            lx, ly, anchor = x2 + 8, y2 - 6, "start"
+        labels.append(
+            f'<text class="rel-label{many}" x="{lx:.1f}" y="{ly:.1f}" text-anchor="{anchor}" {attrs}>'
+            f"{_esc(cardinality)}</text>"
+        )
+    for key, table in tables.items():
+        x, y, h = pos[key]
+        kind = table.get("kind", "table")
+        keys = _model_keys(table)
+        others = len(table["columns"]) - min(len(keys), MODEL_KEYS)
+        personal = sum(1 for c in table["columns"] if c.get("personal"))
+        classes = ["tbl", f"m-{kind}"]
+        if table.get("flag"):
+            classes.append(f"f-{table['flag']}")
+        parts.append(
+            f'<g class="{" ".join(classes)}" data-k="{_esc(key)}" data-label="{_esc(table["label"])}" '
+            f'data-area="{_esc(table.get("area", ""))}" tabindex="0" role="button" aria-pressed="false">'
+            f"<title>{_esc(table['label'])}</title>"
+            f'<rect class="plate" x="{x:.1f}" y="{y:.1f}" width="{MODEL_W}" height="{h:.1f}" rx="8"/>'
+            f'<rect class="bar" x="{x + 1:.1f}" y="{y + 7:.1f}" width="3.5" height="{h - 14:.1f}" rx="1.5"/>'
+            f'<text class="ck" x="{x + 16:.1f}" y="{y + 17:.1f}">{_esc(kind.upper())}</text>'
+            f'<text class="cl" x="{x + 16:.1f}" y="{y + 36:.1f}">{_esc(_clip(table["label"], 25))}</text>'
+        )
+        for n, name in enumerate(keys[:MODEL_KEYS]):
+            parts.append(
+                f'<text class="cr" x="{x + 16:.1f}" y="{y + 55 + 17 * n:.1f}">PK {_esc(_clip(name, 28))}</text>'
+            )
+        if not keys:
+            parts.append(f'<text class="cr none" x="{x + 16:.1f}" y="{y + 55:.1f}">no primary key</text>')
+        more = f"+ {others} more column{'' if others == 1 else 's'}" if others else "no other columns"
+        if personal:
+            more += f" · {personal} personal"
+        parts.append(f'<text class="cm" x="{x + 16:.1f}" y="{y + h - 10:.1f}">{_esc(more)}</text>')
+        if table.get("flag"):
+            parts.append(f'<circle class="flag" cx="{x + MODEL_W - 13:.1f}" cy="{y + 13:.1f}" r="4.5"/>')
+        parts.append("</g>")
+    parts.extend(labels)
+    parts.append("</svg>")
+    return "".join(parts)
+
+
+def _model_card(table: Json, block: Json, names: dict[str, str], areas: dict[str, str]) -> str:
+    kind = table.get("kind", "table")
+    chips = [f'<span class="chip">{_esc(kind)}</span>']
+    if table.get("area"):
+        chips.insert(0, f'<span class="chip">{_esc(areas[table["area"]])}</span>')
+    if table.get("flag"):
+        chips.append(
+            f'<span class="chip sev-{"high" if table["flag"] == "bad" else "medium"}">'
+            f"{'risk' if table['flag'] == 'bad' else 'watch'}</span>"
+        )
+    body = [f"<header>{''.join(chips)}</header><h4>{_inline(table['label'])}</h4>"]
+    if table.get("grain"):
+        body.append(f'<p class="grain"><span class="fix-label">Grain</span> {_inline(table["grain"])}</p>')
+    if table.get("history"):
+        body.append(f'<p class="grain"><span class="fix-label">History</span> {_inline(table["history"])}</p>')
+    if table.get("note"):
+        body.append(f'<div class="evidence">{_paragraphs(table["note"])}</div>')
+    rows = []
+    for column in table["columns"]:
+        notes = [column.get("note", "")]
+        if column.get("history"):
+            notes.append(f"history: {column['history']}")
+        if column.get("mask"):
+            notes.append(f"mask: {column['mask']}")
+        personal = '<span class="chip se">personal</span>' if column.get("personal") else ""
+        rows.append(
+            f'<tr><td class="mono">{_esc(column["name"])}</td><td class="mono">{_esc(column.get("type", ""))}</td>'
+            f'<td class="mono">{_esc(column.get("key", ""))}</td><td>{personal}</td>'
+            f"<td>{_inline(' · '.join(n for n in notes if n))}</td></tr>"
+        )
+    body.append(
+        '<div class="table-wrap"><table><thead><tr><th>Column</th><th>Type</th><th>Key</th><th>Data</th><th>Note</th>'
+        f"</tr></thead><tbody>{''.join(rows)}</tbody></table></div>"
+    )
+    joins = []
+    for rel in block.get("relations", []):
+        if table["id"] in (rel["from"], rel["to"]):
+            other = rel["to"] if rel["from"] == table["id"] else rel["from"]
+            bits = [rel.get("cardinality", "n:1")]
+            if rel.get("on"):
+                bits.append(f"on {rel['on']}")
+            if rel.get("label"):
+                bits.append(rel["label"])
+            joins.append(f"<li>{_esc(names[other])} · {_inline(' · '.join(bits))}</li>")
+    if joins:
+        body.append(f'<div class="io"><div><span class="fix-label">Joins</span><ul>{"".join(joins)}</ul></div></div>')
+    return f'<article class="arch-card model-card plate" data-k="{_esc(table["id"])}">{"".join(body)}</article>'
+
+
+def _model(block: Json) -> str:
+    names = {t["id"]: t["label"] for t in block["tables"]}
+    area_list = block.get("areas", [])
+    areas = {a["id"]: a["label"] for a in area_list}
+    controls = ""
+    if len(area_list) > 1:
+        buttons = "".join(
+            f'<button type="button" data-set-area="{_esc(a["id"])}" aria-pressed="false">{_esc(a["label"])}</button>'
+            for a in area_list
+        )
+        controls = f'<div class="arch-controls"><div class="seg" role="group" aria-label="Area">{buttons}</div></div>'
+    kinds = [k for k in TABLE_KINDS if any(t.get("kind", "table") == k for t in block["tables"])]
+    legend = "".join(f'<span class="legend-item"><i class="swatch m-{k}"></i>{_esc(k)}</span>' for k in kinds)
+    cards = "".join(_model_card(t, block, names, areas) for t in block["tables"])
+    return (
+        f'<div class="model">{controls}<div class="arch-stage">{_model_svg(block)}</div>'
+        f'<div class="legend">{legend}</div>'
+        '<div class="arch-cards"><p class="arch-hint comp-hint">Click a table: its grain, every column, what it '
+        f"joins to</p>{cards}</div></div>"
     )
 
 
@@ -1214,6 +2157,10 @@ def _block(block: Json) -> str:
         body = _decision(block)
     elif kind == "architecture":
         body = _architecture(block)
+    elif kind == "model":
+        body = _model(block)
+    elif kind == "nested":
+        body = _nested(block)
     else:  # kv
         rows = "".join(f"<dt>{_cell(k)}</dt><dd>{_cell(v)}</dd>" for k, v in block["items"])
         body = f'<dl class="kv">{rows}</dl>'
@@ -1517,6 +2464,7 @@ color:var(--purple-soft)}
 border:1px solid var(--plate-border);border-radius:14px;
 background:linear-gradient(160deg,rgba(27,20,54,.7) 0%,rgba(17,12,36,.7) 100%)}
 svg.arch-svg{display:block;height:auto;font-family:var(--mono)}
+svg.arch-svg.nested{margin:0 auto}
 .zone-bg{fill:rgba(236,231,248,.022);stroke:rgba(173,150,255,.14);stroke-width:1}
 .zone-label{font-size:11.5px;font-weight:600;letter-spacing:.14em;fill:var(--ink-3)}
 .comp{cursor:pointer;outline:none;transition:opacity .18s}
@@ -1535,6 +2483,7 @@ svg.arch-svg{display:block;height:auto;font-family:var(--mono)}
 .k-human .plate{fill:rgba(126,224,168,.06);stroke:rgba(126,224,168,.55)}.k-human .bar{fill:var(--green)}
 .k-guard .plate{stroke:rgba(126,224,168,.55)}.k-guard .bar{fill:var(--green)}
 .k-ops .plate{fill:none;stroke:var(--line)}.k-ops .cl{fill:var(--ink-2)}.k-ops .bar{fill:var(--ink-3)}
+.comp.open-box .plate{fill:rgba(173,150,255,.04);stroke:rgba(173,150,255,.4);stroke-width:1.2;stroke-dasharray:7 5}
 .comp.se .plate{stroke:var(--orange);stroke-width:1.9}
 .comp.vonly .plate{stroke-dasharray:4 3}
 .comp.f-warn .plate{stroke:var(--gold);stroke-width:2.3}.comp.f-bad .plate{stroke:var(--red);stroke-width:2.4}
@@ -1567,6 +2516,50 @@ animation:arch-dash 1s linear infinite}
 .arch.trust .comp.risk .plate{fill:rgba(255,138,115,.2);stroke:var(--red);stroke-width:2.8}
 .arch.trust .link:not(.path):not(.untrusted),.arch.trust .link-label:not(.untrusted){opacity:.14}
 .arch.trust .link.path{stroke:var(--red);stroke-width:2.4;opacity:1;marker-end:url(#arch-arrow-red)}
+.arch-controls .arch-reach[aria-pressed=true]{background:rgba(255,166,87,.16);color:var(--orange);
+border-color:rgba(255,166,87,.6)}
+.arch.reach .comp:not(.rch):not(.gone){opacity:.32}
+.arch.reach .comp.rch .plate{stroke:rgba(255,166,87,.75)}
+.arch.reach .comp.rhit .plate{fill:rgba(255,166,87,.2);stroke:var(--orange);stroke-width:2.8}
+.arch.reach .link:not(.rpath),.arch.reach .link-label:not(.rpath){opacity:.14}
+.arch.reach .link.rpath{stroke:var(--orange);stroke-width:2.4;opacity:1;marker-end:url(#arch-arrow-out)}
+svg.model-svg{display:block;height:auto;margin:0 auto;font-family:var(--mono)}
+.tbl{cursor:pointer;outline:none;transition:opacity .18s}
+.tbl .plate{fill:rgba(236,231,248,.045);stroke:rgba(173,150,255,.32);stroke-width:1.2}
+.tbl .bar{fill:rgba(173,150,255,.42)}
+.tbl .ck{font-size:10px;font-weight:600;letter-spacing:.12em;fill:var(--ink-3)}
+.tbl .cl{font-family:var(--sans);font-size:15px;font-weight:700;fill:var(--ink)}
+.tbl .cr{font-size:11.5px;fill:var(--purple-soft)}.tbl .cr.none{fill:var(--red)}
+.tbl .cm{font-size:11px;fill:var(--ink-3)}
+.tbl:focus-visible .plate{stroke:var(--gold);stroke-width:2.4}
+.m-fact .plate{fill:rgba(138,99,242,.17);stroke:var(--purple)}.m-fact .bar{fill:var(--purple)}
+.m-dimension .plate{fill:rgba(255,210,63,.05);stroke:rgba(255,210,63,.5)}.m-dimension .bar{fill:var(--gold)}
+.m-bridge .plate{stroke:rgba(255,166,87,.6)}.m-bridge .bar{fill:var(--orange)}
+.m-hub .plate{fill:rgba(138,99,242,.17);stroke:var(--purple)}.m-hub .bar{fill:var(--purple)}
+.m-link .plate{stroke:rgba(255,166,87,.6)}.m-link .bar{fill:var(--orange)}
+.m-satellite .plate{fill:rgba(255,210,63,.05);stroke:rgba(255,210,63,.5)}.m-satellite .bar{fill:var(--gold)}
+.m-staging .plate{fill:none;stroke:var(--line);stroke-dasharray:5 4}.m-staging .bar{fill:var(--ink-3)}
+.tbl.f-warn .plate{stroke:var(--gold);stroke-width:2.3}.tbl.f-bad .plate{stroke:var(--red);stroke-width:2.4}
+.tbl.f-warn .flag{fill:var(--gold)}.tbl.f-bad .flag{fill:var(--red)}
+.rel{fill:none;stroke:rgba(201,184,255,.42);stroke-width:1.5;marker-end:url(#model-arrow-base);transition:opacity .18s}
+.rel.many{stroke:var(--red);stroke-dasharray:6 5}
+.rel-label{font-size:11px;fill:var(--ink-2);paint-order:stroke;stroke:#0f0a1e;stroke-width:5px;stroke-linejoin:round;
+transition:opacity .18s}
+.rel-label.many{fill:var(--red)}
+.mh-base{fill:rgba(201,184,255,.55)}.mh-on{fill:var(--orange)}
+.model.focus .tbl:not(.sel):not(.near){opacity:.3}
+.model.focus .rel:not(.on),.model.focus .rel-label:not(.on){opacity:.1}
+.tbl.sel .plate{fill:rgba(138,99,242,.42);stroke:var(--purple-soft);stroke-width:2.4}
+.tbl.near .plate{stroke:var(--orange);stroke-width:2}
+.rel.on{stroke:var(--orange);stroke-width:2.3;marker-end:url(#model-arrow-on)}.rel-label.on{fill:var(--orange)}
+.tbl.out{opacity:.12}.model .rel.fade,.model .rel-label.fade{opacity:.08}
+.swatch.m-fact,.swatch.m-hub{background:rgba(138,99,242,.25);border-color:var(--purple)}
+.swatch.m-dimension,.swatch.m-satellite{background:rgba(255,210,63,.08);border-color:rgba(255,210,63,.6)}
+.swatch.m-bridge,.swatch.m-link{border-color:var(--orange)}
+.swatch.m-staging{background:none;border-style:dashed;border-color:var(--line)}
+.model-card .grain{margin-top:8px;font-size:17px;color:var(--ink-2)}
+.model-card .table-wrap{margin-top:14px}
+.model-card td.mono{font:500 14px/1.5 var(--mono)}
 .arch-caption{display:none;margin-top:12px;padding:12px 18px;border:1px solid rgba(255,210,63,.4);border-radius:10px;
 background:rgba(255,210,63,.06);font-size:17px;color:var(--ink)}
 .js .arch-caption.on{display:block}
@@ -1722,11 +2715,12 @@ SCRIPT = """
     var cards = all(root, ".arch-card"), flows = all(root, ".arch-flow"), notes = all(root, ".arch-vnote");
     var vbuttons = all(root, "button[data-set-variant]"), fbuttons = all(root, "button[data-set-flow]");
     var trustButton = root.querySelector(".arch-trust"), caption = root.querySelector(".arch-caption");
+    var reachButton = root.querySelector(".arch-reach");
     var compHint = root.querySelector(".comp-hint"), flowHint = root.querySelector(".flows-hint");
     var prev = root.querySelector(".stepper .prev"), next = root.querySelector(".stepper .next");
     var play = root.querySelector(".stepper .play"), count = root.querySelector(".stepper .count");
     var first = root.getAttribute("data-default");
-    var st = { v: first, comp: null, flow: null, step: 0, trust: false }, timer = null;
+    var st = { v: first, comp: null, flow: null, step: 0, trust: false, reach: false }, timer = null;
     function find(list, attr, key) {
       return list.filter(function (el) { return el.getAttribute(attr) === key; })[0] || null;
     }
@@ -1759,6 +2753,7 @@ SCRIPT = """
       if (st.comp) { parts.push("component=" + encodeURIComponent(st.comp)); }
       if (st.flow) { parts.push("flow=" + encodeURIComponent(st.flow), "step=" + (st.step + 1)); }
       if (st.trust) { parts.push("trust=1"); }
+      if (st.reach) { parts.push("reach=1"); }
       history.replaceState(null, "", parts.length ? "#" + parts.join("&") : location.pathname + location.search);
     }
     function paint() {
@@ -1770,6 +2765,7 @@ SCRIPT = """
       });
       svgs.forEach(function (s) { s.classList.toggle("on", s.getAttribute("data-variant") === v); });
       root.classList.toggle("trust", st.trust);
+      root.classList.toggle("reach", st.reach);
       root.classList.toggle("focus", !!(st.comp || now));
       links.forEach(function (l) {
         var la = l.getAttribute("data-a"), lb = l.getAttribute("data-b"), gone = !listed(l, "data-v", v);
@@ -1777,6 +2773,7 @@ SCRIPT = """
         var hot = !gone && !!now && ((la === a && lb === b) || (la === b && lb === a));
         l.classList.toggle("gone", gone);
         l.classList.toggle("path", listed(l, "data-path", v));
+        l.classList.toggle("rpath", listed(l, "data-rpath", v));
         l.classList.toggle("out", out);
         l.classList.toggle("in", inn);
         l.classList.toggle("hot", hot);
@@ -1792,6 +2789,8 @@ SCRIPT = """
         c.classList.toggle("hot", !!now && (k === a || k === b));
         c.classList.toggle("taint", listed(c, "data-taint", v));
         c.classList.toggle("risk", listed(c, "data-risk", v));
+        c.classList.toggle("rch", listed(c, "data-reach", v));
+        c.classList.toggle("rhit", listed(c, "data-rhit", v));
         c.setAttribute("aria-pressed", String(k === st.comp));
       });
       cards.forEach(function (card) { card.classList.toggle("open", card.getAttribute("data-k") === shown); });
@@ -1812,6 +2811,7 @@ SCRIPT = """
       if (compHint) { compHint.classList.toggle("off", !!shown); }
       if (flowHint) { flowHint.classList.toggle("off", !!st.flow); }
       if (trustButton) { trustButton.setAttribute("aria-pressed", String(st.trust)); }
+      if (reachButton) { reachButton.setAttribute("aria-pressed", String(st.reach)); }
       if (count) { count.textContent = now ? (st.step + 1) + " / " + list.length : ""; }
       if (prev) { prev.disabled = !now || st.step === 0; }
       if (next) { next.disabled = !now || st.step >= list.length - 1; }
@@ -1846,7 +2846,20 @@ SCRIPT = """
         });
       });
     });
-    if (trustButton) { trustButton.addEventListener("click", function () { st.trust = !st.trust; update(); }); }
+    if (trustButton) {
+      trustButton.addEventListener("click", function () {
+        st.trust = !st.trust;
+        if (st.trust) { st.reach = false; }
+        update();
+      });
+    }
+    if (reachButton) {
+      reachButton.addEventListener("click", function () {
+        st.reach = !st.reach;
+        if (st.reach) { st.trust = false; }
+        update();
+      });
+    }
     if (prev) { prev.addEventListener("click", function () { stop(); go(-1); update(); }); }
     if (next) { next.addEventListener("click", function () { stop(); go(1); update(); }); }
     if (play) {
@@ -1880,8 +2893,80 @@ SCRIPT = """
       linked = true;
     }
     if (params.trust === "1" && trustButton) { st.trust = true; linked = true; }
+    if (params.reach === "1" && reachButton) { st.reach = true; linked = true; }
     paint();
     if (linked) { archActive = root; params = {}; root.scrollIntoView({ block: "start" }); }
+  });
+  // The data model: click a table for its card and its neighbours, filter by area. #table= and #area= open it so.
+  all(document, ".model").forEach(function (root) {
+    var svg = root.querySelector("svg.model-svg");
+    if (!svg) { return; }
+    var tables = all(svg, ".tbl"), rels = all(svg, ".rel, .rel-label"), cards = all(root, ".model-card");
+    var buttons = all(root, "button[data-set-area]"), hint = root.querySelector(".comp-hint");
+    var st = { table: null, area: null };
+    function paint() {
+      var near = {}, areaOf = {};
+      tables.forEach(function (t) { areaOf[t.getAttribute("data-k")] = t.getAttribute("data-area"); });
+      rels.forEach(function (r) {
+        var a = r.getAttribute("data-a"), b = r.getAttribute("data-b");
+        var on = !!st.table && (a === st.table || b === st.table);
+        r.classList.toggle("on", on);
+        r.classList.toggle("fade", !!st.area && !on && (areaOf[a] !== st.area || areaOf[b] !== st.area));
+        if (on) { near[a === st.table ? b : a] = true; }
+      });
+      root.classList.toggle("focus", !!st.table);
+      tables.forEach(function (t) {
+        var k = t.getAttribute("data-k");
+        t.classList.toggle("sel", k === st.table);
+        t.classList.toggle("near", near[k] === true);
+        t.classList.toggle("out", !!st.area && areaOf[k] !== st.area && k !== st.table && near[k] !== true);
+        t.setAttribute("aria-pressed", String(k === st.table));
+      });
+      cards.forEach(function (c) { c.classList.toggle("open", c.getAttribute("data-k") === st.table); });
+      buttons.forEach(function (b) {
+        b.setAttribute("aria-pressed", String(b.getAttribute("data-set-area") === st.area));
+      });
+      if (hint) { hint.classList.toggle("off", !!st.table); }
+    }
+    function update() {
+      var parts = [];
+      if (st.area) { parts.push("area=" + encodeURIComponent(st.area)); }
+      if (st.table) { parts.push("table=" + encodeURIComponent(st.table)); }
+      paint();
+      history.replaceState(null, "", parts.length ? "#" + parts.join("&") : location.pathname + location.search);
+    }
+    tables.forEach(function (t) {
+      function act(ev) {
+        ev.stopPropagation();
+        var k = t.getAttribute("data-k");
+        st.table = st.table === k ? null : k;
+        update();
+      }
+      t.addEventListener("click", act);
+      t.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); act(ev); }
+      });
+    });
+    svg.addEventListener("click", function () { st.table = null; update(); });
+    buttons.forEach(function (b) {
+      b.addEventListener("click", function () {
+        var id = b.getAttribute("data-set-area");
+        st.area = st.area === id ? null : id;
+        update();
+      });
+    });
+    document.addEventListener("keydown", function (ev) {
+      var tag = ev.target && ev.target.tagName;
+      if (ev.key === "Escape" && tag !== "INPUT" && st.table) { st.table = null; update(); }
+    });
+    if (params.area && buttons.some(function (b) { return b.getAttribute("data-set-area") === params.area; })) {
+      st.area = params.area;
+    }
+    if (params.table && tables.some(function (t) { return t.getAttribute("data-k") === params.table; })) {
+      st.table = params.table;
+    }
+    paint();
+    if (st.table || st.area) { root.scrollIntoView({ block: "start" }); }
   });
   all(document, ".table-wrap").forEach(function (wrap) {
     var rows = all(wrap, "tbody tr");
@@ -1965,8 +3050,57 @@ def _facts(stats: list[Json]) -> str:
     return f'<div class="facts" style="--cols:{cols}">{"".join(cells)}</div>'
 
 
-def render(page: Json) -> str:
-    """Return the HTML of a page that validate() accepted."""
+# Only a page rendered through --site carries these, so a lone page stays exactly as it was.
+SITE_CSS = """
+header.site{position:sticky;top:0;z-index:30;background:rgba(8,5,19,.88);backdrop-filter:blur(10px);
+border-bottom:1px solid var(--line)}
+header.site .in{display:flex;align-items:center;gap:28px;max-width:1360px;height:56px;margin:0 auto;padding:0 48px}
+header.site .home{flex:none;max-width:280px;overflow:hidden;font-size:17px;font-weight:700;letter-spacing:-.01em;
+color:var(--ink);text-decoration:none;text-overflow:ellipsis;white-space:nowrap}
+header.site nav{position:relative;display:flex;align-items:center;gap:4px;min-width:0;overflow-x:auto;
+scrollbar-width:none;white-space:nowrap}
+header.site nav::-webkit-scrollbar{display:none}
+header.site nav a{flex:none;padding:6px 10px;border-radius:8px;font:600 14px/1.3 var(--mono);color:var(--ink-2);
+text-decoration:none}
+header.site nav a:hover{background:var(--line-2);color:var(--ink)}
+header.site a:focus-visible{outline:2px solid var(--purple-soft);outline-offset:-2px}
+header.site nav a[aria-current]{background:rgba(138,99,242,.28);box-shadow:inset 0 0 0 1px var(--plate-border);
+color:var(--ink)}
+header.site .g{flex:none;margin-left:16px;padding-right:2px;font:600 11.5px/1.3 var(--mono);letter-spacing:.12em;
+text-transform:uppercase;color:var(--ink-3)}
+header.site .g:first-child{margin-left:0}
+section{scroll-margin-top:84px}
+@media (max-width:760px){header.site .in{gap:14px;height:50px;padding:0 16px}
+header.site .home{max-width:130px;font-size:15px}}
+@media print{header.site{display:none}}
+"""
+
+# On a narrow screen the links scroll sideways; start with the current page in view.
+SITE_SCRIPT = """
+(function(){var cur=document.querySelector('header.site [aria-current]');if(!cur)return;var nav=cur.parentNode;
+nav.scrollLeft=cur.offsetLeft-(nav.clientWidth-cur.offsetWidth)/2;})();
+"""
+
+
+def _site_bar(site: Json, current: int, hrefs: list[str]) -> str:
+    """The header of one page of a set: the set's name, then a link to every page, this one marked."""
+    items: list[str] = []
+    group = None
+    for i, (entry, href) in enumerate(zip(site["pages"], hrefs, strict=True)):
+        if entry.get("group") != group:
+            group = entry.get("group")
+            if group:
+                items.append(f'<span class="g">{_esc(group)}</span>')
+        mark = ' aria-current="page"' if i == current else ""
+        items.append(f'<a href="{_esc(href)}"{mark}>{_esc(entry["label"])}</a>')
+    return (
+        f'<header class="site"><div class="in"><a class="home" href="{_esc(hrefs[0])}" title="{_esc(site["title"])}">'
+        f'{_esc(site["title"])}</a><nav aria-label="Pages">{"".join(items)}</nav></div></header>'
+    )
+
+
+def render(page: Json, bar: str = "") -> str:
+    """Return the HTML of a page that validate() accepted, under the header of its set if it has one."""
     skill = page["skill"]
     meta = page.get("meta", {})
     status = f'<span class="skill"><i></i>{_esc(skill)}</span>' + "".join(
@@ -1996,7 +3130,8 @@ def render(page: Json) -> str:
         '<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark">'
         f'<meta name="generator" content="claude-role-skills/{_esc(skill)}">'
-        f"<title>{_esc(page['title'])}</title><style>{font_css()}{CSS}</style></head><body><main>"
+        f"<title>{_esc(page['title'])}</title><style>{font_css()}{CSS}{SITE_CSS if bar else ''}</style></head>"
+        f"<body>{bar}<main>"
         f'<div class="status">{status}</div><h1>{_inline(page["title"])}</h1>'
         + (f'<p class="lead">{_inline(page["subtitle"])}</p>' if page.get("subtitle") else "")
         + verdict_html
@@ -2005,16 +3140,70 @@ def render(page: Json) -> str:
         + "".join(sections)
         + f"<footer>Written by the {_esc(skill)} skill{date} · numbers from the skill's scripts · "
         "claims tagged high (checked), med (likely), guess (not checked)</footer>"
-        f"</main><script>{SCRIPT}</script></body></html>\n"
+        f"</main><script>{SCRIPT}{SITE_SCRIPT if bar else ''}</script></body></html>\n"
     )
+
+
+def _print_problems(source: Path, errors: list[str]) -> None:
+    print(f"{source}: {len(errors)} problem(s)", file=sys.stderr)
+    for error in errors:
+        print(f"  - {error}", file=sys.stderr)
+
+
+def render_site(site_path: Path, *, check: bool = False) -> int:
+    """Write every page of a site file beside its JSON, each under a header linking the whole set.
+
+    Nothing is written unless every page is valid, so a set is never left half new and half old.
+    """
+    try:
+        site = json.loads(site_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"cannot read {site_path}: {exc}", file=sys.stderr)
+        return 2
+    errors = validate_site(site)
+    if errors:
+        _print_problems(site_path, errors)
+        return 1
+    base = site_path.resolve().parent
+    sources = [(base / entry["page"]).resolve() for entry in site["pages"]]
+    pages: list[Json] = []
+    for source in sources:
+        try:
+            page = json.loads(source.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"cannot read {source}: {exc}", file=sys.stderr)
+            continue
+        problems = validate(page)
+        if problems:
+            _print_problems(source, problems)
+            continue
+        pages.append(page)
+    if len(pages) != len(sources):
+        return 1
+    if check:
+        print(f"{site_path}: {len(pages)} pages valid")
+        return 0
+    targets = [source.with_suffix(".html") for source in sources]
+    for i, (page, target) in enumerate(zip(pages, targets, strict=True)):
+        hrefs = [quote(Path(os.path.relpath(other, target.parent)).as_posix()) for other in targets]
+        target.write_text(render(page, _site_bar(site, i, hrefs)), encoding="utf-8")
+        print(target)
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Render a skill page from its JSON.")
-    parser.add_argument("page", type=Path, help="the page JSON")
+    parser.add_argument("page", type=Path, nargs="?", help="the page JSON")
     parser.add_argument("-o", "--output", type=Path, help="where to write the HTML")
+    parser.add_argument("--site", type=Path, help="a site JSON: write all its pages, with a header linking them")
     parser.add_argument("--check", action="store_true", help="validate only, write nothing")
     args = parser.parse_args(argv)
+    if (args.page is None) == (args.site is None):
+        parser.error("give either a page JSON or --site SITE.json")
+    if args.site is not None:
+        if args.output is not None:
+            parser.error("--output is for one page; --site writes each page beside its JSON")
+        return render_site(args.site, check=args.check)
     try:
         page = json.loads(args.page.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -2022,9 +3211,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     errors = validate(page)
     if errors:
-        print(f"{args.page}: {len(errors)} problem(s)", file=sys.stderr)
-        for error in errors:
-            print(f"  - {error}", file=sys.stderr)
+        _print_problems(args.page, errors)
         return 1
     if args.check:
         print(f"{args.page}: valid")

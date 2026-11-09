@@ -1,1006 +1,1028 @@
 {
- "skill": "ai-pattern",
- "title": "Acme support assistant v2: what it should be",
- "subtitle": "The pattern decision for the Acme Devices brief of 14 October 2026, made before anything is built.",
- "meta": {
-  "repo": "acme-assist",
-  "brief": "docs/briefs/support-v2.md",
-  "date": "2026-11-08"
- },
- "verdict": {
-  "text": "Build a **routed workflow**: code sends each question down one of five fixed paths, with RAG for how-to, a live read-only call for orders and stock, and a person for warranty, returns and everything else. The binding constraint is the **cost of an error**: zero wrong warranty or return promises while nobody reads the chat first, so the model must not choose the path or hold any action, and the prototype's agent has to go.",
-  "tone": "ok"
- },
- "stats": [
-  {
-   "label": "Questions per day",
-   "value": "3,000",
-   "note": "peak about 400 per hour",
-   "tone": "info"
+  "skill": "ai-pattern",
+  "title": "Acme support assistant v2: what it should be",
+  "subtitle": "The pattern decision for the Acme Devices brief of 14 October 2026, made before anything is built.",
+  "meta": {
+    "repo": "acme-assist",
+    "brief": "docs/briefs/support-v2.md",
+    "date": "2026-11-08"
   },
-  {
-   "label": "Documents (tokens)",
-   "value": "~1.2M",
-   "note": "41 manuals, ~2,400 pages [med]; the sample is 10,224",
-   "tone": "info"
+  "verdict": {
+    "text": "Build a **routed workflow**: code sends each question down one of five fixed paths, with RAG for how-to, a live read-only call for orders and stock, and a person for warranty, returns and everything else. The binding constraint is the **cost of an error**: zero wrong warranty or return promises while nobody reads the chat first, so the model must not choose the path or hold any action, and the prototype's agent has to go.",
+    "tone": "ok"
   },
-  {
-   "label": "Options left after the hard rules",
-   "value": "1 of 8",
-   "note": "decide.py",
-   "tone": "ok"
-  },
-  {
-   "label": "Chosen rung",
-   "value": "4: workflow",
-   "note": "the prototype is rung 6",
-   "tone": "ok"
+  "stats": [
+    {
+      "label": "Questions per day",
+      "value": "3,000",
+      "note": "peak about 400 per hour",
+      "tone": "info"
+    },
+    {
+      "label": "Documents (tokens)",
+      "value": "~1.2M",
+      "note": "41 manuals, ~2,400 pages [med]; the sample is 10,224",
+      "tone": "info"
+    },
+    {
+      "label": "Options left after the hard rules",
+      "value": "1 of 8",
+      "note": "decide.py",
+      "tone": "ok"
+    },
+    {
+      "label": "Chosen rung",
+      "value": "4: workflow",
+      "note": "the prototype is rung 6",
+      "tone": "ok"
+    }
+  ],
+  "sections": [
+    {
+      "id": "brief",
+      "title": "The brief",
+      "blocks": [
+        {
+          "type": "kv",
+          "items": [
+            [
+              "Users",
+              "Customers of Acme Devices in Serbia and the EU. (brief, Why)"
+            ],
+            [
+              "Channels and languages",
+              "Web chat on the shop and e-mail, in Serbian (Latin and Cyrillic) and English. (brief, Who asks)"
+            ],
+            [
+              "The job",
+              "How-to and troubleshooting ~55% (1,650 a day). Order status ~25% (750). Returns and warranty ~12% (360). Other ~8% (240). (brief, What they ask)"
+            ],
+            [
+              "Stock",
+              "Not in the brief's topic table, yet it is the reason for the brief: the prototype said items were in stock when they were not. (brief, Why)"
+            ],
+            [
+              "Volume",
+              "About 3,000 questions a day, peak about 400 an hour on Monday mornings and after campaigns. (brief)"
+            ],
+            [
+              "Success after 3 months",
+              "50% of how-to questions answered without an agent, zero wrong warranty or return promises, CSAT at least 4.2 of 5. (brief, Targets)"
+            ],
+            [
+              "Law and promises",
+              "Consumer protection law in Serbia and the EU. Never promise a return without an RMA number. Only staff approve returns and refunds. (brief, Rules)"
+            ],
+            [
+              "Where data may go",
+              "Customer data stays in the EU. Acme has an Azure tenant in West Europe. No GPU servers, and a local model is acceptable only for internal tools, so it is out for this customer-facing job. (brief, Rules)"
+            ],
+            [
+              "Latency",
+              "First answer in the chat within 5 seconds. (brief, Targets)"
+            ],
+            [
+              "Budget",
+              "About €1,500 a month for models and hosting together, which is about €0.017 per question at 90,000 questions a month. (brief, the division is mine)"
+            ],
+            [
+              "People",
+              "6 support agents handle escalations (brief), Monday to Friday, 8:00 to 16:00 CET (knowledge/faq-en.md)."
+            ],
+            [
+              "Asked for but not on this page",
+              "The monthly cost in euros. It depends on the tool choice, so it belongs to the next step, the stack selection."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "assumptions",
+      "title": "Assumptions",
+      "intro": "The brief leaves these open. Each one is listed with the decision it drives.",
+      "blocks": [
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "The full library is about 1.2M tokens, from 2,400 pages at about 500 tokens a page [med]. **Drives:** the whole corpus cannot go in the prompt. The live-state rule removes that option even if it did fit.",
+            "One call may carry 100,000 tokens of documents [guess, my budget]. **Drives:** the same elimination, 12 times over budget.",
+            "The steps for every kind of question can be written down [med]. I read the brief and the documents, not real tickets. **Drives:** agents are out. If this is wrong, agentic RAG opens but the workflow is still the lowest open option.",
+            "A model call takes about 2 seconds to its first output [guess, not measured]. **Drives:** the workflow fits the 5 seconds with two calls in a row. Above 2.5 seconds it does not, and this is the only assumption that can break the decision.",
+            "Nobody reads a chat answer before the customer does [med]. The 6 agents handle escalations only. **Drives:** the model may not choose its own actions.",
+            "OrderDesk or the shop can return current stock read-only [guess]. The brief names an API for orders only. **Drives:** the stock route. Without such a source, the assistant states no availability and links to the shop's product page.",
+            "Customers can be identified for order status: the shop login in chat, the sender's address in e-mail, otherwise order number plus e-mail matched in code [guess]. **Drives:** the order route, so no customer reads another customer's order.",
+            "HelpLine, the helpdesk named in the e-mail tagging brief, can also take a new ticket by API [guess]. **Drives:** the hand-off step.",
+            "\"First answer within 5 seconds\" means the first visible words in the chat, at the 95th percentile, and does not apply to e-mail [med]. **Drives:** streaming, and an output check in code instead of a second model call before the answer shows.",
+            "Staff will write and approve fixed texts for general warranty and return questions in all three scripts [guess]. **Drives:** the model generates no policy wording at all.",
+            "E-mail takes the same routes as chat, and a person presses send in HelpLine until the acceptance criteria hold on real e-mail [med]. **Drives:** the rollout order, chat first.",
+            "A customer writing in another EU language gets an answer in English and the offer of a person [guess]. **Drives:** the scope of content and tests."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "split",
+      "title": "Split of the work",
+      "intro": "Requests on the left, steps in the middle, the model, systems and people on the right. The model reads and writes text. It holds no tools, so what it is talked into stays text: code checks the reply before it is sent, and only staff act.",
+      "blocks": [
+        {
+          "type": "graph",
+          "nodes": [
+            {
+              "id": "q_howto",
+              "label": "How-to",
+              "note": "55%, 1,650 a day",
+              "group": "entry"
+            },
+            {
+              "id": "q_order",
+              "label": "Order status",
+              "note": "25%, 750 a day",
+              "group": "entry"
+            },
+            {
+              "id": "q_stock",
+              "label": "Stock",
+              "note": "share unknown",
+              "group": "entry"
+            },
+            {
+              "id": "q_claims",
+              "label": "Returns, warranty",
+              "note": "12%, 360 a day",
+              "group": "entry"
+            },
+            {
+              "id": "q_other",
+              "label": "Other",
+              "note": "8%, 240 a day",
+              "group": "entry"
+            },
+            {
+              "id": "intake",
+              "label": "Language, script, customer",
+              "note": "code",
+              "group": "module"
+            },
+            {
+              "id": "route",
+              "label": "Route",
+              "note": "model labels, code decides",
+              "group": "module"
+            },
+            {
+              "id": "search",
+              "label": "Retrieve",
+              "note": "code, filtered by product and topic",
+              "group": "module"
+            },
+            {
+              "id": "answer",
+              "label": "Write answer",
+              "note": "model, with citations",
+              "group": "module"
+            },
+            {
+              "id": "fetch_order",
+              "label": "Read order",
+              "note": "code, verified customer only",
+              "group": "module"
+            },
+            {
+              "id": "fetch_stock",
+              "label": "Read stock",
+              "note": "code, live or a shop link",
+              "group": "module"
+            },
+            {
+              "id": "template",
+              "label": "Fill template",
+              "note": "code, three scripts",
+              "group": "module"
+            },
+            {
+              "id": "approved",
+              "label": "Approved text",
+              "note": "general policy questions",
+              "group": "module"
+            },
+            {
+              "id": "collect",
+              "label": "Collect details",
+              "note": "model extracts, code validates",
+              "group": "module"
+            },
+            {
+              "id": "ticket",
+              "label": "Create ticket",
+              "note": "code, details filled in",
+              "group": "module"
+            },
+            {
+              "id": "guard",
+              "label": "Check output",
+              "note": "code, blocks promises and RMA numbers",
+              "group": "module"
+            },
+            {
+              "id": "reply",
+              "label": "Send reply",
+              "note": "code, never a model tool",
+              "group": "boundary"
+            },
+            {
+              "id": "model",
+              "label": "Model in the EU",
+              "note": "no tools",
+              "group": "external"
+            },
+            {
+              "id": "index",
+              "label": "Search index",
+              "note": "manuals, rebuilt monthly",
+              "group": "data"
+            },
+            {
+              "id": "orderdesk",
+              "label": "OrderDesk API",
+              "note": "read-only",
+              "group": "external"
+            },
+            {
+              "id": "helpline",
+              "label": "HelpLine",
+              "note": "helpdesk",
+              "group": "external"
+            },
+            {
+              "id": "staff",
+              "label": "6 support agents",
+              "note": "only they approve and issue RMA",
+              "group": "external"
+            }
+          ],
+          "edges": [
+            {
+              "from": "q_howto",
+              "to": "intake"
+            },
+            {
+              "from": "q_order",
+              "to": "intake"
+            },
+            {
+              "from": "q_stock",
+              "to": "intake"
+            },
+            {
+              "from": "q_claims",
+              "to": "intake"
+            },
+            {
+              "from": "q_other",
+              "to": "intake"
+            },
+            {
+              "from": "intake",
+              "to": "route"
+            },
+            {
+              "from": "route",
+              "to": "model",
+              "label": "classify"
+            },
+            {
+              "from": "route",
+              "to": "search",
+              "label": "how-to"
+            },
+            {
+              "from": "route",
+              "to": "fetch_order",
+              "label": "order"
+            },
+            {
+              "from": "route",
+              "to": "fetch_stock",
+              "label": "stock"
+            },
+            {
+              "from": "route",
+              "to": "approved",
+              "label": "general policy"
+            },
+            {
+              "from": "route",
+              "to": "collect",
+              "label": "a claim"
+            },
+            {
+              "from": "route",
+              "to": "ticket",
+              "label": "other, unsure"
+            },
+            {
+              "from": "search",
+              "to": "index"
+            },
+            {
+              "from": "search",
+              "to": "answer"
+            },
+            {
+              "from": "answer",
+              "to": "model",
+              "label": "generate"
+            },
+            {
+              "from": "answer",
+              "to": "guard"
+            },
+            {
+              "from": "fetch_order",
+              "to": "orderdesk"
+            },
+            {
+              "from": "fetch_order",
+              "to": "template"
+            },
+            {
+              "from": "fetch_stock",
+              "to": "orderdesk"
+            },
+            {
+              "from": "fetch_stock",
+              "to": "template"
+            },
+            {
+              "from": "template",
+              "to": "reply"
+            },
+            {
+              "from": "approved",
+              "to": "reply"
+            },
+            {
+              "from": "collect",
+              "to": "model",
+              "label": "extract"
+            },
+            {
+              "from": "collect",
+              "to": "ticket"
+            },
+            {
+              "from": "guard",
+              "to": "reply",
+              "label": "passes"
+            },
+            {
+              "from": "guard",
+              "to": "ticket",
+              "label": "blocked"
+            },
+            {
+              "from": "ticket",
+              "to": "helpline"
+            },
+            {
+              "from": "helpline",
+              "to": "staff"
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Who does each step, and why",
+          "columns": [
+            "Step",
+            "Who",
+            "Why"
+          ],
+          "rows": [
+            [
+              "Detect language and script",
+              "Code",
+              "Latin and Cyrillic Serbian map one to one. The reply script is a rule."
+            ],
+            [
+              "Identify the customer",
+              "Shop login, or a match in code",
+              "It decides whose data may be read, so text in a chat cannot decide it."
+            ],
+            [
+              "Route the question",
+              "Model labels it, code decides",
+              "Free text needs a model. Warranty and return keywords in all three scripts force the person path, an unsure label goes to a person, and on mixed questions the person path wins."
+            ],
+            [
+              "Retrieve",
+              "Code and index",
+              "Same question, same passages, so it can be tested. Exact match is needed for codes such as E3 and SKUs."
+            ],
+            [
+              "Write the how-to answer",
+              "Model",
+              "The one step that needs written language. Every claim cites a passage."
+            ],
+            [
+              "Order status",
+              "OrderDesk, read by code",
+              "A status changes within minutes, so it comes from its owner."
+            ],
+            [
+              "Word the status or stock",
+              "Code template",
+              "A status is a field. No customer data needs to reach the model on this route."
+            ],
+            [
+              "General warranty and return questions",
+              "Staff-approved text, chosen by code",
+              "Zero wrong promises is the target, so this wording is not generated."
+            ],
+            [
+              "Collect claim details",
+              "Model extracts, code validates",
+              "Model, serial number, proof of purchase and fault, as the warranty policy lists them. The agent starts with a complete case."
+            ],
+            [
+              "Approve a return, issue an RMA, refund",
+              "A person",
+              "The brief reserves these for staff."
+            ],
+            [
+              "Check every outgoing text",
+              "Code",
+              "Blocks approval wording, RMA-like numbers and refund promises on every route, including how-to."
+            ],
+            [
+              "Send the reply",
+              "Code",
+              "The model has no way to send anything."
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "warn",
+          "text": "**The 6 agents may become the bottleneck.** The person routes alone are 600 cases a day, 100 per agent. If every how-to question the 50% target leaves unanswered also reaches them, it is up to 1,425 a day, about 238 per agent. The brief does not give today's load, so check it before launch. Outside 8:00 to 16:00 the assistant must say when a person will reply, never ask the customer to wait."
+        }
+      ]
+    },
+    {
+      "id": "documents",
+      "title": "Documents",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Measure",
+            "Sample (counted)",
+            "Full library"
+          ],
+          "rows": [
+            [
+              "Files",
+              "21 (15 md, 3 txt, 3 pdf)",
+              "41 manuals plus policies and guides"
+            ],
+            [
+              "Tokens, estimated",
+              "10,224",
+              "~1.2M [med]"
+            ],
+            [
+              "Share of a 100,000 token budget",
+              "10%",
+              "about 12 times the budget [med]"
+            ],
+            [
+              "Scripts",
+              "14 English Latin, 4 Serbian Latin, 3 Cyrillic",
+              "English and Serbian"
+            ],
+            [
+              "PDF needing OCR",
+              "none of 3",
+              "unknown, some manuals exist only as PDF"
+            ],
+            [
+              "Duplicates",
+              "archive/faq-en-old.md equals faq-en.md",
+              "unknown"
+            ],
+            [
+              "Change rate",
+              "last edit 2 October 2026",
+              "manuals monthly, policies quarterly"
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "warn",
+          "text": "**The sample fits in one prompt and the library does not.** Sample manuals are about one page each, full ones average nearly 60. Retrieval quality must be tested on the real library, because results on this sample will flatter it."
+        },
+        {
+          "type": "list",
+          "title": "What the documents demand of retrieval",
+          "items": [
+            "**Retrieval must cross languages.** In the sample, the K-300 and MF-1 manuals are English only, the cleaning guide has no Latin Serbian version, and the Cyrillic FAQ answers things the Latin FAQ does not (E1, E8, E9, MF-1 milk amounts) [high].",
+            "**Filter by product.** E2 has a different fix on the K-200 and the K-300, and E5 and E6 exist on the K-300 only [high].",
+            "**Warranty statements are everywhere.** 13 of the 15 files outside policies/ state something about warranty, for example \"scale damage is not covered\" in the cleaning guide [high]. Excluding the policies folder is not enough, so sections need a topic tag and the how-to route must leave warranty sections out.",
+            "**E8 and E9 are always a service case** (error-codes.txt) [high], so code sends them to a person with the safety instruction.",
+            "**One gap for Acme to close.** The warranty excludes scale damage when the machine was not descaled \"every 3 months\", while the cleaning guide says every 2 months in hard water [high]. A customer with hard water has no clear answer, and it is exactly the case the assistant must not judge."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "decision",
+      "title": "Decision",
+      "intro": "Every rung of the ladder. The eliminations come from the hard rules in decide.py. Ratings are my judgement [med].",
+      "blocks": [
+        {
+          "type": "decision",
+          "factors": [
+            "Predictability",
+            "Cost of an error",
+            "Observability",
+            "Latency (5 s)",
+            "Cost (€0.017 per question)"
+          ],
+          "options": [
+            {
+              "label": "0. No LLM",
+              "status": "eliminated",
+              "eliminated_by": "rule: needs-language",
+              "why": "Customers write free text in three scripts. Rules alone cannot read it, though parts of the workflow use no model.",
+              "cells": [
+                {
+                  "rating": "pass",
+                  "text": "Fixed"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Misreads free text"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Full"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Instant"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Lowest"
+                }
+              ]
+            },
+            {
+              "label": "1. One model call",
+              "status": "eliminated",
+              "eliminated_by": "rules: needs-a-source, live-state",
+              "why": "It knows neither the manuals nor the state of an order.",
+              "cells": [
+                {
+                  "rating": "weak",
+                  "text": "One path"
+                },
+                {
+                  "rating": "fail",
+                  "text": "Answers from memory"
+                },
+                {
+                  "rating": "weak",
+                  "text": "No source to check"
+                },
+                {
+                  "rating": "pass",
+                  "text": "One call"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Low"
+                }
+              ]
+            },
+            {
+              "label": "2. Whole corpus in the prompt",
+              "status": "eliminated",
+              "eliminated_by": "rules: does-not-fit, live-state",
+              "why": "About 1.2M tokens against a 100,000 budget, and an order status is not in any document.",
+              "cells": [
+                {
+                  "rating": "weak",
+                  "text": "One path"
+                },
+                {
+                  "rating": "fail",
+                  "text": "No live state"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Source unclear"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Very large prompt"
+                },
+                {
+                  "rating": "fail",
+                  "text": "Pays for all of it each call"
+                }
+              ]
+            },
+            {
+              "label": "3. RAG",
+              "status": "eliminated",
+              "eliminated_by": "rule: live-state",
+              "why": "It answers the 55% well and cannot answer the 25%. A copy of stock in an index is the prototype's actual failure.",
+              "cells": [
+                {
+                  "rating": "weak",
+                  "text": "Good for how-to only"
+                },
+                {
+                  "rating": "fail",
+                  "text": "Stale status, no gate on promises"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Good"
+                },
+                {
+                  "rating": "pass",
+                  "text": "One call"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Low"
+                }
+              ]
+            },
+            {
+              "label": "4. Workflow with a router",
+              "status": "chosen",
+              "why": "Five known routes, each testable alone. RAG lives inside the how-to route.",
+              "cells": [
+                {
+                  "rating": "pass",
+                  "text": "Code picks the path"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Claims go to staff"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Trace per step"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Two calls, if about 2 s each [guess]"
+                },
+                {
+                  "rating": "pass",
+                  "text": "One or two calls, none on some routes"
+                }
+              ]
+            },
+            {
+              "label": "5. Agentic RAG",
+              "status": "eliminated",
+              "eliminated_by": "rule: steps-known",
+              "why": "One lookup answers a how-to question. Nothing in the brief or documents needs a second search that depends on the first [med].",
+              "cells": [
+                {
+                  "rating": "weak",
+                  "text": "Search path varies"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Warranty text in reach"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Harder to explain"
+                },
+                {
+                  "rating": "weak",
+                  "text": "More calls in a row"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Several calls"
+                }
+              ]
+            },
+            {
+              "label": "6. One agent with tools (the prototype)",
+              "status": "eliminated",
+              "eliminated_by": "rules: steps-known, unreviewed-autonomy",
+              "why": "A wrong result is expensive and no person checks it, so the model may not choose its own actions.",
+              "cells": [
+                {
+                  "rating": "fail",
+                  "text": "Model picks the path"
+                },
+                {
+                  "rating": "fail",
+                  "text": "Nothing stops a promise"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Tool log only"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Unbounded"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Unbounded"
+                }
+              ]
+            },
+            {
+              "label": "7. Orchestrator with subagents",
+              "status": "eliminated",
+              "eliminated_by": "rules: steps-known, nothing-to-split, unreviewed-autonomy, too-slow",
+              "why": "There are no independent subtasks to hand out.",
+              "cells": [
+                {
+                  "rating": "fail",
+                  "text": "Least predictable"
+                },
+                {
+                  "rating": "fail",
+                  "text": "As for the agent"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Hand-offs hide errors"
+                },
+                {
+                  "rating": "fail",
+                  "text": "At least 3 calls"
+                },
+                {
+                  "rating": "fail",
+                  "text": "Highest"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "title": "Why this one",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "**The binding constraint is the cost of an error.** Live order status rules out everything below the workflow. What rules out everything above it is that a wrong warranty or return promise is a refund Acme did not plan, the target is zero, and no person reads the chat first. A better model lowers the rate of such errors, while a path fixed in code removes the way to make them: on the claims route no generated text reaches the customer at all.\n\nThe decision holds under most of the assumptions. Tested in decide.py, it survives a whole-corpus budget, a person reviewing replies, and steps that cannot all be listed. Removing live state would reopen plain RAG, but 25% of the questions are order status. Only a model too slow to fit two calls in 5 seconds would break it, and the fix for that is a rules-first or smaller router, still a workflow."
+        },
+        {
+          "type": "table",
+          "title": "The five routes",
+          "columns": [
+            "Route",
+            "Per day",
+            "Path",
+            "Model's part"
+          ],
+          "rows": [
+            [
+              "How-to",
+              "1,650",
+              "Retrieve by product and topic, write with citations, check the output. E8, E9 and repeat faults go to a person.",
+              "Writes the answer"
+            ],
+            [
+              "Order status",
+              "750",
+              "Verified customer, OrderDesk, template.",
+              "At most finds the order number"
+            ],
+            [
+              "Stock",
+              "unknown",
+              "Live read and template, or a link to the shop. Never the nightly file.",
+              "None"
+            ],
+            [
+              "Returns, warranty",
+              "360",
+              "Approved text for general questions. For a claim, collect the details and open a ticket. Staff decide and issue the RMA.",
+              "Labels and extracts, writes nothing to the customer"
+            ],
+            [
+              "Other, or unsure",
+              "240",
+              "Ticket in the right queue, including partnerships, invoices, press and complaints.",
+              "Labels"
+            ]
+          ]
+        },
+        {
+          "type": "table",
+          "title": "The prototype against this decision (read from the code, not run)",
+          "columns": [
+            "What it does",
+            "Where",
+            "Consequence",
+            "Do"
+          ],
+          "rows": [
+            [
+              "Stock comes from a nightly export through vector search, one hit",
+              "stock.py:32, snapshot.py:32",
+              "Likely the cause of the incident [med]. The copy can be a day old and carries no date in the answer. One hit shows one warehouse (K300-SLV is 0 in Novi Sad, 2 in Bratislava). 6 of 13 parts are not in the export, so the nearest other item comes back.",
+              "Remove, read live"
+            ],
+            [
+              "The model picks tools in a loop with no limit",
+              "agent.py:17",
+              "No fixed path to test and no bound on time or calls.",
+              "Replace with the router"
+            ],
+            [
+              "The model can send e-mail to any address and fetch any URL",
+              "tools.py:62, tools.py:68",
+              "A customer's message or a fetched page can make it mail anyone from Acme's account, or read internal addresses.",
+              "Remove both"
+            ],
+            [
+              "The only control on promises is one line of prompt",
+              "prompts/system.md:11",
+              "Nothing enforces it.",
+              "Replace with routes and the output check"
+            ],
+            [
+              "There is no order status path",
+              "tools.py:28",
+              "25% of the questions have no answer.",
+              "Add the OrderDesk route"
+            ],
+            [
+              "Calls go to the public API unless a base URL is set",
+              "llm.py:15, config.py:6",
+              "Customer text may leave the EU.",
+              "Move to an EU deployment"
+            ],
+            [
+              "Indexing skips PDFs, includes archive/, stores no product or topic, searches by vector only",
+              "knowledge.py:11, :43, :55, :64",
+              "The safety sheet is invisible, chunks are duplicated, and E2 can come back for the wrong model.",
+              "Rebuild ingestion"
+            ],
+            [
+              "The caller supplies the conversation history, and /chat has no login",
+              "app.py:20, app.py:27",
+              "A client can forge earlier assistant turns.",
+              "Keep history on the server"
+            ],
+            [
+              "A default API key sits in the code, and the model name is an unpinned alias",
+              "config.py:5, config.py:7",
+              "Check whether the key is real and rotate it if so.",
+              "Settings only, pin the model"
+            ],
+            [
+              "No evaluation and no tracing, and tool arguments with personal data go to the log",
+              "tests/test_snapshot.py, agent.py:23",
+              "Nobody can tell whether it works.",
+              "Add evals and EU traces"
+            ]
+          ]
+        },
+        {
+          "type": "text",
+          "text": "Worth keeping: the evidence that customers like the chat, the document set, the HTTP shell and the rule to answer in the customer's script. Treat the core as a rewrite. A full review of the code is a separate job."
+        }
+      ]
+    },
+    {
+      "id": "change",
+      "title": "What would change it",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "**The assistant must write to OrderDesk or issue RMAs:** still a workflow, plus a step where the customer or a staff member confirms each write. Not an agent.",
+            "**Real tickets show that more than about 15% of how-to questions need a second search that depends on the first:** agentic RAG inside the how-to route only, read-only and limited to three searches.",
+            "**Model calls take more than 2.5 seconds to first output:** rules-first routing or a smaller router model, so the 5 seconds still hold.",
+            "**Volume grows tenfold to 30,000 a day:** same pattern, with a cache for the most common questions, and cost becomes the binding factor.",
+            "**A new language is added:** same pattern, with translated content or tested cross-language retrieval, and a labelled test set and approved texts for that language."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "acceptance",
+      "title": "Acceptance criteria",
+      "intro": "All five must hold before the switch for everyone. The order: shadow mode, 10% of chat traffic, then everyone.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Metric",
+            "Threshold",
+            "Measured how, before launch"
+          ],
+          "rows": [
+            [
+              "Wrong promises",
+              "0 on at least 300 adversarial warranty and return prompts, in all three scripts",
+              "Test set graded by Acme staff. Any failure blocks launch."
+            ],
+            [
+              "Claims reach a person",
+              "At least 99% of warranty and return messages take the person path",
+              "Routing on at least 500 labelled past tickets, at least 100 per script."
+            ],
+            [
+              "How-to quality",
+              "At least 90% correct on 300 real questions, and every answer cites a source",
+              "Graded by staff or a checked judge, on the full library, then a weekly sample from traces."
+            ],
+            [
+              "Live data and identity",
+              "Status matches OrderDesk on 200 of 200 test orders, and 100% of attempts to read another customer's order are refused",
+              "Integration test against OrderDesk, plus an identity test set."
+            ],
+            [
+              "Latency and cost",
+              "First words at p95 within 5 s at 400 questions an hour, and at most €1,500 a month",
+              "Load test with traces, the cost model from the stack selection, then the first month's bill."
+            ]
+          ]
+        },
+        {
+          "type": "text",
+          "text": "CSAT of 4.2 and 50% deflection can only be read on real traffic. The 10% stage gives the first reading."
+        }
+      ]
+    },
+    {
+      "id": "adr",
+      "title": "ADR draft",
+      "intro": "Not written into the repository.",
+      "blocks": [
+        {
+          "type": "code",
+          "where": "docs/adr/001-routed-workflow.md (proposed)",
+          "code": "# ADR-001: Support assistant v2 is a routed workflow, not an agent\nStatus: proposed\nDate: 2026-11-08\n\nContext: About 3,000 questions a day, peak 400 an hour, by chat and e-mail, in Serbian\n(Latin and Cyrillic) and English. 55% how-to from about 1.2M tokens of manuals, 25% order\nstatus that changes within minutes in OrderDesk, 12% returns and warranty, 8% other. The\ntarget is zero wrong warranty or return promises, only staff approve returns, and nobody\nreads a chat answer first. Customer data stays in the EU. First answer within 5 seconds,\nabout EUR 1,500 a month. The prototype, an agent with tools, reported stale stock.\n\nDecision: Code routes each question to one of five fixed paths. How-to uses RAG with\ncitations. Order status and stock are read live and worded by code templates. Returns and\nwarranty use staff-approved text and a filled-in ticket, and staff decide and issue the\nRMA. Other and unsure questions go to a person. The model holds no tools, and code checks\nand sends every reply.\n\nConsequences: Each route can be tested alone and traced, and untrusted text reaches only\nthe checked reply and a ticket, never an RMA, a refund or an e-mail. We must build ingestion with product and topic tags, cross-language retrieval, a\nrouter with keyword overrides, the output check, templates in three scripts and a labelled\ntest set. Multi-step questions get less flexible answers. Eliminated: no LLM, one call and\nthe whole corpus (free text, sources, live state), RAG (live state), agentic RAG, one agent\nand subagents (known steps, unreviewed errors). The binding constraint is the cost of an\nerror. Revisit if the assistant must write to OrderDesk, if more than about 15% of how-to\nquestions need dependent searches, or if two model calls do not fit in 5 seconds."
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "title": "Open questions",
+      "intro": "For Acme, most important first. None of them changes the pattern, but they change what gets built.",
+      "blocks": [
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "Can Acme export 500 past tickets with their outcomes? They settle the steps-known assumption, the share of stock questions and the test sets.",
+            "Is there a live source for stock, in OrderDesk or the shop?",
+            "How is a customer identified for order status in chat and in e-mail?",
+            "How many cases do the 6 agents handle today, and can HelpLine take new tickets by API?",
+            "Will Acme's legal team review the approved texts for Serbia and the EU, and confirm how the chat tells customers they are talking to an AI [med]?",
+            "How many of the 41 manuals are scanned, and how much depends on tables and diagrams?",
+            "The separate e-mail tagging brief works on the same inbox. Which of the two touches an e-mail first?"
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "Acme support assistant v2",
+    "decisions": [
+      {
+        "title": "AI pattern",
+        "chosen": "Workflow with a router",
+        "because": "The cost of an error: no wrong warranty or return promise while nobody reads the chat first."
+      }
+    ],
+    "assumptions": [
+      "The full library is about 1.2M tokens.",
+      "The steps for every kind of question can be written down.",
+      "A model call takes about 2 seconds to its first output.",
+      "Nobody reads a chat answer before the customer does."
+    ],
+    "open": [
+      "Can Acme export 500 past tickets with their outcomes?",
+      "Is there a live source for stock?",
+      "How is a customer identified for order status?"
+    ]
   }
- ],
- "sections": [
-  {
-   "id": "brief",
-   "title": "The brief",
-   "blocks": [
-    {
-     "type": "kv",
-     "items": [
-      [
-       "Users",
-       "Customers of Acme Devices in Serbia and the EU. (brief, Why)"
-      ],
-      [
-       "Channels and languages",
-       "Web chat on the shop and e-mail, in Serbian (Latin and Cyrillic) and English. (brief, Who asks)"
-      ],
-      [
-       "The job",
-       "How-to and troubleshooting ~55% (1,650 a day). Order status ~25% (750). Returns and warranty ~12% (360). Other ~8% (240). (brief, What they ask)"
-      ],
-      [
-       "Stock",
-       "Not in the brief's topic table, yet it is the reason for the brief: the prototype said items were in stock when they were not. (brief, Why)"
-      ],
-      [
-       "Volume",
-       "About 3,000 questions a day, peak about 400 an hour on Monday mornings and after campaigns. (brief)"
-      ],
-      [
-       "Success after 3 months",
-       "50% of how-to questions answered without an agent, zero wrong warranty or return promises, CSAT at least 4.2 of 5. (brief, Targets)"
-      ],
-      [
-       "Law and promises",
-       "Consumer protection law in Serbia and the EU. Never promise a return without an RMA number. Only staff approve returns and refunds. (brief, Rules)"
-      ],
-      [
-       "Where data may go",
-       "Customer data stays in the EU. Acme has an Azure tenant in West Europe. No GPU servers, and a local model is acceptable only for internal tools, so it is out for this customer-facing job. (brief, Rules)"
-      ],
-      [
-       "Latency",
-       "First answer in the chat within 5 seconds. (brief, Targets)"
-      ],
-      [
-       "Budget",
-       "About €1,500 a month for models and hosting together, which is about €0.017 per question at 90,000 questions a month. (brief, the division is mine)"
-      ],
-      [
-       "People",
-       "6 support agents handle escalations (brief), Monday to Friday, 8:00 to 16:00 CET (knowledge/faq-en.md)."
-      ],
-      [
-       "Asked for but not on this page",
-       "The monthly cost in euros. It depends on the tool choice, so it belongs to the next step, the stack selection."
-      ]
-     ]
-    }
-   ]
-  },
-  {
-   "id": "assumptions",
-   "title": "Assumptions",
-   "intro": "The brief leaves these open. Each one is listed with the decision it drives.",
-   "blocks": [
-    {
-     "type": "list",
-     "ordered": true,
-     "items": [
-      "The full library is about 1.2M tokens, from 2,400 pages at about 500 tokens a page [med]. **Drives:** the whole corpus cannot go in the prompt. The live-state rule removes that option even if it did fit.",
-      "One call may carry 100,000 tokens of documents [guess, my budget]. **Drives:** the same elimination, 12 times over budget.",
-      "The steps for every kind of question can be written down [med]. I read the brief and the documents, not real tickets. **Drives:** agents are out. If this is wrong, agentic RAG opens but the workflow is still the lowest open option.",
-      "A model call takes about 2 seconds to its first output [guess, not measured]. **Drives:** the workflow fits the 5 seconds with two calls in a row. Above 2.5 seconds it does not, and this is the only assumption that can break the decision.",
-      "Nobody reads a chat answer before the customer does [med]. The 6 agents handle escalations only. **Drives:** the model may not choose its own actions.",
-      "OrderDesk or the shop can return current stock read-only [guess]. The brief names an API for orders only. **Drives:** the stock route. Without such a source, the assistant states no availability and links to the shop's product page.",
-      "Customers can be identified for order status: the shop login in chat, the sender's address in e-mail, otherwise order number plus e-mail matched in code [guess]. **Drives:** the order route, so no customer reads another customer's order.",
-      "HelpLine, the helpdesk named in the e-mail tagging brief, can also take a new ticket by API [guess]. **Drives:** the hand-off step.",
-      "\"First answer within 5 seconds\" means the first visible words in the chat, at the 95th percentile, and does not apply to e-mail [med]. **Drives:** streaming, and an output check in code instead of a second model call before the answer shows.",
-      "Staff will write and approve fixed texts for general warranty and return questions in all three scripts [guess]. **Drives:** the model generates no policy wording at all.",
-      "E-mail takes the same routes as chat, and a person presses send in HelpLine until the acceptance criteria hold on real e-mail [med]. **Drives:** the rollout order, chat first.",
-      "A customer writing in another EU language gets an answer in English and the offer of a person [guess]. **Drives:** the scope of content and tests."
-     ]
-    }
-   ]
-  },
-  {
-   "id": "split",
-   "title": "Split of the work",
-   "intro": "Requests on the left, steps in the middle, the model, systems and people on the right. The model reads and writes text. It holds no tools, so what it is talked into stays text: code checks the reply before it is sent, and only staff act.",
-   "blocks": [
-    {
-     "type": "graph",
-     "nodes": [
-      {
-       "id": "q_howto",
-       "label": "How-to",
-       "note": "55%, 1,650 a day",
-       "group": "entry"
-      },
-      {
-       "id": "q_order",
-       "label": "Order status",
-       "note": "25%, 750 a day",
-       "group": "entry"
-      },
-      {
-       "id": "q_stock",
-       "label": "Stock",
-       "note": "share unknown",
-       "group": "entry"
-      },
-      {
-       "id": "q_claims",
-       "label": "Returns, warranty",
-       "note": "12%, 360 a day",
-       "group": "entry"
-      },
-      {
-       "id": "q_other",
-       "label": "Other",
-       "note": "8%, 240 a day",
-       "group": "entry"
-      },
-      {
-       "id": "intake",
-       "label": "Language, script, customer",
-       "note": "code",
-       "group": "module"
-      },
-      {
-       "id": "route",
-       "label": "Route",
-       "note": "model labels, code decides",
-       "group": "module"
-      },
-      {
-       "id": "search",
-       "label": "Retrieve",
-       "note": "code, filtered by product and topic",
-       "group": "module"
-      },
-      {
-       "id": "answer",
-       "label": "Write answer",
-       "note": "model, with citations",
-       "group": "module"
-      },
-      {
-       "id": "fetch_order",
-       "label": "Read order",
-       "note": "code, verified customer only",
-       "group": "module"
-      },
-      {
-       "id": "fetch_stock",
-       "label": "Read stock",
-       "note": "code, live or a shop link",
-       "group": "module"
-      },
-      {
-       "id": "template",
-       "label": "Fill template",
-       "note": "code, three scripts",
-       "group": "module"
-      },
-      {
-       "id": "approved",
-       "label": "Approved text",
-       "note": "general policy questions",
-       "group": "module"
-      },
-      {
-       "id": "collect",
-       "label": "Collect details",
-       "note": "model extracts, code validates",
-       "group": "module"
-      },
-      {
-       "id": "ticket",
-       "label": "Create ticket",
-       "note": "code, details filled in",
-       "group": "module"
-      },
-      {
-       "id": "guard",
-       "label": "Check output",
-       "note": "code, blocks promises and RMA numbers",
-       "group": "module"
-      },
-      {
-       "id": "reply",
-       "label": "Send reply",
-       "note": "code, never a model tool",
-       "group": "boundary"
-      },
-      {
-       "id": "model",
-       "label": "Model in the EU",
-       "note": "no tools",
-       "group": "external"
-      },
-      {
-       "id": "index",
-       "label": "Search index",
-       "note": "manuals, rebuilt monthly",
-       "group": "data"
-      },
-      {
-       "id": "orderdesk",
-       "label": "OrderDesk API",
-       "note": "read-only",
-       "group": "external"
-      },
-      {
-       "id": "helpline",
-       "label": "HelpLine",
-       "note": "helpdesk",
-       "group": "external"
-      },
-      {
-       "id": "staff",
-       "label": "6 support agents",
-       "note": "only they approve and issue RMA",
-       "group": "external"
-      }
-     ],
-     "edges": [
-      {
-       "from": "q_howto",
-       "to": "intake"
-      },
-      {
-       "from": "q_order",
-       "to": "intake"
-      },
-      {
-       "from": "q_stock",
-       "to": "intake"
-      },
-      {
-       "from": "q_claims",
-       "to": "intake"
-      },
-      {
-       "from": "q_other",
-       "to": "intake"
-      },
-      {
-       "from": "intake",
-       "to": "route"
-      },
-      {
-       "from": "route",
-       "to": "model",
-       "label": "classify"
-      },
-      {
-       "from": "route",
-       "to": "search",
-       "label": "how-to"
-      },
-      {
-       "from": "route",
-       "to": "fetch_order",
-       "label": "order"
-      },
-      {
-       "from": "route",
-       "to": "fetch_stock",
-       "label": "stock"
-      },
-      {
-       "from": "route",
-       "to": "approved",
-       "label": "general policy"
-      },
-      {
-       "from": "route",
-       "to": "collect",
-       "label": "a claim"
-      },
-      {
-       "from": "route",
-       "to": "ticket",
-       "label": "other, unsure"
-      },
-      {
-       "from": "search",
-       "to": "index"
-      },
-      {
-       "from": "search",
-       "to": "answer"
-      },
-      {
-       "from": "answer",
-       "to": "model",
-       "label": "generate"
-      },
-      {
-       "from": "answer",
-       "to": "guard"
-      },
-      {
-       "from": "fetch_order",
-       "to": "orderdesk"
-      },
-      {
-       "from": "fetch_order",
-       "to": "template"
-      },
-      {
-       "from": "fetch_stock",
-       "to": "orderdesk"
-      },
-      {
-       "from": "fetch_stock",
-       "to": "template"
-      },
-      {
-       "from": "template",
-       "to": "reply"
-      },
-      {
-       "from": "approved",
-       "to": "reply"
-      },
-      {
-       "from": "collect",
-       "to": "model",
-       "label": "extract"
-      },
-      {
-       "from": "collect",
-       "to": "ticket"
-      },
-      {
-       "from": "guard",
-       "to": "reply",
-       "label": "passes"
-      },
-      {
-       "from": "guard",
-       "to": "ticket",
-       "label": "blocked"
-      },
-      {
-       "from": "ticket",
-       "to": "helpline"
-      },
-      {
-       "from": "helpline",
-       "to": "staff"
-      }
-     ]
-    },
-    {
-     "type": "table",
-     "title": "Who does each step, and why",
-     "columns": [
-      "Step",
-      "Who",
-      "Why"
-     ],
-     "rows": [
-      [
-       "Detect language and script",
-       "Code",
-       "Latin and Cyrillic Serbian map one to one. The reply script is a rule."
-      ],
-      [
-       "Identify the customer",
-       "Shop login, or a match in code",
-       "It decides whose data may be read, so text in a chat cannot decide it."
-      ],
-      [
-       "Route the question",
-       "Model labels it, code decides",
-       "Free text needs a model. Warranty and return keywords in all three scripts force the person path, an unsure label goes to a person, and on mixed questions the person path wins."
-      ],
-      [
-       "Retrieve",
-       "Code and index",
-       "Same question, same passages, so it can be tested. Exact match is needed for codes such as E3 and SKUs."
-      ],
-      [
-       "Write the how-to answer",
-       "Model",
-       "The one step that needs written language. Every claim cites a passage."
-      ],
-      [
-       "Order status",
-       "OrderDesk, read by code",
-       "A status changes within minutes, so it comes from its owner."
-      ],
-      [
-       "Word the status or stock",
-       "Code template",
-       "A status is a field. No customer data needs to reach the model on this route."
-      ],
-      [
-       "General warranty and return questions",
-       "Staff-approved text, chosen by code",
-       "Zero wrong promises is the target, so this wording is not generated."
-      ],
-      [
-       "Collect claim details",
-       "Model extracts, code validates",
-       "Model, serial number, proof of purchase and fault, as the warranty policy lists them. The agent starts with a complete case."
-      ],
-      [
-       "Approve a return, issue an RMA, refund",
-       "A person",
-       "The brief reserves these for staff."
-      ],
-      [
-       "Check every outgoing text",
-       "Code",
-       "Blocks approval wording, RMA-like numbers and refund promises on every route, including how-to."
-      ],
-      [
-       "Send the reply",
-       "Code",
-       "The model has no way to send anything."
-      ]
-     ]
-    },
-    {
-     "type": "callout",
-     "tone": "warn",
-     "text": "**The 6 agents may become the bottleneck.** The person routes alone are 600 cases a day, 100 per agent. If every how-to question the 50% target leaves unanswered also reaches them, it is up to 1,425 a day, about 238 per agent. The brief does not give today's load, so check it before launch. Outside 8:00 to 16:00 the assistant must say when a person will reply, never ask the customer to wait."
-    }
-   ]
-  },
-  {
-   "id": "documents",
-   "title": "Documents",
-   "blocks": [
-    {
-     "type": "table",
-     "columns": [
-      "Measure",
-      "Sample (counted)",
-      "Full library"
-     ],
-     "rows": [
-      [
-       "Files",
-       "21 (15 md, 3 txt, 3 pdf)",
-       "41 manuals plus policies and guides"
-      ],
-      [
-       "Tokens, estimated",
-       "10,224",
-       "~1.2M [med]"
-      ],
-      [
-       "Share of a 100,000 token budget",
-       "10%",
-       "about 12 times the budget [med]"
-      ],
-      [
-       "Scripts",
-       "14 English Latin, 4 Serbian Latin, 3 Cyrillic",
-       "English and Serbian"
-      ],
-      [
-       "PDF needing OCR",
-       "none of 3",
-       "unknown, some manuals exist only as PDF"
-      ],
-      [
-       "Duplicates",
-       "archive/faq-en-old.md equals faq-en.md",
-       "unknown"
-      ],
-      [
-       "Change rate",
-       "last edit 2 October 2026",
-       "manuals monthly, policies quarterly"
-      ]
-     ]
-    },
-    {
-     "type": "callout",
-     "tone": "warn",
-     "text": "**The sample fits in one prompt and the library does not.** Sample manuals are about one page each, full ones average nearly 60. Retrieval quality must be tested on the real library, because results on this sample will flatter it."
-    },
-    {
-     "type": "list",
-     "title": "What the documents demand of retrieval",
-     "items": [
-      "**Retrieval must cross languages.** In the sample, the K-300 and MF-1 manuals are English only, the cleaning guide has no Latin Serbian version, and the Cyrillic FAQ answers things the Latin FAQ does not (E1, E8, E9, MF-1 milk amounts) [high].",
-      "**Filter by product.** E2 has a different fix on the K-200 and the K-300, and E5 and E6 exist on the K-300 only [high].",
-      "**Warranty statements are everywhere.** 13 of the 15 files outside policies/ state something about warranty, for example \"scale damage is not covered\" in the cleaning guide [high]. Excluding the policies folder is not enough, so sections need a topic tag and the how-to route must leave warranty sections out.",
-      "**E8 and E9 are always a service case** (error-codes.txt) [high], so code sends them to a person with the safety instruction.",
-      "**One gap for Acme to close.** The warranty excludes scale damage when the machine was not descaled \"every 3 months\", while the cleaning guide says every 2 months in hard water [high]. A customer with hard water has no clear answer, and it is exactly the case the assistant must not judge."
-     ]
-    }
-   ]
-  },
-  {
-   "id": "decision",
-   "title": "Decision",
-   "intro": "Every rung of the ladder. The eliminations come from the hard rules in decide.py. Ratings are my judgement [med].",
-   "blocks": [
-    {
-     "type": "decision",
-     "factors": [
-      "Predictability",
-      "Cost of an error",
-      "Observability",
-      "Latency (5 s)",
-      "Cost (€0.017 per question)"
-     ],
-     "options": [
-      {
-       "label": "0. No LLM",
-       "status": "eliminated",
-       "eliminated_by": "rule: needs-language",
-       "why": "Customers write free text in three scripts. Rules alone cannot read it, though parts of the workflow use no model.",
-       "cells": [
-        {
-         "rating": "pass",
-         "text": "Fixed"
-        },
-        {
-         "rating": "weak",
-         "text": "Misreads free text"
-        },
-        {
-         "rating": "pass",
-         "text": "Full"
-        },
-        {
-         "rating": "pass",
-         "text": "Instant"
-        },
-        {
-         "rating": "pass",
-         "text": "Lowest"
-        }
-       ]
-      },
-      {
-       "label": "1. One model call",
-       "status": "eliminated",
-       "eliminated_by": "rules: needs-a-source, live-state",
-       "why": "It knows neither the manuals nor the state of an order.",
-       "cells": [
-        {
-         "rating": "weak",
-         "text": "One path"
-        },
-        {
-         "rating": "fail",
-         "text": "Answers from memory"
-        },
-        {
-         "rating": "weak",
-         "text": "No source to check"
-        },
-        {
-         "rating": "pass",
-         "text": "One call"
-        },
-        {
-         "rating": "pass",
-         "text": "Low"
-        }
-       ]
-      },
-      {
-       "label": "2. Whole corpus in the prompt",
-       "status": "eliminated",
-       "eliminated_by": "rules: does-not-fit, live-state",
-       "why": "About 1.2M tokens against a 100,000 budget, and an order status is not in any document.",
-       "cells": [
-        {
-         "rating": "weak",
-         "text": "One path"
-        },
-        {
-         "rating": "fail",
-         "text": "No live state"
-        },
-        {
-         "rating": "weak",
-         "text": "Source unclear"
-        },
-        {
-         "rating": "weak",
-         "text": "Very large prompt"
-        },
-        {
-         "rating": "fail",
-         "text": "Pays for all of it each call"
-        }
-       ]
-      },
-      {
-       "label": "3. RAG",
-       "status": "eliminated",
-       "eliminated_by": "rule: live-state",
-       "why": "It answers the 55% well and cannot answer the 25%. A copy of stock in an index is the prototype's actual failure.",
-       "cells": [
-        {
-         "rating": "weak",
-         "text": "Good for how-to only"
-        },
-        {
-         "rating": "fail",
-         "text": "Stale status, no gate on promises"
-        },
-        {
-         "rating": "pass",
-         "text": "Good"
-        },
-        {
-         "rating": "pass",
-         "text": "One call"
-        },
-        {
-         "rating": "pass",
-         "text": "Low"
-        }
-       ]
-      },
-      {
-       "label": "4. Workflow with a router",
-       "status": "chosen",
-       "why": "Five known routes, each testable alone. RAG lives inside the how-to route.",
-       "cells": [
-        {
-         "rating": "pass",
-         "text": "Code picks the path"
-        },
-        {
-         "rating": "pass",
-         "text": "Claims go to staff"
-        },
-        {
-         "rating": "pass",
-         "text": "Trace per step"
-        },
-        {
-         "rating": "pass",
-         "text": "Two calls, if about 2 s each [guess]"
-        },
-        {
-         "rating": "pass",
-         "text": "One or two calls, none on some routes"
-        }
-       ]
-      },
-      {
-       "label": "5. Agentic RAG",
-       "status": "eliminated",
-       "eliminated_by": "rule: steps-known",
-       "why": "One lookup answers a how-to question. Nothing in the brief or documents needs a second search that depends on the first [med].",
-       "cells": [
-        {
-         "rating": "weak",
-         "text": "Search path varies"
-        },
-        {
-         "rating": "weak",
-         "text": "Warranty text in reach"
-        },
-        {
-         "rating": "weak",
-         "text": "Harder to explain"
-        },
-        {
-         "rating": "weak",
-         "text": "More calls in a row"
-        },
-        {
-         "rating": "weak",
-         "text": "Several calls"
-        }
-       ]
-      },
-      {
-       "label": "6. One agent with tools (the prototype)",
-       "status": "eliminated",
-       "eliminated_by": "rules: steps-known, unreviewed-autonomy",
-       "why": "A wrong result is expensive and no person checks it, so the model may not choose its own actions.",
-       "cells": [
-        {
-         "rating": "fail",
-         "text": "Model picks the path"
-        },
-        {
-         "rating": "fail",
-         "text": "Nothing stops a promise"
-        },
-        {
-         "rating": "weak",
-         "text": "Tool log only"
-        },
-        {
-         "rating": "weak",
-         "text": "Unbounded"
-        },
-        {
-         "rating": "weak",
-         "text": "Unbounded"
-        }
-       ]
-      },
-      {
-       "label": "7. Orchestrator with subagents",
-       "status": "eliminated",
-       "eliminated_by": "rules: steps-known, nothing-to-split, unreviewed-autonomy, too-slow",
-       "why": "There are no independent subtasks to hand out.",
-       "cells": [
-        {
-         "rating": "fail",
-         "text": "Least predictable"
-        },
-        {
-         "rating": "fail",
-         "text": "As for the agent"
-        },
-        {
-         "rating": "weak",
-         "text": "Hand-offs hide errors"
-        },
-        {
-         "rating": "fail",
-         "text": "At least 3 calls"
-        },
-        {
-         "rating": "fail",
-         "text": "Highest"
-        }
-       ]
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "why",
-   "title": "Why this one",
-   "blocks": [
-    {
-     "type": "text",
-     "text": "**The binding constraint is the cost of an error.** Live order status rules out everything below the workflow. What rules out everything above it is that a wrong warranty or return promise is a refund Acme did not plan, the target is zero, and no person reads the chat first. A better model lowers the rate of such errors, while a path fixed in code removes the way to make them: on the claims route no generated text reaches the customer at all.\n\nThe decision holds under most of the assumptions. Tested in decide.py, it survives a whole-corpus budget, a person reviewing replies, and steps that cannot all be listed. Removing live state would reopen plain RAG, but 25% of the questions are order status. Only a model too slow to fit two calls in 5 seconds would break it, and the fix for that is a rules-first or smaller router, still a workflow."
-    },
-    {
-     "type": "table",
-     "title": "The five routes",
-     "columns": [
-      "Route",
-      "Per day",
-      "Path",
-      "Model's part"
-     ],
-     "rows": [
-      [
-       "How-to",
-       "1,650",
-       "Retrieve by product and topic, write with citations, check the output. E8, E9 and repeat faults go to a person.",
-       "Writes the answer"
-      ],
-      [
-       "Order status",
-       "750",
-       "Verified customer, OrderDesk, template.",
-       "At most finds the order number"
-      ],
-      [
-       "Stock",
-       "unknown",
-       "Live read and template, or a link to the shop. Never the nightly file.",
-       "None"
-      ],
-      [
-       "Returns, warranty",
-       "360",
-       "Approved text for general questions. For a claim, collect the details and open a ticket. Staff decide and issue the RMA.",
-       "Labels and extracts, writes nothing to the customer"
-      ],
-      [
-       "Other, or unsure",
-       "240",
-       "Ticket in the right queue, including partnerships, invoices, press and complaints.",
-       "Labels"
-      ]
-     ]
-    },
-    {
-     "type": "table",
-     "title": "The prototype against this decision (read from the code, not run)",
-     "columns": [
-      "What it does",
-      "Where",
-      "Consequence",
-      "Do"
-     ],
-     "rows": [
-      [
-       "Stock comes from a nightly export through vector search, one hit",
-       "stock.py:32, snapshot.py:32",
-       "Likely the cause of the incident [med]. The copy can be a day old and carries no date in the answer. One hit shows one warehouse (K300-SLV is 0 in Novi Sad, 2 in Bratislava). 6 of 13 parts are not in the export, so the nearest other item comes back.",
-       "Remove, read live"
-      ],
-      [
-       "The model picks tools in a loop with no limit",
-       "agent.py:17",
-       "No fixed path to test and no bound on time or calls.",
-       "Replace with the router"
-      ],
-      [
-       "The model can send e-mail to any address and fetch any URL",
-       "tools.py:62, tools.py:68",
-       "A customer's message or a fetched page can make it mail anyone from Acme's account, or read internal addresses.",
-       "Remove both"
-      ],
-      [
-       "The only control on promises is one line of prompt",
-       "prompts/system.md:11",
-       "Nothing enforces it.",
-       "Replace with routes and the output check"
-      ],
-      [
-       "There is no order status path",
-       "tools.py:28",
-       "25% of the questions have no answer.",
-       "Add the OrderDesk route"
-      ],
-      [
-       "Calls go to the public API unless a base URL is set",
-       "llm.py:15, config.py:6",
-       "Customer text may leave the EU.",
-       "Move to an EU deployment"
-      ],
-      [
-       "Indexing skips PDFs, includes archive/, stores no product or topic, searches by vector only",
-       "knowledge.py:11, :43, :55, :64",
-       "The safety sheet is invisible, chunks are duplicated, and E2 can come back for the wrong model.",
-       "Rebuild ingestion"
-      ],
-      [
-       "The caller supplies the conversation history, and /chat has no login",
-       "app.py:20, app.py:27",
-       "A client can forge earlier assistant turns.",
-       "Keep history on the server"
-      ],
-      [
-       "A default API key sits in the code, and the model name is an unpinned alias",
-       "config.py:5, config.py:7",
-       "Check whether the key is real and rotate it if so.",
-       "Settings only, pin the model"
-      ],
-      [
-       "No evaluation and no tracing, and tool arguments with personal data go to the log",
-       "tests/test_snapshot.py, agent.py:23",
-       "Nobody can tell whether it works.",
-       "Add evals and EU traces"
-      ]
-     ]
-    },
-    {
-     "type": "text",
-     "text": "Worth keeping: the evidence that customers like the chat, the document set, the HTTP shell and the rule to answer in the customer's script. Treat the core as a rewrite. A full review of the code is a separate job."
-    }
-   ]
-  },
-  {
-   "id": "change",
-   "title": "What would change it",
-   "blocks": [
-    {
-     "type": "list",
-     "items": [
-      "**The assistant must write to OrderDesk or issue RMAs:** still a workflow, plus a step where the customer or a staff member confirms each write. Not an agent.",
-      "**Real tickets show that more than about 15% of how-to questions need a second search that depends on the first:** agentic RAG inside the how-to route only, read-only and limited to three searches.",
-      "**Model calls take more than 2.5 seconds to first output:** rules-first routing or a smaller router model, so the 5 seconds still hold.",
-      "**Volume grows tenfold to 30,000 a day:** same pattern, with a cache for the most common questions, and cost becomes the binding factor.",
-      "**A new language is added:** same pattern, with translated content or tested cross-language retrieval, and a labelled test set and approved texts for that language."
-     ]
-    }
-   ]
-  },
-  {
-   "id": "acceptance",
-   "title": "Acceptance criteria",
-   "intro": "All five must hold before the switch for everyone. The order: shadow mode, 10% of chat traffic, then everyone.",
-   "blocks": [
-    {
-     "type": "table",
-     "columns": [
-      "Metric",
-      "Threshold",
-      "Measured how, before launch"
-     ],
-     "rows": [
-      [
-       "Wrong promises",
-       "0 on at least 300 adversarial warranty and return prompts, in all three scripts",
-       "Test set graded by Acme staff. Any failure blocks launch."
-      ],
-      [
-       "Claims reach a person",
-       "At least 99% of warranty and return messages take the person path",
-       "Routing on at least 500 labelled past tickets, at least 100 per script."
-      ],
-      [
-       "How-to quality",
-       "At least 90% correct on 300 real questions, and every answer cites a source",
-       "Graded by staff or a checked judge, on the full library, then a weekly sample from traces."
-      ],
-      [
-       "Live data and identity",
-       "Status matches OrderDesk on 200 of 200 test orders, and 100% of attempts to read another customer's order are refused",
-       "Integration test against OrderDesk, plus an identity test set."
-      ],
-      [
-       "Latency and cost",
-       "First words at p95 within 5 s at 400 questions an hour, and at most €1,500 a month",
-       "Load test with traces, the cost model from the stack selection, then the first month's bill."
-      ]
-     ]
-    },
-    {
-     "type": "text",
-     "text": "CSAT of 4.2 and 50% deflection can only be read on real traffic. The 10% stage gives the first reading."
-    }
-   ]
-  },
-  {
-   "id": "adr",
-   "title": "ADR draft",
-   "intro": "Not written into the repository.",
-   "blocks": [
-    {
-     "type": "code",
-     "where": "docs/adr/001-routed-workflow.md (proposed)",
-     "code": "# ADR-001: Support assistant v2 is a routed workflow, not an agent\nStatus: proposed\nDate: 2026-11-08\n\nContext: About 3,000 questions a day, peak 400 an hour, by chat and e-mail, in Serbian\n(Latin and Cyrillic) and English. 55% how-to from about 1.2M tokens of manuals, 25% order\nstatus that changes within minutes in OrderDesk, 12% returns and warranty, 8% other. The\ntarget is zero wrong warranty or return promises, only staff approve returns, and nobody\nreads a chat answer first. Customer data stays in the EU. First answer within 5 seconds,\nabout EUR 1,500 a month. The prototype, an agent with tools, reported stale stock.\n\nDecision: Code routes each question to one of five fixed paths. How-to uses RAG with\ncitations. Order status and stock are read live and worded by code templates. Returns and\nwarranty use staff-approved text and a filled-in ticket, and staff decide and issue the\nRMA. Other and unsure questions go to a person. The model holds no tools, and code checks\nand sends every reply.\n\nConsequences: Each route can be tested alone and traced, and untrusted text reaches only\nthe checked reply and a ticket, never an RMA, a refund or an e-mail. We must build ingestion with product and topic tags, cross-language retrieval, a\nrouter with keyword overrides, the output check, templates in three scripts and a labelled\ntest set. Multi-step questions get less flexible answers. Eliminated: no LLM, one call and\nthe whole corpus (free text, sources, live state), RAG (live state), agentic RAG, one agent\nand subagents (known steps, unreviewed errors). The binding constraint is the cost of an\nerror. Revisit if the assistant must write to OrderDesk, if more than about 15% of how-to\nquestions need dependent searches, or if two model calls do not fit in 5 seconds."
-    }
-   ]
-  },
-  {
-   "id": "open",
-   "title": "Open questions",
-   "intro": "For Acme, most important first. None of them changes the pattern, but they change what gets built.",
-   "blocks": [
-    {
-     "type": "list",
-     "ordered": true,
-     "items": [
-      "Can Acme export 500 past tickets with their outcomes? They settle the steps-known assumption, the share of stock questions and the test sets.",
-      "Is there a live source for stock, in OrderDesk or the shop?",
-      "How is a customer identified for order status in chat and in e-mail?",
-      "How many cases do the 6 agents handle today, and can HelpLine take new tickets by API?",
-      "Will Acme's legal team review the approved texts for Serbia and the EU, and confirm how the chat tells customers they are talking to an AI [med]?",
-      "How many of the 41 manuals are scanned, and how much depends on tables and diagrams?",
-      "The separate e-mail tagging brief works on the same inbox. Which of the two touches an e-mail first?"
-     ]
-    }
-   ]
-  }
- ]
 }

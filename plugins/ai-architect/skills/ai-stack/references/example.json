@@ -1,847 +1,928 @@
 {
- "skill": "ai-stack",
- "title": "Acme support assistant v2: the stack",
- "subtitle": "The tools for the routed workflow, an Azure variant against an open-weight variant, with every price taken from an example table.",
- "meta": {
-  "repo": "acme-assist",
-  "brief": "docs/briefs/support-v2.md",
-  "pattern": "ai-pattern-2026-11-08.json",
-  "date": "2026-11-08",
-  "prices": "EXAMPLE table, not real prices"
- },
- "verdict": {
-  "text": "**Use variant A, Azure.** It is the only variant the brief clears for customers, because the brief accepts a local model for internal tools only. It comes to USD EXAMPLE 1,171.01 a month against the €1,500 budget, so it appears to fit, but those prices are made up, and the dollars are compared with the euros with no rate applied. The how-to path takes 4.95 s [guess] against 5 s, which leaves almost no margin until a real call is measured.",
-  "tone": "warn"
- },
- "stats": [
-  {
-   "label": "A. Azure, per month",
-   "value": "USD EXAMPLE 1,171.01",
-   "note": "budget €1,500, no rate applied",
-   "tone": "warn"
+  "skill": "ai-stack",
+  "title": "Acme support assistant v2: the stack",
+  "subtitle": "The tools for the routed workflow, an Azure variant against an open-weight variant, with every price taken from an example table.",
+  "meta": {
+    "repo": "acme-assist",
+    "brief": "docs/briefs/support-v2.md",
+    "pattern": "ai-pattern-2026-11-08.json",
+    "date": "2026-11-08",
+    "prices": "EXAMPLE table, not real prices"
   },
-  {
-   "label": "B. Open, per month",
-   "value": "USD EXAMPLE 2,170.00",
-   "note": "mostly a placeholder GPU line",
-   "tone": "warn"
+  "verdict": {
+    "text": "**Use variant A, Azure.** It is the only variant the brief clears for customers, because the brief accepts a local model for internal tools only. It comes to USD EXAMPLE 1,171.01 a month against the €1,500 budget, so it appears to fit, but those prices are made up, and the dollars are compared with the euros with no rate applied. The how-to path takes 4.95 s [guess] against 5 s, which leaves almost no margin until a real call is measured.",
+    "tone": "warn"
   },
-  {
-   "label": "A, models per question",
-   "value": "USD EXAMPLE 0.007567",
-   "note": "models only, without fixed items",
-   "tone": "info"
-  },
-  {
-   "label": "Slowest path",
-   "value": "4.95 s",
-   "note": "how-to, budget 5 s [guess]",
-   "tone": "warn"
-  },
-  {
-   "label": "Price table date",
-   "value": "EXAMPLE 2026-11-01",
-   "note": "made-up prices, replace before quoting",
-   "tone": "bad"
+  "stats": [
+    {
+      "label": "A. Azure, per month",
+      "value": "USD EXAMPLE 1,171.01",
+      "note": "budget €1,500, no rate applied",
+      "tone": "warn"
+    },
+    {
+      "label": "B. Open, per month",
+      "value": "USD EXAMPLE 2,170.00",
+      "note": "mostly a placeholder GPU line",
+      "tone": "warn"
+    },
+    {
+      "label": "A, models per question",
+      "value": "USD EXAMPLE 0.007567",
+      "note": "models only, without fixed items",
+      "tone": "info"
+    },
+    {
+      "label": "Slowest path",
+      "value": "4.95 s",
+      "note": "how-to, budget 5 s [guess]",
+      "tone": "warn"
+    },
+    {
+      "label": "Price table date",
+      "value": "EXAMPLE 2026-11-01",
+      "note": "made-up prices, replace before quoting",
+      "tone": "bad"
+    }
+  ],
+  "sections": [
+    {
+      "id": "constraints",
+      "title": "Constraints",
+      "intro": "These come from the brief and the pattern page, and they remove candidates before any price is read.",
+      "blocks": [
+        {
+          "type": "callout",
+          "tone": "bad",
+          "text": "**Every price on this page is EXAMPLE.** Token prices come from the example table, which is made up. That table has no rows for services, so the search, hosting, database, tracing and GPU lines are placeholders made up for this page. No provider page was read and nothing was looked up online. Replace all of them before quoting any figure."
+        },
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "**Customer data stays in the EU** (brief, Rules). Removes the public API endpoint the prototype defaults to, and any model deployment that may process outside the EU, such as a global deployment type [med].",
+            "**Acme already has an Azure tenant in West Europe** (brief). Everything defaults to it, and anything new has to earn its place.",
+            "**No GPU servers on-prem** (brief, Rules). Removes a model on Acme's own hardware. A local or open model would have to run on a rented GPU server in the tenant.",
+            "**A local model is acceptable for internal tools** (brief, Rules). This assistant answers customers, so the brief does not clear a local model for it, and the pattern page reads it the same way. Removes a local model as the recommended choice. Variant B is costed for comparison only and needs Acme's written agreement before it could be used.",
+            "**The model holds no tools and code sends every reply** (pattern page). Removes any need for tool calling or an agent framework.",
+            "**First visible words within 5 seconds at p95 in chat** (brief, as the pattern page reads it). Removes a second model call before the answer shows, and any check that waits for the whole answer.",
+            "**About €1,500 a month for models and hosting together**, at 3,000 questions a day (brief).",
+            "**Serbian in Latin and Cyrillic and English, retrieval across languages, exact match on codes such as E3 and SKUs** (pattern page, Documents). Removes vector-only search, which is what the prototype does.",
+            "**Who runs it after hand-over is not stated** [guess]. The brief names 6 support agents and no IT or operations team, which weighs against anything self-managed."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stack",
+      "title": "Stack",
+      "intro": "The recommended variant, layer by layer. No model name or version is given, because neither can be confirmed offline for West Europe.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Layer",
+            "Chosen",
+            "Alternatives",
+            "Why",
+            "Gives up"
+          ],
+          "rows": [
+            [
+              "Route and extraction model",
+              "Small Azure OpenAI model in an EU-bound deployment in West Europe, pinned to a dated version",
+              "Rules first, with the model only for unclear cases; Mistral's EU-hosted small model; open weights (variant B)",
+              "Labels and short extractions need little from a model, and it shares the answer model's endpoint and contract [med].",
+              "Routing quality in Cyrillic is unproven until the 500 labelled tickets are run. Bound to what West Europe offers."
+            ],
+            [
+              "Answer model",
+              "Large Azure OpenAI model under the same deployment rules, moving to the small one if it passes the eval",
+              "Small model for answers; Mistral's EU-hosted large model; Claude through an EU region; open weights (variant B)",
+              "This is the one text the customer reads, and the how-to target depends on it. Staying in the tenant meets the EU rule with no new vendor [med].",
+              "The largest cost line on the page. Serbian quality has to be proven on the eval set."
+            ],
+            [
+              "Embeddings",
+              "Multilingual embedding model on Azure OpenAI, same tenant",
+              "bge-m3 or multilingual-e5, self-hosted (variant B)",
+              "Retrieval must cross languages. Changing the model later means re-embedding the library, at USD EXAMPLE 0.02 on this table.",
+              "Quality on Serbian manuals is not known until tested."
+            ],
+            [
+              "Retrieval store",
+              "Azure AI Search, hybrid, filtered by product, topic and language",
+              "PostgreSQL with pgvector; Qdrant, which the prototype uses",
+              "Keywords, vectors and filters in one managed service in the tenant [med].",
+              "The largest fixed line on variant A. The index definition is Azure-specific. Serbian analysis of Cyrillic needs a test [guess]."
+            ],
+            [
+              "Orchestration",
+              "Plain Python with the provider SDK, keeping the prototype's FastAPI shell",
+              "LangGraph; Semantic Kernel",
+              "Five fixed paths in code are what the pattern asks for, and the prototype is already Python [high].",
+              "Retries, timeouts and state are written by hand."
+            ],
+            [
+              "Conversation store",
+              "Azure Database for PostgreSQL",
+              "Cosmos DB; Redis",
+              "History must live on the server (pattern page), and this is plain relational data [med].",
+              "One more managed service to secure and pay for."
+            ],
+            [
+              "Hosting",
+              "Azure Container Apps in the tenant, at least 2 replicas, private endpoints to the model and search",
+              "App Service; AKS",
+              "Scales to the peak with no cluster to run, and warm replicas avoid a cold start inside the 5 seconds [med].",
+              "Less control than Kubernetes."
+            ],
+            [
+              "Tracing",
+              "OpenTelemetry GenAI conventions into Application Insights in West Europe, with personal data masked",
+              "Langfuse self-hosted in the tenant; Langfuse Cloud EU",
+              "No new service, and traces stay in the tenant [med].",
+              "No annotation queue, so the weekly staff sample is exported and graded in a sheet."
+            ],
+            [
+              "Evals",
+              "promptfoo in CI with the labelled sets kept in the repo, plus staff-graded samples",
+              "Langfuse datasets; Ragas for retrieval",
+              "The five acceptance criteria are fixed labelled sets that must run on every change of prompt, model or retrieval [med].",
+              "No dashboard, and the sets still have to be built from past tickets."
+            ],
+            [
+              "Guardrails",
+              "Code: keyword overrides in three scripts, and a check on every outgoing text for approval wording, RMA-like numbers and refund promises",
+              "Azure AI Content Safety and Prompt Shields; a second model as checker",
+              "Zero wrong promises with no added model call inside the 5 seconds (pattern page).",
+              "A word list can miss a paraphrase. The 300 adversarial prompts measure how often."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "variants",
+      "title": "Variants",
+      "intro": "Same pattern and same flows. Only the products and the cost differ.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Aspect",
+            "A. Azure (recommended)",
+            "B. Open weights in Acme's tenant"
+          ],
+          "rows": [
+            [
+              "Allowed by the brief",
+              "Yes",
+              "Not as written. The brief accepts a local model for internal tools only, so this needs Acme's written agreement."
+            ],
+            [
+              "Where it runs",
+              "Tenant in West Europe",
+              "Tenant in West Europe, on a rented GPU server, because Acme has none on-prem"
+            ],
+            [
+              "Route, extraction, answer",
+              "Azure OpenAI small and large, pinned",
+              "One open-weight model on vLLM. The table has only `local-8b`, and whether a model of that size is good enough in Serbian is untested [guess]."
+            ],
+            [
+              "Embeddings",
+              "Azure OpenAI",
+              "bge-m3 on the same server"
+            ],
+            [
+              "Store",
+              "Azure AI Search",
+              "PostgreSQL with pgvector and full-text search"
+            ],
+            [
+              "Orchestration",
+              "Plain Python",
+              "Plain Python, through an OpenAI-compatible endpoint"
+            ],
+            [
+              "Hosting",
+              "Container Apps",
+              "Container Apps plus the GPU server"
+            ],
+            [
+              "Tracing",
+              "Application Insights",
+              "Langfuse self-hosted"
+            ],
+            [
+              "Evals and guardrails",
+              "promptfoo, code checks",
+              "The same"
+            ],
+            [
+              "Who runs it",
+              "Azure runs the model and search",
+              "Someone at Acme must patch, monitor and scale a GPU server. With one server there is no fallback when it fails [med]."
+            ],
+            [
+              "Total per month, USD",
+              "EXAMPLE 1,171.01",
+              "EXAMPLE 2,170.00"
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "text": "**Where a local model does fit.** Tagging manuals at ingestion and pre-grading evals are internal and carry no customer data [med], so the brief allows a local model there. It is not worth adding one for that: on variant A the tagging costs USD EXAMPLE 0.58 a month, and Acme has no GPU."
+        }
+      ]
+    },
+    {
+      "id": "cost",
+      "title": "Cost",
+      "intro": "At 3,000 questions a day and 30 days a month. Every figure comes from `cost_model.py` and the example table. Steps with no model add latency and no token cost, so they are not listed.",
+      "blocks": [
+        {
+          "type": "table",
+          "title": "A. Azure",
+          "columns": [
+            "Item",
+            "Price row",
+            "Per call, USD",
+            "Per month, USD",
+            "Share of total"
+          ],
+          "rows": [
+            [
+              "Route the question",
+              "`example-small`",
+              "EXAMPLE 0.000233",
+              "EXAMPLE 20.93",
+              "1.8%"
+            ],
+            [
+              "Embed the question",
+              "`example-embed`",
+              "EXAMPLE 0.000002",
+              "EXAMPLE 0.08",
+              "0.0%"
+            ],
+            [
+              "Write the how-to answer",
+              "`example-large`",
+              "EXAMPLE 0.013200",
+              "EXAMPLE 653.40",
+              "55.8%"
+            ],
+            [
+              "Find the order number",
+              "`example-small`",
+              "EXAMPLE 0.000101",
+              "EXAMPLE 2.28",
+              "0.2%"
+            ],
+            [
+              "Extract claim details",
+              "`example-small`",
+              "EXAMPLE 0.000345",
+              "EXAMPLE 3.73",
+              "0.3%"
+            ],
+            [
+              "Re-embed the library, monthly",
+              "`example-embed`",
+              "EXAMPLE 0.000000",
+              "EXAMPLE 0.02",
+              "0.0%"
+            ],
+            [
+              "Tag sections by product and topic, monthly",
+              "`example-small`",
+              "EXAMPLE 0.000006",
+              "EXAMPLE 0.58",
+              "0.0%"
+            ],
+            [
+              "**Models, subtotal**",
+              "",
+              "",
+              "EXAMPLE 681.01",
+              ""
+            ],
+            [
+              "Azure AI Search, hybrid and vector",
+              "placeholder, not priced",
+              "",
+              "EXAMPLE 250.00",
+              ""
+            ],
+            [
+              "Azure Container Apps, at least 2 replicas",
+              "placeholder, not priced",
+              "",
+              "EXAMPLE 120.00",
+              ""
+            ],
+            [
+              "Azure Database for PostgreSQL, conversations",
+              "placeholder, not priced",
+              "",
+              "EXAMPLE 60.00",
+              ""
+            ],
+            [
+              "Application Insights and Key Vault",
+              "placeholder, not priced",
+              "",
+              "EXAMPLE 60.00",
+              ""
+            ],
+            [
+              "**Total per month**",
+              "",
+              "",
+              "EXAMPLE 1,171.01",
+              ""
+            ],
+            [
+              "Budget, models and hosting together (brief)",
+              "",
+              "",
+              "€1,500, not an example",
+              ""
+            ]
+          ]
+        },
+        {
+          "type": "table",
+          "title": "B. Open weights in Acme's tenant",
+          "columns": [
+            "Item",
+            "Price row",
+            "Per call, USD",
+            "Per month, USD",
+            "Share of total"
+          ],
+          "rows": [
+            [
+              "Route the question",
+              "`local-8b`",
+              "EXAMPLE 0.000000",
+              "EXAMPLE 0.00",
+              "0.0%"
+            ],
+            [
+              "Embed the question",
+              "`local-8b`",
+              "EXAMPLE 0.000000",
+              "EXAMPLE 0.00",
+              "0.0%"
+            ],
+            [
+              "Write the how-to answer",
+              "`local-8b`",
+              "EXAMPLE 0.000000",
+              "EXAMPLE 0.00",
+              "0.0%"
+            ],
+            [
+              "Find the order number",
+              "`local-8b`",
+              "EXAMPLE 0.000000",
+              "EXAMPLE 0.00",
+              "0.0%"
+            ],
+            [
+              "Extract claim details",
+              "`local-8b`",
+              "EXAMPLE 0.000000",
+              "EXAMPLE 0.00",
+              "0.0%"
+            ],
+            [
+              "Re-embed the library, monthly",
+              "`local-8b`",
+              "EXAMPLE 0.000000",
+              "EXAMPLE 0.00",
+              "0.0%"
+            ],
+            [
+              "Tag sections by product and topic, monthly",
+              "`local-8b`",
+              "EXAMPLE 0.000000",
+              "EXAMPLE 0.00",
+              "0.0%"
+            ],
+            [
+              "**Models, subtotal**",
+              "",
+              "",
+              "EXAMPLE 0.00",
+              ""
+            ],
+            [
+              "GPU server in West Europe, one",
+              "placeholder, not priced",
+              "",
+              "EXAMPLE 1,800.00",
+              ""
+            ],
+            [
+              "PostgreSQL with pgvector, larger",
+              "placeholder, not priced",
+              "",
+              "EXAMPLE 100.00",
+              ""
+            ],
+            [
+              "Azure Container Apps, at least 2 replicas",
+              "placeholder, not priced",
+              "",
+              "EXAMPLE 120.00",
+              ""
+            ],
+            [
+              "Langfuse self-hosted",
+              "placeholder, not priced",
+              "",
+              "EXAMPLE 150.00",
+              ""
+            ],
+            [
+              "**Total per month**",
+              "",
+              "",
+              "EXAMPLE 2,170.00",
+              ""
+            ],
+            [
+              "Budget, models and hosting together (brief)",
+              "",
+              "",
+              "€1,500, not an example",
+              ""
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "warn",
+          "text": "**The currencies do not match.** The example table is in USD and the budget is in euros. No exchange rate was available offline, so none was applied and the two are compared at face value. The fit is indicative only, and the brief's request for a monthly cost in euros stays open until real prices and a dated rate exist."
+        },
+        {
+          "type": "text",
+          "text": "**What costs most.** On variant A the how-to answer is USD EXAMPLE 653.40 a month, 55.8% of the total. The table below shows what moves it. The comparison between the variants cannot be read from this page, because B is almost entirely the placeholder GPU line. The reasons not to recommend B are the brief's rule and the lack of anyone named to run a GPU server, not its price."
+        },
+        {
+          "type": "table",
+          "title": "What would change variant A",
+          "columns": [
+            "Change",
+            "Models per month, USD",
+            "Total per month, USD"
+          ],
+          "rows": [
+            [
+              "Base",
+              "EXAMPLE 681.01",
+              "EXAMPLE 1,171.01"
+            ],
+            [
+              "Answer on the small model, if it passes the eval",
+              "EXAMPLE 82.06",
+              "EXAMPLE 572.06"
+            ],
+            [
+              "Stable 800-token prefix cached",
+              "EXAMPLE 574.04",
+              "EXAMPLE 1,064.04"
+            ],
+            [
+              "3 passages instead of 4",
+              "EXAMPLE 617.16",
+              "EXAMPLE 1,107.16"
+            ],
+            [
+              "8 passages instead of 4, if cross-language retrieval needs them",
+              "EXAMPLE 936.43",
+              "EXAMPLE 1,426.43"
+            ],
+            [
+              "Answers of 600 tokens instead of 300, likely for e-mail",
+              "EXAMPLE 903.76",
+              "EXAMPLE 1,393.76"
+            ]
+          ]
+        },
+        {
+          "type": "table",
+          "title": "What would change variant B",
+          "columns": [
+            "Change",
+            "Models per month, USD",
+            "Total per month, USD"
+          ],
+          "rows": [
+            [
+              "Base, one GPU server",
+              "EXAMPLE 0.00",
+              "EXAMPLE 2,170.00"
+            ],
+            [
+              "Two GPU servers, so a failure does not stop the chat",
+              "EXAMPLE 0.00",
+              "EXAMPLE 3,970.00"
+            ],
+            [
+              "Without the GPU line, which shows how much of B the placeholder is",
+              "EXAMPLE 0.00",
+              "EXAMPLE 370.00"
+            ]
+          ]
+        },
+        {
+          "type": "list",
+          "title": "Warnings printed by cost_model.py (main run; the sensitivity runs print the same warnings under their own scenario names)",
+          "items": [
+            "EXAMPLE PRICES: the table is marked as an example; replace it before quoting any number.",
+            "azure: fixed cost 'Azure AI Search, hybrid and vector' has no as_of date.",
+            "azure: fixed cost 'Azure Container Apps, at least 2 replicas' has no as_of date.",
+            "azure: fixed cost 'Azure Database for PostgreSQL, conversations' has no as_of date.",
+            "azure: fixed cost 'Application Insights and Key Vault' has no as_of date.",
+            "open: fixed cost 'GPU server in West Europe, one' has no as_of date.",
+            "open: fixed cost 'PostgreSQL with pgvector, larger' has no as_of date.",
+            "open: fixed cost 'Azure Container Apps, at least 2 replicas' has no as_of date.",
+            "open: fixed cost 'Langfuse self-hosted' has no as_of date."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "latency",
+      "title": "Latency",
+      "intro": "Seconds to the first visible words, against the 5 seconds in the brief. Nothing here is measured. Both variants use the same guesses, so the page claims no latency difference between them. The limit does not apply to e-mail.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Path",
+            "Steps",
+            "Base, seconds [guess]",
+            "Route call 1 s",
+            "Every model call 2.5 s",
+            "Within 5 s"
+          ],
+          "rows": [
+            [
+              "How-to",
+              "intake, route, embed, search, answer, check the first sentence",
+              "4.95",
+              "3.95",
+              "5.95",
+              "Yes, base only"
+            ],
+            [
+              "Order status",
+              "intake, route, find order number, read OrderDesk",
+              "4.35",
+              "3.35",
+              "5.35",
+              "Yes, base only"
+            ],
+            [
+              "Stock",
+              "intake, route, read stock",
+              "2.35",
+              "1.35",
+              "2.85",
+              "Yes"
+            ],
+            [
+              "General warranty or return question",
+              "intake, route, approved text",
+              "2.06",
+              "1.06",
+              "2.56",
+              "Yes"
+            ],
+            [
+              "Warranty or return claim",
+              "intake, route, extract details, create ticket",
+              "4.55",
+              "3.55",
+              "5.55",
+              "Yes, base only"
+            ],
+            [
+              "Other or unsure",
+              "intake, route, create ticket",
+              "2.55",
+              "1.55",
+              "3.05",
+              "Yes"
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "warn",
+          "text": "**The how-to path has almost no margin.** At the pattern page's guess of 2 seconds per model call it takes 4.95 s. At 2.5 seconds per call it takes 5.95 s and misses the target. A small router that answers in 1 second brings it to 3.95 s, and that is the first fix to try. The output check holds the first sentence until code has passed it, so no unchecked text reaches the customer, and that hold is counted."
+        }
+      ]
+    },
+    {
+      "id": "lockin",
+      "title": "Lock-in",
+      "intro": "For variant A. Prompts, eval sets and traces stay in formats Acme owns, so a model can be swapped and checked against the same set.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Layer",
+            "What is provider-specific",
+            "What moving would cost"
+          ],
+          "rows": [
+            [
+              "Models",
+              "Prompts tuned to one model, and the models offered in the region",
+              "Rerun the eval sets and adjust the prompts [med]"
+            ],
+            [
+              "Embeddings",
+              "Vectors work with that model only",
+              "Re-embed the library and re-check retrieval"
+            ],
+            [
+              "Retrieval store",
+              "Index definition, query syntax and analysers of Azure AI Search",
+              "Rewrite ingestion and the search call, then re-test retrieval. This is the largest move [med]"
+            ],
+            [
+              "Orchestration",
+              "Nothing, it is plain Python",
+              "Nothing"
+            ],
+            [
+              "Conversation store",
+              "Standard PostgreSQL",
+              "Dump and restore"
+            ],
+            [
+              "Hosting",
+              "Container Apps configuration, while the app is a plain container",
+              "Redeploy the same container elsewhere [med]"
+            ],
+            [
+              "Tracing",
+              "Application Insights queries, while the OpenTelemetry data is portable",
+              "Point the exporter elsewhere and rebuild the dashboards [med]"
+            ],
+            [
+              "Evals and guardrails",
+              "Nothing, the sets and the checks live in the repo",
+              "Nothing"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "before",
+      "title": "Before the offer",
+      "blocks": [
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "**Replace every price.** The offer needs the providers' prices for tokens and services, and an exchange rate, each with its date.",
+            "**Confirm the model and version in West Europe**, in a deployment type that keeps processing in the EU.",
+            "**Measure two model calls in a row from West Europe.** This is the one assumption that can break the pattern, and the how-to path has almost no margin.",
+            "**Quotas for the peak.** At 400 questions an hour and the brief's mix: answer 11,733 tokens per minute, route 5,667, claim extraction 848, order extraction 575, query embedding 293. These are computed from guessed token counts and are averages, so ask for headroom above them.",
+            "**Data processing terms:** retention, abuse monitoring and any human review of prompts, no training on prompts, and the agreement that covers customer data in the EU.",
+            "**Private networking** from Container Apps to the model, search and the database.",
+            "**Serbian quality on each candidate model**, in Latin and Cyrillic, on the labelled sets.",
+            "**Who operates this after hand-over**, by name.",
+            "**The open questions on the pattern page**, above all whether a live stock source exists and whether HelpLine can take tickets by API.",
+            "**If Acme wants variant B:** its written agreement, GPU quota in West Europe, a second server or a fallback, and someone to run it."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "assumptions",
+      "title": "Assumptions",
+      "intro": "Every input to `cost_model.py`. Token counts and latencies are the design's, and prices are the table's.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Number",
+            "Value",
+            "Source"
+          ],
+          "rows": [
+            [
+              "Questions per day",
+              "3,000",
+              "Brief"
+            ],
+            [
+              "Days per month",
+              "30",
+              "Pattern page, which gives 90,000 questions a month"
+            ],
+            [
+              "Share per route",
+              "How-to 55%, order 25%, claims 12%, other 8%",
+              "Brief. Stock has no share of its own [guess]: it sits inside these and uses no model after the router"
+            ],
+            [
+              "Route call",
+              "830 tokens in (600 system, 150 history, 80 question), 20 out",
+              "[guess], no router exists yet"
+            ],
+            [
+              "Answer call",
+              "2,900 tokens in (800 system, 4 passages, 300 history, 80 question), 300 out",
+              "[guess] for all but the passages. The prototype's system prompt is 853 characters [high], and v2 adds citation and script rules"
+            ],
+            [
+              "Passage",
+              "430 tokens, 4 per call",
+              "Prototype, `knowledge.py:12` and `:62`: 1,500 characters and limit 4 [high], at about 3.5 characters per token [med]"
+            ],
+            [
+              "Cached share",
+              "0",
+              "Conservative. Providers usually need a minimum prefix length, and 800 tokens may not reach it [med]"
+            ],
+            [
+              "Claim extraction",
+              "980 in, 80 out, on 12% of questions",
+              "[guess]. Assumes every claims message needs it"
+            ],
+            [
+              "Order number extraction",
+              "330 in, 15 out, on 25% of questions",
+              "[guess]. An upper limit, since code will often find the number"
+            ],
+            [
+              "Query embedding",
+              "80 tokens, on 55% of questions",
+              "[guess]"
+            ],
+            [
+              "Library",
+              "About 1.2M tokens re-embedded and re-tagged once a month",
+              "Pattern page [med]. An upper limit, since only changed manuals need it"
+            ],
+            [
+              "Tagging",
+              "300-token prompt per passage, 20 out",
+              "[guess]"
+            ],
+            [
+              "Model call",
+              "2.0 s, also for the route call",
+              "Pattern page's guess, not measured"
+            ],
+            [
+              "Intake",
+              "0.05 s",
+              "[guess]"
+            ],
+            [
+              "Query embedding and search",
+              "0.1 s and 0.3 s",
+              "[guess]"
+            ],
+            [
+              "First sentence held for the check",
+              "0.5 s",
+              "[guess]"
+            ],
+            [
+              "OrderDesk and stock read",
+              "0.3 s",
+              "[guess], no published figure"
+            ],
+            [
+              "Ticket creation",
+              "0.5 s",
+              "[guess]"
+            ],
+            [
+              "Approved text",
+              "0.01 s",
+              "[guess]"
+            ],
+            [
+              "Peak",
+              "400 questions an hour",
+              "Brief. Tokens per minute come from `cost_model.py` run at that rate"
+            ],
+            [
+              "Token prices",
+              "Example table in USD, as of 2026-11-01",
+              "EXAMPLE: `references/prices.example.json`, made-up numbers"
+            ],
+            [
+              "Service and GPU lines",
+              "See the Cost section",
+              "EXAMPLE: placeholders made up for this page, with no date, and no provider page read"
+            ],
+            [
+              "Exchange rate",
+              "None applied",
+              "No rate could be looked up offline"
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "Acme support assistant v2",
+    "regions": [
+      {
+        "name": "West Europe",
+        "why": "Acme's Azure tenant, keeps processing in the EU"
+      }
+    ],
+    "components": [
+      {
+        "id": "models",
+        "label": "Azure OpenAI, small and large, pinned",
+        "tech": "Azure OpenAI",
+        "kind": "model"
+      },
+      {
+        "id": "search",
+        "label": "Azure AI Search",
+        "tech": "Azure AI Search",
+        "kind": "retrieval"
+      },
+      {
+        "id": "hosting",
+        "label": "Container Apps",
+        "tech": "Azure Container Apps",
+        "kind": "service"
+      },
+      {
+        "id": "conversations",
+        "label": "Conversations",
+        "tech": "Azure Database for PostgreSQL",
+        "kind": "store"
+      },
+      {
+        "id": "tracing",
+        "label": "Tracing",
+        "tech": "Application Insights",
+        "kind": "ops"
+      }
+    ],
+    "costs": [
+      {
+        "item": "Variant A, Azure: models",
+        "monthly": 681.01,
+        "currency": "USD",
+        "as_of": "2026-11-01",
+        "source": "EXAMPLE price table, not real prices"
+      },
+      {
+        "item": "Variant A, Azure: search, hosting, database, tracing",
+        "monthly": 490.0,
+        "currency": "USD",
+        "as_of": "2026-11-01",
+        "source": "EXAMPLE price table, not real prices"
+      },
+      {
+        "item": "Variant B, open weights: total",
+        "monthly": 2170.0,
+        "currency": "USD",
+        "as_of": "2026-11-01",
+        "source": "EXAMPLE price table, not real prices"
+      }
+    ],
+    "decisions": [
+      {
+        "title": "Stack",
+        "chosen": "Variant A, Azure",
+        "because": "The only variant the brief clears for customers."
+      }
+    ],
+    "assumptions": [
+      "The prices are made up and the dollars are not converted to euros.",
+      "The how-to path takes 4.95 s, not yet measured."
+    ],
+    "open": [
+      "Replace every price with the providers' prices, dated.",
+      "Confirm the model and version in West Europe.",
+      "Measure two model calls in a row from West Europe."
+    ]
   }
- ],
- "sections": [
-  {
-   "id": "constraints",
-   "title": "Constraints",
-   "intro": "These come from the brief and the pattern page, and they remove candidates before any price is read.",
-   "blocks": [
-    {
-     "type": "callout",
-     "tone": "bad",
-     "text": "**Every price on this page is EXAMPLE.** Token prices come from the example table, which is made up. That table has no rows for services, so the search, hosting, database, tracing and GPU lines are placeholders made up for this page. No provider page was read and nothing was looked up online. Replace all of them before quoting any figure."
-    },
-    {
-     "type": "list",
-     "ordered": true,
-     "items": [
-      "**Customer data stays in the EU** (brief, Rules). Removes the public API endpoint the prototype defaults to, and any model deployment that may process outside the EU, such as a global deployment type [med].",
-      "**Acme already has an Azure tenant in West Europe** (brief). Everything defaults to it, and anything new has to earn its place.",
-      "**No GPU servers on-prem** (brief, Rules). Removes a model on Acme's own hardware. A local or open model would have to run on a rented GPU server in the tenant.",
-      "**A local model is acceptable for internal tools** (brief, Rules). This assistant answers customers, so the brief does not clear a local model for it, and the pattern page reads it the same way. Removes a local model as the recommended choice. Variant B is costed for comparison only and needs Acme's written agreement before it could be used.",
-      "**The model holds no tools and code sends every reply** (pattern page). Removes any need for tool calling or an agent framework.",
-      "**First visible words within 5 seconds at p95 in chat** (brief, as the pattern page reads it). Removes a second model call before the answer shows, and any check that waits for the whole answer.",
-      "**About €1,500 a month for models and hosting together**, at 3,000 questions a day (brief).",
-      "**Serbian in Latin and Cyrillic and English, retrieval across languages, exact match on codes such as E3 and SKUs** (pattern page, Documents). Removes vector-only search, which is what the prototype does.",
-      "**Who runs it after hand-over is not stated** [guess]. The brief names 6 support agents and no IT or operations team, which weighs against anything self-managed."
-     ]
-    }
-   ]
-  },
-  {
-   "id": "stack",
-   "title": "Stack",
-   "intro": "The recommended variant, layer by layer. No model name or version is given, because neither can be confirmed offline for West Europe.",
-   "blocks": [
-    {
-     "type": "table",
-     "columns": [
-      "Layer",
-      "Chosen",
-      "Alternatives",
-      "Why",
-      "Gives up"
-     ],
-     "rows": [
-      [
-       "Route and extraction model",
-       "Small Azure OpenAI model in an EU-bound deployment in West Europe, pinned to a dated version",
-       "Rules first, with the model only for unclear cases; Mistral's EU-hosted small model; open weights (variant B)",
-       "Labels and short extractions need little from a model, and it shares the answer model's endpoint and contract [med].",
-       "Routing quality in Cyrillic is unproven until the 500 labelled tickets are run. Bound to what West Europe offers."
-      ],
-      [
-       "Answer model",
-       "Large Azure OpenAI model under the same deployment rules, moving to the small one if it passes the eval",
-       "Small model for answers; Mistral's EU-hosted large model; Claude through an EU region; open weights (variant B)",
-       "This is the one text the customer reads, and the how-to target depends on it. Staying in the tenant meets the EU rule with no new vendor [med].",
-       "The largest cost line on the page. Serbian quality has to be proven on the eval set."
-      ],
-      [
-       "Embeddings",
-       "Multilingual embedding model on Azure OpenAI, same tenant",
-       "bge-m3 or multilingual-e5, self-hosted (variant B)",
-       "Retrieval must cross languages. Changing the model later means re-embedding the library, at USD EXAMPLE 0.02 on this table.",
-       "Quality on Serbian manuals is not known until tested."
-      ],
-      [
-       "Retrieval store",
-       "Azure AI Search, hybrid, filtered by product, topic and language",
-       "PostgreSQL with pgvector; Qdrant, which the prototype uses",
-       "Keywords, vectors and filters in one managed service in the tenant [med].",
-       "The largest fixed line on variant A. The index definition is Azure-specific. Serbian analysis of Cyrillic needs a test [guess]."
-      ],
-      [
-       "Orchestration",
-       "Plain Python with the provider SDK, keeping the prototype's FastAPI shell",
-       "LangGraph; Semantic Kernel",
-       "Five fixed paths in code are what the pattern asks for, and the prototype is already Python [high].",
-       "Retries, timeouts and state are written by hand."
-      ],
-      [
-       "Conversation store",
-       "Azure Database for PostgreSQL",
-       "Cosmos DB; Redis",
-       "History must live on the server (pattern page), and this is plain relational data [med].",
-       "One more managed service to secure and pay for."
-      ],
-      [
-       "Hosting",
-       "Azure Container Apps in the tenant, at least 2 replicas, private endpoints to the model and search",
-       "App Service; AKS",
-       "Scales to the peak with no cluster to run, and warm replicas avoid a cold start inside the 5 seconds [med].",
-       "Less control than Kubernetes."
-      ],
-      [
-       "Tracing",
-       "OpenTelemetry GenAI conventions into Application Insights in West Europe, with personal data masked",
-       "Langfuse self-hosted in the tenant; Langfuse Cloud EU",
-       "No new service, and traces stay in the tenant [med].",
-       "No annotation queue, so the weekly staff sample is exported and graded in a sheet."
-      ],
-      [
-       "Evals",
-       "promptfoo in CI with the labelled sets kept in the repo, plus staff-graded samples",
-       "Langfuse datasets; Ragas for retrieval",
-       "The five acceptance criteria are fixed labelled sets that must run on every change of prompt, model or retrieval [med].",
-       "No dashboard, and the sets still have to be built from past tickets."
-      ],
-      [
-       "Guardrails",
-       "Code: keyword overrides in three scripts, and a check on every outgoing text for approval wording, RMA-like numbers and refund promises",
-       "Azure AI Content Safety and Prompt Shields; a second model as checker",
-       "Zero wrong promises with no added model call inside the 5 seconds (pattern page).",
-       "A word list can miss a paraphrase. The 300 adversarial prompts measure how often."
-      ]
-     ]
-    }
-   ]
-  },
-  {
-   "id": "variants",
-   "title": "Variants",
-   "intro": "Same pattern and same flows. Only the products and the cost differ.",
-   "blocks": [
-    {
-     "type": "table",
-     "columns": [
-      "Aspect",
-      "A. Azure (recommended)",
-      "B. Open weights in Acme's tenant"
-     ],
-     "rows": [
-      [
-       "Allowed by the brief",
-       "Yes",
-       "Not as written. The brief accepts a local model for internal tools only, so this needs Acme's written agreement."
-      ],
-      [
-       "Where it runs",
-       "Tenant in West Europe",
-       "Tenant in West Europe, on a rented GPU server, because Acme has none on-prem"
-      ],
-      [
-       "Route, extraction, answer",
-       "Azure OpenAI small and large, pinned",
-       "One open-weight model on vLLM. The table has only `local-8b`, and whether a model of that size is good enough in Serbian is untested [guess]."
-      ],
-      [
-       "Embeddings",
-       "Azure OpenAI",
-       "bge-m3 on the same server"
-      ],
-      [
-       "Store",
-       "Azure AI Search",
-       "PostgreSQL with pgvector and full-text search"
-      ],
-      [
-       "Orchestration",
-       "Plain Python",
-       "Plain Python, through an OpenAI-compatible endpoint"
-      ],
-      [
-       "Hosting",
-       "Container Apps",
-       "Container Apps plus the GPU server"
-      ],
-      [
-       "Tracing",
-       "Application Insights",
-       "Langfuse self-hosted"
-      ],
-      [
-       "Evals and guardrails",
-       "promptfoo, code checks",
-       "The same"
-      ],
-      [
-       "Who runs it",
-       "Azure runs the model and search",
-       "Someone at Acme must patch, monitor and scale a GPU server. With one server there is no fallback when it fails [med]."
-      ],
-      [
-       "Total per month, USD",
-       "EXAMPLE 1,171.01",
-       "EXAMPLE 2,170.00"
-      ]
-     ]
-    },
-    {
-     "type": "callout",
-     "tone": "info",
-     "text": "**Where a local model does fit.** Tagging manuals at ingestion and pre-grading evals are internal and carry no customer data [med], so the brief allows a local model there. It is not worth adding one for that: on variant A the tagging costs USD EXAMPLE 0.58 a month, and Acme has no GPU."
-    }
-   ]
-  },
-  {
-   "id": "cost",
-   "title": "Cost",
-   "intro": "At 3,000 questions a day and 30 days a month. Every figure comes from `cost_model.py` and the example table. Steps with no model add latency and no token cost, so they are not listed.",
-   "blocks": [
-    {
-     "type": "table",
-     "title": "A. Azure",
-     "columns": [
-      "Item",
-      "Price row",
-      "Per call, USD",
-      "Per month, USD",
-      "Share of total"
-     ],
-     "rows": [
-      [
-       "Route the question",
-       "`example-small`",
-       "EXAMPLE 0.000233",
-       "EXAMPLE 20.93",
-       "1.8%"
-      ],
-      [
-       "Embed the question",
-       "`example-embed`",
-       "EXAMPLE 0.000002",
-       "EXAMPLE 0.08",
-       "0.0%"
-      ],
-      [
-       "Write the how-to answer",
-       "`example-large`",
-       "EXAMPLE 0.013200",
-       "EXAMPLE 653.40",
-       "55.8%"
-      ],
-      [
-       "Find the order number",
-       "`example-small`",
-       "EXAMPLE 0.000101",
-       "EXAMPLE 2.28",
-       "0.2%"
-      ],
-      [
-       "Extract claim details",
-       "`example-small`",
-       "EXAMPLE 0.000345",
-       "EXAMPLE 3.73",
-       "0.3%"
-      ],
-      [
-       "Re-embed the library, monthly",
-       "`example-embed`",
-       "EXAMPLE 0.000000",
-       "EXAMPLE 0.02",
-       "0.0%"
-      ],
-      [
-       "Tag sections by product and topic, monthly",
-       "`example-small`",
-       "EXAMPLE 0.000006",
-       "EXAMPLE 0.58",
-       "0.0%"
-      ],
-      [
-       "**Models, subtotal**",
-       "",
-       "",
-       "EXAMPLE 681.01",
-       ""
-      ],
-      [
-       "Azure AI Search, hybrid and vector",
-       "placeholder, not priced",
-       "",
-       "EXAMPLE 250.00",
-       ""
-      ],
-      [
-       "Azure Container Apps, at least 2 replicas",
-       "placeholder, not priced",
-       "",
-       "EXAMPLE 120.00",
-       ""
-      ],
-      [
-       "Azure Database for PostgreSQL, conversations",
-       "placeholder, not priced",
-       "",
-       "EXAMPLE 60.00",
-       ""
-      ],
-      [
-       "Application Insights and Key Vault",
-       "placeholder, not priced",
-       "",
-       "EXAMPLE 60.00",
-       ""
-      ],
-      [
-       "**Total per month**",
-       "",
-       "",
-       "EXAMPLE 1,171.01",
-       ""
-      ],
-      [
-       "Budget, models and hosting together (brief)",
-       "",
-       "",
-       "€1,500, not an example",
-       ""
-      ]
-     ]
-    },
-    {
-     "type": "table",
-     "title": "B. Open weights in Acme's tenant",
-     "columns": [
-      "Item",
-      "Price row",
-      "Per call, USD",
-      "Per month, USD",
-      "Share of total"
-     ],
-     "rows": [
-      [
-       "Route the question",
-       "`local-8b`",
-       "EXAMPLE 0.000000",
-       "EXAMPLE 0.00",
-       "0.0%"
-      ],
-      [
-       "Embed the question",
-       "`local-8b`",
-       "EXAMPLE 0.000000",
-       "EXAMPLE 0.00",
-       "0.0%"
-      ],
-      [
-       "Write the how-to answer",
-       "`local-8b`",
-       "EXAMPLE 0.000000",
-       "EXAMPLE 0.00",
-       "0.0%"
-      ],
-      [
-       "Find the order number",
-       "`local-8b`",
-       "EXAMPLE 0.000000",
-       "EXAMPLE 0.00",
-       "0.0%"
-      ],
-      [
-       "Extract claim details",
-       "`local-8b`",
-       "EXAMPLE 0.000000",
-       "EXAMPLE 0.00",
-       "0.0%"
-      ],
-      [
-       "Re-embed the library, monthly",
-       "`local-8b`",
-       "EXAMPLE 0.000000",
-       "EXAMPLE 0.00",
-       "0.0%"
-      ],
-      [
-       "Tag sections by product and topic, monthly",
-       "`local-8b`",
-       "EXAMPLE 0.000000",
-       "EXAMPLE 0.00",
-       "0.0%"
-      ],
-      [
-       "**Models, subtotal**",
-       "",
-       "",
-       "EXAMPLE 0.00",
-       ""
-      ],
-      [
-       "GPU server in West Europe, one",
-       "placeholder, not priced",
-       "",
-       "EXAMPLE 1,800.00",
-       ""
-      ],
-      [
-       "PostgreSQL with pgvector, larger",
-       "placeholder, not priced",
-       "",
-       "EXAMPLE 100.00",
-       ""
-      ],
-      [
-       "Azure Container Apps, at least 2 replicas",
-       "placeholder, not priced",
-       "",
-       "EXAMPLE 120.00",
-       ""
-      ],
-      [
-       "Langfuse self-hosted",
-       "placeholder, not priced",
-       "",
-       "EXAMPLE 150.00",
-       ""
-      ],
-      [
-       "**Total per month**",
-       "",
-       "",
-       "EXAMPLE 2,170.00",
-       ""
-      ],
-      [
-       "Budget, models and hosting together (brief)",
-       "",
-       "",
-       "€1,500, not an example",
-       ""
-      ]
-     ]
-    },
-    {
-     "type": "callout",
-     "tone": "warn",
-     "text": "**The currencies do not match.** The example table is in USD and the budget is in euros. No exchange rate was available offline, so none was applied and the two are compared at face value. The fit is indicative only, and the brief's request for a monthly cost in euros stays open until real prices and a dated rate exist."
-    },
-    {
-     "type": "text",
-     "text": "**What costs most.** On variant A the how-to answer is USD EXAMPLE 653.40 a month, 55.8% of the total. The table below shows what moves it. The comparison between the variants cannot be read from this page, because B is almost entirely the placeholder GPU line. The reasons not to recommend B are the brief's rule and the lack of anyone named to run a GPU server, not its price."
-    },
-    {
-     "type": "table",
-     "title": "What would change variant A",
-     "columns": [
-      "Change",
-      "Models per month, USD",
-      "Total per month, USD"
-     ],
-     "rows": [
-      [
-       "Base",
-       "EXAMPLE 681.01",
-       "EXAMPLE 1,171.01"
-      ],
-      [
-       "Answer on the small model, if it passes the eval",
-       "EXAMPLE 82.06",
-       "EXAMPLE 572.06"
-      ],
-      [
-       "Stable 800-token prefix cached",
-       "EXAMPLE 574.04",
-       "EXAMPLE 1,064.04"
-      ],
-      [
-       "3 passages instead of 4",
-       "EXAMPLE 617.16",
-       "EXAMPLE 1,107.16"
-      ],
-      [
-       "8 passages instead of 4, if cross-language retrieval needs them",
-       "EXAMPLE 936.43",
-       "EXAMPLE 1,426.43"
-      ],
-      [
-       "Answers of 600 tokens instead of 300, likely for e-mail",
-       "EXAMPLE 903.76",
-       "EXAMPLE 1,393.76"
-      ]
-     ]
-    },
-    {
-     "type": "table",
-     "title": "What would change variant B",
-     "columns": [
-      "Change",
-      "Models per month, USD",
-      "Total per month, USD"
-     ],
-     "rows": [
-      [
-       "Base, one GPU server",
-       "EXAMPLE 0.00",
-       "EXAMPLE 2,170.00"
-      ],
-      [
-       "Two GPU servers, so a failure does not stop the chat",
-       "EXAMPLE 0.00",
-       "EXAMPLE 3,970.00"
-      ],
-      [
-       "Without the GPU line, which shows how much of B the placeholder is",
-       "EXAMPLE 0.00",
-       "EXAMPLE 370.00"
-      ]
-     ]
-    },
-    {
-     "type": "list",
-     "title": "Warnings printed by cost_model.py (main run; the sensitivity runs print the same warnings under their own scenario names)",
-     "items": [
-      "EXAMPLE PRICES: the table is marked as an example; replace it before quoting any number.",
-      "azure: fixed cost 'Azure AI Search, hybrid and vector' has no as_of date.",
-      "azure: fixed cost 'Azure Container Apps, at least 2 replicas' has no as_of date.",
-      "azure: fixed cost 'Azure Database for PostgreSQL, conversations' has no as_of date.",
-      "azure: fixed cost 'Application Insights and Key Vault' has no as_of date.",
-      "open: fixed cost 'GPU server in West Europe, one' has no as_of date.",
-      "open: fixed cost 'PostgreSQL with pgvector, larger' has no as_of date.",
-      "open: fixed cost 'Azure Container Apps, at least 2 replicas' has no as_of date.",
-      "open: fixed cost 'Langfuse self-hosted' has no as_of date."
-     ]
-    }
-   ]
-  },
-  {
-   "id": "latency",
-   "title": "Latency",
-   "intro": "Seconds to the first visible words, against the 5 seconds in the brief. Nothing here is measured. Both variants use the same guesses, so the page claims no latency difference between them. The limit does not apply to e-mail.",
-   "blocks": [
-    {
-     "type": "table",
-     "columns": [
-      "Path",
-      "Steps",
-      "Base, seconds [guess]",
-      "Route call 1 s",
-      "Every model call 2.5 s",
-      "Within 5 s"
-     ],
-     "rows": [
-      [
-       "How-to",
-       "intake, route, embed, search, answer, check the first sentence",
-       "4.95",
-       "3.95",
-       "5.95",
-       "Yes, base only"
-      ],
-      [
-       "Order status",
-       "intake, route, find order number, read OrderDesk",
-       "4.35",
-       "3.35",
-       "5.35",
-       "Yes, base only"
-      ],
-      [
-       "Stock",
-       "intake, route, read stock",
-       "2.35",
-       "1.35",
-       "2.85",
-       "Yes"
-      ],
-      [
-       "General warranty or return question",
-       "intake, route, approved text",
-       "2.06",
-       "1.06",
-       "2.56",
-       "Yes"
-      ],
-      [
-       "Warranty or return claim",
-       "intake, route, extract details, create ticket",
-       "4.55",
-       "3.55",
-       "5.55",
-       "Yes, base only"
-      ],
-      [
-       "Other or unsure",
-       "intake, route, create ticket",
-       "2.55",
-       "1.55",
-       "3.05",
-       "Yes"
-      ]
-     ]
-    },
-    {
-     "type": "callout",
-     "tone": "warn",
-     "text": "**The how-to path has almost no margin.** At the pattern page's guess of 2 seconds per model call it takes 4.95 s. At 2.5 seconds per call it takes 5.95 s and misses the target. A small router that answers in 1 second brings it to 3.95 s, and that is the first fix to try. The output check holds the first sentence until code has passed it, so no unchecked text reaches the customer, and that hold is counted."
-    }
-   ]
-  },
-  {
-   "id": "lockin",
-   "title": "Lock-in",
-   "intro": "For variant A. Prompts, eval sets and traces stay in formats Acme owns, so a model can be swapped and checked against the same set.",
-   "blocks": [
-    {
-     "type": "table",
-     "columns": [
-      "Layer",
-      "What is provider-specific",
-      "What moving would cost"
-     ],
-     "rows": [
-      [
-       "Models",
-       "Prompts tuned to one model, and the models offered in the region",
-       "Rerun the eval sets and adjust the prompts [med]"
-      ],
-      [
-       "Embeddings",
-       "Vectors work with that model only",
-       "Re-embed the library and re-check retrieval"
-      ],
-      [
-       "Retrieval store",
-       "Index definition, query syntax and analysers of Azure AI Search",
-       "Rewrite ingestion and the search call, then re-test retrieval. This is the largest move [med]"
-      ],
-      [
-       "Orchestration",
-       "Nothing, it is plain Python",
-       "Nothing"
-      ],
-      [
-       "Conversation store",
-       "Standard PostgreSQL",
-       "Dump and restore"
-      ],
-      [
-       "Hosting",
-       "Container Apps configuration, while the app is a plain container",
-       "Redeploy the same container elsewhere [med]"
-      ],
-      [
-       "Tracing",
-       "Application Insights queries, while the OpenTelemetry data is portable",
-       "Point the exporter elsewhere and rebuild the dashboards [med]"
-      ],
-      [
-       "Evals and guardrails",
-       "Nothing, the sets and the checks live in the repo",
-       "Nothing"
-      ]
-     ]
-    }
-   ]
-  },
-  {
-   "id": "before",
-   "title": "Before the offer",
-   "blocks": [
-    {
-     "type": "list",
-     "ordered": true,
-     "items": [
-      "**Replace every price.** The offer needs the providers' prices for tokens and services, and an exchange rate, each with its date.",
-      "**Confirm the model and version in West Europe**, in a deployment type that keeps processing in the EU.",
-      "**Measure two model calls in a row from West Europe.** This is the one assumption that can break the pattern, and the how-to path has almost no margin.",
-      "**Quotas for the peak.** At 400 questions an hour and the brief's mix: answer 11,733 tokens per minute, route 5,667, claim extraction 848, order extraction 575, query embedding 293. These are computed from guessed token counts and are averages, so ask for headroom above them.",
-      "**Data processing terms:** retention, abuse monitoring and any human review of prompts, no training on prompts, and the agreement that covers customer data in the EU.",
-      "**Private networking** from Container Apps to the model, search and the database.",
-      "**Serbian quality on each candidate model**, in Latin and Cyrillic, on the labelled sets.",
-      "**Who operates this after hand-over**, by name.",
-      "**The open questions on the pattern page**, above all whether a live stock source exists and whether HelpLine can take tickets by API.",
-      "**If Acme wants variant B:** its written agreement, GPU quota in West Europe, a second server or a fallback, and someone to run it."
-     ]
-    }
-   ]
-  },
-  {
-   "id": "assumptions",
-   "title": "Assumptions",
-   "intro": "Every input to `cost_model.py`. Token counts and latencies are the design's, and prices are the table's.",
-   "blocks": [
-    {
-     "type": "table",
-     "columns": [
-      "Number",
-      "Value",
-      "Source"
-     ],
-     "rows": [
-      [
-       "Questions per day",
-       "3,000",
-       "Brief"
-      ],
-      [
-       "Days per month",
-       "30",
-       "Pattern page, which gives 90,000 questions a month"
-      ],
-      [
-       "Share per route",
-       "How-to 55%, order 25%, claims 12%, other 8%",
-       "Brief. Stock has no share of its own [guess]: it sits inside these and uses no model after the router"
-      ],
-      [
-       "Route call",
-       "830 tokens in (600 system, 150 history, 80 question), 20 out",
-       "[guess], no router exists yet"
-      ],
-      [
-       "Answer call",
-       "2,900 tokens in (800 system, 4 passages, 300 history, 80 question), 300 out",
-       "[guess] for all but the passages. The prototype's system prompt is 853 characters [high], and v2 adds citation and script rules"
-      ],
-      [
-       "Passage",
-       "430 tokens, 4 per call",
-       "Prototype, `knowledge.py:12` and `:62`: 1,500 characters and limit 4 [high], at about 3.5 characters per token [med]"
-      ],
-      [
-       "Cached share",
-       "0",
-       "Conservative. Providers usually need a minimum prefix length, and 800 tokens may not reach it [med]"
-      ],
-      [
-       "Claim extraction",
-       "980 in, 80 out, on 12% of questions",
-       "[guess]. Assumes every claims message needs it"
-      ],
-      [
-       "Order number extraction",
-       "330 in, 15 out, on 25% of questions",
-       "[guess]. An upper limit, since code will often find the number"
-      ],
-      [
-       "Query embedding",
-       "80 tokens, on 55% of questions",
-       "[guess]"
-      ],
-      [
-       "Library",
-       "About 1.2M tokens re-embedded and re-tagged once a month",
-       "Pattern page [med]. An upper limit, since only changed manuals need it"
-      ],
-      [
-       "Tagging",
-       "300-token prompt per passage, 20 out",
-       "[guess]"
-      ],
-      [
-       "Model call",
-       "2.0 s, also for the route call",
-       "Pattern page's guess, not measured"
-      ],
-      [
-       "Intake",
-       "0.05 s",
-       "[guess]"
-      ],
-      [
-       "Query embedding and search",
-       "0.1 s and 0.3 s",
-       "[guess]"
-      ],
-      [
-       "First sentence held for the check",
-       "0.5 s",
-       "[guess]"
-      ],
-      [
-       "OrderDesk and stock read",
-       "0.3 s",
-       "[guess], no published figure"
-      ],
-      [
-       "Ticket creation",
-       "0.5 s",
-       "[guess]"
-      ],
-      [
-       "Approved text",
-       "0.01 s",
-       "[guess]"
-      ],
-      [
-       "Peak",
-       "400 questions an hour",
-       "Brief. Tokens per minute come from `cost_model.py` run at that rate"
-      ],
-      [
-       "Token prices",
-       "Example table in USD, as of 2026-11-01",
-       "EXAMPLE: `references/prices.example.json`, made-up numbers"
-      ],
-      [
-       "Service and GPU lines",
-       "See the Cost section",
-       "EXAMPLE: placeholders made up for this page, with no date, and no provider page read"
-      ],
-      [
-       "Exchange rate",
-       "None applied",
-       "No rate could be looked up offline"
-      ]
-     ]
-    }
-   ]
-  }
- ]
 }

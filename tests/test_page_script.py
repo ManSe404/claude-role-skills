@@ -181,3 +181,148 @@ def test_architecture_panel_flow_variant_and_trust_in_a_browser(tmp_path: Path) 
     assert out["risk"] == ["mail"] and out["hashTrust"] == "#component=agent&trust=1"
     assert out["count"] == "2 / 2" and out["hot"] == ["agent>fetch"]
     assert out["cleared"] is True
+
+
+MODEL_HARNESS = """
+<script>
+(function () {
+  function q(sel) { return document.querySelector(sel); }
+  function keys(sel, attr) {
+    return Array.prototype.map.call(document.querySelectorAll(sel), function (e) { return e.getAttribute(attr); });
+  }
+  var out = {};
+  out.deepCards = keys(".model-card.open", "data-k");
+  out.deepArea = q('button[data-set-area="stock"]').getAttribute("aria-pressed");
+  q('button[data-set-area="stock"]').click();
+  out.hashNoArea = location.hash;
+  q('.tbl[data-k="cust"]').dispatchEvent(new MouseEvent("click", {bubbles: true}));
+  out.cards = keys(".model-card.open", "data-k");
+  out.near = keys(".tbl.near", "data-k");
+  out.on = keys("path.rel.on", "data-a");
+  out.hashTable = location.hash;
+  document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape"}));
+  out.cleared = keys(".model-card.open", "data-k").length === 0 && !q(".model").classList.contains("focus");
+  q('button[data-set-area="stock"]').click();
+  out.outside = keys(".tbl.out", "data-k");
+  var pre = document.createElement("pre");
+  pre.id = "result";
+  pre.textContent = JSON.stringify(out);
+  document.body.appendChild(pre);
+})();
+</script>
+"""
+
+REACH_HARNESS = """
+<script>
+(function () {
+  function q(sel) { return document.querySelector(sel); }
+  function keys(sel, attr) {
+    return Array.prototype.map.call(document.querySelectorAll(sel), function (e) { return e.getAttribute(attr); });
+  }
+  var out = {};
+  out.deep = q(".arch").classList.contains("reach");
+  out.hit = keys(".comp.rhit", "data-k").filter(function (k, i, a) { return a.indexOf(k) === i; }).sort();
+  out.path = keys("path.link.rpath", "data-b");
+  q(".arch-trust").click();
+  out.reachOff = !q(".arch").classList.contains("reach") && q(".arch").classList.contains("trust");
+  q(".arch-reach").click();
+  out.trustOff = !q(".arch").classList.contains("trust") && q(".arch").classList.contains("reach");
+  out.hash = location.hash;
+  var pre = document.createElement("pre");
+  pre.id = "result";
+  pre.textContent = JSON.stringify(out);
+  document.body.appendChild(pre);
+})();
+</script>
+"""
+
+
+def browser(tmp_path: Path, html: str, fragment: str) -> dict[str, Any]:
+    target = tmp_path / "page.html"
+    target.write_text(html, encoding="utf-8")
+    assert CHROME is not None
+    done = subprocess.run(
+        [
+            CHROME,
+            "--headless=new",
+            "--disable-gpu",
+            "--no-sandbox",
+            f"--user-data-dir={tmp_path / 'profile'}",
+            "--virtual-time-budget=2000",
+            "--dump-dom",
+            target.as_uri() + fragment,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=90,
+    )
+    match = re.search(r'<pre id="result">(.*?)</pre>', done.stdout, re.S)
+    assert match, done.stderr[-2000:]
+    result: dict[str, Any] = json.loads(
+        match.group(1).replace("&quot;", '"').replace("&amp;", "&").replace("&gt;", ">")
+    )
+    return result
+
+
+@pytest.mark.skipif(CHROME is None, reason="needs Chrome or Chromium")
+def test_model_card_neighbours_and_area_filter_in_a_browser(tmp_path: Path) -> None:
+    from test_render_page import model_block
+
+    data = {"skill": "data-model", "title": "T", "sections": [{"title": "S", "blocks": [model_block()]}]}
+    html = render.render(data).replace("</body>", MODEL_HARNESS + "</body>")
+    out = browser(tmp_path, html, "#area=stock&table=fct")
+    assert out["deepCards"] == ["fct"] and out["deepArea"] == "true"
+    assert out["hashNoArea"] == "#table=fct"
+    assert out["cards"] == ["cust"] and out["near"] == ["fct"] and out["on"] == ["fct"]
+    assert out["hashTable"] == "#table=cust"
+    assert out["cleared"] is True
+    assert out["outside"] == ["fct", "cust"] or sorted(out["outside"]) == ["cust", "fct"]
+
+
+@pytest.mark.skipif(CHROME is None, reason="needs Chrome or Chromium")
+def test_reach_view_in_a_browser(tmp_path: Path) -> None:
+    from test_render_page import reach_block
+
+    data = {"skill": "data-map", "title": "T", "sections": [{"title": "S", "blocks": [reach_block()]}]}
+    html = render.render(data).replace("</body>", REACH_HARNESS + "</body>")
+    out = browser(tmp_path, html, "#reach=1")
+    assert out["deep"] is True
+    assert out["hit"] == ["fetch", "mail"]
+    assert sorted(out["path"]) == ["agent", "fetch", "mail"] or "mail" in out["path"]
+    assert out["reachOff"] is True and out["trustOff"] is True
+    assert out["hash"] == "#reach=1"
+
+
+NESTED_HARNESS = """
+<script>
+(function () {
+  function q(sel) { return document.querySelector(sel); }
+  var out = {};
+  out.deep = q("svg.arch-svg.on").getAttribute("data-variant");
+  q('button[data-set-variant="inside"]').click();
+  out.level = q("svg.arch-svg.on").getAttribute("data-variant");
+  q('svg.arch-svg.on .comp[data-k="ctrl"]').dispatchEvent(new MouseEvent("click", {bubbles: true}));
+  out.card = q(".arch-card.open").getAttribute("data-k");
+  out.hash = location.hash;
+  q('button[data-set-variant="containers"]').click();
+  q('button[data-set-flow="book"]').click();
+  out.count = q(".stepper .count").textContent;
+  var pre = document.createElement("pre");
+  pre.id = "result";
+  pre.textContent = JSON.stringify(out);
+  document.body.appendChild(pre);
+})();
+</script>
+"""
+
+
+@pytest.mark.skipif(CHROME is None, reason="needs Chrome or Chromium")
+def test_nested_levels_cards_and_flows_in_a_browser(tmp_path: Path) -> None:
+    from test_render_page import nested_block
+
+    data = {"skill": "arch-c4", "title": "T", "sections": [{"title": "S", "blocks": [nested_block()]}]}
+    html = render.render(data).replace("</body>", NESTED_HARNESS + "</body>")
+    out = browser(tmp_path, html, "#variant=containers")
+    assert out["deep"] == "containers" and out["level"] == "inside"
+    assert out["card"] == "ctrl" and out["hash"] == "#variant=inside&component=ctrl"
+    assert out["count"] == "1 / 2"

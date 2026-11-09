@@ -1,0 +1,413 @@
+{
+  "skill": "data-review",
+  "title": "acme-data, reviewed before hand-over",
+  "subtitle": "Can the numbers from this warehouse be trusted, what is wrong, and what to fix first.",
+  "meta": {"repo": "acme-data", "commit": "0734a04", "date": "2026-11-09", "samples": "6 CSV files, 5,098 rows"},
+  "verdict": {
+    "text": "No: sales figures cannot be trusted today, because a promotion join in `fct_sales` overstated net sales by 8.6% on the samples and reorders the stores in the regional report. A SQL injection path and national IDs going to the marketing tool also need closing before this is handed over.",
+    "tone": "bad"
+  },
+  "stats": [
+    {"label": "High", "value": 5, "note": "findings", "tone": "bad"},
+    {"label": "Medium", "value": 7, "note": "findings", "tone": "warn"},
+    {"label": "Low", "value": 3, "note": "findings", "tone": "info"},
+    {"label": "Script hits confirmed", "value": "14 of 18", "note": "all 18 read", "tone": "info"},
+    {"label": "Net sales overstated", "value": "+8.6%", "note": "on the samples", "tone": "bad"}
+  ],
+  "sections": [
+    {
+      "id": "findings",
+      "title": "Findings",
+      "intro": "Severity is what a wrong number would cost. Amounts are from the sample exports, in the samples' own unit, since no currency is recorded.",
+      "blocks": [
+        {
+          "type": "findings",
+          "items": [
+            {
+              "severity": "high",
+              "title": "`fct_sales` multiplies lines and applies promotions on the wrong dates",
+              "where": "models/marts/fct_sales.sql:33",
+              "evidence": "The join is on `product_id` alone with no date window, though the model is documented as one row per order line (`models/marts/schema.yml:32`). On the samples 2,787 non-cancelled lines become 3,323 rows (×1.19), up to 3 rows per line. 1,263 of the 1,340 promotion rows do not cover the sale date, so 730 lines are discounted with no promotion running, while only 74 lines were really sold inside one. Net comes to 745,280.65 against 686,173.02 corrected (+8.6%), which is above even the 689,761.31 before any discount. Units are +18.8%. `store_performance` and `dw.fct_daily_sales` both read this model. `count(distinct order_id)` in the report hides the problem, because order counts stay right. The join arrived in commit 81c7521 (2026-08-06). [high]",
+              "fix": "Add `and l.order_date between promo.start_date and promo.end_date` and keep one promotion per line, with a rule for overlaps. Add a unique test on `(order_id, line_no)`. Then reload `dw.fct_daily_sales` for all dates, because rows loaded since the change hold the inflated figures.",
+              "status": "open"
+            },
+            {
+              "severity": "high",
+              "title": "`export_by_region` runs text from the request form as SQL",
+              "where": "warehouse/procs/export_by_region.sql:10",
+              "evidence": "`@region` is concatenated into the statement on line 10 and run by `EXEC(@sql)` on line 12. Line 1 says the value comes from the request form. A value containing a quote ends the string, and the rest runs with the procedure's permissions. Nothing in this query needs dynamic SQL. [high]",
+              "fix": "Replace it with a static `SELECT … WHERE st.region = @region`, and give the caller EXECUTE on this procedure only.",
+              "status": "open"
+            },
+            {
+              "severity": "high",
+              "title": "National IDs go to the marketing tool, and personal columns sit unmasked in the mart",
+              "where": "exports/marketing_contacts.sql:6",
+              "evidence": "`c.email, c.national_id` share one line of the export, and line 1 says Marketing loads the result into its campaign tool by hand. All 203 sample rows carry a national ID, and a mailing has no use for one. [high] `models/marts/dim_customer.sql:13-18` serves first_name, last_name, email, phone, national_id and birth_date in `marts` with no mask, restricted view or grant in the repo; phone and birth_date have no reader in the repo at all. [high] The export filters on loyalty tier only, and neither the model nor the sample has a consent or opt-out column, so an unsubscribe cannot be honoured here. [med]",
+              "fix": "Remove `national_id` from the export before the next mailing. Move the personal columns into a restricted table keyed by `customer_id`, leave masked or hashed versions in `marts`, and drop phone and birth_date unless someone needs them. Add an opt-out filter to the export.",
+              "status": "open"
+            },
+            {
+              "severity": "high",
+              "title": "Staging casts text with no format, and the samples hold two formats",
+              "where": "models/staging/stg_orders.sql:16",
+              "evidence": "Measured: 300 of 1,500 `order_date` values (20%) are `dd.mm.yyyy` and the rest ISO; 120 of 3,000 `unit_price` values (4%) use a decimal comma, cast at `models/staging/stg_order_lines.sql:14`. [high] The effect depends on the engine and on the raw column type, and neither is in the repo. In a month-first session 175 orders stop the build and 110 land on the wrong day; an engine that returns NULL instead loses them silently from the date-filtered daily load. A bare cast does not read a decimal comma on common engines. Non-cancelled lines exposed: 555 by date (19.9% of corrected net) and 112 by price (3.9%). [med]",
+              "fix": "Check the raw types of `erp.orders.order_date` and `erp.order_lines.unit_price` first. If they are text, parse the two known formats explicitly and fail on anything else. If they are typed, the export is what needs fixing and this finding closes.",
+              "status": "open"
+            },
+            {
+              "severity": "high",
+              "title": "The stock snapshot is pinned to 30 September",
+              "where": "notebooks/stock_snapshot.ipynb:18",
+              "evidence": "`snapshot_date = \"2026-09-30\"` is a literal in a cell with no parameter tag, and nothing reads a job argument. The README runs this job daily at 06:00 (`README.md:26`). As committed, every run stamps the same date and adds September's adjustments to the current `erp.stock_levels`, so the ordering team would be reading on-hand figures with six-week-old corrections. [med] because the job definition is not in the repo and could override the cell. `mode(\"overwrite\")` on line 53 keeps one snapshot only. [high] The adjustments join on store and product with no aggregation (line 47), so more than one adjustment in a month duplicates the row; there is no stock sample to measure this. [med]",
+              "fix": "Take the date from the job and read the matching month. Aggregate adjustments to store and product before the join. Append one partition per date instead of overwriting.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "`load_daily_sales` doubles a day on rerun and never sees late changes",
+              "where": "warehouse/procs/load_daily_sales.sql:19",
+              "evidence": "It is a plain INSERT with no delete, and the only key is an IDENTITY (`warehouse/ddl/fct_daily_sales.sql:3`), so a second run doubles the day with no error. An average sample day is about 10 rows and 2,760 net, and the largest is 29 rows. The job loads yesterday only, so an order cancelled after loading leaves `fct_sales` but stays here, and a missed night is never filled. [high]",
+              "fix": "In one transaction, delete the window and insert it again, over a trailing window long enough for late cancellations. Add a unique constraint on `(sale_date, store_id, product_id)`. Drop `WITH (NOLOCK)`.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "Two definitions of a sale, and the report reads staging to get one",
+              "where": "reports/store_performance.sql:10",
+              "evidence": "`fct_sales` has no status, so the report joins `staging.stg_orders` to keep `completed` (line 11). The fact, and so `dw.fct_daily_sales` for Power BI, keeps everything except `cancelled` (`models/intermediate/int_order_lines.sql:29`). The 55 returned orders (100 lines, 20,883.07 net) count as sales in one and not the other, 3.1% apart. [high]",
+              "fix": "Carry the order status on `fct_sales`, report from the mart alone, and have the business decide whether a returned order is a sale.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "`dim_customer` is not one row per customer",
+              "where": "models/staging/schema.yml:32",
+              "evidence": "`stg_customers.customer_id` has `not_null` only. Six IDs appear twice (406 rows, 400 customers), and the paired rows differ only in `loyalty_tier`. [high] That looks like a tier change kept as a second row. [guess] The `unique` test at `models/marts/schema.yml:9` would fail on this data. The marketing export already gives 203 rows for 200 customers, and any join from sales to this table multiplies by 1.01 (1,500 orders become 1,514). [high]",
+              "fix": "Decide which row wins or keep a dated history, deduplicate in `stg_customers`, and add `unique` there.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "The fact has no key tests, and no test runs in the nightly job",
+              "where": "models/marts/schema.yml:31",
+              "evidence": "All eight `fct_sales` columns listed have descriptions only, and the repo has no `relationships` test anywhere. A unique test on `(order_id, line_no)` would have caught the fan-out when it was introduced. `dbt test` appears only under the README's Test heading, not in the three nightly steps (`README.md:20-24`), so a failing model still flows on into `dw`. [high] The job definition itself is not in the repo. [med] There is no `packages.yml`, so `dbt_utils` is not available for a composite key test. [high]",
+              "fix": "Add a composite unique test and `not_null`, plus `relationships` for customer, store and product. Use `dbt build` in the nightly job and stop the procedures when it fails.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "`list_amount` prices past sales at today's list price",
+              "where": "models/marts/fct_sales.sql:28",
+              "evidence": "It multiplies by `dim_product.list_price`, documented as current (`models/marts/schema.yml:23`), and the table rebuilds nightly, so each price change restates past sales. `warehouse/procs/merge_dim_product.sql:10` overwrites name, category and price with no history, so old prices cannot be recovered. 1,850 of 2,763 sample lines were sold at a price other than today's list, and `list_amount` sums to 719,868.10 against 683,552.65 at the prices paid (+5.3%). [high] That gap mixes price changes with ordinary line discounts. [med] Nothing in the repo reads this column; a report outside it might. [guess]",
+              "fix": "Keep a dated price history, or store the list price on the line when it is created, and compute `list_amount` from the price valid on the sale date.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "30 order lines point at products that do not exist",
+              "where": "models/marts/fct_sales.sql:32",
+              "evidence": "30 lines (24 not cancelled, 6,208.66 net) have a `product_id` missing from the product list. All 30 IDs fall in 9001–9030 and each equals a `promotion_id`. [high] That suggests a promotion code written into the product field. [guess] The left join keeps them with a NULL `list_amount`, and any inner join to `dim_product` would lose them. [high]",
+              "fix": "Ask the ERP owner what these lines are, then map or exclude them in staging and add a `relationships` test.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "Nobody owns it, nothing notices a stale source, and how it runs is not in the repo",
+              "where": "models/staging/schema.yml:3",
+              "evidence": "No source has `freshness` or `loaded_at_field`, so if the ERP copy stops, dbt rebuilds old data and the daily load inserts zero rows without an error. No owner, contact or alert appears anywhere in the repo. The stock tables are not declared as sources. The scheduler, `profiles.yml`, the Power BI dataset, the request form, grants and the ERP copy job are all outside the repo, so a hand-over of this repository does not include how the platform runs. [high]",
+              "fix": "Add `freshness` to the sources, name an owner for each source and mart, and add the job definition and a list of outside consumers before handing over.",
+              "status": "open"
+            },
+            {
+              "severity": "low",
+              "title": "Money stored as FLOAT",
+              "where": "warehouse/ddl/fct_daily_sales.sql:8",
+              "evidence": "`net_amount` is FLOAT. [high] Float and exact sums match to the cent across 2,761 sample daily rows, so no number is wrong from this yet. [high]",
+              "fix": "Change it to `decimal(18,2)` during the reload that the fan-out fix needs anyway.",
+              "status": "open"
+            },
+            {
+              "severity": "low",
+              "title": "Two product dimensions, and a mart with no reader",
+              "where": "warehouse/ddl/dim_product.sql:2",
+              "evidence": "`dw.dim_product` and `marts.dim_product` are both built from `stg_products` and treat deleted products differently: the merge keeps them, the dbt table drops them. No SQL in the repo reads `dw.dim_product` or `models/marts/mart_old_campaigns.sql`, which came in for a summer review (commit a2fd916). [high] Readers outside the repo cannot be seen from here. [guess]",
+              "fix": "Ask who reads them, keep one product dimension, and drop what nobody uses.",
+              "status": "open"
+            },
+            {
+              "severity": "low",
+              "title": "The SQL dialects disagree and the engine is not recorded",
+              "where": "models/intermediate/int_order_lines.sql:26",
+              "evidence": "`EXTRACT(YEAR FROM order_date)` is not T-SQL as far as I know, while the procedures read `[marts].[fct_sales]` in T-SQL. If the dbt target were SQL Server, `dbt run` would stop at this model. [med] `profiles.yml` is not in the repo, so the engine cannot be read. `order_year` is not used downstream. [high]",
+              "fix": "Remove `order_year` and record the engine in the repo.",
+              "status": "open"
+            }
+          ]
+        },
+        {
+          "type": "list",
+          "title": "Script hits read and dropped (4 of 18)",
+          "items": [
+            "`notebooks/stock_snapshot.ipynb`, dynamic SQL: `month_suffix` comes from a literal in the notebook, so no caller can set it. The hard-coded date is reported above instead.",
+            "`exports/marketing_contacts.sql:4-6`, first_name, last_name and email: a mailing needs these. The national ID on line 6 and the missing opt-out are reported above."
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "text": "The script also lists `dw.fct_daily_sales` and `marts.stock_snapshot` as unread, and that is wrong. The first is read inside the dynamic SQL and by Power BI, and the second is for the ordering team. Do not remove them. [high]"
+        }
+      ]
+    },
+    {
+      "id": "where",
+      "title": "Where they sit",
+      "intro": "Data flows left to right. Red marks a high finding and amber a medium or low one. Click a box for its card, play the flow to follow an inflated number, or use the reach view to follow personal data. The trust view shows where the request form's text ends up.",
+      "blocks": [
+        {
+          "type": "architecture",
+          "zones": [
+            {"id": "sources", "label": "Sources and inputs"},
+            {"id": "staging", "label": "Staging layers"},
+            {"id": "marts", "label": "Marts (dbt, Spark)"},
+            {"id": "dw", "label": "dw (T-SQL)"},
+            {"id": "consumers", "label": "Consumers"}
+          ],
+          "components": [
+            {"id": "erp_sales", "label": "ERP sales tables", "zone": "sources", "kind": "system", "note": "orders, order_lines, products, stores, promotions; nightly copy with no freshness check", "flag": "warn"},
+            {"id": "erp_customers", "label": "ERP customers", "zone": "sources", "kind": "system", "note": "Names, e-mail, phone, national ID, birth date"},
+            {"id": "erp_stock", "label": "ERP stock tables", "zone": "sources", "kind": "system", "note": "stock_levels and monthly stock_adjustments_*; not declared as dbt sources", "flag": "warn"},
+            {"id": "form", "label": "Request form", "zone": "sources", "kind": "channel", "note": "Supplies the region name; not in the repo"},
+
+            {"id": "stg_orders", "label": "stg_orders", "zone": "staging", "kind": "service", "note": "order_date cast with no format; 20% of sample dates are dd.mm.yyyy", "flag": "bad"},
+            {"id": "stg_lines", "label": "stg_order_lines", "zone": "staging", "kind": "service", "note": "unit_price cast with no format; 4% of sample values use a decimal comma", "flag": "bad"},
+            {"id": "stg_customers", "label": "stg_customers", "zone": "staging", "kind": "service", "note": "customer_id has no unique test; 6 duplicated IDs in the sample", "flag": "warn"},
+            {"id": "stg_promotions", "label": "stg_promotions", "zone": "staging", "kind": "service", "note": "Up to 3 promotions per product, so not unique on product_id"},
+            {"id": "stg_products", "label": "stg_products", "zone": "staging", "kind": "service"},
+            {"id": "stg_stores", "label": "stg_stores", "zone": "staging", "kind": "service"},
+            {"id": "int_lines", "label": "int_order_lines", "zone": "staging", "kind": "service", "note": "Drops only cancelled orders; contains EXTRACT, which is not T-SQL", "flag": "warn"},
+
+            {"id": "fct_sales", "label": "fct_sales", "zone": "marts", "kind": "store", "note": "Promotion join multiplies rows; no key tests; list_amount uses today's price", "flag": "bad"},
+            {"id": "dim_customer", "label": "dim_customer", "zone": "marts", "kind": "store", "note": "Six personal columns unmasked; not one row per customer", "flag": "bad"},
+            {"id": "dim_product", "label": "dim_product", "zone": "marts", "kind": "store", "note": "Current list price only, read by past sales", "flag": "warn"},
+            {"id": "dim_store", "label": "dim_store", "zone": "marts", "kind": "store"},
+            {"id": "old_campaigns", "label": "mart_old_campaigns", "zone": "marts", "kind": "store", "note": "No reader in the repo", "flag": "warn"},
+            {"id": "stock_snapshot", "label": "stock_snapshot", "zone": "marts", "kind": "store", "note": "Written by the Spark notebook; date hard-coded to 2026-09-30, overwritten each run", "flag": "bad"},
+
+            {"id": "merge_product", "label": "merge_dim_product", "zone": "dw", "kind": "service", "note": "Overwrites price and name with no history; reads staging", "flag": "warn"},
+            {"id": "dw_product", "label": "dw.dim_product", "zone": "dw", "kind": "store", "note": "Second product dimension; no reader in the repo", "flag": "warn"},
+            {"id": "load_daily", "label": "load_daily_sales", "zone": "dw", "kind": "service", "note": "Plain INSERT for yesterday; a rerun doubles the day", "flag": "warn"},
+            {"id": "fct_daily", "label": "fct_daily_sales", "zone": "dw", "kind": "store", "note": "net_amount is FLOAT; no key on its grain; holds inflated rows since the join changed", "flag": "warn"},
+            {"id": "export_region", "label": "export_by_region", "zone": "dw", "kind": "service", "note": "Runs the form's text as SQL", "flag": "bad", "side_effect": true},
+
+            {"id": "store_report", "label": "store_performance", "zone": "consumers", "kind": "service", "note": "Reads staging for status; total inflated by the fact", "flag": "warn"},
+            {"id": "mkt_export", "label": "marketing_contacts", "zone": "consumers", "kind": "service", "note": "Sends national_id with the contact list", "flag": "bad"},
+            {"id": "campaign", "label": "Campaign tool", "zone": "consumers", "kind": "system", "note": "Outside the repo; loaded by hand", "side_effect": true},
+            {"id": "powerbi", "label": "Power BI dataset", "zone": "consumers", "kind": "system", "note": "Outside the repo; cannot be reviewed from here"},
+            {"id": "regional_mgrs", "label": "Regional managers", "zone": "consumers", "kind": "human"},
+            {"id": "store_mgrs", "label": "Store managers", "zone": "consumers", "kind": "human"},
+            {"id": "ordering", "label": "Ordering team", "zone": "consumers", "kind": "human"}
+          ],
+          "links": [
+            {"from": "erp_sales", "to": "stg_orders"},
+            {"from": "erp_sales", "to": "stg_lines"},
+            {"from": "erp_sales", "to": "stg_promotions"},
+            {"from": "erp_sales", "to": "stg_products"},
+            {"from": "erp_sales", "to": "stg_stores"},
+            {"from": "erp_customers", "to": "stg_customers"},
+            {"from": "stg_orders", "to": "int_lines"},
+            {"from": "stg_lines", "to": "int_lines"},
+            {"from": "int_lines", "to": "fct_sales", "label": "lines"},
+            {"from": "stg_promotions", "to": "fct_sales", "label": "fan-out", "flag": "bad"},
+            {"from": "stg_promotions", "to": "old_campaigns"},
+            {"from": "stg_products", "to": "dim_product"},
+            {"from": "dim_product", "to": "fct_sales", "label": "today's price", "flag": "warn"},
+            {"from": "stg_products", "to": "merge_product", "label": "skips marts", "flag": "warn"},
+            {"from": "merge_product", "to": "dw_product"},
+            {"from": "stg_stores", "to": "dim_store"},
+            {"from": "stg_customers", "to": "dim_customer"},
+            {"from": "erp_stock", "to": "stock_snapshot"},
+            {"from": "dim_store", "to": "stock_snapshot"},
+            {"from": "dim_product", "to": "stock_snapshot"},
+            {"from": "fct_sales", "to": "load_daily"},
+            {"from": "load_daily", "to": "fct_daily", "label": "no delete", "flag": "warn"},
+            {"from": "fct_daily", "to": "export_region"},
+            {"from": "dim_store", "to": "export_region"},
+            {"from": "form", "to": "export_region", "label": "region text", "trust": "untrusted", "flag": "bad"},
+            {"from": "fct_daily", "to": "powerbi"},
+            {"from": "fct_sales", "to": "store_report"},
+            {"from": "dim_store", "to": "store_report"},
+            {"from": "stg_orders", "to": "store_report", "label": "skips marts", "flag": "warn"},
+            {"from": "dim_customer", "to": "mkt_export"},
+            {"from": "mkt_export", "to": "campaign", "label": "national_id", "flag": "bad"},
+            {"from": "store_report", "to": "regional_mgrs"},
+            {"from": "export_region", "to": "store_mgrs"},
+            {"from": "stock_snapshot", "to": "ordering"}
+          ],
+          "flows": [
+            {
+              "id": "inflated",
+              "title": "How an inflated number reaches a report",
+              "steps": [
+                {"from": "stg_promotions", "to": "fct_sales", "text": "Every promotion ever run on a product joins to its lines: 2,787 lines become 3,323 rows."},
+                {"from": "fct_sales", "to": "store_report", "text": "The report sums the extra rows, and net is 8.6% too high."},
+                {"from": "fct_sales", "to": "load_daily", "text": "Each night yesterday's inflated rows are summed by day, store and product."},
+                {"from": "load_daily", "to": "fct_daily", "text": "They are inserted and stay there, so fixing the model alone does not repair them."},
+                {"from": "fct_daily", "to": "powerbi", "text": "Power BI reads the stored figures."}
+              ]
+            }
+          ],
+          "reach": {"label": "Personal data", "from": ["erp_customers"], "stops": [], "targets": ["mkt_export", "campaign"]}
+        }
+      ]
+    },
+    {
+      "id": "data",
+      "title": "What the data shows",
+      "intro": "Measured by rebuilding `fct_sales` and the report in Python from the six CSV files. Columns and counts only.",
+      "blocks": [
+        {
+          "type": "table",
+          "title": "Measurements",
+          "columns": ["Check", "On the samples", "Lands in"],
+          "rows": [
+            ["Rows after the promotion join", "2,787 lines become 3,323 rows (×1.19), up to 3 per line", "fct_sales"],
+            ["Net sales, as built vs corrected", "745,280.65 vs 686,173.02 (+8.6%)", "fct_sales, dw.fct_daily_sales"],
+            ["Sales before any discount", "689,761.31, so the built \"net\" is about 8% above it", "fct_sales"],
+            ["Units, as built vs actual", "11,624 vs 9,788 (+18.8%)", "fct_sales, dw.fct_daily_sales"],
+            ["Promotion rows that miss the sale date", "1,263 of 1,340", "fct_sales"],
+            ["Lines discounted with no promotion running", "730, against 74 lines really sold in a promotion", "fct_sales"],
+            ["Report total, `completed` orders", "722,367.23 vs 665,289.95 (+8.6%); Bačka +7.8%, Banat +8.3%, Srem +12.0%", "store_performance"],
+            ["`order_date` as dd.mm.yyyy", "300 of 1,500; 110 can swap day and month, 175 cannot be read month-first", "stg_orders"],
+            ["`unit_price` with a decimal comma", "120 of 3,000", "stg_order_lines"],
+            ["Duplicated `customer_id`", "6 IDs, 406 rows for 400 customers, differing only in `loyalty_tier`", "dim_customer"],
+            ["Join from orders to customers", "1,500 rows become 1,514 (×1.01)", "any sales-to-customer join"],
+            ["Marketing export", "203 rows for 200 customers, a national ID on every row", "marketing_contacts"],
+            ["Lines with an unknown product", "30, IDs 9001–9030; 24 not cancelled, 6,208.66 net", "fct_sales"],
+            ["Returned orders counted as sales", "55 orders, 100 lines, 20,883.07 net (3.1% of the report)", "fct_sales vs report"],
+            ["List price vs price paid", "1,850 of 2,763 lines differ; 719,868.10 vs 683,552.65 (+5.3%)", "fct_sales.list_amount"],
+            ["Float vs exact sum", "0.00 difference over 2,761 daily rows", "dw.fct_daily_sales"]
+          ]
+        },
+        {
+          "type": "table",
+          "title": "The regional report: the store order changes",
+          "columns": ["Region", "Store", "Net as built", "Net corrected", "Over by", "Rank as built", "Rank corrected"],
+          "align": ["left", "left", "right", "right", "right", "right", "right"],
+          "rows": [
+            ["Bačka", "Acme Novi Sad Klisa", "69,352.31", "65,380.10", "+6.1%", 1, 1],
+            ["Bačka", "Acme Subotica", "65,284.57", "57,147.86", "+14.2%", 2, 5],
+            ["Bačka", "Acme Novi Sad Centar", "62,525.96", "58,172.70", "+7.5%", 3, 2],
+            ["Srem", "Acme Sremska Mitrovica", "62,255.06", "56,119.62", "+10.9%", 4, 8],
+            ["Banat", "Acme Kikinda", "62,002.76", "56,307.36", "+10.1%", 5, 6],
+            ["Banat", "Acme Vršac", "61,331.16", "54,361.25", "+12.8%", 6, 10],
+            ["Bačka", "Acme Novi Sad Detelinara", "61,070.70", "57,450.78", "+6.3%", 7, 3],
+            ["Banat", "Acme Pančevo", "59,320.53", "57,257.64", "+3.6%", 8, 4],
+            ["Bačka", "Acme Novi Sad Liman", "59,155.28", "56,127.02", "+5.4%", 9, 7],
+            ["Banat", "Acme Zrenjanin", "59,016.10", "55,306.35", "+6.7%", 10, 9],
+            ["Bačka", "Acme Sombor", "52,771.31", "49,075.90", "+7.5%", 11, 11],
+            ["Srem", "Acme Ruma", "48,281.50", "42,583.38", "+13.4%", 12, 12]
+          ]
+        },
+        {
+          "type": "list",
+          "title": "Assumptions behind the corrected figures",
+          "items": [
+            "A promotion applies when the sale date falls between its start and end dates, inclusive.",
+            "Where two promotion windows overlap on a product (5 pairs, touching 3 lines), the highest discount wins.",
+            "`unit_price` does not already include the promotion: only 5 of the 74 lines sold inside a promotion equal list price less the discount.",
+            "Both date shapes and both price shapes were read as intended, so the fan-out figures are not affected by the casting problem.",
+            "The README describes the nightly job correctly, since the job itself is not in the repo.",
+            "The samples have the same shape as the nightly ERP copy."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "order",
+      "title": "Order of the fixes",
+      "intro": "What corrupts data first, then what exposes it, then what makes it hard to change. Steps 7 and 8 are small and independent, so they need not wait for the first six.",
+      "blocks": [
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "**Corrupts data:** fix the promotion join in `fct_sales`, and add the unique test on `(order_id, line_no)`.",
+            "**Corrupts data:** check the raw types of `order_date` and `unit_price`, and parse explicitly if they are text.",
+            "**Corrupts data:** decide whether a returned order is a sale, carry the status on the fact, and report from the mart.",
+            "**Corrupts data:** make `load_daily_sales` safe to rerun, change `net_amount` to decimal, and reload `dw.fct_daily_sales` once for all dates.",
+            "**Corrupts data:** take the stock snapshot's date from the job, aggregate adjustments first, and keep dated snapshots.",
+            "**Corrupts data:** resolve the duplicated customers and the 30 unknown products, and keep a dated list price.",
+            "**Exposes data:** remove `national_id` from the marketing export before the next mailing.",
+            "**Exposes data:** replace the dynamic SQL in `export_by_region` with a static query.",
+            "**Exposes data:** restrict the personal columns in `dim_customer` and add the opt-out filter.",
+            "**Hard to change:** run `dbt build` nightly with tests that stop the load, and add source freshness.",
+            "**Hard to change:** name owners and put the job definition, engine and outside consumers in the repo before the hand-over.",
+            "**Hard to change:** after asking who reads them, remove `order_year`, one of the two product dimensions and `mart_old_campaigns`."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "not-covered",
+      "title": "What this review did not cover",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "No database or dbt command was run. Every number comes from the six CSV files, and engine behaviour is reasoned from the code.",
+            "The samples look synthetic: all 406 e-mail addresses are on one reserved example domain. Treat percentages as size and direction, and re-measure on production.",
+            "The stock notebook could not be measured, because there is no sample of `erp.stock_levels` or `erp.stock_adjustments_*`.",
+            "The scheduler, `profiles.yml`, Power BI dataset, request form, campaign tool and database grants are not in the repo.",
+            "Time zones could not be tested, because the samples hold dates only. `loaded_at` and `updated_at` use UTC.",
+            "Whether the personal data has a lawful basis was not judged.",
+            "`docs/briefs/` describes future work and was read for context only."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "title": "Open questions",
+      "blocks": [
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "Which engine does the `acme_dw` profile target?",
+            "Are `erp.orders.order_date` and `erp.order_lines.unit_price` typed columns or text in the nightly copy?",
+            "Is a returned order a sale, and which of the two figures should the business use?",
+            "Does the scheduler inject `snapshot_date`, or does the notebook really run with the literal?",
+            "Which promotion wins when two windows overlap?",
+            "What are the 30 order lines with product IDs 9001–9030?",
+            "Do two `loyalty_tier` rows for one customer mean a change over time?",
+            "Who reads `dim_customer`, `dw.dim_product`, `mart_old_campaigns` and `list_amount` outside this repo?",
+            "Where is marketing consent recorded?",
+            "Who owns each source and mart after the hand-over, and who gets the failed-load alert?"
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "the Acme Foods sales warehouse in the acme-data repository",
+    "data": [
+      {"name": "customer contact and identity", "class": "personal", "where": ["erp.customers", "staging.stg_customers", "marts.dim_customer", "exports/marketing_contacts.sql"]}
+    ],
+    "assumptions": [
+      "A promotion applies from its start date to its end date inclusive; the highest discount wins an overlap.",
+      "unit_price does not already include the promotion.",
+      "The README describes the nightly job correctly.",
+      "The samples have the same shape as the nightly ERP copy."
+    ],
+    "open": [
+      "Engine behind the acme_dw profile",
+      "Raw column types of order_date and unit_price",
+      "Whether a returned order is a sale",
+      "Whether the scheduler injects snapshot_date",
+      "Owners after the hand-over"
+    ]
+  }
+}

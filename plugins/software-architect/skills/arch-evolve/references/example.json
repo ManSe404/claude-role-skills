@@ -1,0 +1,326 @@
+{
+  "skill": "arch-evolve",
+  "title": "acme-logistics: making Billing separately releasable",
+  "subtitle": "How to get Billing into its own release without stopping the system, in steps that each leave it working and can be undone.",
+  "meta": {"repo": "acme-logistics", "commit": "432aa50", "date": "2026-11-10"},
+  "verdict": {
+    "text": "Do it, because Billing is cheaper to separate than most modules: only its own code touches its tables and no transaction crosses the boundary. Go through step 11 and keep Billing on the same Postgres, but if only the stopping hurts and not the shared release, step 2 alone fixes that.",
+    "tone": "ok"
+  },
+  "stats": [
+    {"label": "Steps", "value": 12, "note": "11 to finish, 1 optional", "tone": "info"},
+    {"label": "Cycles to remove", "value": 1, "note": "of 2 measured; Billing and Shipments", "tone": "warn"},
+    {"label": "Tables with two writers", "value": 1, "note": "shipments, not Billing's; invoices gets a temporary one in steps 5 to 10", "tone": "warn"},
+    {"label": "Main pain ends", "value": "Step 10", "note": "Billing issues invoices from the queue", "tone": "ok"}
+  ],
+  "sections": [
+    {
+      "id": "gap",
+      "title": "The gap",
+      "intro": "Billing is small and already mostly separate in its data. What ties it down is one call inside a request, one response body and a release that has no way to avoid a restart.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["Aspect", "Today", "Target", "Why it matters"],
+          "rows": [
+            ["Release unit", "Billing ships inside the `api` image. Of 16 commits, 14 changed `src/` and 3 changed Billing code.", "Its own `billing` image and release", "Only 3 of 14 API image changes concerned Billing, yet any release restarts both."],
+            ["Stopping", "One `api` instance, no proxy and no health check in the repo [high]", "Two instances behind a proxy, Billing released on its own", "A restart today takes shipments, tracking and invoices down together."],
+            ["Code ties", "Billing imports 4 modules. Billing and Shipments import each other (`BillingService.cs:4`, `ShipmentService.cs:2`).", "No reference to `Acme.Logistics` in either direction", "Billing cannot be built alone while the cycle exists."],
+            ["Issuing an invoice", "A direct call inside the `/delivered` request (`ShipmentService.cs:118`)", "Billing consumes `shipment.delivered`, already published at `ShipmentService.cs:117` with 0 consumers", "Billing can then stop while deliveries continue."],
+            ["`/delivered` response", "Returns the invoice `number` and `total` (`ShipmentsController.cs:52`). 0 callers in this repo [high].", "Callers read `GET /api/invoices?shipmentId=`", "This one contract is what stands in the way of the queue."],
+            ["Data", "`invoices` and `invoice_numbers`: 4 SQL statements, all in `BillingService.cs`, no join to other tables [high]", "Stay as they are, in the same Postgres", "The usually hard part is already done."],
+            ["Transactions", "0 in the repo. Each statement opens its own connection (`Database.cs:17`) [high].", "Still none across modules", "No transaction has to be unpicked."],
+            ["Event delivery", "Published with no properties and no confirm (`MessageBus.cs:25`), so not persistent [med]", "Persistent, confirmed by the broker", "A lost event costs nothing today. After the cut it costs an invoice."],
+            ["Duplicates", "A second `/delivered` issues a second invoice; only cancelled shipments are refused (`ShipmentService.cs:110`) [high]", "One live invoice per shipment", "A queue can deliver a message twice."],
+            ["Safety net", "0 tests, 0 schema files, 0 migrations [high]", "Contract tests and a schema baseline", "There is nothing to prove each step against."]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "title": "A smaller target",
+          "text": "If what hurts is the system stopping, and not Billing sharing a release with the rest, **step 2 alone** fixes it for every module. Steps 3 and 4 add a real boundary and pay for themselves. The full plan is worth it only if Billing needs its own release schedule, and its history is quiet so far: 3 commits, all by one author."
+        }
+      ]
+    },
+    {
+      "id": "invariants",
+      "title": "What stays true",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "`GET /api/invoices?shipmentId=` and `POST /api/invoices/{number}/credit` keep their URL, status code and JSON fields.",
+            "`POST /api/shipments/{id}/delivered` keeps its body until every caller has stopped reading the invoice from it (step 9).",
+            "A delivery recorded through `/delivered` produces an invoice, and a Billing release never loses one.",
+            "From step 6, a shipment has at most one live invoice. Until then duplicates behave as they do today.",
+            "Invoice numbers keep the format `ACME-yyyy-NNNNNN` and keep coming from `invoice_numbers`.",
+            "VAT at 20% and its rounding do not change. The shadow run in step 8 proves it on real deliveries.",
+            "Existing invoices are not rewritten or moved.",
+            "Old and new versions run side by side in every release, so each schema or message change must work for both.",
+            "From step 10, booking, tracking and confirming delivery keep working while Billing is down.",
+            "Deliveries the worker detects are not invoiced today. This plan keeps that until someone decides otherwise (see Open questions)."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "way-there",
+      "title": "The way there",
+      "intro": "One view per stage. Switch stages above the diagram, or play a flow.",
+      "blocks": [
+        {
+          "type": "architecture",
+          "title": "Billing from inside the API to its own release",
+          "zones": [
+            {"id": "people", "label": "Callers"},
+            {"id": "entry", "label": "Entry"},
+            {"id": "app", "label": "Application"},
+            {"id": "messaging", "label": "Messaging"},
+            {"id": "data", "label": "One Postgres"},
+            {"id": "outside", "label": "Outside"}
+          ],
+          "components": [
+            {"id": "counter", "label": "Counter staff", "zone": "people", "kind": "user", "note": "Use the web app at the counters."},
+            {"id": "web", "label": "Web app", "zone": "people", "kind": "channel", "tech": "Angular 17", "note": "Calls `/api/shipments` and `/api/invoices` with relative URLs."},
+            {"id": "delivery_caller", "label": "/delivered caller", "zone": "people", "kind": "system", "flag": "warn", "note": "Not in this repo. Who it is decides step 9.", "details": [["Known", "Neither the web app nor the worker calls this endpoint."]]},
+            {"id": "edge", "label": "Edge proxy", "zone": "entry", "kind": "service", "tech": "nginx (assumed)", "note": "The one place where routes move and can move back.", "variants": ["seams", "routed", "shadow", "target"]},
+            {"id": "api", "label": "API", "zone": "app", "kind": "service", "tech": ".NET 8", "note": "Shipments and tracking. One instance today, two from step 2.", "details": [["Fails how", "Today a restart stops shipments, tracking and invoices together."]]},
+            {"id": "billing_inproc", "label": "Billing in the API", "zone": "app", "kind": "service", "flag": "bad", "side_effect": true, "note": "Issues invoices inside the API process.", "variants": ["today", "seams", "routed", "shadow"]},
+            {"id": "billing", "label": "Billing service", "zone": "app", "kind": "service", "tech": ".NET 8", "side_effect": true, "note": "Own image and release. Serves `/api/invoices`, and issues invoices from step 10.", "variants": ["routed", "shadow", "target"]},
+            {"id": "worker", "label": "Tracking worker", "zone": "app", "kind": "service", "tech": "Python 3.12", "note": "Follows parcels with the carrier. Not changed apart from the URL it calls."},
+            {"id": "queue", "label": "RabbitMQ", "zone": "messaging", "kind": "store", "note": "Exchange `acme.events`. `shipment.delivered` has no consumer today."},
+            {"id": "ops_tables", "label": "shipments, parcels", "zone": "data", "kind": "store", "flag": "warn", "note": "`shipments` has two writers: the API and the worker. Left alone."},
+            {"id": "inv_tables", "label": "invoices", "zone": "data", "kind": "store", "side_effect": true, "note": "`invoices` and `invoice_numbers`. Only Billing code touches them."},
+            {"id": "carrier", "label": "Carrier", "zone": "outside", "kind": "system", "note": "Reports where a parcel is."},
+            {"id": "notify", "label": "Notifications", "zone": "outside", "kind": "system", "note": "Tells the customer a parcel arrived."}
+          ],
+          "links": [
+            {"from": "counter", "to": "web", "label": "uses"},
+            {"from": "web", "to": "api", "label": "/api/*", "variants": ["today"]},
+            {"from": "delivery_caller", "to": "api", "label": "/delivered", "variants": ["today"]},
+            {"from": "web", "to": "edge", "label": "/api/*", "variants": ["seams", "routed", "shadow", "target"]},
+            {"from": "delivery_caller", "to": "edge", "label": "/delivered", "variants": ["seams", "routed", "shadow", "target"]},
+            {"from": "edge", "to": "api", "label": "/api/*", "variants": ["seams"]},
+            {"from": "edge", "to": "api", "label": "/api/shipments", "variants": ["routed", "shadow", "target"]},
+            {"from": "edge", "to": "billing", "label": "/api/invoices", "variants": ["routed", "shadow", "target"]},
+            {"from": "api", "to": "billing_inproc", "label": "issue invoice", "variants": ["today", "seams", "routed", "shadow"]},
+            {"from": "billing_inproc", "to": "inv_tables", "label": "insert", "variants": ["today", "seams", "routed", "shadow"]},
+            {"from": "billing", "to": "inv_tables", "label": "read, credit", "variants": ["routed", "shadow"]},
+            {"from": "billing", "to": "inv_tables", "label": "only writer", "variants": ["target"]},
+            {"from": "billing", "to": "queue", "label": "compare only", "variants": ["shadow"]},
+            {"from": "billing", "to": "queue", "label": "delivered", "variants": ["target"]},
+            {"from": "api", "to": "ops_tables", "label": "read, write"},
+            {"from": "api", "to": "queue", "label": "events"},
+            {"from": "api", "to": "worker", "label": "POST /track"},
+            {"from": "worker", "to": "api", "label": "report", "variants": ["today"]},
+            {"from": "worker", "to": "edge", "label": "report", "variants": ["seams", "routed", "shadow", "target"]},
+            {"from": "worker", "to": "ops_tables", "label": "set status"},
+            {"from": "worker", "to": "queue", "label": "booked"},
+            {"from": "worker", "to": "carrier", "label": "where is it"},
+            {"from": "worker", "to": "notify", "label": "arrived"}
+          ],
+          "flows": [
+            {
+              "id": "issue-today",
+              "title": "Invoice on delivery, today",
+              "variants": ["today"],
+              "steps": [
+                {"from": "delivery_caller", "to": "api", "text": "`POST /api/shipments/{id}/delivered`."},
+                {"from": "api", "to": "ops_tables", "text": "Sets the status to Delivered, on its own connection."},
+                {"from": "api", "to": "queue", "text": "Publishes `shipment.delivered` with only the id. Nothing consumes it."},
+                {"from": "api", "to": "billing_inproc", "text": "Calls Billing directly, in the same request."},
+                {"from": "billing_inproc", "to": "inv_tables", "text": "Takes a number and inserts the invoice. Number and total go back in the response."}
+              ]
+            },
+            {
+              "id": "worker-gap",
+              "title": "A delivery the worker detects: no invoice",
+              "variants": ["today"],
+              "steps": [
+                {"from": "worker", "to": "carrier", "text": "The carrier answers that the parcel is delivered."},
+                {"from": "worker", "to": "ops_tables", "text": "Writes Delivered straight to `shipments` (`db.py:11`)."},
+                {"from": "worker", "to": "notify", "text": "Tells the customer."},
+                {"from": "worker", "to": "api", "text": "Reports the status. The API acts only on `in_transit` (`ShipmentService.cs:133`), so no invoice and no `shipment.delivered`."}
+              ]
+            },
+            {
+              "id": "issue-target",
+              "title": "Invoice on delivery, target",
+              "variants": ["target"],
+              "steps": [
+                {"from": "delivery_caller", "to": "edge", "text": "`POST /api/shipments/{id}/delivered`."},
+                {"from": "edge", "to": "api", "text": "Reaches one of the two API instances."},
+                {"from": "api", "to": "ops_tables", "text": "Sets the status to Delivered."},
+                {"from": "api", "to": "queue", "text": "Publishes a persistent event carrying the amount, then answers without waiting for Billing."},
+                {"from": "billing", "to": "queue", "text": "Takes the event. During a Billing release the event simply waits here."},
+                {"from": "billing", "to": "inv_tables", "text": "Issues the one live invoice and acknowledges only after the commit."}
+              ]
+            }
+          ],
+          "variants": [
+            {"id": "today", "label": "Today", "note": "Billing lives and ships inside the API."},
+            {"id": "seams", "label": "After step 4", "note": "A proxy in front, two API instances, Billing in its own project but the same process."},
+            {"id": "routed", "label": "After step 5", "note": "Billing runs alone and serves `/api/invoices`. Issuing is still in the API."},
+            {"id": "shadow", "label": "After step 8", "note": "Billing follows the event and compares its result with the API's invoice."},
+            {"id": "target", "label": "Target", "note": "After step 11. Billing issues from the queue and the old path is gone."}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "steps",
+      "title": "The steps",
+      "intro": "Ordered by what unblocks the rest. File references are to today's code. Sizes compare steps with each other and say nothing about time.",
+      "blocks": [
+        {
+          "type": "steps",
+          "items": [
+            {"title": "1. Pin today's behaviour", "where": "src/Acme.Api/Controllers/InvoicesController.cs:18, src/Acme.Api/Controllers/ShipmentsController.cs:48", "text": "**Changes:** the repo's first tests: contracts for `GET /api/invoices`, `POST /api/invoices/{number}/credit` and `POST /api/shipments/{id}/delivered`, plus VAT, number format and what a second `/delivered` does. Dump the live schema into the repo (`pg_dump -s`), since no table is defined anywhere in it. Log who calls `/delivered` and `/credit`.\n\n**Stays:** all production behaviour."},
+            {"title": "2. Put a proxy in front and run two API instances", "where": "docker-compose.yml:2, src/Acme.Api/Program.cs:18, worker/src/acme_worker/api_client.py:8", "text": "**Changes:** a new `edge` service takes all `/api/*` traffic and still sends it to `api`. The API gets `/healthz` and runs as two instances, restarted one at a time. The worker calls the edge instead of `api:8080`. The API holds no state in memory, so two instances are safe [high].\n\n**Stays:** every URL and response.\n\n**Pays by itself:** API releases stop interrupting the system, which also covers every later step."},
+            {"title": "3. Break the Billing and Shipments cycle", "where": "src/Acme.Logistics/Billing/BillingService.cs:4, src/Acme.Logistics/Shipments/ShipmentService.cs:2", "text": "**Changes:** `IssueInvoiceAsync` takes a shipment id and a net amount instead of a `Shipment` (`BillingService.cs:17,25-31`). The delivered check at `BillingService.cs:19-22` moves to the caller, which has just set that status (`ShipmentService.cs:115`). `ShipmentService` calls a port it owns, returning a small receipt (`ShipmentService.cs:30,107,118`), and an adapter in `Acme.Api` connects it to Billing (`Program.cs:14`).\n\n**Stays:** the order of status update, publish and invoice, and the `/delivered` body."},
+            {"title": "4. Give Billing its own project", "where": "src/Acme.Logistics/Billing/, src/Acme.Logistics/Common/Helpers.cs:18", "text": "**Changes:** a new `src/Acme.Billing` with no reference to `Acme.Logistics`. Move `BillingService.cs`, `Invoice.cs` and `AddVat`, whose only caller is Billing. Copy `Money` (26 lines) and `Database` (33 lines), neither changed since the first commit, plus `CleanText` and `FormatDate`. Add a test that fails on any reference across the boundary.\n\n**Stays:** one deployable, one process. Billing no longer uses `Domain`, so the Domain and Infrastructure cycle stops mattering to this work."},
+            {"title": "5. Billing service takes /api/invoices", "where": "docker-compose.yml:2, src/Acme.Api/Controllers/InvoicesController.cs:8", "text": "**Changes:** a thin `Acme.Billing.Host` with a copy of `InvoicesController` (same routes, same JSON), `/healthz`, its own image and compose service. The edge sends `/api/invoices*` to it.\n\n**Stays:** issuing, still in the API, and the old controller, kept for routing back.\n\n**Temporary:** `invoices` has two writers until step 10: the API inserts and Billing sets `credited`.\n\n**Pays by itself:** a real independent release, on low-risk traffic."},
+            {"title": "6. One live invoice per shipment", "where": "src/Acme.Logistics/Billing/BillingService.cs:24-38, src/Acme.Logistics/Shipments/ShipmentService.cs:110", "text": "**Changes:** check live data for duplicates, then `CREATE UNIQUE INDEX CONCURRENTLY` on `invoices (shipment_id) WHERE NOT credited`. Issuing looks for a live invoice first, inserts with `ON CONFLICT DO NOTHING` and returns the existing one.\n\n**Stays:** a credited invoice can be issued again.\n\n**Behaviour change:** a second `/delivered` no longer creates a second invoice. The queue needs this, and it fixes a defect by itself. Needs a yes (ADR 3)."},
+            {"title": "7. Make the delivered event safe to depend on", "where": "src/Acme.Logistics/Shipments/ShipmentService.cs:117, src/Acme.Logistics/Infrastructure/MessageBus.cs:25", "text": "**Changes:** add `netAmount`, `currency` and `deliveredAt` to `shipment.delivered`, keeping `id`. Publish persistently and wait for the broker's confirm. Add a contract test on a JSON fixture rather than a shared library.\n\n**Stays:** adding fields is safe, because the only binding anywhere is `shipment.booked` (`tracking.py:35`) [high]."},
+            {"title": "8. Shadow run", "where": "src/Acme.Billing.Host (new)", "text": "**Changes:** Billing binds a durable queue to `shipment.delivered`. For each event it computes net and VAT and compares them with the row the API wrote. It issues nothing and takes no number.\n\n**Stays:** the API's invoice is still the real one."},
+            {"title": "9. Move callers off the invoice in the /delivered response", "where": "src/Acme.Api/Controllers/ShipmentsController.cs:52", "text": "**Changes:** using the log from step 1, move each caller to `GET /api/invoices?shipmentId=`, which already returns number and total.\n\n**Stays:** the response body, until step 10.\n\n**If a caller cannot move:** keep the body and have the API wait briefly for the invoice, returning nulls if Billing is away."},
+            {"title": "10. Billing issues from the queue", "where": "src/Acme.Api/Program.cs:14, src/Acme.Logistics/Shipments/ShipmentService.cs:118", "text": "**Changes:** switch Billing from shadow to issuing, acknowledging only after the commit, with a dead-letter queue. Then flip the API's flag so the port does nothing. During the flip both may try, and the index from step 6 lets only one through. `/delivered` returns `number` and `total` as null.\n\n**Stays:** the event, the tables and every URL.\n\n**The main pain ends here:** a Billing release touches nothing else, and deliveries wait in the queue."},
+            {"title": "11. Remove the old path", "where": "src/Acme.Api/Controllers/InvoicesController.cs, src/Acme.Logistics/Billing/, src/Acme.Api/Acme.Api.csproj:10", "text": "**Changes:** after a full billing period on the new path, delete the in-process adapter and flag, the API's `InvoicesController`, the API's reference to Billing, the old Billing code, `AddVat`, and `number` and `total` from the `/delivered` body.\n\n**Stays:** everything Billing does."},
+            {"title": "12. Optional: a database role only Billing holds", "where": "docker-compose.yml:7", "text": "**Changes:** a `billing` role with rights only on `invoices` and `invoice_numbers`, with those rights revoked from the shared `acme` role.\n\n**Stays:** the tables, where they are. This turns a convention into a rule the database enforces."}
+          ]
+        },
+        {
+          "type": "table",
+          "columns": ["Step", "Move", "Verify", "Undo", "Size"],
+          "rows": [
+            ["1. Pin behaviour", "Characterise first", "Tests pass against the current build", "Delete the tests and the log line", "M"],
+            ["2. Proxy, two instances", "Strangler (the seam only)", "A request loop stays at 2xx while each API instance restarts", "Point clients back at `api:8080`, kept published until this is proven", "M"],
+            ["3. Break the cycle", "Break a cycle", "`code_graph.py` shows no edge between Billing and Shipments, and step 1 tests pass", "Revert the commit", "S"],
+            ["4. Own project", "Enforce a boundary", "`Acme.Billing` builds alone, and the boundary test fails on a reference added on purpose", "Revert the commit", "M"],
+            ["5. Billing takes the route", "Strangler", "Step 1 tests pass through the edge. Release Billing under load and `api`, `worker` and `web` uptime does not change", "Route `/api/invoices` back to `api`", "M"],
+            ["6. One live invoice", "Expand, then contract", "A second `/delivered` gives one invoice; a credit then `/delivered` gives a new one", "`DROP INDEX CONCURRENTLY` and revert the commit", "S"],
+            ["7. Safe event", "Expand, then contract", "An unconsumed message survives a broker restart with its fields, and the contract test passes on both sides", "Revert the commit; extra fields are ignored", "S"],
+            ["8. Shadow run", "Parallel run", "Zero disagreements over a full billing period, month-end included", "Stop the consumer and delete its queue", "M"],
+            ["9. Move callers", "Expand, then contract", "Each caller's owner confirms it no longer reads `number` or `total`", "Callers read the body again; it is still there", "S"],
+            ["10. Issue from the queue", "Queue instead of a call", "Stop Billing and confirm a delivery: `/delivered` succeeds, and exactly one invoice appears after the restart", "Flip both flags back; the API issues again", "S"],
+            ["11. Remove the old path", "Expand, then contract", "`code_graph.py` shows no edge from `Acme.Api` to Billing, and contract tests pass", "Redeploy the previous API image", "S"],
+            ["12. Own role (optional)", "One writer per table", "A write as `acme` fails and a write as `billing` succeeds", "Restore the grants", "S"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stop",
+      "title": "Where to stop",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "**The main pain ends at step 10**, when a Billing release no longer touches anything else. Do step 11 straight after the bake period, because two live issuing paths are the worst place to stay. Step 12 is optional.\n\nSteps 1 to 4 each pay on their own, so stopping after any of them leaves a better system with nothing half done. Steps 5 to 11 are one unit: once `invoices` has a second writer, finish."
+        }
+      ]
+    },
+    {
+      "id": "leave-alone",
+      "title": "What to leave alone",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "**The Domain and Infrastructure cycle** (`Parcel.cs:1`, `ShipmentRepository.cs:2`). Billing stops using `Domain` at step 4, so it no longer stands in the way.",
+            "**The two writers on `shipments`** (`ShipmentRepository.cs:68`, `db.py:11`) and **the API and worker call loop**. Neither involves Billing unless open question 2 is answered yes.",
+            "**A separate database.** Only Billing touches its tables, so a second instance adds backups and cost and buys nothing yet.",
+            "**A separate repository.** An own image and release are enough.",
+            "**A shared library for `Money` or the event.** It would bring back releasing in lock-step. A 26-line copy and a contract test are cheaper.",
+            "**A transactional outbox.** Today a crash between the status update and the invoice insert also loses the invoice, so this plan is no worse. Add one if a lost invoice ever appears.",
+            "**Pricing written twice** (`PricingRules.cs`, `pricing.ts`, changed together in 6 of 6 commits). It costs more day to day than Billing does and deserves its own plan."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "adr",
+      "title": "ADR drafts",
+      "intro": "Drafts only. None goes into the repo without a yes.",
+      "blocks": [
+        {
+          "type": "code",
+          "title": "ADR 1: Billing is a separate deployable on the shared Postgres",
+          "code": "Status: proposed\n\nContext: Billing ships inside the API image, so any release of either restarts both.\nOnly Billing code touches invoices and invoice_numbers.\n\nDecision: Billing gets its own project, image and release, in this repository.\nIt keeps its tables in the same Postgres instance. It shares no code with Acme.Logistics;\nMoney and Database are copied, and contracts are checked by tests on JSON fixtures.\n\nConsequences: Billing releases alone. Small copies may drift, by design.\nA separate database stays possible and is not planned."
+        },
+        {
+          "type": "code",
+          "title": "ADR 2: Invoices are issued from the shipment.delivered event",
+          "code": "Status: proposed\n\nContext: Issuing inside the /delivered request means Shipments needs Billing to be up.\n\nDecision: Shipments publishes shipment.delivered, persistent and confirmed, with the net\namount and currency. Billing consumes it and acknowledges after the commit.\nPOST /api/shipments/{id}/delivered no longer returns the invoice; callers read\nGET /api/invoices?shipmentId=.\n\nConsequences: Billing can stop while deliveries continue. An invoice appears shortly\nafter delivery instead of in the response. A crash between the status update and the\npublish loses the invoice, as a crash before the insert does today."
+        },
+        {
+          "type": "code",
+          "title": "ADR 3: One live invoice per shipment",
+          "code": "Status: proposed\n\nContext: A second /delivered creates a second invoice, and a queue can deliver twice.\n\nDecision: Unique index on invoices (shipment_id) WHERE NOT credited. Issuing returns\nthe existing live invoice instead of creating another.\n\nConsequences: This changes behaviour. Duplicates already in the data must be resolved\nfirst. A credited invoice can still be issued again."
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "title": "Open questions",
+      "blocks": [
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "**Who calls `POST /api/shipments/{id}/delivered`?** Nothing in this repo does. It blocks step 9, and the fallback there applies if a caller cannot move.",
+            "**Should deliveries the worker detects be invoiced?** The worker writes Delivered directly (`tracking.py:24`) and the API ignores that report (`ShipmentService.cs:133`), so those shipments get no invoice and no event. That this happens is checked [high]. Whether it is intended is not known, and if it is not, it is a billing defect today.",
+            "**Do the row mappings work?** `InvoiceRow` and `ShipmentRow` need column mapping that is not in the repo (no `MatchNamesWithUnderscores`, no type handler for `Money` or `Parcel`), so I expect those reads to fail as written [med]. Nothing was run. Step 1 will settle it, and if they fail, fix that before pinning.",
+            "**What is the real schema?** Step 6 needs to know whether live duplicates exist and whether `credited` can be null. A foreign key from `invoices` to `shipments` would matter only for a separate database.",
+            "**Can accounting accept gaps in invoice numbers?** Postgres sequences can already leave gaps, and the flip in step 10 could add a few [med]."
+          ]
+        },
+        {
+          "type": "list",
+          "title": "What I assumed",
+          "items": [
+            "\"Release on its own\" means an own image and release, in this repository.",
+            "\"Without stopping the system\" covers both this migration and every later Billing release.",
+            "Production runs like `docker-compose.yml` on one host, or equivalent. If a proxy already sits in front, use it in step 2 instead of adding `edge`.",
+            "An invoice may appear shortly after delivery rather than in the response.",
+            "`edge` is nginx because it is one config file. Any proxy will do."
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "Making the Billing module of acme-logistics separately releasable",
+    "data": [
+      {"name": "invoices", "class": "business records", "where": ["invoices", "invoice_numbers"], "rule": "Only Billing writes"}
+    ],
+    "components": [
+      {"id": "edge", "label": "Edge proxy", "tech": "nginx (assumed)", "kind": "service"},
+      {"id": "api", "label": "API", "tech": ".NET 8", "kind": "service"},
+      {"id": "billing", "label": "Billing service", "tech": ".NET 8", "kind": "service"},
+      {"id": "worker", "label": "Tracking worker", "tech": "Python 3.12", "kind": "service"},
+      {"id": "queue", "label": "RabbitMQ", "tech": "rabbitmq:3-management", "kind": "store"},
+      {"id": "db", "label": "Postgres", "tech": "postgres:16", "kind": "store"}
+    ],
+    "decisions": [
+      {"title": "Billing deployment", "chosen": "Own image and release, same repository and Postgres", "because": "Only Billing touches its tables and no transaction crosses the boundary"},
+      {"title": "Issuing invoices", "chosen": "From the shipment.delivered event", "because": "Billing can stop while deliveries continue"},
+      {"title": "Duplicates", "chosen": "One live invoice per shipment, by partial unique index", "because": "A queue can deliver twice and a credited invoice must stay reissuable"}
+    ],
+    "assumptions": [
+      "Release on its own means an own image and release in this repository",
+      "Without stopping the system covers the migration and later Billing releases",
+      "Production runs like docker-compose.yml on one host, or equivalent",
+      "An invoice may appear shortly after delivery rather than in the response",
+      "The edge proxy is nginx; any proxy will do"
+    ],
+    "open": [
+      "Who calls POST /api/shipments/{id}/delivered",
+      "Should deliveries the worker detects be invoiced",
+      "Do the Dapper row mappings work as written",
+      "What is the real schema, including live duplicate invoices",
+      "Can accounting accept gaps in invoice numbers"
+    ]
+  }
+}

@@ -1,0 +1,1057 @@
+{
+ "skill": "arch-c4",
+ "title": "Acme Logistics, in three levels",
+ "subtitle": "Who uses it, what runs, and what is inside the API.",
+ "meta": {
+  "repo": "acme-logistics",
+  "commit": "432aa50",
+  "date": "2026-11-10"
+ },
+ "verdict": {
+  "tone": "warn",
+  "text": "Acme Logistics books, tracks and invoices parcels for counter staff, through an Angular web app, a .NET API that holds the business rules, a Python tracking worker, PostgreSQL and RabbitMQ. A change is most likely to hurt around delivery: the API and the worker can both mark a shipment delivered, but only the API's `/delivered` endpoint issues an invoice, and nothing in this repository calls it. [high]"
+ },
+ "stats": [
+  {
+   "label": "Containers",
+   "value": 5,
+   "note": "3 built here, 2 stock images",
+   "tone": "info"
+  },
+  {
+   "label": "Outside systems",
+   "value": 2,
+   "note": "carrier and notifications",
+   "tone": "info"
+  },
+  {
+   "label": "Components drawn",
+   "value": 8,
+   "note": "inside the API",
+   "tone": "info"
+  },
+  {
+   "label": "Guesses left",
+   "value": 3,
+   "note": "1 box, 2 links",
+   "tone": "warn"
+  }
+ ],
+ "sections": [
+  {
+   "id": "system",
+   "title": "The system",
+   "intro": "Start at Context and move to Containers, then Inside the API. Click a box for its card. The three requests play at the Containers level. Marked links are where to be careful.",
+   "blocks": [
+    {
+     "type": "nested",
+     "title": "Acme Logistics",
+     "levels": [
+      {
+       "id": "context",
+       "label": "Context",
+       "open": [],
+       "note": "Who uses the system and what it talks to."
+      },
+      {
+       "id": "containers",
+       "label": "Containers",
+       "open": [
+        "system"
+       ],
+       "note": "What runs on its own."
+      },
+      {
+       "id": "inside-api",
+       "label": "Inside the API",
+       "open": [
+        "system",
+        "api"
+       ],
+       "note": "The parts of the API, where the business rules are."
+      }
+     ],
+     "boxes": [
+      {
+       "id": "counter",
+       "label": "Counter staff",
+       "kind": "user",
+       "note": "Book at the counters",
+       "details": [
+        [
+         "Role",
+         "Use the web app at the counters. `README.md:9` [high]"
+        ]
+       ]
+      },
+      {
+       "id": "backoffice",
+       "label": "Depot / back office",
+       "kind": "user",
+       "note": "[guess] no screen",
+       "flag": "warn",
+       "details": [
+        [
+         "Why it is drawn",
+         "Six API endpoints have no screen and no caller in this repository: read one shipment, mark delivered, cancel, read tracking, reweigh and credit. Commit messages mention reweighing at the depot and credit notes, so I assume staff or a tool outside this repository call them. [guess]"
+        ],
+        [
+         "Why it matters",
+         "Marking delivered is the only path that issues an invoice. [high]"
+        ]
+       ]
+      },
+      {
+       "id": "customer",
+       "label": "Customer",
+       "kind": "user",
+       "note": "Gets arrival message",
+       "details": [
+        [
+         "Role",
+         "Receives the `parcel-delivered` message. The code calls this person the customer and does not say whether that is the sender or the recipient. `worker/src/acme_worker/notifications.py:1` [high]"
+        ]
+       ]
+      },
+      {
+       "id": "carrier",
+       "label": "Carrier API",
+       "kind": "system",
+       "note": "Says where a parcel is.",
+       "details": [
+        [
+         "Why",
+         "The delivery partner that knows a parcel's position and status. [high]"
+        ],
+        [
+         "Called",
+         "The worker sends a GET to `ACME_CARRIER_URL` plus the shipment id, with a 10 s timeout. `worker/src/acme_worker/tracking.py:19` [high]"
+        ],
+        [
+         "Fails how",
+         "The worker raises an error and the API's tracking request answers 500. Booking and invoicing are not touched. [med]"
+        ],
+        [
+         "Unknown",
+         "Which carrier this is: the only address in the repository is a placeholder. [guess]"
+        ]
+       ]
+      },
+      {
+       "id": "notify",
+       "label": "Notification API",
+       "kind": "system",
+       "note": "Messages the customer",
+       "details": [
+        [
+         "Why",
+         "Tells the customer that a parcel has arrived. [high]"
+        ],
+        [
+         "Called",
+         "The worker sends a POST to `ACME_NOTIFY_URL` with the template `parcel-delivered` and a 5 s timeout. The Compose file does not set this setting, so the default in the code applies. `worker/src/acme_worker/notifications.py:7` [high]"
+        ],
+        [
+         "Fails how",
+         "The status is already Delivered. The worker raises before reporting to the API, so the API's tracking request answers 500. The next tracking request sends the message again. [med]"
+        ],
+        [
+         "Unknown",
+         "Which provider this is and which channel it uses. [guess]"
+        ]
+       ]
+      },
+      {
+       "id": "system",
+       "label": "Acme Logistics",
+       "kind": "service",
+       "note": "Parcels and invoices",
+       "details": [
+        [
+         "Responsibility",
+         "Parcel delivery software for businesses in and around Novi Sad: booking, pricing, tracking and invoicing. `README.md:3` [high]"
+        ],
+        [
+         "Not in this box",
+         "The two briefs in `docs/briefs/` describe future systems. Nothing from them is drawn. [high]"
+        ]
+       ]
+      },
+      {
+       "id": "web",
+       "label": "Web app",
+       "kind": "service",
+       "parent": "system",
+       "tech": "Angular 17, ng serve",
+       "note": "Browser app for the counters.",
+       "details": [
+        [
+         "Responsibility",
+         "Shipment list, a Book button with a price estimate, and invoice lookup by shipment. It makes three API calls. `web/src/app/api/client.ts:35-45` [high]"
+        ],
+        [
+         "Owns",
+         "No data. A second copy of the price rules in `web/src/app/shipments/pricing.ts:10-33`. [high]"
+        ],
+        [
+         "Fails how",
+         "The counters cannot book or look up invoices, while the API keeps running. API errors are not shown to staff, because the calls have no error handler. `web/src/app/shipments/shipments.ts:44` [high]"
+        ],
+        [
+         "Code",
+         "`web/src/app/app.ts:5-15`, `web/src/app/shipments/shipments.ts:19`, `web/src/app/invoices/invoices.ts:17`"
+        ]
+       ]
+      },
+      {
+       "id": "api",
+       "label": "API",
+       "kind": "service",
+       "parent": "system",
+       "tech": "ASP.NET Core, .NET 8",
+       "note": "Holds the business rules.",
+       "details": [
+        [
+         "Responsibility",
+         "Ten HTTP endpoints for shipments and invoices, and every rule about price, status and invoicing. The rules are in the library `Acme.Logistics`, which runs inside this process. [high]"
+        ],
+        [
+         "Owns",
+         "Tables `parcels` and `invoices` and the sequence `invoice_numbers`. It shares `shipments` with the worker. [high]"
+        ],
+        [
+         "Fails how",
+         "Booking, invoicing and tracking all stop. There is no error handling, so a broken rule such as an empty recipient answers 500 rather than 400. [med]"
+        ],
+        [
+         "Access",
+         "No login or access check of any kind, and Compose publishes port 8080. [high]"
+        ],
+        [
+         "Code",
+         "`src/Acme.Api/Program.cs:5-19`"
+        ]
+       ]
+      },
+      {
+       "id": "worker",
+       "label": "Tracking worker",
+       "kind": "service",
+       "parent": "system",
+       "tech": "Python 3.12",
+       "note": "Asks the carrier about a parcel, on request.",
+       "flag": "warn",
+       "details": [
+        [
+         "Responsibility",
+         "Answers `POST /track`: asks the carrier, records a delivery, notifies the customer and reports back to the API. It also consumes `shipment.booked`, but only writes a log line. [high]"
+        ],
+        [
+         "Owns",
+         "The queue `worker.booked`. No table of its own, but it writes `shipments.status` directly. [high]"
+        ],
+        [
+         "Fails how",
+         "The API's tracking request answers 500, while booking and invoicing continue. If the consumer thread dies, the HTTP server keeps running and nothing restarts the thread. [high]"
+        ],
+        [
+         "Not there",
+         "No timer or polling. The carrier is asked only when a tracking request arrives. [high]"
+        ],
+        [
+         "Code",
+         "`worker/src/acme_worker/__main__.py:27-30`, `worker/src/acme_worker/tracking.py:18-42`, `worker/src/acme_worker/db.py:8-13`"
+        ]
+       ]
+      },
+      {
+       "id": "db",
+       "label": "Database",
+       "kind": "store",
+       "parent": "system",
+       "tech": "PostgreSQL 16",
+       "note": "Shipments, parcels, invoices.",
+       "details": [
+        [
+         "Responsibility",
+         "The one durable store, used by both the API and the worker. [high]"
+        ],
+        [
+         "Owns",
+         "Tables `shipments`, `parcels` and `invoices`, and the sequence `invoice_numbers`. Sender, recipient and address are personal data. [high]"
+        ],
+        [
+         "Fails how",
+         "The API and the tracking writes stop, and their callers get 500. [med]"
+        ],
+        [
+         "Not there",
+         "No table definitions or migrations in the repository, and no named volume in Compose. [high]"
+        ],
+        [
+         "Code",
+         "`src/Acme.Logistics/Infrastructure/Database.cs:15-32`, `worker/src/acme_worker/db.py:9`, `docker-compose.yml:32-37`"
+        ]
+       ]
+      },
+      {
+       "id": "queue",
+       "label": "Message broker",
+       "kind": "store",
+       "parent": "system",
+       "tech": "RabbitMQ 3",
+       "note": "Shipment events.",
+       "details": [
+        [
+         "Responsibility",
+         "Carries four shipment events from the API on the topic exchange `acme.events`. Only `shipment.booked` reaches a queue in this repository. [high]"
+        ],
+        [
+         "Owns",
+         "The exchange `acme.events` and the queue `worker.booked`. [high]"
+        ],
+        [
+         "Fails how",
+         "On booking, the shipment is saved and the request still answers 500, so trying again makes a second booking. On delivery, the status is saved and no invoice is issued until someone repeats the call. The retry covers only the send, not the connection. `src/Acme.Logistics/Infrastructure/MessageBus.cs:20-25` [high]"
+        ],
+        [
+         "Code",
+         "`src/Acme.Logistics/Infrastructure/MessageBus.cs:9-26`, `worker/src/acme_worker/tracking.py:30-42`, `docker-compose.yml:39-43`"
+        ]
+       ]
+      },
+      {
+       "id": "controllers",
+       "label": "Controllers",
+       "kind": "service",
+       "parent": "api",
+       "note": "Ten HTTP endpoints.",
+       "details": [
+        [
+         "Responsibility",
+         "Turn HTTP requests into service calls and shape the JSON answers. `Program.cs` wires the parts together. [high]"
+        ],
+        [
+         "Owns",
+         "The URLs of the API. [high]"
+        ],
+        [
+         "Fails how",
+         "An unhandled error from any service answers 500. [med]"
+        ],
+        [
+         "Code",
+         "`src/Acme.Api/Controllers/ShipmentsController.cs:9`, `src/Acme.Api/Controllers/InvoicesController.cs:7`, `src/Acme.Api/Program.cs:10-18`"
+        ]
+       ]
+      },
+      {
+       "id": "shipments",
+       "label": "Shipments",
+       "kind": "service",
+       "parent": "api",
+       "note": "Booking and status",
+       "flag": "warn",
+       "details": [
+        [
+         "Responsibility",
+         "Validates and books shipments, moves them between statuses, calls the worker for tracking and publishes events. [high]"
+        ],
+        [
+         "Owns",
+         "The status rules of a shipment, and the limits of 70 kg and 180 cm. [high]"
+        ],
+        [
+         "Fails how",
+         "Delivery runs as three separate steps with no transaction: status, event, invoice. A failure after the first leaves a Delivered shipment with no invoice. [high]"
+        ],
+        [
+         "Code",
+         "`src/Acme.Logistics/Shipments/ShipmentService.cs:24`, `src/Acme.Logistics/Shipments/Shipment.cs:5-24`"
+        ]
+       ]
+      },
+      {
+       "id": "pricing",
+       "label": "Pricing rules",
+       "kind": "service",
+       "parent": "api",
+       "note": "Price in RSD",
+       "flag": "warn",
+       "details": [
+        [
+         "Responsibility",
+         "Price from weight or volumetric weight, with surcharges for heavy, express, remote zone and fuel. [high]"
+        ],
+        [
+         "Owns",
+         "The eight numbers behind the price. The same eight are repeated in the web app, so a change must be made in both. [high]"
+        ],
+        [
+         "Fails how",
+         "A plain calculation with no outside calls. [high]"
+        ],
+        [
+         "Code",
+         "`src/Acme.Logistics/Shipments/PricingRules.cs:5-38`"
+        ]
+       ]
+      },
+      {
+       "id": "billing",
+       "label": "Billing",
+       "kind": "service",
+       "parent": "api",
+       "note": "Invoices and credits.",
+       "details": [
+        [
+         "Responsibility",
+         "Issues an invoice for a delivered shipment, lists invoices and marks one credited. Billing and Shipments depend on each other, so neither can change alone. [high]"
+        ],
+        [
+         "Owns",
+         "Table `invoices` and sequence `invoice_numbers`. [high]"
+        ],
+        [
+         "Fails how",
+         "No check in the code stops a second invoice if delivery is called twice. Whether the database does is unknown, because its schema is not in the repository. [med]"
+        ],
+        [
+         "Code",
+         "`src/Acme.Logistics/Billing/BillingService.cs:8-77`, `src/Acme.Logistics/Billing/Invoice.cs:5-14`"
+        ]
+       ]
+      },
+      {
+       "id": "domain",
+       "label": "Domain",
+       "kind": "service",
+       "parent": "api",
+       "note": "Money and Parcel.",
+       "details": [
+        [
+         "Responsibility",
+         "Money with its currency, and a parcel's size and weight. [high]"
+        ],
+        [
+         "Owns",
+         "Table `parcels`, through `Parcel.ReweighAsync`, which writes SQL from inside the domain model. [high]"
+        ],
+        [
+         "Fails how",
+         "A failed reweigh leaves the stored weight unchanged. The price is not recalculated in any case. [high]"
+        ],
+        [
+         "Code",
+         "`src/Acme.Logistics/Domain/Money.cs:3-26`, `src/Acme.Logistics/Domain/Parcel.cs:5-30`"
+        ]
+       ]
+      },
+      {
+       "id": "persistence",
+       "label": "Persistence",
+       "kind": "service",
+       "parent": "api",
+       "note": "SQL through Dapper.",
+       "details": [
+        [
+         "Responsibility",
+         "Opens a connection per call and runs the SQL for shipments. [high]"
+        ],
+        [
+         "Owns",
+         "Reads and writes of `shipments`. [high]"
+        ],
+        [
+         "Fails how",
+         "Database errors go straight up to the caller, with no retry. [high]"
+        ],
+        [
+         "Code",
+         "`src/Acme.Logistics/Infrastructure/Database.cs:6-33`, `src/Acme.Logistics/Infrastructure/ShipmentRepository.cs:17-70`"
+        ]
+       ]
+      },
+      {
+       "id": "bus",
+       "label": "Event publisher",
+       "kind": "service",
+       "parent": "api",
+       "note": "Sends events",
+       "details": [
+        [
+         "Responsibility",
+         "Opens a new broker connection for each event and publishes it to `acme.events`. [high]"
+        ],
+        [
+         "Owns",
+         "The event format: JSON with a routing key. [high]"
+        ],
+        [
+         "Fails how",
+         "If the broker cannot be reached, the error goes up to the caller. [high]"
+        ],
+        [
+         "Code",
+         "`src/Acme.Logistics/Infrastructure/MessageBus.cs:7-27`"
+        ]
+       ]
+      },
+      {
+       "id": "common",
+       "label": "Common helpers",
+       "kind": "service",
+       "parent": "api",
+       "note": "Dates, text, VAT, retry.",
+       "details": [
+        [
+         "Responsibility",
+         "Date format, text cleaning, adding VAT and a simple retry. [high]"
+        ],
+        [
+         "Owns",
+         "The VAT rate of 20%, which is a business rule kept in a general helper file. [high]"
+        ],
+        [
+         "Fails how",
+         "Plain functions with no outside calls. [high]"
+        ],
+        [
+         "Code",
+         "`src/Acme.Logistics/Common/Helpers.cs:6-38`"
+        ]
+       ]
+      }
+     ],
+     "links": [
+      {
+       "from": "counter",
+       "to": "web",
+       "label": "uses in browser"
+      },
+      {
+       "from": "backoffice",
+       "to": "controllers",
+       "label": "[guess] HTTP",
+       "flag": "warn"
+      },
+      {
+       "from": "web",
+       "to": "controllers",
+       "label": "JSON/HTTP"
+      },
+      {
+       "from": "notify",
+       "to": "customer",
+       "label": "[guess] message"
+      },
+      {
+       "from": "worker",
+       "to": "carrier",
+       "label": "GET position"
+      },
+      {
+       "from": "worker",
+       "to": "notify",
+       "label": "POST notice"
+      },
+      {
+       "from": "worker",
+       "to": "queue",
+       "label": "consume booked"
+      },
+      {
+       "from": "worker",
+       "to": "db",
+       "label": "UPDATE status",
+       "flag": "bad"
+      },
+      {
+       "from": "worker",
+       "to": "controllers",
+       "label": "POST tracking",
+       "flag": "warn"
+      },
+      {
+       "from": "shipments",
+       "to": "worker",
+       "label": "POST /track",
+       "flag": "warn"
+      },
+      {
+       "from": "persistence",
+       "to": "db",
+       "label": "SQL"
+      },
+      {
+       "from": "bus",
+       "to": "queue",
+       "label": "AMQP publish"
+      },
+      {
+       "from": "controllers",
+       "to": "shipments",
+       "label": "method calls"
+      },
+      {
+       "from": "controllers",
+       "to": "billing",
+       "label": "method calls"
+      },
+      {
+       "from": "controllers",
+       "to": "common",
+       "label": "format dates"
+      },
+      {
+       "from": "shipments",
+       "to": "pricing",
+       "label": "Quote()"
+      },
+      {
+       "from": "shipments",
+       "to": "billing",
+       "label": "issue invoice"
+      },
+      {
+       "from": "billing",
+       "to": "shipments",
+       "label": "reads Shipment",
+       "flag": "warn"
+      },
+      {
+       "from": "shipments",
+       "to": "domain",
+       "label": "Parcel, Money"
+      },
+      {
+       "from": "shipments",
+       "to": "persistence",
+       "label": "shipment rows"
+      },
+      {
+       "from": "shipments",
+       "to": "bus",
+       "label": "publish event"
+      },
+      {
+       "from": "shipments",
+       "to": "common",
+       "label": "clean text"
+      },
+      {
+       "from": "pricing",
+       "to": "domain",
+       "label": "Parcel, Money"
+      },
+      {
+       "from": "billing",
+       "to": "domain",
+       "label": "Money"
+      },
+      {
+       "from": "billing",
+       "to": "persistence",
+       "label": "invoice SQL"
+      },
+      {
+       "from": "billing",
+       "to": "common",
+       "label": "VAT"
+      },
+      {
+       "from": "domain",
+       "to": "persistence",
+       "label": "UPDATE parcels",
+       "flag": "warn"
+      },
+      {
+       "from": "persistence",
+       "to": "domain",
+       "label": "Parcel, Money"
+      },
+      {
+       "from": "persistence",
+       "to": "common",
+       "label": "clean text"
+      },
+      {
+       "from": "bus",
+       "to": "common",
+       "label": "retry"
+      }
+     ],
+     "flows": [
+      {
+       "id": "book",
+       "title": "Book a parcel",
+       "variants": [
+        "containers"
+       ],
+       "steps": [
+        {
+         "from": "counter",
+         "to": "web",
+         "text": "Staff press Book on the Shipments page, which shows an estimate from its own copy of the prices. `shipments.ts:39-45` [high]"
+        },
+        {
+         "from": "web",
+         "to": "api",
+         "text": "`POST /api/shipments` with the booking. `client.ts:39-41`, `ShipmentsController.cs:34-39` [high]"
+        },
+        {
+         "from": "api",
+         "to": "db",
+         "text": "The API checks the limits, prices the parcel again and inserts the shipment. `ShipmentService.cs:51-73` [high]"
+        },
+        {
+         "from": "api",
+         "to": "queue",
+         "text": "Publishes `shipment.booked`. If the broker is down, the shipment is already saved and the request fails. `ShipmentService.cs:74`, `MessageBus.cs:20-25` [high]"
+        },
+        {
+         "from": "worker",
+         "to": "queue",
+         "text": "The worker receives the event and only writes a log line. `tracking.py:37-39` [high]"
+        }
+       ]
+      },
+      {
+       "id": "deliver",
+       "title": "Mark delivered and invoice",
+       "variants": [
+        "containers"
+       ],
+       "steps": [
+        {
+         "from": "backoffice",
+         "to": "api",
+         "text": "`POST /api/shipments/{id}/delivered`. Nothing in this repository calls it, so the caller is assumed. `ShipmentsController.cs:48-53` [guess]"
+        },
+        {
+         "from": "api",
+         "to": "db",
+         "text": "Refuses only a cancelled shipment, then sets the status to Delivered. `ShipmentService.cs:109-116` [high]"
+        },
+        {
+         "from": "api",
+         "to": "queue",
+         "text": "Publishes `shipment.delivered`, which no queue in this repository receives. If the broker is down the request stops here: Delivered, with no invoice. `ShipmentService.cs:117` [high]"
+        },
+        {
+         "from": "api",
+         "to": "db",
+         "text": "Takes the next invoice number, adds 20% VAT and inserts the invoice. No check in the code stops a second invoice if the call is repeated. `BillingService.cs:24-38` [high]"
+        }
+       ]
+      },
+      {
+       "id": "track",
+       "title": "Track a parcel",
+       "variants": [
+        "containers"
+       ],
+       "steps": [
+        {
+         "from": "backoffice",
+         "to": "api",
+         "text": "`GET /api/shipments/{id}/tracking`. Nothing in this repository calls it, so the caller is assumed. `ShipmentsController.cs:55-59` [guess]"
+        },
+        {
+         "from": "api",
+         "to": "worker",
+         "text": "`POST /track`, and the API waits for the answer. `ShipmentService.cs:124`, `__main__.py:14-20` [high]"
+        },
+        {
+         "from": "worker",
+         "to": "carrier",
+         "text": "Asks where the parcel is, using our internal shipment id. `tracking.py:19` [high]"
+        },
+        {
+         "from": "worker",
+         "to": "db",
+         "text": "If the carrier says delivered, writes Delivered directly. It does not check the current status and no invoice follows. `tracking.py:23-24`, `db.py:10-13` [high]"
+        },
+        {
+         "from": "worker",
+         "to": "notify",
+         "text": "In that case it also sends the delivered message, again on every tracking request for that parcel. `tracking.py:25` [high]"
+        },
+        {
+         "from": "worker",
+         "to": "api",
+         "text": "`POST /api/shipments/{id}/tracking`, while the first request is still open. `api_client.py:7-11` [high]"
+        },
+        {
+         "from": "api",
+         "to": "db",
+         "text": "Moves Booked to InTransit, only when the carrier says `in_transit`. `ShipmentService.cs:133-136` [high]"
+        },
+        {
+         "from": "api",
+         "to": "queue",
+         "text": "Publishes `shipment.tracked`. The answer then travels back through the worker to the first caller. `ShipmentService.cs:138` [high]"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "type": "list",
+     "title": "What a newcomer should know first",
+     "items": [
+      "**Delivery has two writers and one invoice path.** The API and the worker both set a shipment to Delivered, but only the API's `/delivered` endpoint issues an invoice, and nothing here calls it. [high]",
+      "**The worker does not follow parcels on its own.** It has no timer and its queue consumer only logs. The carrier is asked only when something calls the API's tracking endpoint, and nothing here does. [high]",
+      "**Tracking is a loop.** One request goes from the API to the worker and the carrier, and back into the API before the first request is answered, so each needs the other to be up. [high]",
+      "**A broker outage can lose an invoice.** At delivery the status is saved, the event fails and no invoice is issued until someone repeats the call, because the steps share no transaction. [high]",
+      "**The price rules live in two places.** `PricingRules.cs` and `pricing.ts` hold the same eight numbers, and each pricing change so far was made in both by hand. [high]",
+      "**Nothing is protected.** The API and the worker have no login or access check and both publish a port, and the Compose file holds the database and broker passwords in plain text. [high]"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "what-runs",
+   "title": "What runs",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Container",
+      "Technology",
+      "Deployed how",
+      "Owns"
+     ],
+     "rows": [
+      [
+       "Web app",
+       "Angular 17, TypeScript 5.4, `ng serve` on Node 20",
+       "Docker Compose, built from `web/`, port 4200 published. It runs the Angular development server, not a built bundle. [high]",
+       "No data. A second copy of the price rules. [high]"
+      ],
+      [
+       "API",
+       "ASP.NET Core on .NET 8, with Dapper, Npgsql and RabbitMQ.Client",
+       "Docker Compose, built from `src/Acme.Api/` after a manual `dotnet publish`, port 8080 published. [high]",
+       "The business rules, tables `parcels` and `invoices`, and sequence `invoice_numbers`. Shares `shipments` with the worker. [high]"
+      ],
+      [
+       "Tracking worker",
+       "Python 3.12, standard-library HTTP server, pika, psycopg, requests",
+       "Docker Compose, built from `worker/`, port 8081 published. [high]",
+       "Queue `worker.booked`. Writes `shipments.status`. [high]"
+      ],
+      [
+       "Database",
+       "PostgreSQL 16",
+       "Docker Compose, stock image, no published port, no named volume. [high]",
+       "All tables: `shipments`, `parcels`, `invoices`. [high]"
+      ],
+      [
+       "Message broker",
+       "RabbitMQ 3 with the management plugin",
+       "Docker Compose, stock image, no published port. [high]",
+       "Exchange `acme.events`, queue `worker.booked`. [high]"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "outside-systems",
+   "title": "Outside systems",
+   "intro": "No outside system was found that depends on this one. Only the worker talks to the outside.",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Name",
+      "Why",
+      "How it is called",
+      "What happens when it is down"
+     ],
+     "rows": [
+      [
+       "Carrier API",
+       "Knows where a parcel is. [high]",
+       "HTTP GET from the worker to `ACME_CARRIER_URL` plus the shipment id, 10 s timeout. `tracking.py:19` [high]",
+       "The API's tracking request answers 500. Booking and invoicing continue. [med]"
+      ],
+      [
+       "Notification API",
+       "Tells the customer that a parcel has arrived. [high]",
+       "HTTP POST from the worker to `ACME_NOTIFY_URL`, template `parcel-delivered`, 5 s timeout. The setting is not in the Compose file. `notifications.py:12` [high]",
+       "The status is already Delivered and the tracking request answers 500. The next tracking request sends the message again. [med]"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "components",
+   "title": "Components",
+   "blocks": [
+    {
+     "type": "table",
+     "title": "API",
+     "columns": [
+      "Component",
+      "Responsibility",
+      "File"
+     ],
+     "rows": [
+      [
+       "Controllers",
+       "Turn HTTP requests into service calls and shape the JSON answers. `Program.cs` wires the parts together. [high]",
+       "`src/Acme.Api/Controllers/ShipmentsController.cs:9`, `src/Acme.Api/Controllers/InvoicesController.cs:7`, `src/Acme.Api/Program.cs:10-18`"
+      ],
+      [
+       "Shipments",
+       "Validates and books shipments, moves them between statuses, calls the worker for tracking and publishes events. [high]",
+       "`src/Acme.Logistics/Shipments/ShipmentService.cs:24`, `src/Acme.Logistics/Shipments/Shipment.cs:5-24`"
+      ],
+      [
+       "Pricing rules",
+       "Price from weight or volumetric weight, with surcharges for heavy, express, remote zone and fuel. [high]",
+       "`src/Acme.Logistics/Shipments/PricingRules.cs:5-38`"
+      ],
+      [
+       "Billing",
+       "Issues an invoice for a delivered shipment, lists invoices and marks one credited. Billing and Shipments depend on each other, so neither can change alone. [high]",
+       "`src/Acme.Logistics/Billing/BillingService.cs:8-77`, `src/Acme.Logistics/Billing/Invoice.cs:5-14`"
+      ],
+      [
+       "Domain",
+       "Money with its currency, and a parcel's size and weight. [high]",
+       "`src/Acme.Logistics/Domain/Money.cs:3-26`, `src/Acme.Logistics/Domain/Parcel.cs:5-30`"
+      ],
+      [
+       "Persistence",
+       "Opens a connection per call and runs the SQL for shipments. [high]",
+       "`src/Acme.Logistics/Infrastructure/Database.cs:6-33`, `src/Acme.Logistics/Infrastructure/ShipmentRepository.cs:17-70`"
+      ],
+      [
+       "Event publisher",
+       "Opens a new broker connection for each event and publishes it to `acme.events`. [high]",
+       "`src/Acme.Logistics/Infrastructure/MessageBus.cs:7-27`"
+      ],
+      [
+       "Common helpers",
+       "Date format, text cleaning, adding VAT and a simple retry. [high]",
+       "`src/Acme.Logistics/Common/Helpers.cs:6-38`"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "open-questions",
+   "title": "Open questions",
+   "blocks": [
+    {
+     "type": "list",
+     "title": "Assumptions I made",
+     "items": [
+      "The part that matters most is the API: pricing, the shipment status rules and all invoicing are in it, so it is the container opened here. The worker is described in its card.",
+      "Docker Compose is the deployment, because it is the only deployment description in the repository.",
+      "Someone outside this repository calls the six API endpoints that have no screen. They are drawn as one box, Depot / back office. [guess]",
+      "The carrier and the notification service are real, separate systems, although the addresses in the repository are placeholders. [guess]",
+      "The two briefs in `docs/briefs/` are future systems, so nothing from them is drawn.",
+      "Everything comes from reading commit 432aa50. Nothing was built or run, so failure behaviour marked [med] is read from the code and not observed."
+     ]
+    },
+    {
+     "type": "list",
+     "title": "Questions to settle",
+     "ordered": true,
+     "items": [
+      "Who calls `POST /api/shipments/{id}/delivered`? It is the only path to an invoice and nothing here calls it. Ask this first. [high]",
+      "Should a delivery reported by the carrier issue an invoice? Today it sets Delivered and no invoice follows. [high]",
+      "Who listens to `shipment.delivered`, `shipment.tracked` and `shipment.reweighed`? No queue in this repository receives them, so unless something outside binds one, the broker drops them. [med]",
+      "Where is the database schema? The repository has no table definitions or migrations, and no code inserts into `parcels`, although every shipment read joins to it. As written, a new shipment could not be read back unless something else adds that row. [med]",
+      "How does the browser reach the API? The web app calls relative `/api` paths, and the repository has no proxy setting, `angular.json` or Angular entry file. [high]",
+      "Does the booking page work as committed? Its template has no input fields, so it can only send the default values, and the API refuses an empty recipient. [high]",
+      "Should reweighing change the price? Today it changes only the stored weight. `ShipmentService.cs:141-151` [high]",
+      "How does the carrier know our shipment? The worker asks by internal shipment id, and nothing in this repository registers a parcel with the carrier. [high]"
+     ]
+    }
+   ]
+  }
+ ],
+ "facts": {
+  "version": 1,
+  "scope": "Acme Logistics, the parcel booking, tracking and invoicing system, at commit 432aa50",
+  "data": [
+   {
+    "name": "sender, recipient and delivery address",
+    "class": "personal",
+    "where": [
+     "shipments"
+    ],
+    "rule": "no rule found in the repository"
+   }
+  ],
+  "components": [
+   {
+    "id": "web",
+    "label": "Web app",
+    "tech": "Angular 17, ng serve",
+    "kind": "service"
+   },
+   {
+    "id": "api",
+    "label": "API",
+    "tech": "ASP.NET Core, .NET 8",
+    "kind": "service"
+   },
+   {
+    "id": "worker",
+    "label": "Tracking worker",
+    "tech": "Python 3.12",
+    "kind": "service"
+   },
+   {
+    "id": "db",
+    "label": "Database",
+    "tech": "PostgreSQL 16",
+    "kind": "store"
+   },
+   {
+    "id": "queue",
+    "label": "Message broker",
+    "tech": "RabbitMQ 3",
+    "kind": "store"
+   },
+   {
+    "id": "carrier",
+    "label": "Carrier API",
+    "tech": "not stated",
+    "kind": "system"
+   },
+   {
+    "id": "notify",
+    "label": "Notification API",
+    "tech": "not stated",
+    "kind": "system"
+   }
+  ],
+  "assumptions": [
+   "The part that matters most is the API: pricing, the shipment status rules and all invoicing are in it, so it is the container opened here. The worker is described in its card.",
+   "Docker Compose is the deployment, because it is the only deployment description in the repository.",
+   "Someone outside this repository calls the six API endpoints that have no screen. They are drawn as one box, Depot / back office. [guess]",
+   "The carrier and the notification service are real, separate systems, although the addresses in the repository are placeholders. [guess]",
+   "The two briefs in `docs/briefs/` are future systems, so nothing from them is drawn.",
+   "Everything comes from reading commit 432aa50. Nothing was built or run, so failure behaviour marked [med] is read from the code and not observed."
+  ],
+  "open": [
+   "Who calls `POST /api/shipments/{id}/delivered`? It is the only path to an invoice and nothing here calls it. Ask this first. [high]",
+   "Should a delivery reported by the carrier issue an invoice? Today it sets Delivered and no invoice follows. [high]",
+   "Who listens to `shipment.delivered`, `shipment.tracked` and `shipment.reweighed`? No queue in this repository receives them, so unless something outside binds one, the broker drops them. [med]",
+   "Where is the database schema? The repository has no table definitions or migrations, and no code inserts into `parcels`, although every shipment read joins to it. As written, a new shipment could not be read back unless something else adds that row. [med]",
+   "How does the browser reach the API? The web app calls relative `/api` paths, and the repository has no proxy setting, `angular.json` or Angular entry file. [high]",
+   "Does the booking page work as committed? Its template has no input fields, so it can only send the default values, and the API refuses an empty recipient. [high]",
+   "Should reweighing change the price? Today it changes only the stored weight. `ShipmentService.cs:141-151` [high]",
+   "How does the carrier know our shipment? The worker asks by internal shipment id, and nothing in this repository registers a parcel with the carrier. [high]"
+  ]
+ }
+}

@@ -1,2062 +1,2282 @@
 {
- "skill": "ai-architecture",
- "title": "Acme support assistant v2: the architecture",
- "subtitle": "How a customer's question moves through the design, what each part does, and how far text from outside can reach. This is a design, and nothing on this page is built yet.",
- "meta": {
-  "repo": "acme-assist",
-  "commit": "74dced7",
-  "brief": "docs/briefs/support-v2.md",
-  "pattern": "ai-pattern-2026-11-08.json",
-  "stack": "ai-stack-2026-11-08.json",
-  "date": "2026-11-08",
-  "prices": "EXAMPLE table, not real prices"
- },
- "verdict": {
-  "text": "The design is a routed workflow in Acme's Azure tenant in West Europe: code sends each question down one of five fixed paths, the models hold no tools, and only Acme's staff approve a return or issue an RMA. The risk to look at first is the how-to answer, the one place where text written by a model reaches a customer with only a word-list check in between, so a promise worded in an unexpected way could pass.",
-  "tone": "warn"
- },
- "stats": [
-  {
-   "label": "Components",
-   "value": 28,
-   "note": "21 in agentic RAG",
-   "tone": "info"
+  "skill": "ai-architecture",
+  "title": "Acme support assistant v2: the architecture",
+  "subtitle": "How a customer's question moves through the design, what each part does, and how far text from outside can reach. This is a design, and nothing on this page is built yet.",
+  "meta": {
+    "repo": "acme-assist",
+    "commit": "74dced7",
+    "brief": "docs/briefs/support-v2.md",
+    "pattern": "ai-pattern-2026-11-08.json",
+    "stack": "ai-stack-2026-11-08.json",
+    "date": "2026-11-08",
+    "prices": "EXAMPLE table, not real prices"
   },
-  {
-   "label": "Questions walked through",
-   "value": 4,
-   "note": "plus 2 on agentic RAG",
-   "tone": "info"
+  "verdict": {
+    "text": "The design is a routed workflow in Acme's Azure tenant in West Europe: code sends each question down one of five fixed paths, the models hold no tools, and only Acme's staff approve a return or issue an RMA. The risk to look at first is the how-to answer, the one place where text written by a model reaches a customer with only a word-list check in between, so a promise worded in an unexpected way could pass.",
+    "tone": "warn"
   },
-  {
-   "label": "Untrusted entry points",
-   "value": 2,
-   "note": "web chat and e-mail",
-   "tone": "warn"
-  },
-  {
-   "label": "Side effects reachable from untrusted text",
-   "value": "2 of 3",
-   "note": "the reply and the ticket; RMA, refund and e-mail sit behind a person",
-   "tone": "warn"
-  }
- ],
- "sections": [
-  {
-   "id": "architecture",
-   "title": "Architecture",
-   "intro": "Click a box for its card. Play a question with the arrows, switch between the two variants, and turn on the trust view to see how far text from outside travels. The fifth route, other or unsure, goes from the router straight to a ticket and then follows the last steps of the warranty claim.\n\nAll cost figures in the cards are EXAMPLE figures from a made-up price table, and all latencies are guesses until a real call is measured. Both must be replaced before any figure is quoted.",
-   "blocks": [
+  "stats": [
     {
-     "type": "architecture",
-     "title": "Acme support assistant v2",
-     "zones": [
-      {
-       "id": "people",
-       "label": "Customers, channels"
-      },
-      {
-       "id": "app",
-       "label": "Application"
-      },
-      {
-       "id": "routes",
-       "label": "Decides the path"
-      },
-      {
-       "id": "output",
-       "label": "Output"
-      },
-      {
-       "id": "ai",
-       "label": "AI layer"
-      },
-      {
-       "id": "know",
-       "label": "Knowledge"
-      },
-      {
-       "id": "sys",
-       "label": "Systems and people"
-      },
-      {
-       "id": "ops",
-       "label": "Operations"
-      }
-     ],
-     "components": [
-      {
-       "id": "customer",
-       "label": "Customer",
-       "zone": "people",
-       "kind": "user",
-       "tech": "Serbian and English",
-       "note": "Serbian (Latin, Cyrillic) or English. About 3,000 questions a day, peak 400 an hour.",
-       "details": [
-        [
-         "Responsibility",
-         "Asks by web chat or e-mail."
-        ],
-        [
-         "Data it sees",
-         "Their own order and whatever they type."
-        ],
-        [
-         "Fails how",
-         "Not applicable."
-        ]
-       ]
-      },
-      {
-       "id": "webchat",
-       "label": "Web chat",
-       "zone": "people",
-       "kind": "channel",
-       "tech": "Shop widget",
-       "note": "Streams the answer as it is written, with its sources.",
-       "details": [
-        [
-         "Responsibility",
-         "Takes the question and shows the answer."
-        ],
-        [
-         "Data it sees",
-         "The message and the session. It no longer sends the history."
-        ],
-        [
-         "Fails how",
-         "Shows the support e-mail address instead [guess]."
-        ],
-        [
-         "Prototype",
-         "The widget is named in the README. Its code is not in this repository."
-        ]
-       ]
-      },
-      {
-       "id": "email",
-       "label": "Support e-mail",
-       "zone": "people",
-       "kind": "channel",
-       "tech": "support@example.com",
-       "note": "About 200 a day. Same routes as chat, and a person presses send at first.",
-       "details": [
-        [
-         "Responsibility",
-         "Brings e-mail into the same routes. Replies wait in HelpLine for a person until the acceptance criteria hold on real e-mail."
-        ],
-        [
-         "Data it sees",
-         "Names, addresses, phone numbers and order numbers (e-mail tagging brief)."
-        ],
-        [
-         "Fails how",
-         "Messages stay in the inbox until the next read [guess]."
-        ],
-        [
-         "Not decided",
-         "How e-mail reaches the API is not chosen on the stack page [guess]. The separate e-mail tagging job works on the same inbox."
-        ]
-       ]
-      },
-      {
-       "id": "api",
-       "label": "Assistant API",
-       "zone": "app",
-       "kind": "service",
-       "tech": "FastAPI on Azure",
-       "note": "The one door in, on Container Apps. History stays on the server.",
-       "details": [
-        [
-         "Responsibility",
-         "Takes a message, loads the session's history and streams the answer back."
-        ],
-        [
-         "Data it sees",
-         "Customer text and the session."
-        ],
-        [
-         "Fails how",
-         "A replica can fail, because at least 2 run. If all fail, the widget shows the support e-mail address [guess]."
-        ],
-        [
-         "Cost",
-         "EXAMPLE USD 120.00 a month for hosting, placeholder, 10.2% of the example total."
-        ],
-        [
-         "Prototype",
-         "The HTTP shell is kept (`src/acme_assist/app.py:27`). The client-supplied history (`app.py:20`) goes."
-        ],
-        [
-         "Settings",
-         "Keys live in Key Vault, none in code."
-        ]
-       ]
-      },
-      {
-       "id": "intake",
-       "label": "Intake",
-       "zone": "app",
-       "kind": "service",
-       "tech": "Code",
-       "note": "Language, script and who is asking. No model.",
-       "details": [
-        [
-         "Responsibility",
-         "Detects language and script, and identifies the customer: shop login in chat, sender's address in e-mail, otherwise order number plus e-mail matched in code [guess]."
-        ],
-        [
-         "Data it sees",
-         "The message and the shop session."
-        ],
-        [
-         "Fails how",
-         "Customer not identified: the order route refuses and offers a person [med]."
-        ],
-        [
-         "Latency",
-         "0.05 s [guess]"
-        ]
-       ]
-      },
-      {
-       "id": "router",
-       "label": "Router",
-       "zone": "routes",
-       "kind": "guard",
-       "tech": "Code + small model",
-       "note": "The model labels, code decides. Warranty and return words force the person path.",
-       "details": [
-        [
-         "Responsibility",
-         "Applies keyword overrides in three scripts and picks one of five routes. An unsure label goes to a person, and on mixed questions the person path wins."
-        ],
-        [
-         "Data it sees",
-         "The message and recent turns. The model returns a label only."
-        ],
-        [
-         "Fails how",
-         "Model down or too slow: the question goes to a person [med]. A wrong label on a warranty question is what the 500 labelled tickets test."
-        ],
-        [
-         "Cost",
-         "EXAMPLE USD 20.93 a month, 1.8% of the example total."
-        ],
-        [
-         "Latency",
-         "2.0 s [guess], the first of two model waits on the how-to path"
-        ]
-       ],
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "id": "howto",
-       "label": "How-to route",
-       "zone": "routes",
-       "kind": "service",
-       "tech": "Code",
-       "note": "55%, 1,650 a day. Retrieve, then write with citations.",
-       "details": [
-        [
-         "Responsibility",
-         "Searches by product and topic, leaving warranty sections out, and asks the answer model to write from the passages. E8, E9 and repeat faults go to a person."
-        ],
-        [
-         "Data it sees",
-         "The question and four passages. No order data."
-        ],
-        [
-         "Fails how",
-         "No good passage or search down: it does not answer from memory and offers a person [med]."
-        ]
-       ],
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "id": "orderroute",
-       "label": "Order route",
-       "zone": "routes",
-       "kind": "service",
-       "tech": "Code",
-       "note": "25%, 750 a day. Verified customer, OrderDesk, template.",
-       "details": [
-        [
-         "Responsibility",
-         "Reads this customer's order status and fills a template. The model at most finds the order number."
-        ],
-        [
-         "Data it sees",
-         "Order number, identity and the status field. The order record never goes to a model."
-        ],
-        [
-         "Fails how",
-         "OrderDesk down: says so and offers a person, never guesses [med]. Another customer's order is refused."
-        ],
-        [
-         "Cost",
-         "EXAMPLE USD 2.28 a month for finding order numbers, 0.2%."
-        ]
-       ],
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "id": "stockroute",
-       "label": "Stock route",
-       "zone": "routes",
-       "kind": "service",
-       "tech": "Code",
-       "note": "Share unknown. A live read and a template, or a link to the shop.",
-       "details": [
-        [
-         "Responsibility",
-         "Reads current stock per warehouse and fills a template. Without a live source it states no availability and links to the shop's product page."
-        ],
-        [
-         "Data it sees",
-         "SKU and quantity per warehouse. No customer data."
-        ],
-        [
-         "Fails how",
-         "Source down: no availability stated, link to the shop [med]."
-        ],
-        [
-         "Prototype",
-         "Replaces `src/acme_assist/stock.py:32`, one vector hit from a nightly export."
-        ],
-        [
-         "Latency",
-         "2.35 s to the first words [guess]"
-        ]
-       ],
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "id": "claimsroute",
-       "label": "Claims route",
-       "zone": "routes",
-       "kind": "service",
-       "tech": "Code + small model",
-       "note": "12%, 360 a day. Approved text, or a filled-in ticket.",
-       "details": [
-        [
-         "Responsibility",
-         "A general question gets staff-approved text. For a claim the small model extracts model, serial number, proof of purchase and fault, code validates them and a ticket opens."
-        ],
-        [
-         "Data it sees",
-         "The claim details the customer gives."
-        ],
-        [
-         "Fails how",
-         "A field is missing: the ticket opens as it is and staff ask [guess]. The model writes nothing the customer reads on this route."
-        ],
-        [
-         "Cost",
-         "EXAMPLE USD 3.73 a month for extraction, 0.3%."
-        ]
-       ],
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "id": "agent",
-       "label": "Agent loop",
-       "zone": "routes",
-       "kind": "service",
-       "tech": "Large model, looped",
-       "note": "Rejected. The model picks each search, at most 3, and decides when to stop.",
-       "details": [
-        [
-         "Responsibility",
-         "Replaces the router and the routes. The model decides what to search, when it has enough and whether to hand over to a person."
-        ],
-        [
-         "Data it sees",
-         "The whole conversation, manuals, warranty text, order status and stock."
-        ],
-        [
-         "Fails how",
-         "The search path varies per question, so there is no fixed path to test."
-        ],
-        [
-         "Cost",
-         "Not costed on the stack page. The pattern page rates it as several calls."
-        ],
-        [
-         "Latency",
-         "One search 4.95 s, two 7.35 s, three 9.75 s, computed from the stack page's guessed call times [guess]"
-        ],
-        [
-         "Why rejected",
-         "Rule steps-known: one lookup answers a how-to question, and nothing in the brief or documents needs a second search that depends on the first [med]."
-        ],
-        [
-         "Drawn as",
-         "Its strongest form [med]: read-only tools, the three-search limit from the pattern page, the same channels and the same output check."
-        ]
-       ],
-       "variants": [
-        "agentic"
-       ],
-       "flag": "warn"
-      },
-      {
-       "id": "template",
-       "label": "Templates",
-       "zone": "output",
-       "kind": "service",
-       "tech": "Code, three scripts",
-       "note": "Status and stock in fixed wording. No model.",
-       "details": [
-        [
-         "Responsibility",
-         "Turns a status or a quantity into a sentence in Latin Serbian, Cyrillic Serbian or English."
-        ],
-        [
-         "Data it sees",
-         "Fields from OrderDesk or the stock source."
-        ],
-        [
-         "Fails how",
-         "No template for a status: offers a person [guess]."
-        ]
-       ],
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "id": "guard",
-       "label": "Output check",
-       "zone": "output",
-       "kind": "guard",
-       "tech": "Code, word list",
-       "note": "Blocks approval wording, RMA-like numbers and refund promises.",
-       "details": [
-        [
-         "Responsibility",
-         "Checks every outgoing text on every route. It holds the first sentence of a streamed answer until that has passed, and later sentences must pass the same way [med]."
-        ],
-        [
-         "Data it sees",
-         "Everything that goes out."
-        ],
-        [
-         "Fails how",
-         "Blocked: the reply is replaced and a ticket opens. A word list can miss a paraphrase, and the 300 adversarial prompts measure how often."
-        ],
-        [
-         "Latency",
-         "0.5 s for the first sentence [guess]"
-        ]
-       ],
-       "flag": "warn"
-      },
-      {
-       "id": "reply",
-       "label": "Send reply",
-       "zone": "output",
-       "kind": "tool",
-       "tech": "Code",
-       "note": "To this session only. Never a model tool.",
-       "details": [
-        [
-         "Responsibility",
-         "Streams the checked text to the session, or leaves an e-mail draft in HelpLine for a person. The destination comes from the session, never from text."
-        ],
-        [
-         "Data it sees",
-         "The answer text."
-        ],
-        [
-         "Fails how",
-         "Session gone: the answer stays in the conversation [guess]."
-        ],
-        [
-         "Prototype",
-         "Replaces the model's `send_email` tool (`src/acme_assist/tools.py:68`), which could write to any address."
-        ]
-       ],
-       "side_effect": true
-      },
-      {
-       "id": "ticket",
-       "label": "Create ticket",
-       "zone": "output",
-       "kind": "tool",
-       "tech": "Code, fixed fields",
-       "note": "Opens a HelpLine ticket in a queue chosen by code.",
-       "details": [
-        [
-         "Responsibility",
-         "Opens a ticket with validated fields and the customer's words quoted as data."
-        ],
-        [
-         "Data it sees",
-         "Name, contact details, claim details and the conversation."
-        ],
-        [
-         "Fails how",
-         "HelpLine down: retries, and the customer gets the support e-mail address [guess]."
-        ],
-        [
-         "Latency",
-         "0.5 s [guess]"
-        ]
-       ],
-       "side_effect": true
-      },
-      {
-       "id": "small",
-       "label": "Small model",
-       "zone": "ai",
-       "kind": "model",
-       "tech": "Azure OpenAI, pinned",
-       "note": "Labels and short extractions. No tools.",
-       "details": [
-        [
-         "Responsibility",
-         "Gives a route label, finds an order number, extracts claim details and tags sections at ingestion."
-        ],
-        [
-         "Data it sees",
-         "The customer's message and recent turns."
-        ],
-        [
-         "Fails how",
-         "Timeout: the question goes to a person [med]."
-        ],
-        [
-         "Cost",
-         "EXAMPLE USD 27.52 a month, 2.4% of the example total."
-        ],
-        [
-         "Model",
-         "Deployed so that processing stays in the EU. No name or version yet, because neither could be confirmed for West Europe."
-        ]
-       ],
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "id": "large",
-       "label": "Answer model",
-       "zone": "ai",
-       "kind": "model",
-       "tech": "Azure OpenAI, pinned",
-       "note": "Writes the how-to answer, with citations. No tools.",
-       "details": [
-        [
-         "Responsibility",
-         "Writes the one text a customer reads from a model. In the agentic variant it also decides each step of the loop."
-        ],
-        [
-         "Data it sees",
-         "The question, recent turns and four passages."
-        ],
-        [
-         "Fails how",
-         "Timeout: no answer from memory, offers a person [med]."
-        ],
-        [
-         "Cost",
-         "EXAMPLE USD 653.40 a month, 55.8% of the example total, the largest line. Moving to the small model if it passes the eval is the first saving to test."
-        ]
-       ]
-      },
-      {
-       "id": "embed",
-       "label": "Embeddings",
-       "zone": "ai",
-       "kind": "model",
-       "tech": "Azure OpenAI",
-       "note": "Multilingual, in the same tenant.",
-       "details": [
-        [
-         "Responsibility",
-         "Turns a question or a passage into a vector, across languages."
-        ],
-        [
-         "Data it sees",
-         "Question text and passages."
-        ],
-        [
-         "Fails how",
-         "Search falls back to keywords only [guess]."
-        ],
-        [
-         "Cost",
-         "EXAMPLE USD 0.10 a month, under 0.1%. Changing the model means re-embedding the library."
-        ]
-       ]
-      },
-      {
-       "id": "search",
-       "label": "Azure AI Search",
-       "zone": "know",
-       "kind": "retrieval",
-       "tech": "Hybrid, filtered",
-       "note": "Keywords, vectors and filters by product, topic and language.",
-       "details": [
-        [
-         "Responsibility",
-         "Finds passages across languages, including exact codes such as E3 and SKUs."
-        ],
-        [
-         "Data it sees",
-         "Manuals and policies, with no customer data."
-        ],
-        [
-         "Fails how",
-         "No result: no answer is written and a person is offered [med]."
-        ],
-        [
-         "Cost",
-         "EXAMPLE USD 250.00 a month, placeholder, 21.3%, the largest fixed line."
-        ],
-        [
-         "Prototype",
-         "Replaces vector-only Qdrant search (`src/acme_assist/knowledge.py:64`)."
-        ],
-        [
-         "To test",
-         "Serbian analysis of Cyrillic [guess]."
-        ]
-       ]
-      },
-      {
-       "id": "ingest",
-       "label": "Ingestion job",
-       "zone": "know",
-       "kind": "service",
-       "tech": "Python, monthly",
-       "note": "41 manuals, about 2,400 pages, PDFs too. Tags product and topic.",
-       "details": [
-        [
-         "Responsibility",
-         "Reads manuals and policies, splits them, tags product and topic, skips the archive, embeds them and updates the index."
-        ],
-        [
-         "Data it sees",
-         "Acme's documents, no customer data."
-        ],
-        [
-         "Fails how",
-         "The old index keeps serving, so it must not wipe the live one first."
-        ],
-        [
-         "Cost",
-         "EXAMPLE USD 0.60 a month, under 0.1%."
-        ],
-        [
-         "Prototype",
-         "Replaces `src/acme_assist/knowledge.py:43`, which skips PDFs and indexes `archive/`."
-        ],
-        [
-         "Not decided",
-         "Where this job runs is not chosen on the stack page [guess]."
-        ]
-       ]
-      },
-      {
-       "id": "approved",
-       "label": "Approved texts",
-       "zone": "know",
-       "kind": "store",
-       "tech": "Staff-written",
-       "note": "General warranty and return answers, word for word, three scripts.",
-       "details": [
-        [
-         "Responsibility",
-         "Holds the only wording the assistant may use on warranty and returns."
-        ],
-        [
-         "Data it sees",
-         "No personal data."
-        ],
-        [
-         "Fails how",
-         "No text for a question: a person takes it."
-        ],
-        [
-         "Depends on",
-         "Staff writing them and Acme's legal team reviewing them [guess]."
-        ]
-       ],
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "id": "convo",
-       "label": "Conversations",
-       "zone": "know",
-       "kind": "store",
-       "tech": "Azure PostgreSQL",
-       "note": "History on the server, in West Europe.",
-       "details": [
-        [
-         "Responsibility",
-         "Keeps each session's history, so a client cannot forge earlier turns."
-        ],
-        [
-         "Data it sees",
-         "Customer text, which can hold personal data."
-        ],
-        [
-         "Fails how",
-         "Without history the message is handled as a first turn [guess]."
-        ],
-        [
-         "Cost",
-         "EXAMPLE USD 60.00 a month, placeholder, 5.1%."
-        ]
-       ]
-      },
-      {
-       "id": "orderdesk",
-       "label": "OrderDesk API",
-       "zone": "sys",
-       "kind": "system",
-       "tech": "REST, read-only",
-       "note": "Acme's ERP. A status changes within minutes.",
-       "details": [
-        [
-         "Responsibility",
-         "The owner of order status. The assistant only reads it."
-        ],
-        [
-         "Data it sees",
-         "Orders and customers."
-        ],
-        [
-         "Fails how",
-         "See Order route."
-        ]
-       ]
-      },
-      {
-       "id": "stocksrc",
-       "label": "Live stock source",
-       "zone": "sys",
-       "kind": "system",
-       "tech": "Unconfirmed",
-       "note": "OrderDesk or the shop, if either can give it. Open question.",
-       "details": [
-        [
-         "Responsibility",
-         "Would return current stock per warehouse, read-only."
-        ],
-        [
-         "Data it sees",
-         "SKU and quantity."
-        ],
-        [
-         "Fails how",
-         "If it does not exist: no availability statement and a link to the shop."
-        ]
-       ],
-       "flag": "warn"
-      },
-      {
-       "id": "helpline",
-       "label": "HelpLine",
-       "zone": "sys",
-       "kind": "system",
-       "tech": "Helpdesk",
-       "note": "Tickets, queues and e-mail drafts. Hosting location unknown.",
-       "details": [
-        [
-         "Responsibility",
-         "Holds tickets and queues for the agents."
-        ],
-        [
-         "Data it sees",
-         "Names, contact details, serial numbers, proof of purchase and the customer's words."
-        ],
-        [
-         "Fails how",
-         "See Create ticket."
-        ],
-        [
-         "Assumed",
-         "That it can take a new ticket by API [guess]. The briefs name only its tag API."
-        ],
-        [
-         "Not known",
-         "Where it stores data. Customer data must stay in the EU."
-        ]
-       ],
-       "flag": "warn"
-      },
-      {
-       "id": "staff",
-       "label": "6 support agents",
-       "zone": "sys",
-       "kind": "human",
-       "tech": "Mon-Fri, 8 to 16 CET",
-       "note": "Read every ticket. Only they approve returns and issue RMAs.",
-       "details": [
-        [
-         "Responsibility",
-         "Read tickets, decide claims and press send on e-mail drafts."
-        ],
-        [
-         "Data it sees",
-         "Tickets."
-        ],
-        [
-         "Fails how",
-         "Too many cases: the person routes alone are 600 a day, 100 per agent, and up to 1,425 if every undeflected how-to question reaches them. The brief does not give today's load."
-        ],
-        [
-         "Outside hours",
-         "The assistant says when a person will reply. It never asks the customer to wait."
-        ]
-       ]
-      },
-      {
-       "id": "actions",
-       "label": "RMA, refund, mail",
-       "zone": "sys",
-       "kind": "system",
-       "tech": "Staff only",
-       "note": "Issue an RMA, approve a refund, send the e-mail. Behind a person.",
-       "details": [
-        [
-         "Responsibility",
-         "What changes the world on a claim. The assistant has no path here."
-        ],
-        [
-         "Data it sees",
-         "Contact details and the order."
-        ],
-        [
-         "Fails how",
-         "Not applicable: staff work this by hand."
-        ]
-       ],
-       "side_effect": true
-      },
-      {
-       "id": "traces",
-       "label": "Tracing",
-       "zone": "ops",
-       "kind": "ops",
-       "tech": "App Insights, OTel",
-       "note": "A trace per step, personal data masked, West Europe.",
-       "details": [
-        [
-         "Responsibility",
-         "Records route, label, latency and result, for debugging and the weekly staff sample."
-        ],
-        [
-         "Data it sees",
-         "Masked text."
-        ],
-        [
-         "Fails how",
-         "Lost traces do not stop the chat [guess]."
-        ],
-        [
-         "Cost",
-         "EXAMPLE USD 60.00 a month with Key Vault, placeholder, 5.1%."
-        ],
-        [
-         "Prototype",
-         "Replaces the log line at `src/acme_assist/agent.py:23`, which writes tool arguments in full."
-        ]
-       ]
-      },
-      {
-       "id": "evals",
-       "label": "Evals",
-       "zone": "ops",
-       "kind": "ops",
-       "tech": "promptfoo in CI",
-       "note": "Five acceptance sets, run on every change.",
-       "details": [
-        [
-         "Responsibility",
-         "Runs the labelled sets on every change of prompt, model or retrieval."
-        ],
-        [
-         "Data it sees",
-         "Labelled past tickets and test prompts."
-        ],
-        [
-         "Fails how",
-         "A failed set blocks the release."
-        ],
-        [
-         "Still to build",
-         "The sets come from Acme's past tickets, which must be anonymised first."
-        ]
-       ]
-      }
-     ],
-     "links": [
-      {
-       "from": "customer",
-       "to": "webchat",
-       "label": "question",
-       "trust": "untrusted"
-      },
-      {
-       "from": "customer",
-       "to": "email",
-       "label": "e-mail",
-       "trust": "untrusted"
-      },
-      {
-       "from": "webchat",
-       "to": "api",
-       "label": "message",
-       "trust": "untrusted"
-      },
-      {
-       "from": "email",
-       "to": "api",
-       "label": "e-mail text",
-       "trust": "untrusted"
-      },
-      {
-       "from": "api",
-       "to": "intake",
-       "label": "message",
-       "trust": "untrusted"
-      },
-      {
-       "from": "api",
-       "to": "convo",
-       "label": "history",
-       "trust": "untrusted"
-      },
-      {
-       "from": "intake",
-       "to": "router",
-       "label": "text, language",
-       "trust": "untrusted",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "router",
-       "to": "small",
-       "label": "label?",
-       "trust": "untrusted",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "router",
-       "to": "howto",
-       "label": "how-to",
-       "trust": "untrusted",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "router",
-       "to": "orderroute",
-       "label": "order",
-       "trust": "untrusted",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "router",
-       "to": "stockroute",
-       "label": "stock",
-       "trust": "untrusted",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "router",
-       "to": "claimsroute",
-       "label": "claim",
-       "trust": "untrusted",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "router",
-       "to": "ticket",
-       "label": "other, unsure",
-       "trust": "untrusted",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "howto",
-       "to": "embed",
-       "label": "question",
-       "trust": "untrusted",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "howto",
-       "to": "search",
-       "label": "filtered query",
-       "trust": "untrusted",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "howto",
-       "to": "large",
-       "label": "passages",
-       "trust": "untrusted",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "howto",
-       "to": "guard",
-       "label": "draft",
-       "trust": "untrusted",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "orderroute",
-       "to": "small",
-       "label": "find number",
-       "trust": "untrusted",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "claimsroute",
-       "to": "small",
-       "label": "extract",
-       "trust": "untrusted",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "claimsroute",
-       "to": "ticket",
-       "label": "claim fields",
-       "trust": "untrusted",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "orderroute",
-       "to": "orderdesk",
-       "label": "read status",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "orderroute",
-       "to": "template",
-       "label": "status",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "stockroute",
-       "to": "stocksrc",
-       "label": "read stock",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "stockroute",
-       "to": "template",
-       "label": "quantity",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "template",
-       "to": "guard",
-       "label": "text",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "claimsroute",
-       "to": "approved",
-       "label": "general?",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "claimsroute",
-       "to": "guard",
-       "label": "fixed text",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "ingest",
-       "to": "small",
-       "label": "tag sections",
-       "variants": [
-        "workflow"
-       ]
-      },
-      {
-       "from": "intake",
-       "to": "agent",
-       "label": "message",
-       "trust": "untrusted",
-       "variants": [
-        "agentic"
-       ]
-      },
-      {
-       "from": "agent",
-       "to": "large",
-       "label": "what next?",
-       "trust": "untrusted",
-       "variants": [
-        "agentic"
-       ]
-      },
-      {
-       "from": "agent",
-       "to": "embed",
-       "label": "query",
-       "trust": "untrusted",
-       "variants": [
-        "agentic"
-       ]
-      },
-      {
-       "from": "agent",
-       "to": "search",
-       "label": "3 searches max",
-       "trust": "untrusted",
-       "variants": [
-        "agentic"
-       ]
-      },
-      {
-       "from": "agent",
-       "to": "guard",
-       "label": "draft",
-       "trust": "untrusted",
-       "variants": [
-        "agentic"
-       ]
-      },
-      {
-       "from": "agent",
-       "to": "ticket",
-       "label": "hand over",
-       "trust": "untrusted",
-       "variants": [
-        "agentic"
-       ]
-      },
-      {
-       "from": "agent",
-       "to": "orderdesk",
-       "label": "read order",
-       "variants": [
-        "agentic"
-       ]
-      },
-      {
-       "from": "agent",
-       "to": "stocksrc",
-       "label": "read stock",
-       "variants": [
-        "agentic"
-       ]
-      },
-      {
-       "from": "guard",
-       "to": "reply",
-       "label": "passed",
-       "trust": "untrusted"
-      },
-      {
-       "from": "guard",
-       "to": "ticket",
-       "label": "blocked",
-       "trust": "untrusted"
-      },
-      {
-       "from": "ticket",
-       "to": "helpline",
-       "label": "new ticket",
-       "trust": "untrusted"
-      },
-      {
-       "from": "helpline",
-       "to": "staff",
-       "label": "queue",
-       "trust": "untrusted"
-      },
-      {
-       "from": "reply",
-       "to": "webchat",
-       "label": "answer"
-      },
-      {
-       "from": "reply",
-       "to": "helpline",
-       "label": "e-mail draft"
-      },
-      {
-       "from": "staff",
-       "to": "actions",
-       "label": "approve, RMA"
-      },
-      {
-       "from": "ingest",
-       "to": "embed",
-       "label": "passages"
-      },
-      {
-       "from": "ingest",
-       "to": "search",
-       "label": "index"
-      },
-      {
-       "from": "api",
-       "to": "traces",
-       "label": "trace"
-      },
-      {
-       "from": "evals",
-       "to": "api",
-       "label": "test sets"
-      }
-     ],
-     "flows": [
-      {
-       "id": "howto",
-       "title": "How-to: “My K-300 shows E2”",
-       "variants": [
-        "workflow"
-       ],
-       "steps": [
-        {
-         "from": "customer",
-         "to": "webchat",
-         "text": "**“My K-300 shows E2.”** The customer writes in Serbian (Latin or Cyrillic) or English. About 55% of all questions are like this."
-        },
-        {
-         "from": "webchat",
-         "to": "api",
-         "text": "The message and the session go to the API. History stays on the server, so a browser cannot forge earlier turns."
-        },
-        {
-         "from": "api",
-         "to": "intake",
-         "text": "Code detects the language and script. 0.05 s [guess]."
-        },
-        {
-         "from": "intake",
-         "to": "router",
-         "text": "Text and language go to the router."
-        },
-        {
-         "from": "router",
-         "to": "small",
-         "text": "The small model returns a label and nothing else: how-to. It holds no tools. 2.0 s [guess]."
-        },
-        {
-         "from": "router",
-         "to": "howto",
-         "text": "Code finds no warranty or return word in any of the three scripts. E8 or E9 would go straight to a person with the safety instruction. This is E2, so the how-to route takes it."
-        },
-        {
-         "from": "howto",
-         "to": "embed",
-         "text": "The question becomes a vector. 0.1 s [guess]."
-        },
-        {
-         "from": "howto",
-         "to": "search",
-         "text": "Hybrid search filtered to the K-300, with warranty sections left out. 0.3 s [guess]. The K-200 has a different fix for E2, which is why the product filter matters."
-        },
-        {
-         "from": "howto",
-         "to": "large",
-         "text": "Four passages and the question go to the answer model. It writes in the customer's script and cites each claim. First words after about 2.0 s [guess]."
-        },
-        {
-         "from": "howto",
-         "to": "guard",
-         "text": "The first sentence is held until the check passes. 0.5 s [guess]. Approval wording, RMA-like numbers and refund promises are blocked here."
-        },
-        {
-         "from": "guard",
-         "to": "reply",
-         "text": "Passed. Code streams it to this session and to no other destination. A blocked answer would open a ticket instead."
-        },
-        {
-         "from": "reply",
-         "to": "webchat",
-         "text": "**“Choose Hot water and let it run for 30 seconds. If E2 comes back, descale the machine.”** The source is shown. About 4.95 s to the first words [guess], against the 5 s target."
-        }
-       ]
-      },
-      {
-       "id": "order",
-       "title": "Order status: “Where is my order?”",
-       "variants": [
-        "workflow"
-       ],
-       "steps": [
-        {
-         "from": "customer",
-         "to": "webchat",
-         "text": "**“Where is my order?”** About 25% of questions, 750 a day. The status changes within minutes."
-        },
-        {
-         "from": "webchat",
-         "to": "api",
-         "text": "The message goes in with the session."
-        },
-        {
-         "from": "api",
-         "to": "intake",
-         "text": "Who is asking comes from the shop login, not from the text [guess]. Someone not logged in gives an order number and e-mail, and code matches them."
-        },
-        {
-         "from": "intake",
-         "to": "router",
-         "text": "Text, language and the verified customer go to the router."
-        },
-        {
-         "from": "router",
-         "to": "small",
-         "text": "The model labels it: order status. 2.0 s [guess]."
-        },
-        {
-         "from": "router",
-         "to": "orderroute",
-         "text": "Code sends it down the order route."
-        },
-        {
-         "from": "orderroute",
-         "to": "small",
-         "text": "If code cannot find the order number in the text, the small model finds it. That is all it does here."
-        },
-        {
-         "from": "orderroute",
-         "to": "orderdesk",
-         "text": "Code reads OrderDesk live and read-only, for this verified customer only. 0.3 s [guess]. Another customer's order is refused."
-        },
-        {
-         "from": "orderroute",
-         "to": "template",
-         "text": "The status is a field. A template words it in the customer's script, so the order record never reaches a model."
-        },
-        {
-         "from": "template",
-         "to": "guard",
-         "text": "The fixed text passes the same check as every other reply."
-        },
-        {
-         "from": "guard",
-         "to": "reply",
-         "text": "Code sends it to this session."
-        },
-        {
-         "from": "reply",
-         "to": "webchat",
-         "text": "**The customer reads the status OrderDesk holds now.** About 4.35 s [guess]."
-        }
-       ]
-      },
-      {
-       "id": "stock",
-       "title": "Stock: the question behind the brief",
-       "variants": [
-        "workflow"
-       ],
-       "steps": [
-        {
-         "from": "customer",
-         "to": "webchat",
-         "text": "**“Is the K-300 in silver in stock?”** The prototype said yes when it was not, and Acme had to apologise and cancel orders."
-        },
-        {
-         "from": "webchat",
-         "to": "api",
-         "text": "The message goes in with the session."
-        },
-        {
-         "from": "api",
-         "to": "intake",
-         "text": "Language and script. This question needs no customer data."
-        },
-        {
-         "from": "intake",
-         "to": "router",
-         "text": "Text and language go to the router."
-        },
-        {
-         "from": "router",
-         "to": "small",
-         "text": "The model labels it: stock. 2.0 s [guess]."
-        },
-        {
-         "from": "router",
-         "to": "stockroute",
-         "text": "The stock route takes over. No model is used after this point."
-        },
-        {
-         "from": "stockroute",
-         "to": "stocksrc",
-         "text": "Code reads current stock per warehouse. 0.3 s [guess]. The prototype took one row of a nightly file, and K300-SLV is 0 in Novi Sad and 2 in Bratislava, so one row can say either. Whether a live source exists is an open question for Acme."
-        },
-        {
-         "from": "stockroute",
-         "to": "template",
-         "text": "A template words the result. Without a live source the assistant states no availability and links to the shop's product page."
-        },
-        {
-         "from": "template",
-         "to": "guard",
-         "text": "The fixed text passes the same check."
-        },
-        {
-         "from": "guard",
-         "to": "reply",
-         "text": "Code sends it to this session."
-        },
-        {
-         "from": "reply",
-         "to": "webchat",
-         "text": "**The customer gets current stock or a link to the shop, never a day-old number.** About 2.35 s [guess]."
-        }
-       ]
-      },
-      {
-       "id": "claim",
-       "title": "Warranty claim: a person decides",
-       "variants": [
-        "workflow"
-       ],
-       "steps": [
-        {
-         "from": "customer",
-         "to": "webchat",
-         "text": "**“My K-200 is leaking and it is under warranty. Can I get a new one?”** About 12% of questions, 360 a day. A wrong promise here is the costliest error."
-        },
-        {
-         "from": "webchat",
-         "to": "api",
-         "text": "The message goes in with the session."
-        },
-        {
-         "from": "api",
-         "to": "intake",
-         "text": "Language and script. The customer is identified if logged in."
-        },
-        {
-         "from": "intake",
-         "to": "router",
-         "text": "Text and language go to the router."
-        },
-        {
-         "from": "router",
-         "to": "small",
-         "text": "The small model labels it, but its label does not decide this one."
-        },
-        {
-         "from": "router",
-         "to": "claimsroute",
-         "text": "The word “warranty” forces the person path, in any of the three scripts. On a mixed question the person path wins."
-        },
-        {
-         "from": "claimsroute",
-         "to": "approved",
-         "text": "A general question such as “How long is the warranty?” ends here: code picks the staff-approved text, which no model wrote. This message reports a fault, so it is a claim."
-        },
-        {
-         "from": "claimsroute",
-         "to": "small",
-         "text": "The small model extracts model, serial number, proof of purchase and fault into fixed fields. The customer never reads what it writes."
-        },
-        {
-         "from": "claimsroute",
-         "to": "ticket",
-         "text": "Code validates the fields and opens the ticket. 0.5 s [guess]. Questions labelled other or unsure arrive at this same step, straight from the router."
-        },
-        {
-         "from": "ticket",
-         "to": "helpline",
-         "text": "The ticket reaches the right queue, with the customer's words quoted."
-        },
-        {
-         "from": "claimsroute",
-         "to": "guard",
-         "text": "A fixed text says what happens next. No promise and no number."
-        },
-        {
-         "from": "guard",
-         "to": "reply",
-         "text": "Code sends it to this session."
-        },
-        {
-         "from": "reply",
-         "to": "webchat",
-         "text": "**“Your case is with our team.”** About 4.55 s [guess]. Outside 8:00 to 16:00 it says when a person will reply."
-        },
-        {
-         "from": "helpline",
-         "to": "staff",
-         "text": "A person reads the case and decides."
-        },
-        {
-         "from": "staff",
-         "to": "actions",
-         "text": "Only staff approve the return and issue the RMA number, which goes out by e-mail. A parcel without an RMA number is refused."
-        }
-       ]
-      },
-      {
-       "id": "agentic-howto",
-       "title": "Agentic RAG: the same “E2” question",
-       "variants": [
-        "agentic"
-       ],
-       "steps": [
-        {
-         "from": "customer",
-         "to": "webchat",
-         "text": "**“My K-300 shows E2.”** The same question as in the workflow."
-        },
-        {
-         "from": "webchat",
-         "to": "api",
-         "text": "The message goes in with the session."
-        },
-        {
-         "from": "api",
-         "to": "intake",
-         "text": "Language and script, as before."
-        },
-        {
-         "from": "intake",
-         "to": "agent",
-         "text": "There is no router. The message goes straight to a model in a loop."
-        },
-        {
-         "from": "agent",
-         "to": "large",
-         "text": "The model decides what to search for. 2.0 s [guess]. This call takes the place of the route call."
-        },
-        {
-         "from": "agent",
-         "to": "embed",
-         "text": "The query becomes a vector. 0.1 s [guess]."
-        },
-        {
-         "from": "agent",
-         "to": "search",
-         "text": "Hybrid search, with the query the model chose. 0.3 s [guess]."
-        },
-        {
-         "from": "agent",
-         "to": "large",
-         "text": "The model decides it has enough and writes the answer. First words after about 2.0 s [guess]."
-        },
-        {
-         "from": "agent",
-         "to": "guard",
-         "text": "The same word-list check. 0.5 s [guess]."
-        },
-        {
-         "from": "guard",
-         "to": "reply",
-         "text": "Passed. Code sends it to this session."
-        },
-        {
-         "from": "reply",
-         "to": "webchat",
-         "text": "**With one search it also takes 4.95 s** [guess]. One more round adds about 2.4 s, so two searches take 7.35 s and miss the 5 s target. The loop only pays for itself when a second search is needed, and nothing in the brief or the documents needs one [med]."
-        }
-       ]
-      },
-      {
-       "id": "agentic-mixed",
-       "title": "Agentic RAG: where it goes wrong",
-       "variants": [
-        "agentic"
-       ],
-       "steps": [
-        {
-         "from": "customer",
-         "to": "webchat",
-         "text": "**“My K-200 shows E3 and now it leaks. That is under warranty, right?”**"
-        },
-        {
-         "from": "webchat",
-         "to": "api",
-         "text": "The message goes in with the session."
-        },
-        {
-         "from": "api",
-         "to": "intake",
-         "text": "Language and script, as before."
-        },
-        {
-         "from": "intake",
-         "to": "agent",
-         "text": "No code step decides that this is a warranty question. In the workflow a keyword would send it to a person at this point."
-        },
-        {
-         "from": "agent",
-         "to": "large",
-         "text": "The model decides to search for E3 and for the warranty."
-        },
-        {
-         "from": "agent",
-         "to": "search",
-         "text": "Manuals and warranty text are both in reach. 13 of the 15 sample files outside the policies folder say something about warranty."
-        },
-        {
-         "from": "agent",
-         "to": "large",
-         "text": "The model weighs the case itself. The warranty excludes scale damage if the machine was not descaled every 3 months, while the cleaning guide says every 2 months in hard water. Only staff may judge this. The model could hand over, but that is its own choice."
-        },
-        {
-         "from": "agent",
-         "to": "guard",
-         "text": "**“Yes, this should be covered”** contains no approval phrase on the list, no RMA number and no refund promise, so it can pass [med]."
-        },
-        {
-         "from": "guard",
-         "to": "reply",
-         "text": "Nothing stops it, and code sends it."
-        },
-        {
-         "from": "reply",
-         "to": "webchat",
-         "text": "**The customer reads a warranty judgement that nobody at Acme made.** This is the error the brief calls expensive, and the target is zero."
-        }
-       ]
-      }
-     ],
-     "variants": [
-      {
-       "id": "workflow",
-       "label": "Routed workflow (chosen)",
-       "note": "Code picks one of five fixed routes. The models read and write text and hold no tools."
-      },
-      {
-       "id": "agentic",
-       "label": "Agentic RAG (rejected)",
-       "note": "A model in a loop decides what to search and when to stop, with read-only tools. Drawn in its strongest form: same channels, same output check, at most three searches."
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "components",
-   "title": "Components",
-   "blocks": [
-    {
-     "type": "table",
-     "columns": [
-      "Component",
-      "Zone",
-      "Technology",
-      "Responsibility",
-      "Fails how"
-     ],
-     "rows": [
-      [
-       "Customer",
-       "Customers, channels",
-       "Serbian and English",
-       "Asks by web chat or e-mail.",
-       "Not applicable."
-      ],
-      [
-       "Web chat",
-       "Customers, channels",
-       "Shop widget",
-       "Takes the question and shows the answer.",
-       "Shows the support e-mail address instead [guess]."
-      ],
-      [
-       "Support e-mail",
-       "Customers, channels",
-       "support@example.com",
-       "Brings e-mail into the same routes. Replies wait in HelpLine for a person until the acceptance criteria hold on real e-mail.",
-       "Messages stay in the inbox until the next read [guess]."
-      ],
-      [
-       "Assistant API",
-       "Application",
-       "FastAPI on Azure",
-       "Takes a message, loads the session's history and streams the answer back.",
-       "A replica can fail, because at least 2 run. If all fail, the widget shows the support e-mail address [guess]."
-      ],
-      [
-       "Intake",
-       "Application",
-       "Code",
-       "Detects language and script, and identifies the customer: shop login in chat, sender's address in e-mail, otherwise order number plus e-mail matched in code [guess].",
-       "Customer not identified: the order route refuses and offers a person [med]."
-      ],
-      [
-       "Router (workflow only)",
-       "Decides the path",
-       "Code + small model",
-       "Applies keyword overrides in three scripts and picks one of five routes. An unsure label goes to a person, and on mixed questions the person path wins.",
-       "Model down or too slow: the question goes to a person [med]. A wrong label on a warranty question is what the 500 labelled tickets test."
-      ],
-      [
-       "How-to route (workflow only)",
-       "Decides the path",
-       "Code",
-       "Searches by product and topic, leaving warranty sections out, and asks the answer model to write from the passages. E8, E9 and repeat faults go to a person.",
-       "No good passage or search down: it does not answer from memory and offers a person [med]."
-      ],
-      [
-       "Order route (workflow only)",
-       "Decides the path",
-       "Code",
-       "Reads this customer's order status and fills a template. The model at most finds the order number.",
-       "OrderDesk down: says so and offers a person, never guesses [med]. Another customer's order is refused."
-      ],
-      [
-       "Stock route (workflow only)",
-       "Decides the path",
-       "Code",
-       "Reads current stock per warehouse and fills a template. Without a live source it states no availability and links to the shop's product page.",
-       "Source down: no availability stated, link to the shop [med]."
-      ],
-      [
-       "Claims route (workflow only)",
-       "Decides the path",
-       "Code + small model",
-       "A general question gets staff-approved text. For a claim the small model extracts model, serial number, proof of purchase and fault, code validates them and a ticket opens.",
-       "A field is missing: the ticket opens as it is and staff ask [guess]. The model writes nothing the customer reads on this route."
-      ],
-      [
-       "Agent loop (agentic only)",
-       "Decides the path",
-       "Large model, looped",
-       "Replaces the router and the routes. The model decides what to search, when it has enough and whether to hand over to a person.",
-       "The search path varies per question, so there is no fixed path to test."
-      ],
-      [
-       "Templates (workflow only)",
-       "Output",
-       "Code, three scripts",
-       "Turns a status or a quantity into a sentence in Latin Serbian, Cyrillic Serbian or English.",
-       "No template for a status: offers a person [guess]."
-      ],
-      [
-       "Output check",
-       "Output",
-       "Code, word list",
-       "Checks every outgoing text on every route. It holds the first sentence of a streamed answer until that has passed, and later sentences must pass the same way [med].",
-       "Blocked: the reply is replaced and a ticket opens. A word list can miss a paraphrase, and the 300 adversarial prompts measure how often."
-      ],
-      [
-       "Send reply",
-       "Output",
-       "Code",
-       "Streams the checked text to the session, or leaves an e-mail draft in HelpLine for a person. The destination comes from the session, never from text.",
-       "Session gone: the answer stays in the conversation [guess]."
-      ],
-      [
-       "Create ticket",
-       "Output",
-       "Code, fixed fields",
-       "Opens a ticket with validated fields and the customer's words quoted as data.",
-       "HelpLine down: retries, and the customer gets the support e-mail address [guess]."
-      ],
-      [
-       "Small model (workflow only)",
-       "AI layer",
-       "Azure OpenAI, pinned",
-       "Gives a route label, finds an order number, extracts claim details and tags sections at ingestion.",
-       "Timeout: the question goes to a person [med]."
-      ],
-      [
-       "Answer model",
-       "AI layer",
-       "Azure OpenAI, pinned",
-       "Writes the one text a customer reads from a model. In the agentic variant it also decides each step of the loop.",
-       "Timeout: no answer from memory, offers a person [med]."
-      ],
-      [
-       "Embeddings",
-       "AI layer",
-       "Azure OpenAI",
-       "Turns a question or a passage into a vector, across languages.",
-       "Search falls back to keywords only [guess]."
-      ],
-      [
-       "Azure AI Search",
-       "Knowledge",
-       "Hybrid, filtered",
-       "Finds passages across languages, including exact codes such as E3 and SKUs.",
-       "No result: no answer is written and a person is offered [med]."
-      ],
-      [
-       "Ingestion job",
-       "Knowledge",
-       "Python, monthly",
-       "Reads manuals and policies, splits them, tags product and topic, skips the archive, embeds them and updates the index.",
-       "The old index keeps serving, so it must not wipe the live one first."
-      ],
-      [
-       "Approved texts (workflow only)",
-       "Knowledge",
-       "Staff-written",
-       "Holds the only wording the assistant may use on warranty and returns.",
-       "No text for a question: a person takes it."
-      ],
-      [
-       "Conversations",
-       "Knowledge",
-       "Azure PostgreSQL",
-       "Keeps each session's history, so a client cannot forge earlier turns.",
-       "Without history the message is handled as a first turn [guess]."
-      ],
-      [
-       "OrderDesk API",
-       "Systems and people",
-       "REST, read-only",
-       "The owner of order status. The assistant only reads it.",
-       "See Order route."
-      ],
-      [
-       "Live stock source",
-       "Systems and people",
-       "Unconfirmed",
-       "Would return current stock per warehouse, read-only.",
-       "If it does not exist: no availability statement and a link to the shop."
-      ],
-      [
-       "HelpLine",
-       "Systems and people",
-       "Helpdesk",
-       "Holds tickets and queues for the agents.",
-       "See Create ticket."
-      ],
-      [
-       "6 support agents",
-       "Systems and people",
-       "Mon-Fri, 8 to 16 CET",
-       "Read tickets, decide claims and press send on e-mail drafts.",
-       "Too many cases: the person routes alone are 600 a day, 100 per agent, and up to 1,425 if every undeflected how-to question reaches them. The brief does not give today's load."
-      ],
-      [
-       "RMA, refund, mail",
-       "Systems and people",
-       "Staff only",
-       "What changes the world on a claim. The assistant has no path here.",
-       "Not applicable: staff work this by hand."
-      ],
-      [
-       "Tracing",
-       "Operations",
-       "App Insights, OTel",
-       "Records route, label, latency and result, for debugging and the weekly staff sample.",
-       "Lost traces do not stop the chat [guess]."
-      ],
-      [
-       "Evals",
-       "Operations",
-       "promptfoo in CI",
-       "Runs the labelled sets on every change of prompt, model or retrieval.",
-       "A failed set blocks the release."
-      ]
-     ]
-    }
-   ]
-  },
-  {
-   "id": "trust",
-   "title": "Trust boundaries",
-   "intro": "Text from outside enters at two places, the web chat and the e-mail inbox. In the workflow the models hold no tools, but that text still reaches two actions: the reply and the ticket. The table under the diagram lists every path, and this one says what stops each.",
-   "blocks": [
-    {
-     "type": "table",
-     "title": "What stops each path",
-     "columns": [
-      "Variant",
-      "Action reached",
-      "What stops it",
-      "How strong"
-     ],
-     "rows": [
-      [
-       "Routed workflow",
-       "Send reply",
-       "On the order, stock and claims routes the text is fixed wording. On the how-to route a model writes it and the word-list check is all that stands between it and the customer. The destination comes from the session, so text cannot choose an address.",
-       "**The weak spot.** A paraphrased promise can pass. The 300 adversarial prompts measure how often, and any failure blocks launch."
-      ],
-      [
-       "Routed workflow",
-       "Create ticket",
-       "Code validates the fields and picks the queue, the customer's words are quoted as data, and a person reads the ticket before anything happens.",
-       "Strong for actions. A flood of tickets is still possible, so the API needs a limit per session [med]."
-      ],
-      [
-       "Agentic RAG",
-       "Send reply",
-       "The same word list, but the model chose its own searches and may have read warranty text. No code keeps a warranty question away from it.",
-       "**Weak.** The word list is the only control."
-      ],
-      [
-       "Agentic RAG",
-       "Create ticket",
-       "Code writes the ticket, but the model decides whether to hand over at all.",
-       "A person is involved only if the model chooses it."
-      ],
-      [
-       "Both",
-       "RMA, refund, e-mail",
-       "A person. No path from outside text reaches it in either variant.",
-       "Strong."
-      ]
-     ]
+      "label": "Components",
+      "value": 28,
+      "note": "21 in agentic RAG",
+      "tone": "info"
     },
     {
-     "type": "list",
-     "title": "Also worth knowing",
-     "items": [
-      "**Whose data is read** is settled by the shop login and code, not by text in the chat [guess]. Acme has to confirm how the login works.",
-      "**An e-mail sender can be forged.** If the sender's address identifies the customer, the mail authentication result has to be checked and the reply must go only to that address [med]. At first a person presses send on every e-mail.",
-      "**Manuals and policies are treated as vetted**, because they are Acme's own. A search of the 21 sample files found no instruction-like text. The 41 full manuals were not checked, and a supplier's document added later would change this.",
-      "**OrderDesk output is treated as vetted** only because code reads named fields. A free-text field such as a delivery note must not be passed on [med]."
-     ]
-    }
-   ]
-  },
-  {
-   "id": "data",
-   "title": "Data",
-   "intro": "The rule from the brief: customer data stays in the EU.",
-   "blocks": [
+      "label": "Questions walked through",
+      "value": 4,
+      "note": "plus 2 on agentic RAG",
+      "tone": "info"
+    },
     {
-     "type": "table",
-     "columns": [
-      "Data",
-      "Goes to",
-      "Stored or logged",
-      "Note"
-     ],
-     "rows": [
-      [
-       "Customer message, can hold name, address or order number",
-       "Container Apps, small model, answer model on the how-to route, embeddings. All in West Europe",
-       "Conversations in PostgreSQL. Traces with personal data masked",
-       "Retention, abuse monitoring and any human review of prompts must be checked in the data processing terms. The retention period is not set."
-      ],
-      [
-       "Order record",
-       "Read by code from OrderDesk",
-       "Only the worded status, in the conversation",
-       "It goes to no model."
-      ],
-      [
-       "Claim details: serial number, proof of purchase, fault, contact details",
-       "Small model for extraction, then HelpLine",
-       "HelpLine",
-       "**HelpLine's hosting location is not known.** It has to be in the EU."
-      ],
-      [
-       "E-mail content",
-       "Shared inbox, then the same routes",
-       "Mailbox and HelpLine",
-       "Names, addresses, phone numbers and order numbers. Where the mailbox is hosted is not stated."
-      ],
-      [
-       "Stock",
-       "Code only",
-       "Not stored",
-       "No customer data."
-      ],
-      [
-       "Manuals and policies",
-       "Ingestion, small model, embeddings, Azure AI Search",
-       "Search index",
-       "No customer data."
-      ],
-      [
-       "Labelled past tickets for evals",
-       "CI",
-       "The stack page keeps the sets in the repo",
-       "**Past tickets carry personal data**, so they must be anonymised first or kept in the tenant."
-      ],
-      [
-       "Keys and settings",
-       "Key Vault",
-       "Not in code or logs",
-       "The prototype has a literal default key in `config.py`. Check whether it is real and rotate it if so."
+      "label": "Untrusted entry points",
+      "value": 2,
+      "note": "web chat and e-mail",
+      "tone": "warn"
+    },
+    {
+      "label": "Side effects reachable from untrusted text",
+      "value": "2 of 3",
+      "note": "the reply and the ticket; RMA, refund and e-mail sit behind a person",
+      "tone": "warn"
+    }
+  ],
+  "sections": [
+    {
+      "id": "architecture",
+      "title": "Architecture",
+      "intro": "Click a box for its card. Play a question with the arrows, switch between the two variants, and turn on the trust view to see how far text from outside travels. The fifth route, other or unsure, goes from the router straight to a ticket and then follows the last steps of the warranty claim.\n\nAll cost figures in the cards are EXAMPLE figures from a made-up price table, and all latencies are guesses until a real call is measured. Both must be replaced before any figure is quoted.",
+      "blocks": [
+        {
+          "type": "architecture",
+          "title": "Acme support assistant v2",
+          "zones": [
+            {
+              "id": "people",
+              "label": "Customers, channels"
+            },
+            {
+              "id": "app",
+              "label": "Application"
+            },
+            {
+              "id": "routes",
+              "label": "Decides the path"
+            },
+            {
+              "id": "output",
+              "label": "Output"
+            },
+            {
+              "id": "ai",
+              "label": "AI layer"
+            },
+            {
+              "id": "know",
+              "label": "Knowledge"
+            },
+            {
+              "id": "sys",
+              "label": "Systems and people"
+            },
+            {
+              "id": "ops",
+              "label": "Operations"
+            }
+          ],
+          "components": [
+            {
+              "id": "customer",
+              "label": "Customer",
+              "zone": "people",
+              "kind": "user",
+              "tech": "Serbian and English",
+              "note": "Serbian (Latin, Cyrillic) or English. About 3,000 questions a day, peak 400 an hour.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Asks by web chat or e-mail."
+                ],
+                [
+                  "Data it sees",
+                  "Their own order and whatever they type."
+                ],
+                [
+                  "Fails how",
+                  "Not applicable."
+                ]
+              ]
+            },
+            {
+              "id": "webchat",
+              "label": "Web chat",
+              "zone": "people",
+              "kind": "channel",
+              "tech": "Shop widget",
+              "note": "Streams the answer as it is written, with its sources.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Takes the question and shows the answer."
+                ],
+                [
+                  "Data it sees",
+                  "The message and the session. It no longer sends the history."
+                ],
+                [
+                  "Fails how",
+                  "Shows the support e-mail address instead [guess]."
+                ],
+                [
+                  "Prototype",
+                  "The widget is named in the README. Its code is not in this repository."
+                ]
+              ]
+            },
+            {
+              "id": "email",
+              "label": "Support e-mail",
+              "zone": "people",
+              "kind": "channel",
+              "tech": "support@example.com",
+              "note": "About 200 a day. Same routes as chat, and a person presses send at first.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Brings e-mail into the same routes. Replies wait in HelpLine for a person until the acceptance criteria hold on real e-mail."
+                ],
+                [
+                  "Data it sees",
+                  "Names, addresses, phone numbers and order numbers (e-mail tagging brief)."
+                ],
+                [
+                  "Fails how",
+                  "Messages stay in the inbox until the next read [guess]."
+                ],
+                [
+                  "Not decided",
+                  "How e-mail reaches the API is not chosen on the stack page [guess]. The separate e-mail tagging job works on the same inbox."
+                ]
+              ]
+            },
+            {
+              "id": "api",
+              "label": "Assistant API",
+              "zone": "app",
+              "kind": "service",
+              "tech": "FastAPI on Azure",
+              "note": "The one door in, on Container Apps. History stays on the server.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Takes a message, loads the session's history and streams the answer back."
+                ],
+                [
+                  "Data it sees",
+                  "Customer text and the session."
+                ],
+                [
+                  "Fails how",
+                  "A replica can fail, because at least 2 run. If all fail, the widget shows the support e-mail address [guess]."
+                ],
+                [
+                  "Cost",
+                  "EXAMPLE USD 120.00 a month for hosting, placeholder, 10.2% of the example total."
+                ],
+                [
+                  "Prototype",
+                  "The HTTP shell is kept (`src/acme_assist/app.py:27`). The client-supplied history (`app.py:20`) goes."
+                ],
+                [
+                  "Settings",
+                  "Keys live in Key Vault, none in code."
+                ]
+              ]
+            },
+            {
+              "id": "intake",
+              "label": "Intake",
+              "zone": "app",
+              "kind": "service",
+              "tech": "Code",
+              "note": "Language, script and who is asking. No model.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Detects language and script, and identifies the customer: shop login in chat, sender's address in e-mail, otherwise order number plus e-mail matched in code [guess]."
+                ],
+                [
+                  "Data it sees",
+                  "The message and the shop session."
+                ],
+                [
+                  "Fails how",
+                  "Customer not identified: the order route refuses and offers a person [med]."
+                ],
+                [
+                  "Latency",
+                  "0.05 s [guess]"
+                ]
+              ]
+            },
+            {
+              "id": "router",
+              "label": "Router",
+              "zone": "routes",
+              "kind": "guard",
+              "tech": "Code + small model",
+              "note": "The model labels, code decides. Warranty and return words force the person path.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Applies keyword overrides in three scripts and picks one of five routes. An unsure label goes to a person, and on mixed questions the person path wins."
+                ],
+                [
+                  "Data it sees",
+                  "The message and recent turns. The model returns a label only."
+                ],
+                [
+                  "Fails how",
+                  "Model down or too slow: the question goes to a person [med]. A wrong label on a warranty question is what the 500 labelled tickets test."
+                ],
+                [
+                  "Cost",
+                  "EXAMPLE USD 20.93 a month, 1.8% of the example total."
+                ],
+                [
+                  "Latency",
+                  "2.0 s [guess], the first of two model waits on the how-to path"
+                ]
+              ],
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "id": "howto",
+              "label": "How-to route",
+              "zone": "routes",
+              "kind": "service",
+              "tech": "Code",
+              "note": "55%, 1,650 a day. Retrieve, then write with citations.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Searches by product and topic, leaving warranty sections out, and asks the answer model to write from the passages. E8, E9 and repeat faults go to a person."
+                ],
+                [
+                  "Data it sees",
+                  "The question and four passages. No order data."
+                ],
+                [
+                  "Fails how",
+                  "No good passage or search down: it does not answer from memory and offers a person [med]."
+                ]
+              ],
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "id": "orderroute",
+              "label": "Order route",
+              "zone": "routes",
+              "kind": "service",
+              "tech": "Code",
+              "note": "25%, 750 a day. Verified customer, OrderDesk, template.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Reads this customer's order status and fills a template. The model at most finds the order number."
+                ],
+                [
+                  "Data it sees",
+                  "Order number, identity and the status field. The order record never goes to a model."
+                ],
+                [
+                  "Fails how",
+                  "OrderDesk down: says so and offers a person, never guesses [med]. Another customer's order is refused."
+                ],
+                [
+                  "Cost",
+                  "EXAMPLE USD 2.28 a month for finding order numbers, 0.2%."
+                ]
+              ],
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "id": "stockroute",
+              "label": "Stock route",
+              "zone": "routes",
+              "kind": "service",
+              "tech": "Code",
+              "note": "Share unknown. A live read and a template, or a link to the shop.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Reads current stock per warehouse and fills a template. Without a live source it states no availability and links to the shop's product page."
+                ],
+                [
+                  "Data it sees",
+                  "SKU and quantity per warehouse. No customer data."
+                ],
+                [
+                  "Fails how",
+                  "Source down: no availability stated, link to the shop [med]."
+                ],
+                [
+                  "Prototype",
+                  "Replaces `src/acme_assist/stock.py:32`, one vector hit from a nightly export."
+                ],
+                [
+                  "Latency",
+                  "2.35 s to the first words [guess]"
+                ]
+              ],
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "id": "claimsroute",
+              "label": "Claims route",
+              "zone": "routes",
+              "kind": "service",
+              "tech": "Code + small model",
+              "note": "12%, 360 a day. Approved text, or a filled-in ticket.",
+              "details": [
+                [
+                  "Responsibility",
+                  "A general question gets staff-approved text. For a claim the small model extracts model, serial number, proof of purchase and fault, code validates them and a ticket opens."
+                ],
+                [
+                  "Data it sees",
+                  "The claim details the customer gives."
+                ],
+                [
+                  "Fails how",
+                  "A field is missing: the ticket opens as it is and staff ask [guess]. The model writes nothing the customer reads on this route."
+                ],
+                [
+                  "Cost",
+                  "EXAMPLE USD 3.73 a month for extraction, 0.3%."
+                ]
+              ],
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "id": "agent",
+              "label": "Agent loop",
+              "zone": "routes",
+              "kind": "service",
+              "tech": "Large model, looped",
+              "note": "Rejected. The model picks each search, at most 3, and decides when to stop.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Replaces the router and the routes. The model decides what to search, when it has enough and whether to hand over to a person."
+                ],
+                [
+                  "Data it sees",
+                  "The whole conversation, manuals, warranty text, order status and stock."
+                ],
+                [
+                  "Fails how",
+                  "The search path varies per question, so there is no fixed path to test."
+                ],
+                [
+                  "Cost",
+                  "Not costed on the stack page. The pattern page rates it as several calls."
+                ],
+                [
+                  "Latency",
+                  "One search 4.95 s, two 7.35 s, three 9.75 s, computed from the stack page's guessed call times [guess]"
+                ],
+                [
+                  "Why rejected",
+                  "Rule steps-known: one lookup answers a how-to question, and nothing in the brief or documents needs a second search that depends on the first [med]."
+                ],
+                [
+                  "Drawn as",
+                  "Its strongest form [med]: read-only tools, the three-search limit from the pattern page, the same channels and the same output check."
+                ]
+              ],
+              "variants": [
+                "agentic"
+              ],
+              "flag": "warn"
+            },
+            {
+              "id": "template",
+              "label": "Templates",
+              "zone": "output",
+              "kind": "service",
+              "tech": "Code, three scripts",
+              "note": "Status and stock in fixed wording. No model.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Turns a status or a quantity into a sentence in Latin Serbian, Cyrillic Serbian or English."
+                ],
+                [
+                  "Data it sees",
+                  "Fields from OrderDesk or the stock source."
+                ],
+                [
+                  "Fails how",
+                  "No template for a status: offers a person [guess]."
+                ]
+              ],
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "id": "guard",
+              "label": "Output check",
+              "zone": "output",
+              "kind": "guard",
+              "tech": "Code, word list",
+              "note": "Blocks approval wording, RMA-like numbers and refund promises.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Checks every outgoing text on every route. It holds the first sentence of a streamed answer until that has passed, and later sentences must pass the same way [med]."
+                ],
+                [
+                  "Data it sees",
+                  "Everything that goes out."
+                ],
+                [
+                  "Fails how",
+                  "Blocked: the reply is replaced and a ticket opens. A word list can miss a paraphrase, and the 300 adversarial prompts measure how often."
+                ],
+                [
+                  "Latency",
+                  "0.5 s for the first sentence [guess]"
+                ]
+              ],
+              "flag": "warn"
+            },
+            {
+              "id": "reply",
+              "label": "Send reply",
+              "zone": "output",
+              "kind": "tool",
+              "tech": "Code",
+              "note": "To this session only. Never a model tool.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Streams the checked text to the session, or leaves an e-mail draft in HelpLine for a person. The destination comes from the session, never from text."
+                ],
+                [
+                  "Data it sees",
+                  "The answer text."
+                ],
+                [
+                  "Fails how",
+                  "Session gone: the answer stays in the conversation [guess]."
+                ],
+                [
+                  "Prototype",
+                  "Replaces the model's `send_email` tool (`src/acme_assist/tools.py:68`), which could write to any address."
+                ]
+              ],
+              "side_effect": true
+            },
+            {
+              "id": "ticket",
+              "label": "Create ticket",
+              "zone": "output",
+              "kind": "tool",
+              "tech": "Code, fixed fields",
+              "note": "Opens a HelpLine ticket in a queue chosen by code.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Opens a ticket with validated fields and the customer's words quoted as data."
+                ],
+                [
+                  "Data it sees",
+                  "Name, contact details, claim details and the conversation."
+                ],
+                [
+                  "Fails how",
+                  "HelpLine down: retries, and the customer gets the support e-mail address [guess]."
+                ],
+                [
+                  "Latency",
+                  "0.5 s [guess]"
+                ]
+              ],
+              "side_effect": true
+            },
+            {
+              "id": "small",
+              "label": "Small model",
+              "zone": "ai",
+              "kind": "model",
+              "tech": "Azure OpenAI, pinned",
+              "note": "Labels and short extractions. No tools.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Gives a route label, finds an order number, extracts claim details and tags sections at ingestion."
+                ],
+                [
+                  "Data it sees",
+                  "The customer's message and recent turns."
+                ],
+                [
+                  "Fails how",
+                  "Timeout: the question goes to a person [med]."
+                ],
+                [
+                  "Cost",
+                  "EXAMPLE USD 27.52 a month, 2.4% of the example total."
+                ],
+                [
+                  "Model",
+                  "Deployed so that processing stays in the EU. No name or version yet, because neither could be confirmed for West Europe."
+                ]
+              ],
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "id": "large",
+              "label": "Answer model",
+              "zone": "ai",
+              "kind": "model",
+              "tech": "Azure OpenAI, pinned",
+              "note": "Writes the how-to answer, with citations. No tools.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Writes the one text a customer reads from a model. In the agentic variant it also decides each step of the loop."
+                ],
+                [
+                  "Data it sees",
+                  "The question, recent turns and four passages."
+                ],
+                [
+                  "Fails how",
+                  "Timeout: no answer from memory, offers a person [med]."
+                ],
+                [
+                  "Cost",
+                  "EXAMPLE USD 653.40 a month, 55.8% of the example total, the largest line. Moving to the small model if it passes the eval is the first saving to test."
+                ]
+              ]
+            },
+            {
+              "id": "embed",
+              "label": "Embeddings",
+              "zone": "ai",
+              "kind": "model",
+              "tech": "Azure OpenAI",
+              "note": "Multilingual, in the same tenant.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Turns a question or a passage into a vector, across languages."
+                ],
+                [
+                  "Data it sees",
+                  "Question text and passages."
+                ],
+                [
+                  "Fails how",
+                  "Search falls back to keywords only [guess]."
+                ],
+                [
+                  "Cost",
+                  "EXAMPLE USD 0.10 a month, under 0.1%. Changing the model means re-embedding the library."
+                ]
+              ]
+            },
+            {
+              "id": "search",
+              "label": "Azure AI Search",
+              "zone": "know",
+              "kind": "retrieval",
+              "tech": "Hybrid, filtered",
+              "note": "Keywords, vectors and filters by product, topic and language.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Finds passages across languages, including exact codes such as E3 and SKUs."
+                ],
+                [
+                  "Data it sees",
+                  "Manuals and policies, with no customer data."
+                ],
+                [
+                  "Fails how",
+                  "No result: no answer is written and a person is offered [med]."
+                ],
+                [
+                  "Cost",
+                  "EXAMPLE USD 250.00 a month, placeholder, 21.3%, the largest fixed line."
+                ],
+                [
+                  "Prototype",
+                  "Replaces vector-only Qdrant search (`src/acme_assist/knowledge.py:64`)."
+                ],
+                [
+                  "To test",
+                  "Serbian analysis of Cyrillic [guess]."
+                ]
+              ]
+            },
+            {
+              "id": "ingest",
+              "label": "Ingestion job",
+              "zone": "know",
+              "kind": "service",
+              "tech": "Python, monthly",
+              "note": "41 manuals, about 2,400 pages, PDFs too. Tags product and topic.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Reads manuals and policies, splits them, tags product and topic, skips the archive, embeds them and updates the index."
+                ],
+                [
+                  "Data it sees",
+                  "Acme's documents, no customer data."
+                ],
+                [
+                  "Fails how",
+                  "The old index keeps serving, so it must not wipe the live one first."
+                ],
+                [
+                  "Cost",
+                  "EXAMPLE USD 0.60 a month, under 0.1%."
+                ],
+                [
+                  "Prototype",
+                  "Replaces `src/acme_assist/knowledge.py:43`, which skips PDFs and indexes `archive/`."
+                ],
+                [
+                  "Not decided",
+                  "Where this job runs is not chosen on the stack page [guess]."
+                ]
+              ]
+            },
+            {
+              "id": "approved",
+              "label": "Approved texts",
+              "zone": "know",
+              "kind": "store",
+              "tech": "Staff-written",
+              "note": "General warranty and return answers, word for word, three scripts.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Holds the only wording the assistant may use on warranty and returns."
+                ],
+                [
+                  "Data it sees",
+                  "No personal data."
+                ],
+                [
+                  "Fails how",
+                  "No text for a question: a person takes it."
+                ],
+                [
+                  "Depends on",
+                  "Staff writing them and Acme's legal team reviewing them [guess]."
+                ]
+              ],
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "id": "convo",
+              "label": "Conversations",
+              "zone": "know",
+              "kind": "store",
+              "tech": "Azure PostgreSQL",
+              "note": "History on the server, in West Europe.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Keeps each session's history, so a client cannot forge earlier turns."
+                ],
+                [
+                  "Data it sees",
+                  "Customer text, which can hold personal data."
+                ],
+                [
+                  "Fails how",
+                  "Without history the message is handled as a first turn [guess]."
+                ],
+                [
+                  "Cost",
+                  "EXAMPLE USD 60.00 a month, placeholder, 5.1%."
+                ]
+              ]
+            },
+            {
+              "id": "orderdesk",
+              "label": "OrderDesk API",
+              "zone": "sys",
+              "kind": "system",
+              "tech": "REST, read-only",
+              "note": "Acme's ERP. A status changes within minutes.",
+              "details": [
+                [
+                  "Responsibility",
+                  "The owner of order status. The assistant only reads it."
+                ],
+                [
+                  "Data it sees",
+                  "Orders and customers."
+                ],
+                [
+                  "Fails how",
+                  "See Order route."
+                ]
+              ]
+            },
+            {
+              "id": "stocksrc",
+              "label": "Live stock source",
+              "zone": "sys",
+              "kind": "system",
+              "tech": "Unconfirmed",
+              "note": "OrderDesk or the shop, if either can give it. Open question.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Would return current stock per warehouse, read-only."
+                ],
+                [
+                  "Data it sees",
+                  "SKU and quantity."
+                ],
+                [
+                  "Fails how",
+                  "If it does not exist: no availability statement and a link to the shop."
+                ]
+              ],
+              "flag": "warn"
+            },
+            {
+              "id": "helpline",
+              "label": "HelpLine",
+              "zone": "sys",
+              "kind": "system",
+              "tech": "Helpdesk",
+              "note": "Tickets, queues and e-mail drafts. Hosting location unknown.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Holds tickets and queues for the agents."
+                ],
+                [
+                  "Data it sees",
+                  "Names, contact details, serial numbers, proof of purchase and the customer's words."
+                ],
+                [
+                  "Fails how",
+                  "See Create ticket."
+                ],
+                [
+                  "Assumed",
+                  "That it can take a new ticket by API [guess]. The briefs name only its tag API."
+                ],
+                [
+                  "Not known",
+                  "Where it stores data. Customer data must stay in the EU."
+                ]
+              ],
+              "flag": "warn"
+            },
+            {
+              "id": "staff",
+              "label": "6 support agents",
+              "zone": "sys",
+              "kind": "human",
+              "tech": "Mon-Fri, 8 to 16 CET",
+              "note": "Read every ticket. Only they approve returns and issue RMAs.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Read tickets, decide claims and press send on e-mail drafts."
+                ],
+                [
+                  "Data it sees",
+                  "Tickets."
+                ],
+                [
+                  "Fails how",
+                  "Too many cases: the person routes alone are 600 a day, 100 per agent, and up to 1,425 if every undeflected how-to question reaches them. The brief does not give today's load."
+                ],
+                [
+                  "Outside hours",
+                  "The assistant says when a person will reply. It never asks the customer to wait."
+                ]
+              ]
+            },
+            {
+              "id": "actions",
+              "label": "RMA, refund, mail",
+              "zone": "sys",
+              "kind": "system",
+              "tech": "Staff only",
+              "note": "Issue an RMA, approve a refund, send the e-mail. Behind a person.",
+              "details": [
+                [
+                  "Responsibility",
+                  "What changes the world on a claim. The assistant has no path here."
+                ],
+                [
+                  "Data it sees",
+                  "Contact details and the order."
+                ],
+                [
+                  "Fails how",
+                  "Not applicable: staff work this by hand."
+                ]
+              ],
+              "side_effect": true
+            },
+            {
+              "id": "traces",
+              "label": "Tracing",
+              "zone": "ops",
+              "kind": "ops",
+              "tech": "App Insights, OTel",
+              "note": "A trace per step, personal data masked, West Europe.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Records route, label, latency and result, for debugging and the weekly staff sample."
+                ],
+                [
+                  "Data it sees",
+                  "Masked text."
+                ],
+                [
+                  "Fails how",
+                  "Lost traces do not stop the chat [guess]."
+                ],
+                [
+                  "Cost",
+                  "EXAMPLE USD 60.00 a month with Key Vault, placeholder, 5.1%."
+                ],
+                [
+                  "Prototype",
+                  "Replaces the log line at `src/acme_assist/agent.py:23`, which writes tool arguments in full."
+                ]
+              ]
+            },
+            {
+              "id": "evals",
+              "label": "Evals",
+              "zone": "ops",
+              "kind": "ops",
+              "tech": "promptfoo in CI",
+              "note": "Five acceptance sets, run on every change.",
+              "details": [
+                [
+                  "Responsibility",
+                  "Runs the labelled sets on every change of prompt, model or retrieval."
+                ],
+                [
+                  "Data it sees",
+                  "Labelled past tickets and test prompts."
+                ],
+                [
+                  "Fails how",
+                  "A failed set blocks the release."
+                ],
+                [
+                  "Still to build",
+                  "The sets come from Acme's past tickets, which must be anonymised first."
+                ]
+              ]
+            }
+          ],
+          "links": [
+            {
+              "from": "customer",
+              "to": "webchat",
+              "label": "question",
+              "trust": "untrusted"
+            },
+            {
+              "from": "customer",
+              "to": "email",
+              "label": "e-mail",
+              "trust": "untrusted"
+            },
+            {
+              "from": "webchat",
+              "to": "api",
+              "label": "message",
+              "trust": "untrusted"
+            },
+            {
+              "from": "email",
+              "to": "api",
+              "label": "e-mail text",
+              "trust": "untrusted"
+            },
+            {
+              "from": "api",
+              "to": "intake",
+              "label": "message",
+              "trust": "untrusted"
+            },
+            {
+              "from": "api",
+              "to": "convo",
+              "label": "history",
+              "trust": "untrusted"
+            },
+            {
+              "from": "intake",
+              "to": "router",
+              "label": "text, language",
+              "trust": "untrusted",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "router",
+              "to": "small",
+              "label": "label?",
+              "trust": "untrusted",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "router",
+              "to": "howto",
+              "label": "how-to",
+              "trust": "untrusted",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "router",
+              "to": "orderroute",
+              "label": "order",
+              "trust": "untrusted",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "router",
+              "to": "stockroute",
+              "label": "stock",
+              "trust": "untrusted",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "router",
+              "to": "claimsroute",
+              "label": "claim",
+              "trust": "untrusted",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "router",
+              "to": "ticket",
+              "label": "other, unsure",
+              "trust": "untrusted",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "howto",
+              "to": "embed",
+              "label": "question",
+              "trust": "untrusted",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "howto",
+              "to": "search",
+              "label": "filtered query",
+              "trust": "untrusted",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "howto",
+              "to": "large",
+              "label": "passages",
+              "trust": "untrusted",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "howto",
+              "to": "guard",
+              "label": "draft",
+              "trust": "untrusted",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "orderroute",
+              "to": "small",
+              "label": "find number",
+              "trust": "untrusted",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "claimsroute",
+              "to": "small",
+              "label": "extract",
+              "trust": "untrusted",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "claimsroute",
+              "to": "ticket",
+              "label": "claim fields",
+              "trust": "untrusted",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "orderroute",
+              "to": "orderdesk",
+              "label": "read status",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "orderroute",
+              "to": "template",
+              "label": "status",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "stockroute",
+              "to": "stocksrc",
+              "label": "read stock",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "stockroute",
+              "to": "template",
+              "label": "quantity",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "template",
+              "to": "guard",
+              "label": "text",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "claimsroute",
+              "to": "approved",
+              "label": "general?",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "claimsroute",
+              "to": "guard",
+              "label": "fixed text",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "ingest",
+              "to": "small",
+              "label": "tag sections",
+              "variants": [
+                "workflow"
+              ]
+            },
+            {
+              "from": "intake",
+              "to": "agent",
+              "label": "message",
+              "trust": "untrusted",
+              "variants": [
+                "agentic"
+              ]
+            },
+            {
+              "from": "agent",
+              "to": "large",
+              "label": "what next?",
+              "trust": "untrusted",
+              "variants": [
+                "agentic"
+              ]
+            },
+            {
+              "from": "agent",
+              "to": "embed",
+              "label": "query",
+              "trust": "untrusted",
+              "variants": [
+                "agentic"
+              ]
+            },
+            {
+              "from": "agent",
+              "to": "search",
+              "label": "3 searches max",
+              "trust": "untrusted",
+              "variants": [
+                "agentic"
+              ]
+            },
+            {
+              "from": "agent",
+              "to": "guard",
+              "label": "draft",
+              "trust": "untrusted",
+              "variants": [
+                "agentic"
+              ]
+            },
+            {
+              "from": "agent",
+              "to": "ticket",
+              "label": "hand over",
+              "trust": "untrusted",
+              "variants": [
+                "agentic"
+              ]
+            },
+            {
+              "from": "agent",
+              "to": "orderdesk",
+              "label": "read order",
+              "variants": [
+                "agentic"
+              ]
+            },
+            {
+              "from": "agent",
+              "to": "stocksrc",
+              "label": "read stock",
+              "variants": [
+                "agentic"
+              ]
+            },
+            {
+              "from": "guard",
+              "to": "reply",
+              "label": "passed",
+              "trust": "untrusted"
+            },
+            {
+              "from": "guard",
+              "to": "ticket",
+              "label": "blocked",
+              "trust": "untrusted"
+            },
+            {
+              "from": "ticket",
+              "to": "helpline",
+              "label": "new ticket",
+              "trust": "untrusted"
+            },
+            {
+              "from": "helpline",
+              "to": "staff",
+              "label": "queue",
+              "trust": "untrusted"
+            },
+            {
+              "from": "reply",
+              "to": "webchat",
+              "label": "answer"
+            },
+            {
+              "from": "reply",
+              "to": "helpline",
+              "label": "e-mail draft"
+            },
+            {
+              "from": "staff",
+              "to": "actions",
+              "label": "approve, RMA"
+            },
+            {
+              "from": "ingest",
+              "to": "embed",
+              "label": "passages"
+            },
+            {
+              "from": "ingest",
+              "to": "search",
+              "label": "index"
+            },
+            {
+              "from": "api",
+              "to": "traces",
+              "label": "trace"
+            },
+            {
+              "from": "evals",
+              "to": "api",
+              "label": "test sets"
+            }
+          ],
+          "flows": [
+            {
+              "id": "howto",
+              "title": "How-to: “My K-300 shows E2”",
+              "variants": [
+                "workflow"
+              ],
+              "steps": [
+                {
+                  "from": "customer",
+                  "to": "webchat",
+                  "text": "**“My K-300 shows E2.”** The customer writes in Serbian (Latin or Cyrillic) or English. About 55% of all questions are like this."
+                },
+                {
+                  "from": "webchat",
+                  "to": "api",
+                  "text": "The message and the session go to the API. History stays on the server, so a browser cannot forge earlier turns."
+                },
+                {
+                  "from": "api",
+                  "to": "intake",
+                  "text": "Code detects the language and script. 0.05 s [guess]."
+                },
+                {
+                  "from": "intake",
+                  "to": "router",
+                  "text": "Text and language go to the router."
+                },
+                {
+                  "from": "router",
+                  "to": "small",
+                  "text": "The small model returns a label and nothing else: how-to. It holds no tools. 2.0 s [guess]."
+                },
+                {
+                  "from": "router",
+                  "to": "howto",
+                  "text": "Code finds no warranty or return word in any of the three scripts. E8 or E9 would go straight to a person with the safety instruction. This is E2, so the how-to route takes it."
+                },
+                {
+                  "from": "howto",
+                  "to": "embed",
+                  "text": "The question becomes a vector. 0.1 s [guess]."
+                },
+                {
+                  "from": "howto",
+                  "to": "search",
+                  "text": "Hybrid search filtered to the K-300, with warranty sections left out. 0.3 s [guess]. The K-200 has a different fix for E2, which is why the product filter matters."
+                },
+                {
+                  "from": "howto",
+                  "to": "large",
+                  "text": "Four passages and the question go to the answer model. It writes in the customer's script and cites each claim. First words after about 2.0 s [guess]."
+                },
+                {
+                  "from": "howto",
+                  "to": "guard",
+                  "text": "The first sentence is held until the check passes. 0.5 s [guess]. Approval wording, RMA-like numbers and refund promises are blocked here."
+                },
+                {
+                  "from": "guard",
+                  "to": "reply",
+                  "text": "Passed. Code streams it to this session and to no other destination. A blocked answer would open a ticket instead."
+                },
+                {
+                  "from": "reply",
+                  "to": "webchat",
+                  "text": "**“Choose Hot water and let it run for 30 seconds. If E2 comes back, descale the machine.”** The source is shown. About 4.95 s to the first words [guess], against the 5 s target."
+                }
+              ]
+            },
+            {
+              "id": "order",
+              "title": "Order status: “Where is my order?”",
+              "variants": [
+                "workflow"
+              ],
+              "steps": [
+                {
+                  "from": "customer",
+                  "to": "webchat",
+                  "text": "**“Where is my order?”** About 25% of questions, 750 a day. The status changes within minutes."
+                },
+                {
+                  "from": "webchat",
+                  "to": "api",
+                  "text": "The message goes in with the session."
+                },
+                {
+                  "from": "api",
+                  "to": "intake",
+                  "text": "Who is asking comes from the shop login, not from the text [guess]. Someone not logged in gives an order number and e-mail, and code matches them."
+                },
+                {
+                  "from": "intake",
+                  "to": "router",
+                  "text": "Text, language and the verified customer go to the router."
+                },
+                {
+                  "from": "router",
+                  "to": "small",
+                  "text": "The model labels it: order status. 2.0 s [guess]."
+                },
+                {
+                  "from": "router",
+                  "to": "orderroute",
+                  "text": "Code sends it down the order route."
+                },
+                {
+                  "from": "orderroute",
+                  "to": "small",
+                  "text": "If code cannot find the order number in the text, the small model finds it. That is all it does here."
+                },
+                {
+                  "from": "orderroute",
+                  "to": "orderdesk",
+                  "text": "Code reads OrderDesk live and read-only, for this verified customer only. 0.3 s [guess]. Another customer's order is refused."
+                },
+                {
+                  "from": "orderroute",
+                  "to": "template",
+                  "text": "The status is a field. A template words it in the customer's script, so the order record never reaches a model."
+                },
+                {
+                  "from": "template",
+                  "to": "guard",
+                  "text": "The fixed text passes the same check as every other reply."
+                },
+                {
+                  "from": "guard",
+                  "to": "reply",
+                  "text": "Code sends it to this session."
+                },
+                {
+                  "from": "reply",
+                  "to": "webchat",
+                  "text": "**The customer reads the status OrderDesk holds now.** About 4.35 s [guess]."
+                }
+              ]
+            },
+            {
+              "id": "stock",
+              "title": "Stock: the question behind the brief",
+              "variants": [
+                "workflow"
+              ],
+              "steps": [
+                {
+                  "from": "customer",
+                  "to": "webchat",
+                  "text": "**“Is the K-300 in silver in stock?”** The prototype said yes when it was not, and Acme had to apologise and cancel orders."
+                },
+                {
+                  "from": "webchat",
+                  "to": "api",
+                  "text": "The message goes in with the session."
+                },
+                {
+                  "from": "api",
+                  "to": "intake",
+                  "text": "Language and script. This question needs no customer data."
+                },
+                {
+                  "from": "intake",
+                  "to": "router",
+                  "text": "Text and language go to the router."
+                },
+                {
+                  "from": "router",
+                  "to": "small",
+                  "text": "The model labels it: stock. 2.0 s [guess]."
+                },
+                {
+                  "from": "router",
+                  "to": "stockroute",
+                  "text": "The stock route takes over. No model is used after this point."
+                },
+                {
+                  "from": "stockroute",
+                  "to": "stocksrc",
+                  "text": "Code reads current stock per warehouse. 0.3 s [guess]. The prototype took one row of a nightly file, and K300-SLV is 0 in Novi Sad and 2 in Bratislava, so one row can say either. Whether a live source exists is an open question for Acme."
+                },
+                {
+                  "from": "stockroute",
+                  "to": "template",
+                  "text": "A template words the result. Without a live source the assistant states no availability and links to the shop's product page."
+                },
+                {
+                  "from": "template",
+                  "to": "guard",
+                  "text": "The fixed text passes the same check."
+                },
+                {
+                  "from": "guard",
+                  "to": "reply",
+                  "text": "Code sends it to this session."
+                },
+                {
+                  "from": "reply",
+                  "to": "webchat",
+                  "text": "**The customer gets current stock or a link to the shop, never a day-old number.** About 2.35 s [guess]."
+                }
+              ]
+            },
+            {
+              "id": "claim",
+              "title": "Warranty claim: a person decides",
+              "variants": [
+                "workflow"
+              ],
+              "steps": [
+                {
+                  "from": "customer",
+                  "to": "webchat",
+                  "text": "**“My K-200 is leaking and it is under warranty. Can I get a new one?”** About 12% of questions, 360 a day. A wrong promise here is the costliest error."
+                },
+                {
+                  "from": "webchat",
+                  "to": "api",
+                  "text": "The message goes in with the session."
+                },
+                {
+                  "from": "api",
+                  "to": "intake",
+                  "text": "Language and script. The customer is identified if logged in."
+                },
+                {
+                  "from": "intake",
+                  "to": "router",
+                  "text": "Text and language go to the router."
+                },
+                {
+                  "from": "router",
+                  "to": "small",
+                  "text": "The small model labels it, but its label does not decide this one."
+                },
+                {
+                  "from": "router",
+                  "to": "claimsroute",
+                  "text": "The word “warranty” forces the person path, in any of the three scripts. On a mixed question the person path wins."
+                },
+                {
+                  "from": "claimsroute",
+                  "to": "approved",
+                  "text": "A general question such as “How long is the warranty?” ends here: code picks the staff-approved text, which no model wrote. This message reports a fault, so it is a claim."
+                },
+                {
+                  "from": "claimsroute",
+                  "to": "small",
+                  "text": "The small model extracts model, serial number, proof of purchase and fault into fixed fields. The customer never reads what it writes."
+                },
+                {
+                  "from": "claimsroute",
+                  "to": "ticket",
+                  "text": "Code validates the fields and opens the ticket. 0.5 s [guess]. Questions labelled other or unsure arrive at this same step, straight from the router."
+                },
+                {
+                  "from": "ticket",
+                  "to": "helpline",
+                  "text": "The ticket reaches the right queue, with the customer's words quoted."
+                },
+                {
+                  "from": "claimsroute",
+                  "to": "guard",
+                  "text": "A fixed text says what happens next. No promise and no number."
+                },
+                {
+                  "from": "guard",
+                  "to": "reply",
+                  "text": "Code sends it to this session."
+                },
+                {
+                  "from": "reply",
+                  "to": "webchat",
+                  "text": "**“Your case is with our team.”** About 4.55 s [guess]. Outside 8:00 to 16:00 it says when a person will reply."
+                },
+                {
+                  "from": "helpline",
+                  "to": "staff",
+                  "text": "A person reads the case and decides."
+                },
+                {
+                  "from": "staff",
+                  "to": "actions",
+                  "text": "Only staff approve the return and issue the RMA number, which goes out by e-mail. A parcel without an RMA number is refused."
+                }
+              ]
+            },
+            {
+              "id": "agentic-howto",
+              "title": "Agentic RAG: the same “E2” question",
+              "variants": [
+                "agentic"
+              ],
+              "steps": [
+                {
+                  "from": "customer",
+                  "to": "webchat",
+                  "text": "**“My K-300 shows E2.”** The same question as in the workflow."
+                },
+                {
+                  "from": "webchat",
+                  "to": "api",
+                  "text": "The message goes in with the session."
+                },
+                {
+                  "from": "api",
+                  "to": "intake",
+                  "text": "Language and script, as before."
+                },
+                {
+                  "from": "intake",
+                  "to": "agent",
+                  "text": "There is no router. The message goes straight to a model in a loop."
+                },
+                {
+                  "from": "agent",
+                  "to": "large",
+                  "text": "The model decides what to search for. 2.0 s [guess]. This call takes the place of the route call."
+                },
+                {
+                  "from": "agent",
+                  "to": "embed",
+                  "text": "The query becomes a vector. 0.1 s [guess]."
+                },
+                {
+                  "from": "agent",
+                  "to": "search",
+                  "text": "Hybrid search, with the query the model chose. 0.3 s [guess]."
+                },
+                {
+                  "from": "agent",
+                  "to": "large",
+                  "text": "The model decides it has enough and writes the answer. First words after about 2.0 s [guess]."
+                },
+                {
+                  "from": "agent",
+                  "to": "guard",
+                  "text": "The same word-list check. 0.5 s [guess]."
+                },
+                {
+                  "from": "guard",
+                  "to": "reply",
+                  "text": "Passed. Code sends it to this session."
+                },
+                {
+                  "from": "reply",
+                  "to": "webchat",
+                  "text": "**With one search it also takes 4.95 s** [guess]. One more round adds about 2.4 s, so two searches take 7.35 s and miss the 5 s target. The loop only pays for itself when a second search is needed, and nothing in the brief or the documents needs one [med]."
+                }
+              ]
+            },
+            {
+              "id": "agentic-mixed",
+              "title": "Agentic RAG: where it goes wrong",
+              "variants": [
+                "agentic"
+              ],
+              "steps": [
+                {
+                  "from": "customer",
+                  "to": "webchat",
+                  "text": "**“My K-200 shows E3 and now it leaks. That is under warranty, right?”**"
+                },
+                {
+                  "from": "webchat",
+                  "to": "api",
+                  "text": "The message goes in with the session."
+                },
+                {
+                  "from": "api",
+                  "to": "intake",
+                  "text": "Language and script, as before."
+                },
+                {
+                  "from": "intake",
+                  "to": "agent",
+                  "text": "No code step decides that this is a warranty question. In the workflow a keyword would send it to a person at this point."
+                },
+                {
+                  "from": "agent",
+                  "to": "large",
+                  "text": "The model decides to search for E3 and for the warranty."
+                },
+                {
+                  "from": "agent",
+                  "to": "search",
+                  "text": "Manuals and warranty text are both in reach. 13 of the 15 sample files outside the policies folder say something about warranty."
+                },
+                {
+                  "from": "agent",
+                  "to": "large",
+                  "text": "The model weighs the case itself. The warranty excludes scale damage if the machine was not descaled every 3 months, while the cleaning guide says every 2 months in hard water. Only staff may judge this. The model could hand over, but that is its own choice."
+                },
+                {
+                  "from": "agent",
+                  "to": "guard",
+                  "text": "**“Yes, this should be covered”** contains no approval phrase on the list, no RMA number and no refund promise, so it can pass [med]."
+                },
+                {
+                  "from": "guard",
+                  "to": "reply",
+                  "text": "Nothing stops it, and code sends it."
+                },
+                {
+                  "from": "reply",
+                  "to": "webchat",
+                  "text": "**The customer reads a warranty judgement that nobody at Acme made.** This is the error the brief calls expensive, and the target is zero."
+                }
+              ]
+            }
+          ],
+          "variants": [
+            {
+              "id": "workflow",
+              "label": "Routed workflow (chosen)",
+              "note": "Code picks one of five fixed routes. The models read and write text and hold no tools."
+            },
+            {
+              "id": "agentic",
+              "label": "Agentic RAG (rejected)",
+              "note": "A model in a loop decides what to search and when to stop, with read-only tools. Drawn in its strongest form: same channels, same output check, at most three searches."
+            }
+          ]
+        }
       ]
-     ]
-    }
-   ]
-  },
-  {
-   "id": "open",
-   "title": "Open questions",
-   "intro": "For Acme, most important first.",
-   "blocks": [
+    },
     {
-     "type": "list",
-     "ordered": true,
-     "items": [
-      "Is there a live source for stock, in OrderDesk or the shop? Without one the stock route only links to the shop.",
-      "Where does HelpLine store its data, and can it take new tickets by API?",
-      "How is a customer identified in chat and in e-mail?",
-      "How does a customer hand over a proof of purchase in chat? The claim needs it and the design has no upload path yet.",
-      "Can two model calls in a row from West Europe fit in 5 seconds? The how-to path is at 4.95 s [guess], and this must be measured.",
-      "Can Acme export 500 past tickets, and how many cases do the 6 agents handle today?",
-      "Will Acme's legal team review the approved texts for Serbia and the EU?",
-      "How does e-mail reach the API, and which of this and the e-mail tagging job touches a message first?",
-      "Who operates this after hand-over, and where does the ingestion job run?",
-      "What are the real prices and the exchange rate? Every cost on this page is an EXAMPLE in USD, and the budget is in euros."
-     ]
+      "id": "components",
+      "title": "Components",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Component",
+            "Zone",
+            "Technology",
+            "Responsibility",
+            "Fails how"
+          ],
+          "rows": [
+            [
+              "Customer",
+              "Customers, channels",
+              "Serbian and English",
+              "Asks by web chat or e-mail.",
+              "Not applicable."
+            ],
+            [
+              "Web chat",
+              "Customers, channels",
+              "Shop widget",
+              "Takes the question and shows the answer.",
+              "Shows the support e-mail address instead [guess]."
+            ],
+            [
+              "Support e-mail",
+              "Customers, channels",
+              "support@example.com",
+              "Brings e-mail into the same routes. Replies wait in HelpLine for a person until the acceptance criteria hold on real e-mail.",
+              "Messages stay in the inbox until the next read [guess]."
+            ],
+            [
+              "Assistant API",
+              "Application",
+              "FastAPI on Azure",
+              "Takes a message, loads the session's history and streams the answer back.",
+              "A replica can fail, because at least 2 run. If all fail, the widget shows the support e-mail address [guess]."
+            ],
+            [
+              "Intake",
+              "Application",
+              "Code",
+              "Detects language and script, and identifies the customer: shop login in chat, sender's address in e-mail, otherwise order number plus e-mail matched in code [guess].",
+              "Customer not identified: the order route refuses and offers a person [med]."
+            ],
+            [
+              "Router (workflow only)",
+              "Decides the path",
+              "Code + small model",
+              "Applies keyword overrides in three scripts and picks one of five routes. An unsure label goes to a person, and on mixed questions the person path wins.",
+              "Model down or too slow: the question goes to a person [med]. A wrong label on a warranty question is what the 500 labelled tickets test."
+            ],
+            [
+              "How-to route (workflow only)",
+              "Decides the path",
+              "Code",
+              "Searches by product and topic, leaving warranty sections out, and asks the answer model to write from the passages. E8, E9 and repeat faults go to a person.",
+              "No good passage or search down: it does not answer from memory and offers a person [med]."
+            ],
+            [
+              "Order route (workflow only)",
+              "Decides the path",
+              "Code",
+              "Reads this customer's order status and fills a template. The model at most finds the order number.",
+              "OrderDesk down: says so and offers a person, never guesses [med]. Another customer's order is refused."
+            ],
+            [
+              "Stock route (workflow only)",
+              "Decides the path",
+              "Code",
+              "Reads current stock per warehouse and fills a template. Without a live source it states no availability and links to the shop's product page.",
+              "Source down: no availability stated, link to the shop [med]."
+            ],
+            [
+              "Claims route (workflow only)",
+              "Decides the path",
+              "Code + small model",
+              "A general question gets staff-approved text. For a claim the small model extracts model, serial number, proof of purchase and fault, code validates them and a ticket opens.",
+              "A field is missing: the ticket opens as it is and staff ask [guess]. The model writes nothing the customer reads on this route."
+            ],
+            [
+              "Agent loop (agentic only)",
+              "Decides the path",
+              "Large model, looped",
+              "Replaces the router and the routes. The model decides what to search, when it has enough and whether to hand over to a person.",
+              "The search path varies per question, so there is no fixed path to test."
+            ],
+            [
+              "Templates (workflow only)",
+              "Output",
+              "Code, three scripts",
+              "Turns a status or a quantity into a sentence in Latin Serbian, Cyrillic Serbian or English.",
+              "No template for a status: offers a person [guess]."
+            ],
+            [
+              "Output check",
+              "Output",
+              "Code, word list",
+              "Checks every outgoing text on every route. It holds the first sentence of a streamed answer until that has passed, and later sentences must pass the same way [med].",
+              "Blocked: the reply is replaced and a ticket opens. A word list can miss a paraphrase, and the 300 adversarial prompts measure how often."
+            ],
+            [
+              "Send reply",
+              "Output",
+              "Code",
+              "Streams the checked text to the session, or leaves an e-mail draft in HelpLine for a person. The destination comes from the session, never from text.",
+              "Session gone: the answer stays in the conversation [guess]."
+            ],
+            [
+              "Create ticket",
+              "Output",
+              "Code, fixed fields",
+              "Opens a ticket with validated fields and the customer's words quoted as data.",
+              "HelpLine down: retries, and the customer gets the support e-mail address [guess]."
+            ],
+            [
+              "Small model (workflow only)",
+              "AI layer",
+              "Azure OpenAI, pinned",
+              "Gives a route label, finds an order number, extracts claim details and tags sections at ingestion.",
+              "Timeout: the question goes to a person [med]."
+            ],
+            [
+              "Answer model",
+              "AI layer",
+              "Azure OpenAI, pinned",
+              "Writes the one text a customer reads from a model. In the agentic variant it also decides each step of the loop.",
+              "Timeout: no answer from memory, offers a person [med]."
+            ],
+            [
+              "Embeddings",
+              "AI layer",
+              "Azure OpenAI",
+              "Turns a question or a passage into a vector, across languages.",
+              "Search falls back to keywords only [guess]."
+            ],
+            [
+              "Azure AI Search",
+              "Knowledge",
+              "Hybrid, filtered",
+              "Finds passages across languages, including exact codes such as E3 and SKUs.",
+              "No result: no answer is written and a person is offered [med]."
+            ],
+            [
+              "Ingestion job",
+              "Knowledge",
+              "Python, monthly",
+              "Reads manuals and policies, splits them, tags product and topic, skips the archive, embeds them and updates the index.",
+              "The old index keeps serving, so it must not wipe the live one first."
+            ],
+            [
+              "Approved texts (workflow only)",
+              "Knowledge",
+              "Staff-written",
+              "Holds the only wording the assistant may use on warranty and returns.",
+              "No text for a question: a person takes it."
+            ],
+            [
+              "Conversations",
+              "Knowledge",
+              "Azure PostgreSQL",
+              "Keeps each session's history, so a client cannot forge earlier turns.",
+              "Without history the message is handled as a first turn [guess]."
+            ],
+            [
+              "OrderDesk API",
+              "Systems and people",
+              "REST, read-only",
+              "The owner of order status. The assistant only reads it.",
+              "See Order route."
+            ],
+            [
+              "Live stock source",
+              "Systems and people",
+              "Unconfirmed",
+              "Would return current stock per warehouse, read-only.",
+              "If it does not exist: no availability statement and a link to the shop."
+            ],
+            [
+              "HelpLine",
+              "Systems and people",
+              "Helpdesk",
+              "Holds tickets and queues for the agents.",
+              "See Create ticket."
+            ],
+            [
+              "6 support agents",
+              "Systems and people",
+              "Mon-Fri, 8 to 16 CET",
+              "Read tickets, decide claims and press send on e-mail drafts.",
+              "Too many cases: the person routes alone are 600 a day, 100 per agent, and up to 1,425 if every undeflected how-to question reaches them. The brief does not give today's load."
+            ],
+            [
+              "RMA, refund, mail",
+              "Systems and people",
+              "Staff only",
+              "What changes the world on a claim. The assistant has no path here.",
+              "Not applicable: staff work this by hand."
+            ],
+            [
+              "Tracing",
+              "Operations",
+              "App Insights, OTel",
+              "Records route, label, latency and result, for debugging and the weekly staff sample.",
+              "Lost traces do not stop the chat [guess]."
+            ],
+            [
+              "Evals",
+              "Operations",
+              "promptfoo in CI",
+              "Runs the labelled sets on every change of prompt, model or retrieval.",
+              "A failed set blocks the release."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trust",
+      "title": "Trust boundaries",
+      "intro": "Text from outside enters at two places, the web chat and the e-mail inbox. In the workflow the models hold no tools, but that text still reaches two actions: the reply and the ticket. The table under the diagram lists every path, and this one says what stops each.",
+      "blocks": [
+        {
+          "type": "table",
+          "title": "What stops each path",
+          "columns": [
+            "Variant",
+            "Action reached",
+            "What stops it",
+            "How strong"
+          ],
+          "rows": [
+            [
+              "Routed workflow",
+              "Send reply",
+              "On the order, stock and claims routes the text is fixed wording. On the how-to route a model writes it and the word-list check is all that stands between it and the customer. The destination comes from the session, so text cannot choose an address.",
+              "**The weak spot.** A paraphrased promise can pass. The 300 adversarial prompts measure how often, and any failure blocks launch."
+            ],
+            [
+              "Routed workflow",
+              "Create ticket",
+              "Code validates the fields and picks the queue, the customer's words are quoted as data, and a person reads the ticket before anything happens.",
+              "Strong for actions. A flood of tickets is still possible, so the API needs a limit per session [med]."
+            ],
+            [
+              "Agentic RAG",
+              "Send reply",
+              "The same word list, but the model chose its own searches and may have read warranty text. No code keeps a warranty question away from it.",
+              "**Weak.** The word list is the only control."
+            ],
+            [
+              "Agentic RAG",
+              "Create ticket",
+              "Code writes the ticket, but the model decides whether to hand over at all.",
+              "A person is involved only if the model chooses it."
+            ],
+            [
+              "Both",
+              "RMA, refund, e-mail",
+              "A person. No path from outside text reaches it in either variant.",
+              "Strong."
+            ]
+          ]
+        },
+        {
+          "type": "list",
+          "title": "Also worth knowing",
+          "items": [
+            "**Whose data is read** is settled by the shop login and code, not by text in the chat [guess]. Acme has to confirm how the login works.",
+            "**An e-mail sender can be forged.** If the sender's address identifies the customer, the mail authentication result has to be checked and the reply must go only to that address [med]. At first a person presses send on every e-mail.",
+            "**Manuals and policies are treated as vetted**, because they are Acme's own. A search of the 21 sample files found no instruction-like text. The 41 full manuals were not checked, and a supplier's document added later would change this.",
+            "**OrderDesk output is treated as vetted** only because code reads named fields. A free-text field such as a delivery note must not be passed on [med]."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "data",
+      "title": "Data",
+      "intro": "The rule from the brief: customer data stays in the EU.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Data",
+            "Goes to",
+            "Stored or logged",
+            "Note"
+          ],
+          "rows": [
+            [
+              "Customer message, can hold name, address or order number",
+              "Container Apps, small model, answer model on the how-to route, embeddings. All in West Europe",
+              "Conversations in PostgreSQL. Traces with personal data masked",
+              "Retention, abuse monitoring and any human review of prompts must be checked in the data processing terms. The retention period is not set."
+            ],
+            [
+              "Order record",
+              "Read by code from OrderDesk",
+              "Only the worded status, in the conversation",
+              "It goes to no model."
+            ],
+            [
+              "Claim details: serial number, proof of purchase, fault, contact details",
+              "Small model for extraction, then HelpLine",
+              "HelpLine",
+              "**HelpLine's hosting location is not known.** It has to be in the EU."
+            ],
+            [
+              "E-mail content",
+              "Shared inbox, then the same routes",
+              "Mailbox and HelpLine",
+              "Names, addresses, phone numbers and order numbers. Where the mailbox is hosted is not stated."
+            ],
+            [
+              "Stock",
+              "Code only",
+              "Not stored",
+              "No customer data."
+            ],
+            [
+              "Manuals and policies",
+              "Ingestion, small model, embeddings, Azure AI Search",
+              "Search index",
+              "No customer data."
+            ],
+            [
+              "Labelled past tickets for evals",
+              "CI",
+              "The stack page keeps the sets in the repo",
+              "**Past tickets carry personal data**, so they must be anonymised first or kept in the tenant."
+            ],
+            [
+              "Keys and settings",
+              "Key Vault",
+              "Not in code or logs",
+              "The prototype has a literal default key in `config.py`. Check whether it is real and rotate it if so."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "title": "Open questions",
+      "intro": "For Acme, most important first.",
+      "blocks": [
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "Is there a live source for stock, in OrderDesk or the shop? Without one the stock route only links to the shop.",
+            "Where does HelpLine store its data, and can it take new tickets by API?",
+            "How is a customer identified in chat and in e-mail?",
+            "How does a customer hand over a proof of purchase in chat? The claim needs it and the design has no upload path yet.",
+            "Can two model calls in a row from West Europe fit in 5 seconds? The how-to path is at 4.95 s [guess], and this must be measured.",
+            "Can Acme export 500 past tickets, and how many cases do the 6 agents handle today?",
+            "Will Acme's legal team review the approved texts for Serbia and the EU?",
+            "How does e-mail reach the API, and which of this and the e-mail tagging job touches a message first?",
+            "Who operates this after hand-over, and where does the ingestion job run?",
+            "What are the real prices and the exchange rate? Every cost on this page is an EXAMPLE in USD, and the budget is in euros."
+          ]
+        }
+      ]
     }
-   ]
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "Acme support assistant v2",
+    "regions": [
+      {
+        "name": "West Europe",
+        "why": "Acme's Azure tenant"
+      }
+    ],
+    "data": [
+      {
+        "name": "Customer message",
+        "class": "personal",
+        "where": [
+          "Conversations in PostgreSQL",
+          "the small and answer models"
+        ],
+        "rule": "traces mask personal data"
+      },
+      {
+        "name": "Claim details and contact",
+        "class": "personal",
+        "where": [
+          "the small model",
+          "HelpLine"
+        ],
+        "rule": "HelpLine must be in the EU; its location is not known"
+      },
+      {
+        "name": "Labelled past tickets",
+        "class": "personal",
+        "where": [
+          "evals in CI"
+        ],
+        "rule": "anonymised first or kept in the tenant"
+      }
+    ],
+    "components": [
+      {
+        "id": "customer",
+        "label": "Customer",
+        "tech": "Serbian and English",
+        "kind": "user"
+      },
+      {
+        "id": "webchat",
+        "label": "Web chat",
+        "tech": "Shop widget",
+        "kind": "channel"
+      },
+      {
+        "id": "email",
+        "label": "Support e-mail",
+        "tech": "support@example.com",
+        "kind": "channel"
+      },
+      {
+        "id": "api",
+        "label": "Assistant API",
+        "tech": "FastAPI on Azure",
+        "kind": "service"
+      },
+      {
+        "id": "intake",
+        "label": "Intake",
+        "tech": "Code",
+        "kind": "service"
+      },
+      {
+        "id": "router",
+        "label": "Router",
+        "tech": "Code + small model",
+        "kind": "guard"
+      },
+      {
+        "id": "howto",
+        "label": "How-to route",
+        "tech": "Code",
+        "kind": "service"
+      },
+      {
+        "id": "orderroute",
+        "label": "Order route",
+        "tech": "Code",
+        "kind": "service"
+      },
+      {
+        "id": "stockroute",
+        "label": "Stock route",
+        "tech": "Code",
+        "kind": "service"
+      },
+      {
+        "id": "claimsroute",
+        "label": "Claims route",
+        "tech": "Code + small model",
+        "kind": "service"
+      },
+      {
+        "id": "template",
+        "label": "Templates",
+        "tech": "Code, three scripts",
+        "kind": "service"
+      },
+      {
+        "id": "guard",
+        "label": "Output check",
+        "tech": "Code, word list",
+        "kind": "guard"
+      },
+      {
+        "id": "reply",
+        "label": "Send reply",
+        "tech": "Code",
+        "kind": "tool"
+      },
+      {
+        "id": "ticket",
+        "label": "Create ticket",
+        "tech": "Code, fixed fields",
+        "kind": "tool"
+      },
+      {
+        "id": "small",
+        "label": "Small model",
+        "tech": "Azure OpenAI, pinned",
+        "kind": "model"
+      },
+      {
+        "id": "large",
+        "label": "Answer model",
+        "tech": "Azure OpenAI, pinned",
+        "kind": "model"
+      },
+      {
+        "id": "embed",
+        "label": "Embeddings",
+        "tech": "Azure OpenAI",
+        "kind": "model"
+      },
+      {
+        "id": "search",
+        "label": "Azure AI Search",
+        "tech": "Hybrid, filtered",
+        "kind": "retrieval"
+      },
+      {
+        "id": "ingest",
+        "label": "Ingestion job",
+        "tech": "Python, monthly",
+        "kind": "service"
+      },
+      {
+        "id": "approved",
+        "label": "Approved texts",
+        "tech": "Staff-written",
+        "kind": "store"
+      },
+      {
+        "id": "convo",
+        "label": "Conversations",
+        "tech": "Azure PostgreSQL",
+        "kind": "store"
+      },
+      {
+        "id": "orderdesk",
+        "label": "OrderDesk API",
+        "tech": "REST, read-only",
+        "kind": "system"
+      },
+      {
+        "id": "stocksrc",
+        "label": "Live stock source",
+        "tech": "Unconfirmed",
+        "kind": "system"
+      },
+      {
+        "id": "helpline",
+        "label": "HelpLine",
+        "tech": "Helpdesk",
+        "kind": "system"
+      },
+      {
+        "id": "staff",
+        "label": "6 support agents",
+        "tech": "Mon-Fri, 8 to 16 CET",
+        "kind": "human"
+      },
+      {
+        "id": "actions",
+        "label": "RMA, refund, mail",
+        "tech": "Staff only",
+        "kind": "system"
+      },
+      {
+        "id": "traces",
+        "label": "Tracing",
+        "tech": "App Insights, OTel",
+        "kind": "ops"
+      },
+      {
+        "id": "evals",
+        "label": "Evals",
+        "tech": "promptfoo in CI",
+        "kind": "ops"
+      }
+    ],
+    "decisions": [
+      {
+        "title": "Design",
+        "chosen": "Routed workflow, models hold no tools",
+        "because": "Only Acme's staff approve a return or issue an RMA."
+      }
+    ],
+    "open": [
+      "Is there a live source for stock?",
+      "Where does HelpLine store its data, and can it take new tickets by API?",
+      "How is a customer identified in chat and in e-mail?"
+    ]
   }
- ]
 }

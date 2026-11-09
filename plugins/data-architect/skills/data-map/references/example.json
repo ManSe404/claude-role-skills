@@ -1,0 +1,450 @@
+{
+  "skill": "data-map",
+  "title": "acme-data, mapped",
+  "subtitle": "Where Acme Foods' sales data comes from, which layers it passes, who reads it, who owns it and where personal data goes. Read from the code only: no database was contacted.",
+  "meta": {"repo": "acme-data", "commit": "0734a04", "date": "2026-11-09"},
+  "verdict": {
+    "text": "This is Acme Foods' nightly sales warehouse: six ERP tables pass through dbt staging into marts, T-SQL procedures and a Spark notebook write beside them, and nothing anywhere masks personal data. Look first at `exports/marketing_contacts.sql:6`, which sends national ID numbers to the marketing tool every month, then at the promotion join in `models/marts/fct_sales.sql:33`, which inflates every sales figure downstream.",
+    "tone": "bad"
+  },
+  "stats": [
+    {"label": "Tables", "value": 23, "note": "8 ERP, 6 staging, 1 ephemeral, 6 marts, 2 dw", "tone": "info"},
+    {"label": "Layers", "value": 5, "note": "erp, staging, intermediate, marts, and dw, which does not fit the line", "tone": "info"},
+    {"label": "Consumers", "value": 5, "note": "3 have a query here, 2 are named only in comments", "tone": "warn"},
+    {"label": "Dynamic SQL sites", "value": 2, "note": "1 pastes in a value from a request form", "tone": "bad"}
+  ],
+  "sections": [
+    {
+      "id": "platform",
+      "title": "The platform",
+      "intro": "Links point the way the data goes. Click a box for its card, step through a flow with the arrow keys, and press **Personal data** to draw how far it travels.",
+      "blocks": [
+        {
+          "type": "architecture",
+          "title": "Sources, layers and consumers",
+          "zones": [
+            {"id": "erp", "label": "ERP copy"},
+            {"id": "staging", "label": "Staging"},
+            {"id": "intermediate", "label": "Intermediate"},
+            {"id": "marts", "label": "Marts"},
+            {"id": "dw", "label": "dw (T-SQL)"},
+            {"id": "consumers", "label": "Consumers"},
+            {"id": "ops", "label": "Operations"}
+          ],
+          "components": [
+            {"id": "erp_customers", "label": "erp.customers", "zone": "erp", "kind": "store", "tech": "dbt source", "note": "Customer master. Personal data starts here.", "details": [["Declared", "models/staging/schema.yml:10"], ["Loaded by", "not in this repo"]]},
+            {"id": "erp_orders", "label": "erp.orders, lines", "zone": "erp", "kind": "store", "tech": "dbt sources", "note": "`erp.orders` and `erp.order_lines`. `erp.orders.customer_id` ties each sale to a person.", "details": [["Declared", "models/staging/schema.yml:8-9"], ["Loaded by", "not in this repo"]]},
+            {"id": "erp_products", "label": "erp.products", "zone": "erp", "kind": "store", "tech": "dbt source", "details": [["Declared", "models/staging/schema.yml:11"]]},
+            {"id": "erp_stores", "label": "erp.stores", "zone": "erp", "kind": "store", "tech": "dbt source", "details": [["Declared", "models/staging/schema.yml:12"]]},
+            {"id": "erp_promotions", "label": "erp.promotions", "zone": "erp", "kind": "store", "tech": "dbt source", "details": [["Declared", "models/staging/schema.yml:13"]]},
+            {"id": "erp_stock", "label": "erp stock tables", "zone": "erp", "kind": "store", "tech": "not declared in dbt", "flag": "warn", "note": "`erp.stock_levels` and one `erp.stock_adjustments_YYYY_MM` table per month. Only the notebook reads them.", "details": [["Read at", "notebooks/stock_snapshot.ipynb cell 3, lines 1 and 4"]]},
+
+            {"id": "stg_customers", "label": "stg_customers", "zone": "staging", "kind": "store", "tech": "dbt view", "note": "All nine customer columns, unmasked.", "details": [["File", "models/staging/stg_customers.sql"], ["Owner", "Vesna Lipovac"]]},
+            {"id": "stg_orders", "label": "stg_orders, lines", "zone": "staging", "kind": "store", "tech": "dbt views", "note": "`stg_orders` and `stg_order_lines`: typed dates and prices.", "details": [["Files", "models/staging/stg_orders.sql, stg_order_lines.sql"], ["Owner", "Vesna Lipovac"]]},
+            {"id": "stg_products", "label": "stg_products", "zone": "staging", "kind": "store", "tech": "dbt view", "details": [["File", "models/staging/stg_products.sql"], ["Owner", "Vesna Lipovac"]]},
+            {"id": "stg_stores", "label": "stg_stores", "zone": "staging", "kind": "store", "tech": "dbt view", "details": [["File", "models/staging/stg_stores.sql"], ["Owner", "Vesna Lipovac"]]},
+            {"id": "stg_promotions", "label": "stg_promotions", "zone": "staging", "kind": "store", "tech": "dbt view", "details": [["File", "models/staging/stg_promotions.sql"], ["Owner", "Marko Javor"]]},
+
+            {"id": "int_order_lines", "label": "int_order_lines", "zone": "intermediate", "kind": "service", "tech": "dbt ephemeral", "note": "Lines joined to orders, cancelled orders dropped. No table exists: this is compiled into `fct_sales`.", "details": [["File", "models/intermediate/int_order_lines.sql"], ["Owner", "Marko Javor"]]},
+
+            {"id": "dim_customer", "label": "dim_customer", "zone": "marts", "kind": "store", "tech": "dbt table", "flag": "warn", "note": "One row per customer as documented, with national ID, birth date, email and phone in clear.", "details": [["File", "models/marts/dim_customer.sql"], ["Owner", "Marko Javor"]]},
+            {"id": "dim_product", "label": "dim_product", "zone": "marts", "kind": "store", "tech": "dbt table", "note": "The product list the sales fact actually uses.", "details": [["File", "models/marts/dim_product.sql"], ["Owner", "Marko Javor"]]},
+            {"id": "dim_store", "label": "dim_store", "zone": "marts", "kind": "store", "tech": "dbt table", "details": [["File", "models/marts/dim_store.sql"], ["Owner", "Marko Javor"]]},
+            {"id": "fct_sales", "label": "fct_sales", "zone": "marts", "kind": "store", "tech": "dbt table", "flag": "bad", "note": "Meant to be one row per order line. The promotion join breaks that.", "details": [["File", "models/marts/fct_sales.sql"], ["Owner", "Marko Javor"], ["Tests", "none"]]},
+            {"id": "mart_old_campaigns", "label": "mart_old_campaigns", "zone": "marts", "kind": "store", "tech": "dbt table", "flag": "warn", "note": "Rebuilt nightly. No reader in this repo.", "details": [["File", "models/marts/mart_old_campaigns.sql"], ["Owner", "Vesna Lipovac"]]},
+            {"id": "stock_snapshot", "label": "stock_snapshot", "zone": "marts", "kind": "store", "tech": "Spark table, not dbt", "flag": "warn", "note": "`marts.stock_snapshot`. The date is fixed in the notebook and each run overwrites the table.", "details": [["File", "notebooks/stock_snapshot.ipynb"], ["Owner", "Marko Javor"]]},
+
+            {"id": "dw_dim_product", "label": "dw.dim_product", "zone": "dw", "kind": "store", "tech": "T-SQL table", "flag": "warn", "note": "A second product list, merged nightly. No reader in this repo.", "details": [["DDL", "warehouse/ddl/dim_product.sql"], ["Written by", "dw.merge_dim_product"], ["Owner", "Vesna Lipovac"]]},
+            {"id": "dw_fct_daily_sales", "label": "dw.fct_daily_sales", "zone": "dw", "kind": "store", "tech": "T-SQL table", "flag": "warn", "note": "One row per day, store and product. Appended daily, and a repeat run doubles a day.", "details": [["DDL", "warehouse/ddl/fct_daily_sales.sql"], ["Written by", "dw.load_daily_sales"], ["Owner", "Marko Javor"]]},
+
+            {"id": "store_performance", "label": "store_performance", "zone": "consumers", "kind": "service", "tech": "SQL report", "note": "For the regional managers, refreshed every Monday. Completed orders only.", "details": [["File", "reports/store_performance.sql"], ["Owner", "Vesna Lipovac"]]},
+            {"id": "request_form", "label": "request form", "zone": "consumers", "kind": "channel", "tech": "not in this repo", "flag": "bad", "note": "Named only in the comment at `warehouse/procs/export_by_region.sql:1`. It supplies the region name."},
+            {"id": "export_by_region", "label": "export_by_region", "zone": "consumers", "kind": "service", "tech": "T-SQL, dynamic SQL", "flag": "bad", "note": "Sales of one region for the store managers. The region name is pasted into the statement.", "details": [["File", "warehouse/procs/export_by_region.sql"], ["Owner", "Vesna Lipovac"]]},
+            {"id": "marketing_export", "label": "marketing_contacts", "zone": "consumers", "kind": "service", "tech": "SQL export", "flag": "bad", "note": "Monthly contact list, with `national_id`.", "details": [["File", "exports/marketing_contacts.sql"], ["Owner", "Vesna Lipovac"]]},
+            {"id": "campaign_tool", "label": "campaign tool", "zone": "consumers", "kind": "system", "tech": "outside this repo", "flag": "warn", "note": "Marketing loads the export by hand. The repo does not name the tool."},
+            {"id": "powerbi", "label": "Power BI dataset", "zone": "consumers", "kind": "system", "tech": "outside this repo", "note": "Named only in the comment at `warehouse/ddl/fct_daily_sales.sql:1`."},
+            {"id": "ordering_team", "label": "ordering team", "zone": "consumers", "kind": "human", "tech": "outside this repo", "note": "Named only in the first cell of the notebook."},
+
+            {"id": "scheduler", "label": "scheduler", "zone": "ops", "kind": "ops", "tech": "not in this repo", "note": "02:00 `dbt run`, then `dw.merge_dim_product`, then `dw.load_daily_sales` for yesterday. 06:00 the Spark notebook. As the README says, nothing here defines it.", "details": [["Source", "README.md:20-26"]]}
+          ],
+          "links": [
+            {"from": "erp_customers", "to": "stg_customers"},
+            {"from": "erp_orders", "to": "stg_orders"},
+            {"from": "erp_products", "to": "stg_products"},
+            {"from": "erp_stores", "to": "stg_stores"},
+            {"from": "erp_promotions", "to": "stg_promotions"},
+            {"from": "stg_customers", "to": "dim_customer"},
+            {"from": "stg_orders", "to": "int_order_lines"},
+            {"from": "stg_orders", "to": "store_performance", "label": "skips marts"},
+            {"from": "stg_products", "to": "dim_product"},
+            {"from": "stg_products", "to": "dw_dim_product", "label": "MERGE"},
+            {"from": "stg_stores", "to": "dim_store"},
+            {"from": "stg_promotions", "to": "fct_sales", "label": "no date check", "flag": "bad"},
+            {"from": "stg_promotions", "to": "mart_old_campaigns"},
+            {"from": "int_order_lines", "to": "fct_sales"},
+            {"from": "dim_product", "to": "fct_sales", "label": "list_price"},
+            {"from": "fct_sales", "to": "dw_fct_daily_sales", "label": "daily INSERT", "flag": "warn"},
+            {"from": "fct_sales", "to": "store_performance"},
+            {"from": "dim_store", "to": "store_performance"},
+            {"from": "dim_store", "to": "export_by_region", "label": "dynamic SQL", "flag": "bad"},
+            {"from": "dw_fct_daily_sales", "to": "export_by_region", "label": "dynamic SQL", "flag": "bad"},
+            {"from": "request_form", "to": "export_by_region", "label": "@region", "flag": "bad"},
+            {"from": "dw_fct_daily_sales", "to": "powerbi", "label": "comment only"},
+            {"from": "dim_customer", "to": "marketing_export", "label": "national_id", "flag": "bad"},
+            {"from": "marketing_export", "to": "campaign_tool", "label": "by hand", "flag": "warn"},
+            {"from": "erp_stock", "to": "stock_snapshot", "label": "notebook"},
+            {"from": "dim_store", "to": "stock_snapshot", "label": "no schema"},
+            {"from": "dim_product", "to": "stock_snapshot", "label": "notebook"},
+            {"from": "stock_snapshot", "to": "ordering_team", "label": "comment only"}
+          ],
+          "flows": [
+            {
+              "id": "sales",
+              "title": "Sales: from an ERP order to the figure a manager sees",
+              "steps": [
+                {"from": "erp_orders", "to": "stg_orders", "text": "`erp.orders` and `erp.order_lines` become staging views with typed dates and prices (`models/staging/stg_orders.sql:6`, `models/staging/stg_order_lines.sql:3`). In the sample CSVs, 300 of 1,500 dates are written `dd.mm.yyyy` and 120 of 3,000 prices use a decimal comma. The casts at `stg_orders.sql:16` and `stg_order_lines.sql:14` are plain, so whether those values convert, fail or swap day and month depends on the engine. [med]"},
+                {"from": "stg_orders", "to": "int_order_lines", "text": "Lines are joined to their order and cancelled orders are dropped (`models/intermediate/int_order_lines.sql:28-29`). Returned orders stay in. The model is ephemeral, so this logic is compiled into `fct_sales` and no table exists. [high]"},
+                {"from": "int_order_lines", "to": "fct_sales", "text": "The sales fact reads the joined lines (`models/marts/fct_sales.sql:6`). `models/marts/schema.yml:32` documents one row per order line, and no test checks it. [high]"},
+                {"from": "stg_promotions", "to": "fct_sales", "text": "The discount join matches on `product_id` alone, with no date condition (`models/marts/fct_sales.sql:33`, added in commit 81c7521 on 2026-08-06). [high] On the sample data, 2,787 lines become 3,323 rows (+19%) and 730 lines get a discount from a promotion that was not running. Net sales come to 745,281 against 686,210 with the dates respected (+8.6%), which is higher even than the 689,761 before any discount."},
+                {"from": "fct_sales", "to": "dw_fct_daily_sales", "text": "`dw.load_daily_sales` sums one day per store and product and inserts it (`warehouse/procs/load_daily_sales.sql:15-22`). Nothing deletes first, so running a date twice doubles that date, and fixing the promotion join will not correct days already loaded. `customer_id` is grouped away here. [high]"},
+                {"from": "fct_sales", "to": "store_performance", "text": "The store report keeps only `completed` orders by joining back to `staging.stg_orders` (`reports/store_performance.sql:8-11`). Returned orders are in `dw.fct_daily_sales` but not here, a 3.1% gap in net sales on the sample. [high]"},
+                {"from": "dw_fct_daily_sales", "to": "export_by_region", "text": "`dw.export_by_region` reads the daily table through a statement built as a string, with the form's region name pasted in (`warehouse/procs/export_by_region.sql:10,12`). The inventory script cannot see this read. [high]"},
+                {"from": "dw_fct_daily_sales", "to": "powerbi", "text": "A comment says this table feeds the Power BI dataset (`warehouse/ddl/fct_daily_sales.sql:1`). Nothing in the repo confirms it, see Open questions."}
+              ]
+            },
+            {
+              "id": "customers",
+              "title": "Customer details: from the ERP to the marketing tool",
+              "steps": [
+                {"from": "erp_customers", "to": "stg_customers", "text": "All nine columns pass through unchanged, including `national_id` and `birth_date` (`models/staging/stg_customers.sql:3,10-18`). [high]"},
+                {"from": "stg_customers", "to": "dim_customer", "text": "The same nine columns, rebuilt as a table every night (`models/marts/dim_customer.sql:5,12-20`). The `unique` test on `customer_id` (`models/marts/schema.yml:9`) would fail on the sample, which has 406 rows for 400 ids, and staging tests only `not_null`. [high]"},
+                {"from": "dim_customer", "to": "marketing_export", "text": "Gold and silver customers are selected (`exports/marketing_contacts.sql:9-10`). Line 6 lists `national_id` on the same line as `email`, and a mailing has no use for it. [high]"},
+                {"from": "marketing_export", "to": "campaign_tool", "text": "Marketing loads the result into its campaign tool by hand, for the monthly mailing (`exports/marketing_contacts.sql:1`). The repo does not name the tool, see Open questions."}
+              ]
+            },
+            {
+              "id": "products",
+              "title": "Products: one source, two copies",
+              "steps": [
+                {"from": "erp_products", "to": "stg_products", "text": "`erp.products` becomes a staging view (`models/staging/stg_products.sql:3`). [high]"},
+                {"from": "stg_products", "to": "dim_product", "text": "`dim_product` is the copy that `fct_sales` and the notebook use (`models/marts/dim_product.sql:3`). [high]"},
+                {"from": "stg_products", "to": "dw_dim_product", "text": "`dw.merge_dim_product` keeps a second copy with no reader in this repo (`warehouse/procs/merge_dim_product.sql:7-17`). The MERGE has no `WHEN NOT MATCHED BY SOURCE`, so a product removed from the ERP stays here and disappears from `dim_product`. [high]"}
+              ]
+            },
+            {
+              "id": "stock",
+              "title": "Stock: the notebook beside dbt",
+              "steps": [
+                {"from": "erp_stock", "to": "stock_snapshot", "text": "The notebook reads `erp.stock_levels` and a monthly adjustments table whose name it builds at run time (`notebooks/stock_snapshot.ipynb` cell 3, lines 1 and 4). Neither is declared in dbt, and staging is skipped. [high]"},
+                {"from": "dim_store", "to": "stock_snapshot", "text": "It adds `region` from `dim_store`, named without a schema (cell 3, line 2), so the table it gets depends on Spark's current database. I assumed `marts.dim_store`. [med]"},
+                {"from": "dim_product", "to": "stock_snapshot", "text": "It adds `category` from `marts.dim_product` (cell 3, line 3). [high]"},
+                {"from": "stock_snapshot", "to": "ordering_team", "text": "`snapshot_date` is fixed at `2026-09-30` (cell 2, line 1) and the write overwrites the table (cell 4, line 12), so as committed every 06:00 run produces the same date. [high] The first cell names the ordering team as the reader, see Open questions."}
+              ]
+            }
+          ],
+          "reach": {
+            "label": "Personal data",
+            "from": ["erp_customers", "int_order_lines"],
+            "stops": ["fct_sales"],
+            "targets": ["dim_customer", "fct_sales", "marketing_export", "campaign_tool"]
+          }
+        },
+        {
+          "type": "list",
+          "title": "Layers, and what does not fit",
+          "items": [
+            "`erp` to `staging` (views) to `intermediate` (ephemeral) to `marts` (tables): this is the dbt line (`dbt_project.yml:15-23`). [high]",
+            "`dw` is not a step after marts. `dw.fct_daily_sales` reads `marts.fct_sales`, but `dw.dim_product` reads staging directly, and both are loaded by T-SQL procedures outside dbt. [high]",
+            "`marts.stock_snapshot` sits in the marts schema but Spark writes it straight from `erp`, outside dbt and past staging. [high]",
+            "`reports/store_performance.sql:10` reads `staging.stg_orders` directly, past marts. `dw.export_by_region` mixes `dw` and `marts`. [high]"
+          ]
+        },
+        {
+          "type": "kv",
+          "title": "When it runs (from the README and comments, the scheduler is not in this repo)",
+          "items": [
+            ["Every night, 02:00", "`dbt run`, then `dw.merge_dim_product`, then `dw.load_daily_sales` for yesterday (`README.md:20-24`)"],
+            ["Every day, 06:00", "Spark job: the stock snapshot notebook (`README.md:26`)"],
+            ["Every Monday", "Store performance report (`reports/store_performance.sql:1`)"],
+            ["Monthly", "Marketing contact list (`exports/marketing_contacts.sql:1`)"],
+            ["On request", "`dw.export_by_region`, from the request form (`README.md:26`, `warehouse/procs/export_by_region.sql:1`)"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lineage",
+      "title": "Lineage",
+      "intro": "Click a table to trace what feeds it and what it feeds. Edge labels are the file and line where the read happens.",
+      "blocks": [
+        {
+          "type": "graph",
+          "nodes": [
+            {"id": "erp_customers", "label": "erp.customers", "group": "entry", "note": "personal data starts here"},
+            {"id": "erp_orders", "label": "erp.orders", "group": "entry"},
+            {"id": "erp_order_lines", "label": "erp.order_lines", "group": "entry"},
+            {"id": "erp_products", "label": "erp.products", "group": "entry"},
+            {"id": "erp_stores", "label": "erp.stores", "group": "entry"},
+            {"id": "erp_promotions", "label": "erp.promotions", "group": "entry"},
+            {"id": "erp_stock_levels", "label": "erp.stock_levels", "group": "entry", "note": "not declared in dbt"},
+            {"id": "erp_stock_adjustments", "label": "erp.stock_adjustments_*", "group": "entry", "note": "name built at run time, one table per month"},
+            {"id": "stg_customers", "label": "stg_customers", "group": "module"},
+            {"id": "stg_orders", "label": "stg_orders", "group": "module"},
+            {"id": "stg_order_lines", "label": "stg_order_lines", "group": "module"},
+            {"id": "stg_products", "label": "stg_products", "group": "module"},
+            {"id": "stg_stores", "label": "stg_stores", "group": "module"},
+            {"id": "stg_promotions", "label": "stg_promotions", "group": "module"},
+            {"id": "int_order_lines", "label": "int_order_lines", "group": "module", "note": "ephemeral"},
+            {"id": "dim_customer", "label": "dim_customer", "group": "data"},
+            {"id": "dim_product", "label": "dim_product", "group": "data"},
+            {"id": "dim_store", "label": "dim_store", "group": "data"},
+            {"id": "fct_sales", "label": "fct_sales", "group": "data"},
+            {"id": "mart_old_campaigns", "label": "mart_old_campaigns", "group": "data", "note": "no reader here"},
+            {"id": "stock_snapshot", "label": "marts.stock_snapshot", "group": "data", "note": "written by Spark"},
+            {"id": "dw_dim_product", "label": "dw.dim_product", "group": "data", "note": "no reader here"},
+            {"id": "dw_fct_daily_sales", "label": "dw.fct_daily_sales", "group": "data"},
+            {"id": "store_performance", "label": "store_performance", "group": "boundary"},
+            {"id": "marketing_contacts", "label": "marketing_contacts", "group": "boundary"},
+            {"id": "export_by_region", "label": "dw.export_by_region", "group": "boundary", "note": "dynamic SQL"},
+            {"id": "regional_managers", "label": "regional managers", "group": "external", "note": "named in a comment"},
+            {"id": "store_managers", "label": "store managers", "group": "external", "note": "named in a comment"},
+            {"id": "campaign_tool", "label": "campaign tool", "group": "external", "note": "named in a comment"},
+            {"id": "power_bi", "label": "Power BI dataset", "group": "external", "note": "named in a comment"},
+            {"id": "ordering_team", "label": "ordering team", "group": "external", "note": "named in a comment"}
+          ],
+          "edges": [
+            {"from": "erp_customers", "to": "stg_customers", "label": "stg_customers.sql:3"},
+            {"from": "erp_orders", "to": "stg_orders", "label": "stg_orders.sql:6"},
+            {"from": "erp_order_lines", "to": "stg_order_lines", "label": "stg_order_lines.sql:3"},
+            {"from": "erp_products", "to": "stg_products", "label": "stg_products.sql:3"},
+            {"from": "erp_stores", "to": "stg_stores", "label": "stg_stores.sql:3"},
+            {"from": "erp_promotions", "to": "stg_promotions", "label": "stg_promotions.sql:3"},
+            {"from": "stg_customers", "to": "dim_customer", "label": "dim_customer.sql:5"},
+            {"from": "stg_orders", "to": "int_order_lines", "label": "int_order_lines.sql:5"},
+            {"from": "stg_order_lines", "to": "int_order_lines", "label": "int_order_lines.sql:11"},
+            {"from": "stg_products", "to": "dim_product", "label": "dim_product.sql:3"},
+            {"from": "stg_products", "to": "dw_dim_product", "label": "merge_dim_product.sql:8"},
+            {"from": "stg_stores", "to": "dim_store", "label": "dim_store.sql:3"},
+            {"from": "stg_promotions", "to": "fct_sales", "label": "fct_sales.sql:33"},
+            {"from": "stg_promotions", "to": "mart_old_campaigns", "label": "mart_old_campaigns.sql:5"},
+            {"from": "int_order_lines", "to": "fct_sales", "label": "fct_sales.sql:6"},
+            {"from": "dim_product", "to": "fct_sales", "label": "fct_sales.sql:12"},
+            {"from": "fct_sales", "to": "dw_fct_daily_sales", "label": "load_daily_sales.sql:15"},
+            {"from": "fct_sales", "to": "store_performance", "label": "store_performance.sql:8"},
+            {"from": "dim_store", "to": "store_performance", "label": "store_performance.sql:9"},
+            {"from": "stg_orders", "to": "store_performance", "label": "store_performance.sql:10"},
+            {"from": "dim_customer", "to": "marketing_contacts", "label": "marketing_contacts.sql:9"},
+            {"from": "dw_fct_daily_sales", "to": "export_by_region", "label": "export_by_region.sql:10"},
+            {"from": "dim_store", "to": "export_by_region", "label": "export_by_region.sql:10"},
+            {"from": "erp_stock_levels", "to": "stock_snapshot", "label": "notebook cell 3:1"},
+            {"from": "erp_stock_adjustments", "to": "stock_snapshot", "label": "notebook cell 3:4"},
+            {"from": "dim_store", "to": "stock_snapshot", "label": "notebook cell 3:2"},
+            {"from": "dim_product", "to": "stock_snapshot", "label": "notebook cell 3:3"},
+            {"from": "store_performance", "to": "regional_managers", "label": "comment, line 1"},
+            {"from": "export_by_region", "to": "store_managers", "label": "comment, line 1"},
+            {"from": "marketing_contacts", "to": "campaign_tool", "label": "comment, line 1"},
+            {"from": "dw_fct_daily_sales", "to": "power_bi", "label": "comment, DDL line 1"},
+            {"from": "stock_snapshot", "to": "ordering_team", "label": "notebook cell 1"}
+          ]
+        },
+        {
+          "type": "text",
+          "title": "What reading the code changed",
+          "text": "The inventory script found 24 links between tables. I read each one in the code and added three it could not see: the two reads inside the dynamic SQL at `warehouse/procs/export_by_region.sql:10`, and the monthly table at notebook cell 3, line 4. The script found no cycles and neither did I. [high]\n\nThe five links into people and outside tools come from comments, so they say what someone intended and not what runs.\n\nThree names look like tables but are not read by any statement: `old_orders_backup` (`models/staging/stg_orders.sql:5`) and `retired_table` (`warehouse/procs/load_daily_sales.sql:16`) are comments, and `finance_ledger` (`reports/store_performance.sql:7`) is a footnote string. [high]"
+        }
+      ]
+    },
+    {
+      "id": "tables",
+      "title": "Tables",
+      "intro": "Owner is the git author of the file. The repo has 10 commits from two people between 2026-06-09 and 2026-10-20, and every SQL file was committed once except `fct_sales.sql`, committed twice. The last change to SQL was on 2026-09-24. The last three rows are the consumers with code here, not tables.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["Name", "Kind", "Layer", "Fed by", "Read by", "Owner", "File"],
+          "rows": [
+            ["erp.customers", "dbt source", "erp", "not in this repo", "stg_customers", null, "models/staging/schema.yml:10"],
+            ["erp.orders", "dbt source", "erp", "not in this repo", "stg_orders", null, "models/staging/schema.yml:8"],
+            ["erp.order_lines", "dbt source", "erp", "not in this repo", "stg_order_lines", null, "models/staging/schema.yml:9"],
+            ["erp.products", "dbt source", "erp", "not in this repo", "stg_products", null, "models/staging/schema.yml:11"],
+            ["erp.stores", "dbt source", "erp", "not in this repo", "stg_stores", null, "models/staging/schema.yml:12"],
+            ["erp.promotions", "dbt source", "erp", "not in this repo", "stg_promotions", null, "models/staging/schema.yml:13"],
+            ["erp.stock_levels", "undeclared source", "erp", "not in this repo", "marts.stock_snapshot", null, "notebooks/stock_snapshot.ipynb cell 3:1"],
+            ["erp.stock_adjustments_YYYY_MM", "undeclared, one per month", "erp", "not in this repo", "marts.stock_snapshot", null, "notebooks/stock_snapshot.ipynb cell 3:4"],
+            ["stg_customers", "dbt view", "staging", "erp.customers", "dim_customer", "Vesna Lipovac", "models/staging/stg_customers.sql"],
+            ["stg_orders", "dbt view", "staging", "erp.orders", "int_order_lines, store_performance", "Vesna Lipovac", "models/staging/stg_orders.sql"],
+            ["stg_order_lines", "dbt view", "staging", "erp.order_lines", "int_order_lines", "Vesna Lipovac", "models/staging/stg_order_lines.sql"],
+            ["stg_products", "dbt view", "staging", "erp.products", "dim_product, dw.dim_product", "Vesna Lipovac", "models/staging/stg_products.sql"],
+            ["stg_stores", "dbt view", "staging", "erp.stores", "dim_store", "Vesna Lipovac", "models/staging/stg_stores.sql"],
+            ["stg_promotions", "dbt view", "staging", "erp.promotions", "fct_sales, mart_old_campaigns", "Marko Javor", "models/staging/stg_promotions.sql"],
+            ["int_order_lines", "dbt ephemeral", "intermediate", "stg_orders, stg_order_lines", "fct_sales", "Marko Javor", "models/intermediate/int_order_lines.sql"],
+            ["dim_customer", "dbt table", "marts", "stg_customers", "marketing_contacts", "Marko Javor", "models/marts/dim_customer.sql"],
+            ["dim_product", "dbt table", "marts", "stg_products", "fct_sales, marts.stock_snapshot", "Marko Javor", "models/marts/dim_product.sql"],
+            ["dim_store", "dbt table", "marts", "stg_stores", "store_performance, dw.export_by_region, marts.stock_snapshot [med]", "Marko Javor", "models/marts/dim_store.sql"],
+            ["fct_sales", "dbt table", "marts", "int_order_lines, dim_product, stg_promotions", "dw.fct_daily_sales, store_performance", "Marko Javor", "models/marts/fct_sales.sql"],
+            ["mart_old_campaigns", "dbt table", "marts", "stg_promotions", "nobody in this repo", "Vesna Lipovac", "models/marts/mart_old_campaigns.sql"],
+            ["marts.stock_snapshot", "Spark table", "marts, outside dbt", "erp.stock_levels, erp.stock_adjustments_*, dim_store, dim_product", "ordering team, per a comment", "Marko Javor", "notebooks/stock_snapshot.ipynb cell 4:12"],
+            ["dw.dim_product", "T-SQL table", "dw", "stg_products, by dw.merge_dim_product", "nobody in this repo", "Vesna Lipovac", "warehouse/ddl/dim_product.sql"],
+            ["dw.fct_daily_sales", "T-SQL table", "dw", "fct_sales, by dw.load_daily_sales", "dw.export_by_region; Power BI, per a comment", "Marko Javor", "warehouse/ddl/fct_daily_sales.sql"],
+            ["store_performance", "report query", "consumer", "fct_sales, dim_store, stg_orders", "regional managers, per a comment", "Vesna Lipovac", "reports/store_performance.sql"],
+            ["marketing_contacts", "export query", "consumer", "dim_customer", "Marketing's campaign tool, by hand", "Vesna Lipovac", "exports/marketing_contacts.sql"],
+            ["dw.export_by_region", "T-SQL procedure", "consumer", "dw.fct_daily_sales, dim_store", "store managers, per a comment", "Vesna Lipovac", "warehouse/procs/export_by_region.sql"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dynamic-sql",
+      "title": "Dynamic SQL",
+      "intro": "A script cannot read these, so I opened each one.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["Where", "What it builds", "Input", "What it can touch"],
+          "rows": [
+            [
+              "`warehouse/procs/export_by_region.sql:10` (built), `:12` (`EXEC`)",
+              "A `SELECT` on `dw.fct_daily_sales` joined to `marts.dim_store`, filtered by region. [high]",
+              "`@region`, pasted between quotes, from the request form according to the comment on line 1. [high]",
+              "As intended, those two tables. As written, a value containing a quote can end the string and run its own statement, and 60 characters is enough for that. It runs with the rights of the login behind the form, which could include reading `marts.dim_customer`. The repo holds no `GRANT` or `EXECUTE AS`, so those rights are not known. [med]"
+            ],
+            [
+              "`notebooks/stock_snapshot.ipynb` cell 3, line 4",
+              "A `SELECT` on `erp.stock_adjustments_{month_suffix}`. [high]",
+              "`month_suffix` is derived from `snapshot_date`, fixed in cell 2. No outside input in the code. [high]",
+              "As committed, only `erp.stock_adjustments_2026_09`. A changed date reaches any `erp.stock_adjustments_YYYY_MM`, and that is the whole of its range. [high]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "unread",
+      "title": "Nobody reads these",
+      "intro": "The script listed four tables with no reader in this repo. After reading the code, two are open questions and two have a reader. None of this says a table is safe to remove: a tool outside this repo may read it.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["Table", "After reading the code", "Ask before touching"],
+          "rows": [
+            ["`dw.dim_product`", "No reader here. Merged every night by `dw.merge_dim_product`, while `fct_sales` and the notebook use the dbt `dim_product`. [high]", "Vesna Lipovac: what was it for, and does Power BI read it?"],
+            ["`mart_old_campaigns`", "No reader here. Rebuilt on every `dbt run`. Its commit a2fd916 calls it the campaign mart for the summer review, so it may have been a one-off. [med]", "Vesna Lipovac: is the summer review over?"],
+            ["`dw.fct_daily_sales`", "**Has a reader.** `dw.export_by_region` reads it inside dynamic SQL (`warehouse/procs/export_by_region.sql:10`), and the DDL comment names the Power BI dataset. [high]", "Do not treat as unused."],
+            ["`marts.stock_snapshot`", "No reader in code, but the notebook says it is written for the ordering team (cell 1). [high]", "Marko Javor: how does the ordering team read it?"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "personal-data",
+      "title": "Where personal data goes",
+      "intro": "A search of the whole repo for masking, hashing, encryption, `GRANT`, `EXECUTE AS`, retention and erasure finds nothing. [high]",
+      "blocks": [
+        {
+          "type": "callout",
+          "tone": "bad",
+          "text": "Personal data is masked nowhere. `national_id` travels in clear from `erp.customers` to Marketing's campaign tool, and `exports/marketing_contacts.sql:6` is the line that sends it out. [high]"
+        },
+        {
+          "type": "table",
+          "title": "Column by column",
+          "columns": ["Column", "stg_customers, dim_customer", "Marketing export", "Beyond the warehouse"],
+          "rows": [
+            ["`national_id`", "yes, in clear", "yes, line 6", "campaign tool"],
+            ["`email`", "yes, in clear", "yes, line 6", "campaign tool"],
+            ["`first_name`, `last_name`", "yes, in clear", "yes, lines 4-5", "campaign tool"],
+            ["`city`, `loyalty_tier`", "yes, in clear", "yes, lines 7-8", "campaign tool"],
+            ["`phone`, `birth_date`", "yes, in clear", "no", "no"],
+            ["`customer_id`", "yes", "yes, line 3", "campaign tool, and on every row of `fct_sales`"]
+          ]
+        },
+        {
+          "type": "steps",
+          "title": "The paths",
+          "items": [
+            {"title": "Identity and contact", "text": "`erp.customers`, `stg_customers`, `dim_customer`, `marketing_contacts`, then by hand to the campaign tool. No step removes or masks a column except that the export leaves out phone and birth date. [high]", "where": "exports/marketing_contacts.sql:3-9"},
+            {"title": "Purchase history", "text": "`erp.orders.customer_id` goes through `stg_orders` and `int_order_lines` into `fct_sales`, where each sale can be joined back to `dim_customer`. It stops there: `dw.load_daily_sales` groups it away and the store report does not select it. [high]", "where": "models/marts/fct_sales.sql:22"},
+            {"title": "A copy on disk", "text": "`data/customers.csv` has the same personal columns and 406 rows. It is ignored by git, so it exists only in working copies. I read its header and its `customer_id` column, not the values.", "where": ".gitignore:5"}
+          ]
+        },
+        {
+          "type": "text",
+          "title": "What the reach view does and does not show",
+          "text": "The reach view follows the links in the code. It starts the purchase-history path at `int_order_lines` because `stg_orders` also feeds the store report, which takes only `order_id` and `status` from it. It stops at `fct_sales` because no reader selects `customer_id` from there, and that is not masking: anyone who can read `fct_sales` can make the join.\n\nIt does not draw the risk at `dw.export_by_region`. No code path carries customer data there, but a crafted region name could read `marts.dim_customer` if the login allows it. See Dynamic SQL."
+        }
+      ]
+    },
+    {
+      "id": "open-questions",
+      "title": "Open questions",
+      "intro": "These cannot be answered from the repository. Who to ask comes from git, and both people may have moved on.",
+      "blocks": [
+        {
+          "type": "list",
+          "title": "To ask",
+          "ordered": true,
+          "items": [
+            "**Marketing's campaign tool.** Which tool is it, who holds the files and why does it receive `national_id`? What is the legal basis for that? Ask Vesna Lipovac and Marketing.",
+            "**The request form behind `dw.export_by_region`.** Who can submit it, and under which database login does it run? That login sets what a crafted region name can reach.",
+            "**Which sales figure is official?** The store report counts `completed` orders. `dw.fct_daily_sales`, Power BI and the regional export count everything not cancelled.",
+            "**Which engine does dbt run on?** `dbt_project.yml:5` names the profile `acme_dw` and no `profiles.yml` is here. The procedures are T-SQL and read dbt's tables directly, yet `models/intermediate/int_order_lines.sql:26` uses `EXTRACT`, which I do not expect SQL Server to accept. [med] The column it makes, `order_year`, is used nowhere.",
+            "**Do the schema names line up?** dbt by default names a custom schema `<target>_marts` [med], and the repo has no macro to change that, yet the procedures and reports read `marts.…` and `staging.…`. Check what the database actually contains.",
+            "**How do Spark and T-SQL see the same tables?** The notebook reads `marts.dim_product` and `erp.stock_levels` through Spark, and the procedures read `[marts]` through T-SQL.",
+            "**Who makes the nightly ERP copy, and does it finish before 02:00?** `models/staging/schema.yml:5` only says it exists. Nothing in this repo loads `erp.*`, and the scheduler is not here either.",
+            "**The Power BI dataset.** Which tables does it read, and who owns it? Only `warehouse/ddl/fct_daily_sales.sql:1` mentions it.",
+            "**The stock job.** Does the 06:00 job override `snapshot_date`, and how does the ordering team read the result? Ask Marko Javor. The notebook has no parameter cell.",
+            "**The Monday report.** Who runs `reports/store_performance.sql`, and how does it reach the regional managers?",
+            "**Is `data/customers.csv` real customer data?** If it is, it should not be sitting in working copies.",
+            "**Are Vesna Lipovac and Marko Javor still reachable?** They are the only two authors in the history."
+          ]
+        },
+        {
+          "type": "list",
+          "title": "What I assumed",
+          "items": [
+            "Schedules and consumers named in the README and in comments are true. Nothing in this repo runs them or confirms them.",
+            "`marts.x` and `staging.x` in T-SQL are the tables dbt builds from the model of the same name.",
+            "`dim_store` in the notebook is `marts.dim_store`.",
+            "The git author of a file stands in for its owner.",
+            "The CSVs in `data/` behave like the ERP tables. Every figure marked as sample comes from them, not from production. Dates written `dd.mm.yyyy` are read day first: 175 of those 300 can only be read that way.",
+            "`docs/briefs/` holds plans for a later platform and for a sister company, so nothing in those files is on this map.",
+            "The dbt schema naming and the `EXTRACT` point come from general knowledge. I could not open the documentation in this session."
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "the sales warehouse of Acme Foods in the acme-data repository, commit 0734a04",
+    "data": [
+      {"name": "customer identity and contact", "class": "personal", "where": ["erp.customers", "stg_customers", "marts.dim_customer", "exports/marketing_contacts.sql"], "rule": "none in the code, no masking"},
+      {"name": "national identification number", "class": "personal", "where": ["erp.customers", "stg_customers", "marts.dim_customer", "exports/marketing_contacts.sql"], "rule": "none in the code, leaves in the marketing export"},
+      {"name": "customer_id on sales", "class": "personal", "where": ["erp.orders", "stg_orders", "int_order_lines", "marts.fct_sales"], "rule": "grouped away by dw.load_daily_sales"}
+    ],
+    "components": [
+      {"id": "dbt", "label": "dbt project acme_foods", "tech": "dbt, target engine not in the repo", "kind": "service"},
+      {"id": "dw", "label": "dw schema tables and procedures", "tech": "T-SQL", "kind": "store"},
+      {"id": "stock_notebook", "label": "Stock snapshot notebook", "tech": "PySpark", "kind": "service"},
+      {"id": "scheduler", "label": "Nightly scheduler", "tech": "not in the repo", "kind": "ops"}
+    ],
+    "assumptions": [
+      "Schedules and consumers named in the README and in comments are true.",
+      "marts.x and staging.x in T-SQL are the tables dbt builds from the model of the same name.",
+      "dim_store in the notebook is marts.dim_store.",
+      "The git author of a file stands in for its owner.",
+      "Sample CSVs in data/ behave like the ERP tables; sample figures are not production figures."
+    ],
+    "open": [
+      "Which campaign tool receives the marketing export, and why does it receive national_id?",
+      "Who can submit the request form behind dw.export_by_region, and under which login does it run?",
+      "Which sales figure is official: completed orders, or everything not cancelled?",
+      "Which engine does dbt run on, and do its schema names match what the procedures read?",
+      "How do Spark and T-SQL see the same tables?",
+      "Who makes the nightly ERP copy?",
+      "Which tables does the Power BI dataset read?",
+      "Does the 06:00 job override snapshot_date?",
+      "Is data/customers.csv real customer data?"
+    ]
+  }
+}

@@ -1,0 +1,390 @@
+{
+  "skill": "arch-style",
+  "title": "Fleet platform: what shape it should have",
+  "subtitle": "The architecture style for the next Acme Logistics system, decided from the brief by eliminating options.",
+  "meta": {"repo": "acme-logistics", "brief": "docs/briefs/fleet-platform.md", "date": "2026-11-10"},
+  "verdict": {
+    "text": "Build the fleet platform as services with an event backbone: four deployables around five business areas, with telemetry ingestion and route optimisation each running alone. The binding constraint is who can run it, because 2 platform engineers is one short of the 3 that microservices need.",
+    "tone": "ok"
+  },
+  "stats": [
+    {"label": "Teams", "value": 4, "note": "product teams, plus 2 platform engineers", "tone": "info"},
+    {"label": "Business areas", "value": 5, "note": "the brief names only 2 parts", "tone": "info"},
+    {"label": "Left after hard rules", "value": "2 of 6", "note": "a few services, event backbone", "tone": "info"},
+    {"label": "Chosen option", "value": "Event backbone", "note": "services with an event backbone", "tone": "ok"}
+  ],
+  "sections": [
+    {
+      "id": "brief",
+      "title": "The brief",
+      "blocks": [
+        {
+          "type": "kv",
+          "items": [
+            ["Business areas", "5. Only two parts are named: vehicle telemetry ingestion and route optimisation. Source: `fleet-platform.md:8`, `:9`, `:11` [high]"],
+            ["Teams", "4 product teams with 30 engineers. Source: `fleet-platform.md:7` [high]"],
+            ["Who runs production", "2 platform engineers. The brief does not say who is on call. Source: `fleet-platform.md:7` [high]"],
+            ["How often parts change", "The teams ship on their own schedules. No release frequency is given. Source: `fleet-platform.md:10` [high]"],
+            ["Load per part", "Telemetry ingestion takes about 200 times the load of the rest, steady day and night. No absolute rates are given. Source: `fleet-platform.md:9`, `:14` [high]"],
+            ["Runtimes", "Route optimisation is in Python, the rest is .NET. Source: `fleet-platform.md:11` [high]"],
+            ["Long work", "Route computations run for up to 40 minutes. Source: `fleet-platform.md:15` [high]"],
+            ["Shared events", "Several teams must react to the same vehicle events. Source: `fleet-platform.md:12` [high]"],
+            ["Consistency", "No transaction spans two business areas. Source: `fleet-platform.md:13` [high]"],
+            ["Not negotiable", "The brief names no compliance, region, budget or deadline limit, so nothing beyond the facts above is treated as fixed. Source: not stated in `fleet-platform.md` [high]"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "assumptions",
+      "title": "Assumptions",
+      "intro": "All ten facts the hard rules read come straight from the brief, so no rule rests on an assumption. The assumptions below shape the boundaries and how the chosen option is run.",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "**The five areas are telemetry, route optimisation and three the brief does not name**, shown here as Area C, D and E. Drives: the boundaries. No decision depends on what C, D and E turn out to be, as long as they are .NET at ordinary load. [guess]",
+            "**Telemetry and route optimisation have one team each, and the other two teams share C, D and E, with C and D on one team.** Drives: four deployables rather than five. [guess]",
+            "**Only derived vehicle events go on the backbone, and raw telemetry stays inside ingestion.** Drives: the 200 times load stays in one part and the backbone is sized for events. [guess]",
+            "**The broker is a managed service, with no vendor chosen yet.** Drives: rating \"can this team run it\" as weak rather than fail. [guess]",
+            "**Each product team is on call for its own services, and the platform engineers run the broker, the deployment path and tracing.** Drives: the same rating. [guess]",
+            "**A route computation is a job: the request is accepted at once, the result is published as an event, and a job can resume from a checkpoint.** Drives: the route optimisation boundary and how it deploys. [med]"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "decision",
+      "title": "Decision",
+      "intro": "Options run from the simplest up. The hard rules come first, then the factors in order: the first factor that rules an option out eliminates it.",
+      "blocks": [
+        {
+          "type": "decision",
+          "factors": ["Hard rules", "Can this team run it", "Consistency", "Change independence", "Operations", "Cost"],
+          "options": [
+            {
+              "label": "One deployable",
+              "status": "eliminated",
+              "eliminated_by": "Rules: ships-separately, scales-alone, two-runtimes",
+              "why": "Parts must release on their own schedules, one part takes 200 times the load of the rest (10 or more fires the rule), and a part needs another runtime. [high]",
+              "cells": [
+                {"rating": "fail", "text": "3 rules fire"},
+                {"rating": "pass", "text": "One thing to run [med]"},
+                {"rating": "pass", "text": "One database [med]"},
+                {"rating": "fail", "text": "One release for 4 teams [high]"},
+                {"rating": "fail", "text": "Telemetry load sizes everything [med]"},
+                {"rating": "weak", "text": "All of it scaled for telemetry [med]"}
+              ]
+            },
+            {
+              "label": "A modular monolith",
+              "status": "eliminated",
+              "eliminated_by": "Rules: ships-separately, scales-alone, two-runtimes",
+              "why": "The same three rules: module boundaries do not give separate releases, separate scaling or a second runtime. [high]",
+              "cells": [
+                {"rating": "fail", "text": "3 rules fire"},
+                {"rating": "pass", "text": "One thing to run, boundary checks in CI [med]"},
+                {"rating": "pass", "text": "One database, one schema per module [med]"},
+                {"rating": "fail", "text": "One release for 4 teams [high]"},
+                {"rating": "fail", "text": "Python needs a separate process anyway [med]"},
+                {"rating": "weak", "text": "All of it scaled for telemetry [med]"}
+              ]
+            },
+            {
+              "label": "Serverless functions",
+              "status": "eliminated",
+              "eliminated_by": "Rules: long-running, not-idle",
+              "why": "Route computations run for up to 40 minutes (the rule's line is 15), and load is steady, so paying per call saves nothing. [high]",
+              "cells": [
+                {"rating": "fail", "text": "2 rules fire"},
+                {"rating": "weak", "text": "Local testing and limits [med]"},
+                {"rating": "pass", "text": "No cross-area transaction needed [high]"},
+                {"rating": "pass", "text": "Each function ships alone [med]"},
+                {"rating": "fail", "text": "40-minute work does not fit [high]"},
+                {"rating": "fail", "text": "Steady load billed per call [med]"}
+              ]
+            },
+            {
+              "label": "A few services",
+              "status": "eliminated",
+              "eliminated_by": "Factor: change independence",
+              "why": "Several teams must react to the same vehicle events. With direct calls, telemetry would have to know each consumer, a new consumer would need a telemetry release, and a slow consumer would push back on the part with the highest load. [med]",
+              "cells": [
+                {"rating": "pass", "text": "No rule fires"},
+                {"rating": "pass", "text": "Fewest things to run among the splits [med]"},
+                {"rating": "pass", "text": "No cross-area transaction needed [high]"},
+                {"rating": "fail", "text": "Producer changes for each new consumer [med]"},
+                {"rating": "weak", "text": "Retries and fan-out live in the callers [med]"},
+                {"rating": "pass", "text": "No broker [med]"}
+              ]
+            },
+            {
+              "label": "Services with an event backbone",
+              "status": "chosen",
+              "why": "The lowest option that survives the rules and the factors. It sits one rung above the lowest open option for one named reason: several teams must react to the same vehicle events. [high]",
+              "cells": [
+                {"rating": "pass", "text": "No rule fires"},
+                {"rating": "weak", "text": "Fits 2 platform engineers only with a managed broker and product teams on call [guess]"},
+                {"rating": "pass", "text": "No cross-area transaction needed, and consumers accept that events arrive later [high]"},
+                {"rating": "pass", "text": "A new consumer subscribes, and the producer does not change [med]"},
+                {"rating": "weak", "text": "Broker, replays, event versions, tracing across async steps [med]"},
+                {"rating": "weak", "text": "A broker to pay for. Relative only, no vendor chosen [med]"}
+              ]
+            },
+            {
+              "label": "Microservices",
+              "status": "eliminated",
+              "eliminated_by": "Rule: too-few-platform-engineers",
+              "why": "2 platform engineers, and at least 3 are needed for deployment, tracing and on-call across many services. [high]",
+              "cells": [
+                {"rating": "fail", "text": "1 rule fires"},
+                {"rating": "fail", "text": "On-call and tooling per service, 2 platform engineers [high]"},
+                {"rating": "pass", "text": "No cross-area transaction needed [high]"},
+                {"rating": "pass", "text": "Full autonomy per service [med]"},
+                {"rating": "fail", "text": "Most failure modes of the ladder [med]"},
+                {"rating": "weak", "text": "Most deployables and tooling [med]"}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "title": "Why this one",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "**The binding constraint is who can run it.** The next option up, microservices, is ruled out by a hard rule on people: the brief gives 2 platform engineers and the rule needs at least 3. With 4 teams and 5 business areas, nothing in the brief asks for many small services anyway. [high]\n\n**The climb from a few services has one named reason.** Several teams must react to the same vehicle events (`fleet-platform.md:12`). With direct calls, the telemetry team would have to know every consumer, each new consumer would need a telemetry release, and a slow consumer would push back on the part with 200 times the load. That conflicts with teams shipping on their own schedules. [med]\n\n**The bottom of the ladder is out for three separate reasons:** separate releases, the 200 times load and a second runtime. Removing only one of them changes nothing, which the rule re-runs confirmed. Serverless is out because route computations run for up to 40 minutes and load is steady. [high]\n\n**Four deployables, not five.** Telemetry stands alone for its load and route optimisation for its runtime. The other two teams get one deployable each, so every team ships alone. Areas C and D share a deployable as separate modules, because nothing in the brief asks them to ship or scale apart. [med]"
+        },
+        {
+          "type": "table",
+          "title": "Thresholds the rules used",
+          "columns": ["Rule", "Fires when", "From the brief", "Result"],
+          "rows": [
+            ["`scales-alone`", "one part takes 10 or more times the load of the rest", "about 200 times", "fires: one deployable and modular monolith out"],
+            ["`long-running`", "work runs more than 15 minutes or holds state", "up to 40 minutes", "fires: serverless out"],
+            ["`too-few-teams`", "fewer than 3 teams", "4 teams", "does not fire"],
+            ["`too-few-platform-engineers`", "fewer than 3 platform engineers", "2 platform engineers", "fires: microservices out"]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "warn",
+          "text": "These thresholds are the ruleset's judgements, not measurements, and on people the margin is one person. Two platform engineers cannot hold a day-and-night pager alone. If the product teams will not take on-call for their own services, this option fails on \"can this team run it\" as well, and the fix is more platform people, because every split shape needs someone on call. [med]"
+        }
+      ]
+    },
+    {
+      "id": "boundaries",
+      "title": "Boundaries",
+      "intro": "Each boundary owns its data, and no table has two writers. Between services only events cross, except route requests, which are accepted at once and answered by an event. Click a box for what it owns.",
+      "blocks": [
+        {
+          "type": "nested",
+          "title": "Fleet platform",
+          "levels": [
+            {"id": "deployables", "label": "Deployables", "open": ["fleet"], "note": "What ships and scales on its own."},
+            {"id": "inside", "label": "Inside each", "open": ["fleet", "telemetry", "routing", "core"], "note": "The parts that keep raw telemetry in one place, make long work safe and separate two areas in one deployable."}
+          ],
+          "boxes": [
+            {"id": "vehicles", "label": "Vehicles", "kind": "system", "note": "Send telemetry. Outside the platform."},
+            {"id": "fleet", "label": "Fleet platform", "kind": "service", "note": "Five business areas in four deployables, joined by an event backbone."},
+            {
+              "id": "telemetry", "label": "Telemetry", "parent": "fleet", "kind": "service", "tech": ".NET",
+              "note": "Takes in vehicle telemetry and publishes vehicle events.",
+              "details": [
+                ["Owns", "Raw signals and the rules that turn them into vehicle events"],
+                ["Team", "Team 1 [guess]"],
+                ["Runs apart because", "About 200 times the load of the rest [high]"],
+                ["Sends out", "Vehicle events on the backbone, and no synchronous calls"]
+              ]
+            },
+            {"id": "tel_gateway", "label": "Ingest endpoint", "parent": "telemetry", "kind": "service", "note": "Receives telemetry from the vehicles and scales with that load."},
+            {"id": "tel_raw", "label": "Raw signals", "parent": "telemetry", "kind": "store", "note": "Raw telemetry. Stays inside this boundary. [guess]", "details": [["Owner", "Telemetry only"]]},
+            {"id": "tel_derive", "label": "Event derivation", "parent": "telemetry", "kind": "service", "note": "Turns raw signals into vehicle events at a much lower rate. [guess]"},
+            {
+              "id": "routing", "label": "Route optimisation", "parent": "fleet", "kind": "service", "tech": "Python",
+              "note": "Runs route computations of up to 40 minutes as jobs.",
+              "details": [
+                ["Owns", "Route jobs, their checkpoints and their results"],
+                ["Team", "Team 2 [guess]"],
+                ["Runs apart because", "Python, and work of up to 40 minutes [high]"],
+                ["Takes in", "Route requests and vehicle events it subscribes to"],
+                ["Sends out", "A route computed event for each finished job"]
+              ]
+            },
+            {"id": "rt_jobs", "label": "Job API", "parent": "routing", "kind": "service", "note": "Accepts a route request at once and records the job. No caller waits for the computation."},
+            {"id": "rt_store", "label": "Jobs and results", "parent": "routing", "kind": "store", "note": "Job state, checkpoints and results.", "details": [["Owner", "Route optimisation only"]]},
+            {"id": "rt_workers", "label": "Worker pool", "parent": "routing", "kind": "service", "note": "Claims jobs, writes checkpoints and survives a lost worker or a deployment by resuming from the last checkpoint. [med]"},
+            {
+              "id": "core", "label": "Areas C and D", "parent": "fleet", "kind": "service", "tech": ".NET",
+              "note": "One deployable for one team, with two modules and separate data.",
+              "details": [
+                ["Owns", "The tables of Area C and Area D, in separate schemas"],
+                ["Team", "Team 3 [guess]"],
+                ["Why one deployable", "One team, and nothing asks them to ship or scale apart [med]"],
+                ["Takes in", "Events from the backbone"]
+              ]
+            },
+            {"id": "area_c", "label": "Area C", "parent": "core", "kind": "service", "note": "Business area not named in the brief. Owns its own schema. [guess]"},
+            {"id": "area_d", "label": "Area D", "parent": "core", "kind": "service", "note": "Business area not named in the brief. Owns its own schema. [guess]"},
+            {
+              "id": "area_e", "label": "Area E", "parent": "fleet", "kind": "service", "tech": ".NET",
+              "note": "Business area not named in the brief, in its own deployable. [guess]",
+              "details": [
+                ["Owns", "The tables of Area E"],
+                ["Team", "Team 4 [guess]"],
+                ["Takes in", "Events from the backbone"]
+              ]
+            },
+            {
+              "id": "backbone", "label": "Event backbone", "parent": "fleet", "kind": "store",
+              "note": "A managed broker, with no vendor chosen. Carries vehicle events and route computed events.",
+              "details": [
+                ["Owns", "Event transport and retention, not the meaning of events. Each event type belongs to the team that publishes it."],
+                ["Run by", "The 2 platform engineers, with the deployment path and tracing [guess]"],
+                ["Fails how", "Every team depends on it. Producers must buffer, and consumers must catch up by replay."]
+              ]
+            }
+          ],
+          "links": [
+            {"from": "vehicles", "to": "tel_gateway", "label": "telemetry"},
+            {"from": "tel_gateway", "to": "tel_raw", "label": "raw signals"},
+            {"from": "tel_raw", "to": "tel_derive", "label": "raw stream"},
+            {"from": "tel_derive", "to": "backbone", "label": "vehicle events"},
+            {"from": "backbone", "to": "rt_jobs", "label": "events"},
+            {"from": "backbone", "to": "area_c", "label": "events"},
+            {"from": "backbone", "to": "area_d", "label": "events"},
+            {"from": "backbone", "to": "area_e", "label": "events"},
+            {"from": "area_c", "to": "rt_jobs", "label": "route request"},
+            {"from": "rt_jobs", "to": "rt_store", "label": "job"},
+            {"from": "rt_workers", "to": "rt_store", "label": "claim, checkpoint"},
+            {"from": "rt_workers", "to": "backbone", "label": "route computed"}
+          ],
+          "flows": [
+            {
+              "id": "vehicle_event",
+              "title": "A vehicle event reaches the teams",
+              "variants": ["inside"],
+              "steps": [
+                {"from": "vehicles", "to": "tel_gateway", "text": "A vehicle sends telemetry."},
+                {"from": "tel_gateway", "to": "tel_raw", "text": "The raw signal is stored and stays inside this boundary."},
+                {"from": "tel_raw", "to": "tel_derive", "text": "Derivation turns raw signals into a vehicle event."},
+                {"from": "tel_derive", "to": "backbone", "text": "The event is published. Telemetry does not know who consumes it."},
+                {"from": "backbone", "to": "area_c", "text": "Area C receives it on its own schedule."},
+                {"from": "backbone", "to": "area_e", "text": "Area E receives the same event, and a new consumer needs no change in telemetry."}
+              ]
+            },
+            {
+              "id": "route_job",
+              "title": "A route is computed",
+              "variants": ["inside"],
+              "steps": [
+                {"from": "area_c", "to": "rt_jobs", "text": "Area C asks for a route and gets a job id at once. [guess]"},
+                {"from": "rt_jobs", "to": "rt_store", "text": "The job is recorded."},
+                {"from": "rt_workers", "to": "rt_store", "text": "A worker claims the job and writes checkpoints for up to 40 minutes."},
+                {"from": "rt_workers", "to": "backbone", "text": "The result is published as a route computed event."},
+                {"from": "backbone", "to": "area_c", "text": "Area C receives the result."}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "change",
+      "title": "What would change it",
+      "intro": "Each condition was checked by re-running the hard rules with that fact changed.",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "**Each event turns out to have one consumer.** Rule `nobody-to-notify` fires and leads to **a few services**.",
+            "**A third platform engineer joins.** Rule `too-few-platform-engineers` lifts and **microservices** is open again. It would still need a named reason, such as one team having to release parts of its area separately, and the brief has none today.",
+            "**A real transaction must span two areas.** Rule `one-transaction` rules out every split, and the one-deployable options are already out, so the ladder has no answer. Merge those two areas into one deployable, which keeps **this option** with one service fewer.",
+            "**All three reasons to split go away:** telemetry falls below 10 times the rest, route optimisation moves to .NET and the teams accept one release train. Rule `no-reason-to-split` fires and leaves the one-deployable options, and with 5 areas and 4 teams that means **a modular monolith**. Any one of these alone changes nothing."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fitness",
+      "title": "Fitness rules",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["Rule", "How CI measures it", "Fails when"],
+          "rows": [
+            ["Each table has one writer", "A script collects table names from every service's and module's migrations and checks each name has one owner. [med]", "A table appears under two owners, or Area C code maps to an Area D table."],
+            ["Telemetry makes no synchronous call to another service", "An architecture test lists the references of the telemetry projects. [med]", "A telemetry project references the client of another service."],
+            ["One service deploys alone", "Each service has its own pipeline that builds from its own folder and tests against recorded contracts. A job compares each event schema with the last published version. [med]", "A build needs another service's artifact, or an event schema breaks a published version."],
+            ["No cycle of synchronous calls", "Each service lists the services it calls in a manifest. CI builds the graph and looks for cycles. [med]", "The graph has a cycle."],
+            ["A route job outlives its worker", "An integration test starts a job, kills the worker and checks that another worker finishes it from the checkpoint, and that the request was answered before the computation began. [med]", "The job is lost or restarts from zero, or the caller waited for the computation."]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "adr",
+      "title": "ADR draft",
+      "intro": "A draft only. It has not been written into the repository.",
+      "blocks": [
+        {
+          "type": "code",
+          "code": "# ADR-NNN: Build the fleet platform as services with an event backbone\n\nDate: 2026-11-10\nStatus: Proposed\n\n## Context\nThe fleet platform will be built by 30 engineers in 4 product teams, with 2\nplatform engineers. There are 5 business areas. The teams ship on their own\nschedules. Vehicle telemetry ingestion takes about 200 times the load of the\nrest. Route optimisation is in Python and the rest is .NET. Route computations\nrun for up to 40 minutes. Load is steady day and night. Several teams must react\nto the same vehicle events. No transaction spans two business areas.\n\nOne deployable and a modular monolith are ruled out by separate releases, the\ndifference in load and the second runtime. Serverless functions are ruled out by\n40-minute work and steady load. Microservices are ruled out by having 2 platform\nengineers where 3 are needed. A few services without a backbone would make\ntelemetry call every consumer, so a new consumer would need a telemetry release.\n\n## Decision\nWe will build services with an event backbone: four deployables around five\nbusiness areas.\n\n- Telemetry ingestion and route optimisation each run alone. The other three\n  areas run in two deployables, one per team, and two of them share a deployable\n  as separate modules.\n- Each service owns its data. No service writes another service's tables.\n- Telemetry publishes derived vehicle events. Raw telemetry stays inside\n  ingestion.\n- Route computations are jobs: a request is accepted at once, a worker runs it,\n  and the result is published as an event. A job resumes from a checkpoint after\n  a lost worker.\n- The broker is a managed service. Product teams are on call for their own\n  services. The platform engineers run the broker, the deployment path and\n  tracing.\n\n## Consequences\nEasier: each team ships alone, telemetry scales alone, and a new consumer\nsubscribes without a change to the producer.\n\nHarder: eventual consistency between areas, event versioning and replays, and\ntracing across asynchronous steps.\n\nWe accept: a broker that every team depends on, on-call duty in the product\nteams, and two platform engineers with little slack.\n\nWe will revisit this if events stop being shared, if a transaction must span two\nareas, or if the platform team reaches 3 or more and a team needs to release\nparts of its area separately.\n"
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "title": "Open questions",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "What are the other three business areas, and which team owns what? The answer settles whether there are four or five deployables.",
+            "Do other teams need raw telemetry or only derived vehicle events? Raw telemetry would put the 200 times load on the backbone.",
+            "What are the actual rates and retention? The brief gives only a ratio, so the broker and telemetry cannot be sized or priced yet.",
+            "Who takes the night pager? Load is steady day and night, and the brief does not say who is on call.",
+            "Can a route computation resume from a checkpoint? If not, a lost worker costs up to 40 minutes of work and deployments must wait for running jobs.",
+            "Must one vehicle's events arrive in order, and how far back must a consumer be able to replay?",
+            "How does this system relate to the code already in `acme-logistics`? Only the brief was read for this page."
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "the fleet platform of Acme Logistics",
+    "components": [
+      {"id": "telemetry", "label": "Telemetry", "tech": ".NET", "kind": "service"},
+      {"id": "routing", "label": "Route optimisation", "tech": "Python", "kind": "service"},
+      {"id": "core", "label": "Areas C and D", "tech": ".NET", "kind": "service"},
+      {"id": "area_e", "label": "Area E", "tech": ".NET", "kind": "service"},
+      {"id": "backbone", "label": "Event backbone", "tech": "not chosen", "kind": "store"}
+    ],
+    "decisions": [
+      {"title": "System shape", "chosen": "Services with an event backbone", "because": "Several teams must react to the same vehicle events, and 2 platform engineers is one short of the 3 microservices need."},
+      {"title": "Number of deployables", "chosen": "Four, around five business areas", "because": "Telemetry alone for load, route optimisation alone for runtime, and one deployable per remaining team."}
+    ],
+    "assumptions": [
+      "The five areas are telemetry, route optimisation and three unnamed areas shown as C, D and E.",
+      "Telemetry and route optimisation have one team each; the other two teams share C, D and E, with C and D on one team.",
+      "Only derived vehicle events go on the backbone; raw telemetry stays inside ingestion.",
+      "The broker is a managed service, with no vendor chosen.",
+      "Each product team is on call for its own services; the platform engineers run the broker, the deployment path and tracing.",
+      "A route computation is a job that is accepted at once, publishes its result as an event and can resume from a checkpoint."
+    ],
+    "open": [
+      "Names of the other three business areas and which team owns what.",
+      "Whether other teams need raw telemetry or only derived vehicle events.",
+      "Actual rates and retention; the brief gives only a ratio.",
+      "Who takes the night pager.",
+      "Whether a route computation can resume from a checkpoint.",
+      "Event ordering per vehicle and how far back consumers can replay.",
+      "How this system relates to the code already in acme-logistics."
+    ]
+  }
+}

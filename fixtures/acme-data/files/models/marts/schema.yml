@@ -1,0 +1,49 @@
+version: 2
+
+models:
+  - name: dim_customer
+    description: One row per customer.
+    columns:
+      - name: customer_id
+        tests:
+          - unique
+          - not_null
+      - name: email
+        description: Customer e-mail address.
+      - name: national_id
+        description: National identification number.
+  - name: dim_product
+    description: One row per product, with the current list price.
+    columns:
+      - name: product_id
+        tests:
+          - unique
+          - not_null
+      - name: list_price
+        description: Current list price from the ERP.
+  - name: dim_store
+    description: One row per store.
+    columns:
+      - name: store_id
+        tests:
+          - unique
+          - not_null
+  - name: fct_sales
+    description: Sales, one row per order line.
+    columns:
+      - name: order_id
+        description: Order number.
+      - name: line_no
+        description: Line number within the order.
+      - name: sale_date
+        description: Day of the sale.
+      - name: customer_id
+        description: Customer who bought.
+      - name: store_id
+        description: Store that sold.
+      - name: product_id
+        description: Product sold.
+      - name: net_amount
+        description: Amount after the promotion discount.
+      - name: list_amount
+        description: Quantity at the list price.

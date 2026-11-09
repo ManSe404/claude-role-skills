@@ -1,0 +1,23 @@
+name: acme_foods
+version: "1.0.0"
+config-version: 2
+
+profile: acme_dw
+
+model-paths: ["models"]
+target-path: target
+clean-targets:
+  - target
+  - dbt_packages
+
+models:
+  acme_foods:
+    staging:
+      +schema: staging
+      +materialized: view
+    intermediate:
+      +schema: intermediate
+      +materialized: ephemeral
+    marts:
+      +schema: marts
+      +materialized: table

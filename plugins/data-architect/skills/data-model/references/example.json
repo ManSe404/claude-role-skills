@@ -1,0 +1,1128 @@
+{
+ "skill": "data-model",
+ "title": "Acme Foods sales, modelled",
+ "subtitle": "A star schema that answers revenue per store and per product per month, and repeat customers.",
+ "meta": {
+  "repo": "acme-data",
+  "commit": "0734a04",
+  "date": "2026-11-09",
+  "sample": "6 ERP exports, 5,098 rows, 1 Jan to 27 Sep 2026"
+ },
+ "verdict": {
+  "tone": "warn",
+  "text": "**Star schema:** one order-line fact with shared date, store, product, customer and promotion dimensions.\n\n**Biggest data problem:** promotions are joined on product alone, which turns 2,787 order lines into 3,323 rows. The store report shows 722,367.23 where the corrected revenue is 665,289.95, 8.6% too high."
+ },
+ "stats": [
+  {
+   "label": "Tables",
+   "value": 7,
+   "note": "1 fact, 5 dimensions, 1 restricted staging",
+   "tone": "info"
+  },
+  {
+   "label": "Facts",
+   "value": 1,
+   "note": "order line",
+   "tone": "info"
+  },
+  {
+   "label": "Grains checked against data",
+   "value": "6 of 7",
+   "note": "dim_date is generated",
+   "tone": "ok"
+  },
+  {
+   "label": "Personal columns",
+   "value": 9,
+   "note": "in the source exports: 5 direct, 4 indirect",
+   "tone": "warn"
+  }
+ ],
+ "sections": [
+  {
+   "id": "questions",
+   "title": "The questions",
+   "intro": "Each answer below was computed from the samples by building this star in memory. The process behind the data: an order with lines is written in the ERP and ends as completed, cancelled or returned; promotions are set per product and period. Who asks is read from the repository: regional managers read store figures [med], Marketing uses customer lists [guess].",
+   "blocks": [
+    {
+     "type": "list",
+     "ordered": true,
+     "items": [
+      "**Revenue per store per month:** `SUM(revenue_amount)` by `dim_store` and `dim_date.month_start`. All 108 store-months are filled (12 stores, 9 months). Total 665,289.95; store totals run from 42,583.38 to 65,380.10.",
+      "**Revenue per product per month:** the same sum by `dim_product`, 1,013 product-months over 150 products. The 30 inferred products carry 6,208.66 (0.9%) and stay visible as their own lines.",
+      "**Repeat customers:** customers with two or more completed orders. 336 of 387 buyers (86.8%). Counting order lines instead of orders would give 376."
+     ]
+    },
+    {
+     "type": "list",
+     "title": "Assumptions, because the brief said not to ask",
+     "items": [
+      "Revenue counts completed orders only. Including returned orders adds 20,883.07 (3.1%).",
+      "`unit_price` is the price before the promotion, as the current `fct_sales` treats it, so the discount is deducted. If it is already net, revenue is 668,767.61 instead of 665,289.95 (+0.5%).",
+      "A promotion applies in every store, on its start and end dates included. Where two overlap, the larger discount wins, then the lower id. That affects 3 lines.",
+      "A repeat customer has two or more completed orders in the period analysed, here 1 January to 27 September 2026.",
+      "For the 6 customers with two rows, the last row in the export wins and the customer is flagged. Nothing in the export says which row is newer.",
+      "The dotted date form is day first: 175 of the 300 dotted values have a first part above 12 and none has a second part above 12.",
+      "All amounts are in one currency, which the export does not name, and are treated as they stand with respect to VAT.",
+      "`order_date` is the local trading day of the store; the export has no time or zone.",
+      "The ERP is the source of record for sales. The DDL is T-SQL because the only DDL in the repository is T-SQL."
+     ]
+    },
+    {
+     "type": "code",
+     "title": "The queries",
+     "code": "-- Revenue per store per month\nSELECT s.store_name, d.month_start, SUM(f.revenue_amount) AS revenue\nFROM marts.fct_sales_line AS f\nJOIN marts.dim_store AS s ON s.store_key = f.store_key\nJOIN marts.dim_date AS d ON d.date_key = f.date_key\nGROUP BY s.store_name, d.month_start;\n\n-- Revenue per product per month\nSELECT p.product_id, p.product_name, d.month_start, SUM(f.revenue_amount) AS revenue\nFROM marts.fct_sales_line AS f\nJOIN marts.dim_product AS p ON p.product_key = f.product_key\nJOIN marts.dim_date AS d ON d.date_key = f.date_key\nGROUP BY p.product_id, p.product_name, d.month_start;\n\n-- Repeat customers: count orders, on the durable customer_id, never on customer_key\nSELECT COUNT(*) AS buyers,\n       SUM(CASE WHEN x.orders >= 2 THEN 1 ELSE 0 END) AS repeat_customers\nFROM (\n    SELECT c.customer_id, COUNT(DISTINCT f.order_id) AS orders\n    FROM marts.fct_sales_line AS f\n    JOIN marts.dim_customer AS c ON c.customer_key = f.customer_key\n    WHERE f.order_status = 'completed'\n    GROUP BY c.customer_id\n) AS x;\n"
+    }
+   ]
+  },
+  {
+   "id": "data",
+   "title": "What the data says",
+   "intro": "Counts come from the profiler and two read-only checks over all rows. The grain and key columns are counted; a pair that only happens to be unique in the sample, such as customer, store and date on an order, is not treated as a key.",
+   "blocks": [
+    {
+     "type": "table",
+     "title": "Per source",
+     "columns": [
+      "Source",
+      "Rows",
+      "Keys",
+      "Problems found"
+     ],
+     "rows": [
+      [
+       "orders",
+       1500,
+       "`order_id` unique",
+       "300 dates are `dd.mm.yyyy`, 1,200 are ISO, spread over all stores. 125 of the dotted dates have a day of 12 or less, and 110 would silently change month if read month first; those orders hold 196 completed lines worth 51,782.21. Status: 1,346 completed, 99 cancelled, 55 returned."
+      ],
+      [
+       "order_lines",
+       3000,
+       "`order_id, line_no` unique",
+       "120 `unit_price` values use a decimal comma (28,278.26, all 12 stores). 30 lines point to a product that does not exist. 17 orders hold one product on two lines, so `order_id, product_id` is not a key."
+      ],
+      [
+       "customers",
+       406,
+       "`customer_id` is not unique: 400 ids",
+       "6 customers have two rows that differ only in `loyalty_tier`, with no date to order them. They multiply orders from 1,500 to 1,514 rows. 7 customers never ordered. 95 `national_id` values start with a zero."
+      ],
+      [
+       "products",
+       120,
+       "`product_id` unique",
+       "Only today's `list_price`, so past list prices cannot be rebuilt."
+      ],
+      [
+       "promotions",
+       60,
+       "`promotion_id` unique",
+       "`product_id` repeats: 12 products have 3 promotions each, and 5 pairs of windows overlap. Joining on product alone multiplies 3,000 lines to 3,576."
+      ],
+      [
+       "stores",
+       12,
+       "`store_id` unique",
+       "None. 3 regions, one export, so no change history to see."
+      ]
+     ]
+    },
+    {
+     "type": "findings",
+     "title": "What the current models do with this",
+     "items": [
+      {
+       "severity": "high",
+       "title": "Promotions join on product alone",
+       "where": "models/marts/fct_sales.sql:33",
+       "evidence": "2,787 lines become 3,323 rows (536 extra), and the discount is applied on any date. Against the model: store report 722,367.23 vs 665,289.95 (+8.6%), single store-months -8.7% to +31.2%, product-months -30.0% to +235.7%, 284 of 1,013 off by more than 1%.",
+       "fix": "Join on product and sale date between start and end, and keep one promotion per line.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "Two definitions of a sale",
+       "where": "models/intermediate/int_order_lines.sql:29, reports/store_performance.sql:11",
+       "evidence": "The fact keeps returned orders, the store report drops them. The not-cancelled path gives 745,280.65 and the report 722,367.23.",
+       "fix": "One rule in one column: `revenue_amount`.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "List amount uses today's price",
+       "where": "models/marts/fct_sales.sql:28",
+       "evidence": "`list_amount` is recomputed from the current `list_price` on each rebuild, and `dw.merge_dim_product` overwrites that price nightly, so past rows change.",
+       "fix": "Store `list_unit_price` on the fact once.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "Daily load only adds",
+       "where": "warehouse/procs/load_daily_sales.sql:19",
+       "evidence": "Read from the code, not run: a rerun inserts the day again, there is no unique key on day, store and product, and a return after the sale date never reaches the table. `net_amount` is FLOAT. [guess]",
+       "fix": "Retire it and read the new fact; the fact merges on its primary key, so a rerun is safe.",
+       "status": "open"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "approach",
+   "title": "Approach",
+   "blocks": [
+    {
+     "type": "decision",
+     "factors": [
+      "Answers the questions",
+      "Facts share dimensions",
+      "History on tier, region",
+      "Cost for one ERP source"
+     ],
+     "options": [
+      {
+       "label": "One wide table",
+       "status": "eliminated",
+       "eliminated_by": "Facts share dimensions",
+       "why": "`marts.stock_snapshot` already reads `dim_store` and `dim_product`, so a wide table would split those definitions.",
+       "cells": [
+        {
+         "rating": "pass",
+         "text": "one scan"
+        },
+        {
+         "rating": "fail",
+         "text": "stock needs the same store and product"
+        },
+        {
+         "rating": "weak",
+         "text": "versions copied onto every line"
+        },
+        {
+         "rating": "pass",
+         "text": "cheapest"
+        }
+       ]
+      },
+      {
+       "label": "Star schema",
+       "status": "chosen",
+       "why": "One business process, one source, BI readers, and dimensions the stock snapshot already shares.",
+       "cells": [
+        {
+         "rating": "pass",
+         "text": "at most two joins"
+        },
+        {
+         "rating": "pass",
+         "text": "store and product shared"
+        },
+        {
+         "rating": "pass",
+         "text": "new rows in three dimensions"
+        },
+        {
+         "rating": "pass",
+         "text": "the repository already has this shape"
+        }
+       ]
+      },
+      {
+       "label": "3NF",
+       "status": "eliminated",
+       "eliminated_by": "Cost for one ERP source",
+       "why": "The ERP is already the source of record, there are no other writers, and readers would still need a star on top.",
+       "cells": [
+        {
+         "rating": "weak",
+         "text": "needs a star on top"
+        },
+        {
+         "rating": "pass",
+         "text": "yes"
+        },
+        {
+         "rating": "pass",
+         "text": "yes"
+        },
+        {
+         "rating": "fail",
+         "text": "a second layer with no reason"
+        }
+       ]
+      },
+      {
+       "label": "Data Vault",
+       "status": "eliminated",
+       "eliminated_by": "Cost for one ERP source",
+       "why": "One source and no audit demand in the request.",
+       "cells": [
+        {
+         "rating": "weak",
+         "text": "needs marts on top"
+        },
+        {
+         "rating": "pass",
+         "text": "yes"
+        },
+        {
+         "rating": "pass",
+         "text": "yes"
+        },
+        {
+         "rating": "fail",
+         "text": "many joins, nothing to reconcile"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "type": "callout",
+     "tone": "info",
+     "text": "Reopen this if the tills, the loyalty app or the returns desk from the new-platform brief must be reconciled with the ERP. Several sources disagreeing about a sale is the named reason to climb. The Acme Bakery brief is about another company and was not used."
+    }
+   ]
+  },
+  {
+   "id": "model",
+   "title": "The model",
+   "intro": "One fact, because the ERP order header has no measure of its own; order counts use `COUNT(DISTINCT order_id)`.",
+   "blocks": [
+    {
+     "type": "model",
+     "title": "Sales star",
+     "areas": [
+      {
+       "id": "sales",
+       "label": "Sales fact"
+      },
+      {
+       "id": "shared",
+       "label": "Dimensions"
+      },
+      {
+       "id": "restricted",
+       "label": "Restricted staging"
+      }
+     ],
+     "tables": [
+      {
+       "id": "fct_sales_line",
+       "label": "fct_sales_line",
+       "kind": "fact",
+       "area": "sales",
+       "grain": "one row per order line",
+       "note": "Keeps every status. `revenue_amount` is zero unless the order is completed, so a plain SUM is right.",
+       "history": "Merged on order_id and line_no. Status and amounts change when the order changes; list_unit_price does not.",
+       "columns": [
+        {
+         "name": "order_id",
+         "type": "int",
+         "key": "pk",
+         "note": "ERP order number, kept on the fact"
+        },
+        {
+         "name": "line_no",
+         "type": "smallint",
+         "key": "pk",
+         "note": "line within the order"
+        },
+        {
+         "name": "date_key",
+         "type": "int",
+         "key": "fk",
+         "note": "the order date, parsed by explicit format"
+        },
+        {
+         "name": "store_key",
+         "type": "int",
+         "key": "fk",
+         "note": "store version in force on the sale date"
+        },
+        {
+         "name": "product_key",
+         "type": "int",
+         "key": "fk",
+         "note": "product version in force on the sale date"
+        },
+        {
+         "name": "customer_key",
+         "type": "int",
+         "key": "fk",
+         "note": "customer version in force on the sale date",
+         "personal": true,
+         "mask": "Surrogate only; contact data stays in restricted staging."
+        },
+        {
+         "name": "promotion_key",
+         "type": "int",
+         "key": "fk",
+         "note": "the one promotion in force, -1 for none"
+        },
+        {
+         "name": "order_status",
+         "type": "varchar(12)",
+         "note": "completed, cancelled or returned",
+         "history": "overwrite when the order changes"
+        },
+        {
+         "name": "quantity",
+         "type": "int"
+        },
+        {
+         "name": "unit_price",
+         "type": "decimal(10,2)",
+         "note": "as sold, decimal comma normalised at staging",
+         "history": "kept on the fact"
+        },
+        {
+         "name": "list_unit_price",
+         "type": "decimal(10,2)",
+         "note": "list price at first load, null for inferred products",
+         "history": "kept on the fact, never recalculated"
+        },
+        {
+         "name": "gross_amount",
+         "type": "decimal(14,2)",
+         "note": "quantity * unit_price"
+        },
+        {
+         "name": "discount_pct",
+         "type": "decimal(5,2)",
+         "note": "from the promotion in force",
+         "history": "kept on the fact"
+        },
+        {
+         "name": "discount_amount",
+         "type": "decimal(14,2)",
+         "note": "gross_amount * discount_pct / 100, rounded per line"
+        },
+        {
+         "name": "net_amount",
+         "type": "decimal(14,2)",
+         "note": "gross_amount - discount_amount"
+        },
+        {
+         "name": "revenue_amount",
+         "type": "decimal(14,2)",
+         "note": "net_amount when completed, else 0"
+        },
+        {
+         "name": "loaded_at",
+         "type": "datetime2",
+         "note": "UTC"
+        }
+       ]
+      },
+      {
+       "id": "dim_date",
+       "label": "dim_date",
+       "kind": "dimension",
+       "area": "shared",
+       "grain": "one row per calendar day",
+       "note": "Generated, not from the ERP.",
+       "history": "none, generated",
+       "columns": [
+        {
+         "name": "date_key",
+         "type": "int",
+         "key": "pk",
+         "note": "yyyymmdd"
+        },
+        {
+         "name": "calendar_date",
+         "type": "date",
+         "key": "bk"
+        },
+        {
+         "name": "month_start",
+         "type": "date",
+         "note": "the month roll-up"
+        },
+        {
+         "name": "year_no",
+         "type": "smallint"
+        },
+        {
+         "name": "month_no",
+         "type": "tinyint"
+        }
+       ]
+      },
+      {
+       "id": "dim_store",
+       "label": "dim_store",
+       "kind": "dimension",
+       "area": "shared",
+       "grain": "one row per store version",
+       "note": "Also read by the stock snapshot.",
+       "history": "new row when region changes",
+       "columns": [
+        {
+         "name": "store_key",
+         "type": "int",
+         "key": "pk"
+        },
+        {
+         "name": "store_id",
+         "type": "int",
+         "key": "bk"
+        },
+        {
+         "name": "store_name",
+         "type": "nvarchar(120)",
+         "history": "overwrite"
+        },
+        {
+         "name": "city",
+         "type": "nvarchar(60)",
+         "history": "overwrite"
+        },
+        {
+         "name": "region",
+         "type": "nvarchar(60)",
+         "history": "new row"
+        },
+        {
+         "name": "valid_from",
+         "type": "date",
+         "note": "1900-01-01 on the first version"
+        },
+        {
+         "name": "valid_to",
+         "type": "date",
+         "note": "9999-12-31 while current"
+        },
+        {
+         "name": "is_current",
+         "type": "bit"
+        }
+       ]
+      },
+      {
+       "id": "dim_product",
+       "label": "dim_product",
+       "kind": "dimension",
+       "area": "shared",
+       "grain": "one row per product version",
+       "note": "Holds 30 inferred members for product ids the ERP product list does not have.",
+       "flag": "warn",
+       "history": "new row when category changes",
+       "columns": [
+        {
+         "name": "product_key",
+         "type": "int",
+         "key": "pk"
+        },
+        {
+         "name": "product_id",
+         "type": "int",
+         "key": "bk"
+        },
+        {
+         "name": "product_name",
+         "type": "nvarchar(120)",
+         "history": "overwrite"
+        },
+        {
+         "name": "category",
+         "type": "nvarchar(60)",
+         "history": "new row"
+        },
+        {
+         "name": "current_list_price",
+         "type": "decimal(10,2)",
+         "note": "today's price only, do not use for history",
+         "history": "overwrite"
+        },
+        {
+         "name": "is_inferred",
+         "type": "bit",
+         "note": "1 when the id appears only on order lines"
+        },
+        {
+         "name": "valid_from",
+         "type": "date",
+         "note": "1900-01-01 on the first version"
+        },
+        {
+         "name": "valid_to",
+         "type": "date",
+         "note": "9999-12-31 while current"
+        },
+        {
+         "name": "is_current",
+         "type": "bit"
+        }
+       ]
+      },
+      {
+       "id": "dim_customer",
+       "label": "dim_customer",
+       "kind": "dimension",
+       "area": "shared",
+       "grain": "one row per customer version",
+       "note": "No name, contact or national id. Repeat customers are counted on customer_id, because a customer can have several versions.",
+       "flag": "warn",
+       "history": "new row when loyalty_tier changes",
+       "columns": [
+        {
+         "name": "customer_key",
+         "type": "int",
+         "key": "pk"
+        },
+        {
+         "name": "customer_id",
+         "type": "int",
+         "key": "bk",
+         "note": "the durable customer",
+         "personal": true,
+         "mask": "Kept as the join to restricted staging; not exposed in BI reports."
+        },
+        {
+         "name": "city",
+         "type": "nvarchar(60)",
+         "note": "8 cities in the sample",
+         "personal": true,
+         "mask": "Kept at city level; overwritten when the customer moves.",
+         "history": "overwrite"
+        },
+        {
+         "name": "loyalty_tier",
+         "type": "varchar(10)",
+         "note": "gold, silver, bronze or none",
+         "history": "new row"
+        },
+        {
+         "name": "loyalty_tier_conflict",
+         "type": "bit",
+         "note": "1 for the 6 customers exported with two tiers"
+        },
+        {
+         "name": "valid_from",
+         "type": "date",
+         "note": "1900-01-01 on the first version"
+        },
+        {
+         "name": "valid_to",
+         "type": "date",
+         "note": "9999-12-31 while current"
+        },
+        {
+         "name": "is_current",
+         "type": "bit"
+        }
+       ]
+      },
+      {
+       "id": "dim_promotion",
+       "label": "dim_promotion",
+       "kind": "dimension",
+       "area": "shared",
+       "grain": "one row per promotion",
+       "note": "Row -1 means no promotion.",
+       "history": "overwrite; the discount a sale got is stored on the fact",
+       "columns": [
+        {
+         "name": "promotion_key",
+         "type": "int",
+         "key": "pk"
+        },
+        {
+         "name": "promotion_id",
+         "type": "int",
+         "key": "bk"
+        },
+        {
+         "name": "product_id",
+         "type": "int",
+         "note": "promoted product, business key"
+        },
+        {
+         "name": "start_date",
+         "type": "date",
+         "note": "inclusive"
+        },
+        {
+         "name": "end_date",
+         "type": "date",
+         "note": "inclusive"
+        },
+        {
+         "name": "discount_pct",
+         "type": "decimal(5,2)"
+        }
+       ]
+      },
+      {
+       "id": "stg_customers",
+       "label": "stg_customers",
+       "kind": "staging",
+       "area": "restricted",
+       "grain": "one row per customer, after the duplicate rule",
+       "note": "Read only by the load job and the mailing export. phone, national_id and birth_date are not selected from the ERP.",
+       "history": "overwrite",
+       "columns": [
+        {
+         "name": "customer_id",
+         "type": "int",
+         "key": "pk",
+         "note": "ERP customer number",
+         "personal": true,
+         "mask": "Kept; restricted to the load job and the mailing export."
+        },
+        {
+         "name": "first_name",
+         "type": "nvarchar(100)",
+         "personal": true,
+         "mask": "Kept for the monthly mailing only; never in marts."
+        },
+        {
+         "name": "last_name",
+         "type": "nvarchar(100)",
+         "personal": true,
+         "mask": "Kept for the monthly mailing only; never in marts."
+        },
+        {
+         "name": "email",
+         "type": "nvarchar(254)",
+         "personal": true,
+         "mask": "Kept for the monthly mailing only; never a join key, never in marts."
+        },
+        {
+         "name": "city",
+         "type": "nvarchar(60)",
+         "personal": true,
+         "mask": "Kept; passed to dim_customer at city level."
+        },
+        {
+         "name": "loyalty_tier",
+         "type": "varchar(10)",
+         "note": "last row in the export wins [guess]"
+        },
+        {
+         "name": "loyalty_tier_conflict",
+         "type": "bit",
+         "note": "1 for the 6 customers exported with two tiers"
+        }
+       ]
+      }
+     ],
+     "relations": [
+      {
+       "from": "fct_sales_line",
+       "to": "dim_date",
+       "on": "date_key",
+       "cardinality": "n:1",
+       "label": "sold on"
+      },
+      {
+       "from": "fct_sales_line",
+       "to": "dim_store",
+       "on": "store_key",
+       "cardinality": "n:1",
+       "label": "sold at"
+      },
+      {
+       "from": "fct_sales_line",
+       "to": "dim_product",
+       "on": "product_key",
+       "cardinality": "n:1",
+       "label": "of product"
+      },
+      {
+       "from": "fct_sales_line",
+       "to": "dim_customer",
+       "on": "customer_key",
+       "cardinality": "n:1",
+       "label": "bought by"
+      },
+      {
+       "from": "fct_sales_line",
+       "to": "dim_promotion",
+       "on": "promotion_key",
+       "cardinality": "n:1",
+       "label": "under promotion"
+      },
+      {
+       "from": "dim_customer",
+       "to": "stg_customers",
+       "on": "customer_id",
+       "cardinality": "n:1",
+       "label": "built from"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "grain",
+   "title": "Grain",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Table",
+      "Grain",
+      "Duplicates measured"
+     ],
+     "rows": [
+      [
+       "fct_sales_line",
+       "one row per order line",
+       "0 on `order_id, line_no` in 3,000 rows. The star built from the samples kept exactly 3,000 rows. [high]"
+      ],
+      [
+       "dim_customer",
+       "one row per customer version",
+       "6 duplicate ids on `customer_id` (12 rows); 400 rows after the rule. [high]"
+      ],
+      [
+       "dim_product",
+       "one row per product version",
+       "0 on `product_id` in 120 rows; 150 with the 30 inferred members. [high]"
+      ],
+      [
+       "dim_store",
+       "one row per store version",
+       "0 on `store_id` in 12 rows. [high]"
+      ],
+      [
+       "dim_promotion",
+       "one row per promotion",
+       "0 on `promotion_id` in 60 rows. [high]"
+      ],
+      [
+       "stg_customers",
+       "one row per customer, after the duplicate rule",
+       "6 duplicate ids in 406 rows; 400 rows after the rule. [high]"
+      ],
+      [
+       "dim_date",
+       "one row per calendar day",
+       "Generated, nothing to count. [guess]"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "keys",
+   "title": "Keys",
+   "intro": "One source, so no cross-source mapping. Every dimension has an integer surrogate because it keeps versions; the fact keeps the ERP key.",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Entity",
+      "Business key",
+      "How sources map",
+      "Orphans"
+     ],
+     "rows": [
+      [
+       "Order line",
+       "`order_id, line_no`",
+       "ERP only; each line finds its order",
+       "0 lines without an order"
+      ],
+      [
+       "Customer",
+       "`customer_id`",
+       "`orders.customer_id` to `customers.customer_id`. `email` and `national_id` are one-to-one with it, so no person has two ids. 3 phone numbers are shared by two customers, not merged. [high]",
+       "0 orders without a customer"
+      ],
+      [
+       "Product",
+       "`product_id`",
+       "`order_lines.product_id` to `products.product_id`",
+       "30 lines, 30 ids (9001 to 9030), 24 of them on completed orders. Loaded as inferred members. They equal promotion ids by number, but the price fits that promotion's product on 1 of 30 lines against all 2,970 known lines, so they are not misfiled promotion ids. [high]"
+      ],
+      [
+       "Store",
+       "`store_id`",
+       "`orders.store_id` to `stores.store_id`",
+       "0"
+      ],
+      [
+       "Promotion",
+       "`promotion_id`",
+       "Matched to a line on product and sale date within the window. 85 lines fall in a window, 70 of them completed, and 3 fall in two.",
+       "0 promotions without a product"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "bus",
+   "title": "Bus matrix",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Fact",
+      "Date",
+      "Store",
+      "Product",
+      "Customer",
+      "Promotion"
+     ],
+     "rows": [
+      [
+       "fct_sales_line",
+       "yes",
+       "yes",
+       "yes",
+       "yes",
+       "yes"
+      ],
+      [
+       "marts.stock_snapshot (exists, outside this model)",
+       "yes",
+       "yes",
+       "yes",
+       "no",
+       "no"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "history",
+   "title": "History",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Attribute",
+      "Type",
+      "Why"
+     ],
+     "rows": [
+      [
+       "`unit_price`, `discount_pct`, `list_unit_price`",
+       "stored on the fact",
+       "Past amounts must not depend on today's price or a corrected promotion. List prices before the first load cannot be rebuilt."
+      ],
+      [
+       "`order_status`",
+       "overwrite, on merge",
+       "An order can change after the sale. Its revenue leaves the month of sale; the export has no status date."
+      ],
+      [
+       "`dim_customer.loyalty_tier`",
+       "new row",
+       "6 customers already show two tiers. Versions start at first load because the source has no dates."
+      ],
+      [
+       "`dim_store.region`",
+       "new row",
+       "The store report rolls up by region; a reassigned store must not move past sales."
+      ],
+      [
+       "`dim_product.category`",
+       "new row",
+       "A recategorised product must not move past sales."
+      ],
+      [
+       "`current_list_price`",
+       "overwrite",
+       "Today's value only; history lives on the fact."
+      ],
+      [
+       "names, `dim_customer.city`, `dim_store.city`, promotion attributes",
+       "overwrite",
+       "Corrections or current state; nothing asked depends on the past value."
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "personal",
+   "title": "Personal data",
+   "intro": "Columns and counts only. `marts.dim_customer` holds all of these unmasked today, and `exports/marketing_contacts.sql` sends `national_id` to Marketing with no use for it; the model removes both.",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Column",
+      "Class",
+      "Masked where"
+     ],
+     "rows": [
+      [
+       "`customers.first_name`",
+       "direct",
+       "Kept only in restricted `stg_customers`, for the mailing. Not in marts."
+      ],
+      [
+       "`customers.last_name`",
+       "direct",
+       "Kept only in restricted `stg_customers`, for the mailing. Not in marts."
+      ],
+      [
+       "`customers.email`",
+       "direct",
+       "Kept only in restricted `stg_customers`, for the mailing. Never a join key."
+      ],
+      [
+       "`customers.phone`",
+       "direct",
+       "Dropped at staging, no consumer."
+      ],
+      [
+       "`customers.national_id`",
+       "direct",
+       "Dropped at staging, no consumer. Not hashed: a 13-digit number with a known structure can be brute-forced. Text if ever kept, because 95 values start with a zero."
+      ],
+      [
+       "`customers.birth_date`",
+       "indirect",
+       "Dropped at staging, no question needs it."
+      ],
+      [
+       "`customers.city`",
+       "indirect",
+       "Kept in `dim_customer` at city level, 8 cities."
+      ],
+      [
+       "`customers.customer_id`",
+       "indirect",
+       "Kept in restricted staging and `dim_customer`, not shown in BI reports."
+      ],
+      [
+       "`orders.customer_id`",
+       "indirect",
+       "Replaced by `customer_key` on the fact; with the dimension it is purchase history per person, so access follows `dim_customer`."
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ddl",
+   "title": "DDL draft",
+   "intro": "Not run: no SQL Server was available. The logic was run on SQLite over the samples. Nothing was written to the repository; say the word and it goes in.",
+   "blocks": [
+    {
+     "type": "code",
+     "code": "-- Draft, not run. T-SQL because warehouse/ddl is T-SQL. Money is DECIMAL, loaded_at is UTC.\n-- First version of every dimension row starts on 1900-01-01, so all past sales find a row.\n\nCREATE TABLE [staging].[stg_customers] (     -- restricted: load job and the mailing export only\n    [customer_id]           INT           NOT NULL PRIMARY KEY,\n    [first_name]            NVARCHAR(100) NOT NULL,\n    [last_name]             NVARCHAR(100) NOT NULL,\n    [email]                 NVARCHAR(254) NOT NULL,\n    [city]                  NVARCHAR(60)  NOT NULL,\n    [loyalty_tier]          VARCHAR(10)   NOT NULL,\n    [loyalty_tier_conflict] BIT           NOT NULL DEFAULT 0\n);\n\nCREATE TABLE [marts].[dim_date] (\n    [date_key]      INT      NOT NULL PRIMARY KEY,   -- yyyymmdd\n    [calendar_date] DATE     NOT NULL UNIQUE,\n    [month_start]   DATE     NOT NULL,\n    [year_no]       SMALLINT NOT NULL,\n    [month_no]      TINYINT  NOT NULL\n);\n\nCREATE TABLE [marts].[dim_store] (\n    [store_key]  INT IDENTITY(1, 1) NOT NULL PRIMARY KEY,\n    [store_id]   INT           NOT NULL,\n    [store_name] NVARCHAR(120) NOT NULL,\n    [city]       NVARCHAR(60)  NOT NULL,\n    [region]     NVARCHAR(60)  NOT NULL,             -- new row on change\n    [valid_from] DATE          NOT NULL,\n    [valid_to]   DATE          NOT NULL DEFAULT '9999-12-31',\n    [is_current] BIT           NOT NULL,\n    CONSTRAINT [uq_dim_store] UNIQUE ([store_id], [valid_from])\n);\n\nCREATE TABLE [marts].[dim_product] (\n    [product_key]        INT IDENTITY(1, 1) NOT NULL PRIMARY KEY,\n    [product_id]         INT           NOT NULL,\n    [product_name]       NVARCHAR(120) NOT NULL,\n    [category]           NVARCHAR(60)  NOT NULL,     -- new row on change\n    [current_list_price] DECIMAL(10, 2) NULL,        -- today's price only, null when inferred\n    [is_inferred]        BIT           NOT NULL DEFAULT 0,\n    [valid_from]         DATE          NOT NULL,\n    [valid_to]           DATE          NOT NULL DEFAULT '9999-12-31',\n    [is_current]         BIT           NOT NULL,\n    CONSTRAINT [uq_dim_product] UNIQUE ([product_id], [valid_from])\n);\n\nCREATE TABLE [marts].[dim_customer] (\n    [customer_key]          INT IDENTITY(1, 1) NOT NULL PRIMARY KEY,\n    [customer_id]           INT          NOT NULL,   -- count repeat customers on this column\n    [city]                  NVARCHAR(60) NOT NULL,\n    [loyalty_tier]          VARCHAR(10)  NOT NULL,   -- new row on change\n    [loyalty_tier_conflict] BIT          NOT NULL DEFAULT 0,\n    [valid_from]            DATE         NOT NULL,\n    [valid_to]              DATE         NOT NULL DEFAULT '9999-12-31',\n    [is_current]            BIT          NOT NULL,\n    CONSTRAINT [uq_dim_customer] UNIQUE ([customer_id], [valid_from])\n);\n\nCREATE TABLE [marts].[dim_promotion] (               -- row -1 means no promotion\n    [promotion_key] INT           NOT NULL PRIMARY KEY,\n    [promotion_id]  INT           NULL,\n    [product_id]    INT           NULL,\n    [start_date]    DATE          NULL,\n    [end_date]      DATE          NULL,\n    [discount_pct]  DECIMAL(5, 2) NOT NULL DEFAULT 0\n);\n\nCREATE TABLE [marts].[fct_sales_line] (\n    [order_id]        INT            NOT NULL,\n    [line_no]         SMALLINT       NOT NULL,\n    [date_key]        INT            NOT NULL REFERENCES [marts].[dim_date] ([date_key]),\n    [store_key]       INT            NOT NULL REFERENCES [marts].[dim_store] ([store_key]),\n    [product_key]     INT            NOT NULL REFERENCES [marts].[dim_product] ([product_key]),\n    [customer_key]    INT            NOT NULL REFERENCES [marts].[dim_customer] ([customer_key]),\n    [promotion_key]   INT            NOT NULL DEFAULT -1 REFERENCES [marts].[dim_promotion] ([promotion_key]),\n    [order_status]    VARCHAR(12)    NOT NULL CHECK ([order_status] IN ('completed', 'cancelled', 'returned')),\n    [quantity]        INT            NOT NULL,\n    [unit_price]      DECIMAL(10, 2) NOT NULL,\n    [list_unit_price] DECIMAL(10, 2) NULL,           -- set once at first load, never recalculated\n    [gross_amount]    DECIMAL(14, 2) NOT NULL,       -- quantity * unit_price\n    [discount_pct]    DECIMAL(5, 2)  NOT NULL DEFAULT 0,\n    [discount_amount] DECIMAL(14, 2) NOT NULL DEFAULT 0,\n    [net_amount]      DECIMAL(14, 2) NOT NULL,       -- gross_amount - discount_amount\n    [revenue_amount]  DECIMAL(14, 2) NOT NULL,       -- net_amount when completed, else 0\n    [loaded_at]       DATETIME2      NOT NULL DEFAULT SYSUTCDATETIME(),\n    CONSTRAINT [pk_fct_sales_line] PRIMARY KEY ([order_id], [line_no])\n);\n"
+    },
+    {
+     "type": "list",
+     "title": "Load rules the DDL cannot state",
+     "ordered": true,
+     "items": [
+      "Parse `order_date` by explicit format, ISO then `dd.mm.yyyy`. Any other value stops the load.",
+      "Replace a decimal comma in `unit_price` with a point before casting.",
+      "Join a promotion on product and sale date within its window, and keep one per line: largest discount, then lowest id.",
+      "Keep one row per `customer_id` in staging: the last in the export, with `loyalty_tier_conflict` set.",
+      "Add an inferred `dim_product` row for each unknown id, before the fact loads.",
+      "Merge the fact on `order_id, line_no`, and include orders whose status changed. Test that fact rows equal source lines."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "open",
+   "title": "Open questions",
+   "blocks": [
+    {
+     "type": "list",
+     "ordered": true,
+     "items": [
+      "Is `unit_price` before or after the promotion? Lines inside a promotion window are priced like all others, at 0.90 to 1.00 of list, even for promotions up to 30%, so the data does not settle it. Worth 3,477.66. For Finance.",
+      "Does a returned order count as revenue, and in which month? The status sits on the order, with no return date or partial return. Assumed no, and the original month loses it. Worth 20,883.07.",
+      "Which loyalty tier is right for the 6 customers with two rows, and can the ERP export a change date?",
+      "What are product ids 9001 to 9030? 30 order lines use them and the product list does not have them. They look like promotion ids by number, but the prices rule that out.",
+      "Is the ERP all of the sales? The new-platform brief lists tills, the loyalty app and a returns desk as separate sources, and every sample order has a customer, so anonymous till sales may be missing. That would change revenue per store.",
+      "Do `erp.orders` and `erp.order_lines` hold the same text formats as the CSV exports? If they do, the plain casts in `stg_orders` and `stg_order_lines` fail or swap day and month today. [med]",
+      "What currency are the amounts in, and do they include VAT?",
+      "Should a repeat customer be measured over all time or a rolling window, such as 12 months?",
+      "Which Power BI dataset reads `dw.fct_daily_sales`? It should move to this fact, and then the table and `dw.load_daily_sales` can be retired.",
+      "Which engine does dbt run on? `int_order_lines` uses `EXTRACT`, which T-SQL does not have, while the procedures are T-SQL. [med]",
+      "Noticed, outside this model: `warehouse/procs/export_by_region.sql:10` concatenates the region from a request form into dynamic SQL, which allows SQL injection."
+     ]
+    }
+   ]
+  }
+ ],
+ "facts": {
+  "version": 1,
+  "scope": "the sales of Acme Foods, from the ERP exports and the acme-data project",
+  "data": [
+   {
+    "name": "customer contact",
+    "class": "personal",
+    "where": [
+     "erp.customers",
+     "staging.stg_customers"
+    ],
+    "rule": "name and e-mail in restricted staging only; phone, national id and birth date dropped"
+   },
+   {
+    "name": "purchase history",
+    "class": "personal",
+    "where": [
+     "marts.fct_sales_line",
+     "marts.dim_customer"
+    ],
+    "rule": "surrogate customer key; no contact data in marts"
+   }
+  ],
+  "components": [
+   {
+    "id": "fct_sales_line",
+    "label": "Sales fact",
+    "tech": "T-SQL draft, not built",
+    "kind": "store"
+   }
+  ],
+  "decisions": [
+   {
+    "title": "Model approach",
+    "chosen": "Star schema",
+    "because": "one process and source, with store and product dimensions shared with the stock snapshot"
+   },
+   {
+    "title": "Revenue",
+    "chosen": "completed orders, net of the one promotion in force",
+    "because": "the report and the fact disagree today; one rule in one column"
+   },
+   {
+    "title": "Fact grain",
+    "chosen": "one row per order line",
+    "because": "0 duplicates on order_id and line_no in 3,000 rows"
+   }
+  ],
+  "assumptions": [
+   "Revenue counts completed orders only. Including returned orders adds 20,883.07 (3.1%).",
+   "`unit_price` is the price before the promotion, as the current `fct_sales` treats it, so the discount is deducted. If it is already net, revenue is 668,767.61 instead of 665,289.95 (+0.5%).",
+   "A promotion applies in every store, on its start and end dates included. Where two overlap, the larger discount wins, then the lower id. That affects 3 lines.",
+   "A repeat customer has two or more completed orders in the period analysed, here 1 January to 27 September 2026.",
+   "For the 6 customers with two rows, the last row in the export wins and the customer is flagged. Nothing in the export says which row is newer.",
+   "The dotted date form is day first: 175 of the 300 dotted values have a first part above 12 and none has a second part above 12.",
+   "All amounts are in one currency, which the export does not name, and are treated as they stand with respect to VAT.",
+   "`order_date` is the local trading day of the store; the export has no time or zone.",
+   "The ERP is the source of record for sales. The DDL is T-SQL because the only DDL in the repository is T-SQL."
+  ],
+  "open": [
+   "Is `unit_price` before or after the promotion? Lines inside a promotion window are priced like all others, at 0.90 to 1.00 of list, even for promotions up to 30%, so the data does not settle it. Worth 3,477.66. For Finance.",
+   "Does a returned order count as revenue, and in which month? The status sits on the order, with no return date or partial return. Assumed no, and the original month loses it. Worth 20,883.07.",
+   "Which loyalty tier is right for the 6 customers with two rows, and can the ERP export a change date?",
+   "What are product ids 9001 to 9030? 30 order lines use them and the product list does not have them. They look like promotion ids by number, but the prices rule that out.",
+   "Is the ERP all of the sales? The new-platform brief lists tills, the loyalty app and a returns desk as separate sources, and every sample order has a customer, so anonymous till sales may be missing. That would change revenue per store.",
+   "Do `erp.orders` and `erp.order_lines` hold the same text formats as the CSV exports? If they do, the plain casts in `stg_orders` and `stg_order_lines` fail or swap day and month today. [med]",
+   "What currency are the amounts in, and do they include VAT?",
+   "Should a repeat customer be measured over all time or a rolling window, such as 12 months?",
+   "Which Power BI dataset reads `dw.fct_daily_sales`? It should move to this fact, and then the table and `dw.load_daily_sales` can be retired.",
+   "Which engine does dbt run on? `int_order_lines` uses `EXTRACT`, which T-SQL does not have, while the procedures are T-SQL. [med]",
+   "Noticed, outside this model: `warehouse/procs/export_by_region.sql:10` concatenates the region from a request form into dynamic SQL, which allows SQL injection."
+  ]
+ }
+}
