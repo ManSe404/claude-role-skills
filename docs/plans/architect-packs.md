@@ -38,8 +38,20 @@ reworked at the end. `ai-architect` gets it during step 1. Format in
 **2. Five skills will match "draw the architecture".** `codebase-map`, `ai-architecture`, `data-map`,
 `arch-c4` and `cloud-map`. Every description must name its subject (a repository, an AI solution, a
 data platform, a system's structure, cloud infrastructure). Whether Claude picks correctly has never
-been measured, because no eval has been run. Run the selection check once after step 2, with all
-packs installed, when Stefan says so.
+been measured until the selection check below.
+
+Measured 2026-11-10 with `tools/selection_check.py`: all 8 packs loaded, 31 of ours among 66 skills visible, 62 prompts
+(12 that should fire nothing), one run each, first turn only, on Opus 5.5.
+
+| Tools offered | Right | Right skill when one was due | Wrong skill | Fired when none was due |
+|---|---|---|---|---|
+| Skill only | 60 of 62 | 50 of 50 | 0 | 2 (`Deploy this app to AWS` took `cloud-design`, a rename took `impact`) |
+| Ordinary tools too | 60 of 62 | 48 of 50 | 0 | 0 |
+
+With ordinary tools the two misses were a look around first (`Draw the architecture of this repository`, in an empty
+folder) and a direct answer (`AKS or App Service`). The two false fires came from offering only the Skill tool, so no
+description was changed. The two passes cost $16.85 in all. The prompts were written by the author of the descriptions, so
+this is a floor for confusion between skills, not a measure on strangers' wording.
 
 **3. The simplest thing that passes.** Every deciding skill starts at the bottom of a ladder and
 climbs only for a requirement it can name. Every fixture includes a brief where the right answer is

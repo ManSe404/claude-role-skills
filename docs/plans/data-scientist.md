@@ -43,6 +43,30 @@ Steps:
 
 Never: starts a model; overrules a rule of the script; states a cost the brief did not give without marking it.
 
+### `ds-explore`: before the split (added 2026-11-10)
+
+Added after the pack was built. Exploring had been left to Anthropic's `data:explore-data`, which is generic (it never
+mentions a target, a label or leakage), is not part of this repository and is not available on every account. The pack
+also had a hole: `ds-frame` comes before anyone looks closely at the data and `ds-dataset` needs a split that exists.
+
+When: one table and a yes/no target, before any split. Input: the file, the target, the id, entity and time columns,
+how long until the outcome is known.
+
+`explore_target.py`: the rate per period, whether the newest labels can be known yet, each feature's distribution and
+codes for unknown, strength with a seeded bootstrap interval, a test per feature corrected by Holm across all of them
+(for a number, a Mann-Whitney test for a trend and a chi-square over bins for any shape, the smaller p-value doubled), the
+shape, segments, whether missing carries signal, redundant pairs, leak suspects. `shuffled`, `out_of_fold_rates` and
+`strongest` moved from `dataset_audit.py` to `model_stats.py` so that both use one definition.
+
+The data analyst keeps the general look at a table in the `data` plugin; the same script can back an analyst version.
+
+Not covered: a numeric target, interactions between features, whether a feature is known at prediction time.
+
+Fixture: `extras/data/snapshots.csv`, 6,000 rows from their own generator so no older file moved by a byte. Planted: the
+rate jumps from 2025-11, the last three months' labels are not in, 999 for unknown tenure, a U-shaped feature, a segment,
+a redundant fee, 400 campaign codes, a near-constant flag, a column filled only for churners, missing values that carry
+signal, repeated customers and a column of account managers' names whose levels must stay numbered.
+
 ### 2. `ds-dataset`: audit a training set
 
 When: before anyone trusts a model built on a training set, with train and test files at hand.
@@ -141,6 +165,7 @@ Personal columns are present and never shown.
 3. **dataset-finds-the-leaks:** at least five of the planted problems, no personal value.
 4. **evaluate-calls-noise-noise:** one win real, one inside the noise, the calibration, the slice.
 5. **experiment-reads-correctly:** the broken split stops, the correction changes the call.
+6. **explore-finds-what-matters:** at least six of nine planted facts, the leak not recommended, no personal value.
 
 Each has a `skill-fired` grader. Evals run only when Stefan asks.
 

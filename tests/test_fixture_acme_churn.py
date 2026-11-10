@@ -10,6 +10,7 @@ ENTITIES, DUPLICATES: the same customers on both sides, and exact copies.
 MISSING: missingness that differs by class. DRIFT: the PSI of the one feature that moved.
 PREDICTIONS: ranking metrics, the calibration of each model and the slice where one model collapses.
 EXPERIMENT: exact counts of both runs, and what the correction for four metrics does.
+SNAPSHOTS: the table before any split, with what exploring it should find.
 """
 
 from __future__ import annotations
@@ -29,7 +30,14 @@ from conftest import ROOT
 
 MAKE_DATA = ROOT / "fixtures" / "acme-churn" / "make_data.py"
 FILES = ROOT / "fixtures" / "acme-churn" / "files"
-CSV_FILES = ["experiment_broken.csv", "experiment_clean.csv", "predictions.csv", "test.csv", "train.csv"]
+CSV_FILES = [
+    "experiment_broken.csv",
+    "experiment_clean.csv",
+    "predictions.csv",
+    "snapshots.csv",
+    "test.csv",
+    "train.csv",
+]
 PERSONAL_COLUMNS = ("full_name", "email", "phone")
 
 TRAIN: dict[str, int] = {"rows": 2400, "positives": 411}
@@ -49,6 +57,28 @@ MISSING: dict[str, Any] = {
     "missing_negative_train": 208,
     "positive_share": 229 / 411,
     "negative_share": 208 / (2400 - 411),
+}
+SNAPSHOTS: dict[str, Any] = {
+    "rows": 6000,
+    "positives": 665,
+    "customers": 4500,
+    "customers_with_several_rows": 1500,
+    "before_jump_rows": 3246,
+    "before_jump_positives": 332,
+    "after_jump_known_rows": 1167,
+    "after_jump_known_positives": 213,
+    "unfinished_rows": 1587,
+    "unfinished_positives": 120,
+    "just_before_rows": 389,
+    "just_before_positives": 74,
+    "unknown_tenure_rows": 180,
+    "unknown_tenure_positives": 22,
+    "legacy_rows": 668,
+    "legacy_positives": 113,
+    "campaign_levels": 400,
+    "nps_missing_rows": 928,
+    "nps_missing_positives": 344,
+    "highest_real_tenure": 63,
 }
 DRIFT: dict[str, Any] = {"column": "monthly_fee_eur", "psi_low": 0.35, "psi_high": 0.55, "stable_below": 0.1}
 PREDICTIONS: dict[str, Any] = {
@@ -323,3 +353,87 @@ def test_personal_columns_are_present_and_fictional(churn_repo: Path, train: lis
     all_text = "\n".join(p.read_text("utf-8") for p in FILES.rglob("*") if p.is_file())
     for row in train[:50]:
         assert row["email"] not in all_text and row["full_name"] not in all_text
+
+
+# ---------------------------------------------------------------------------- snapshots.csv, before any split
+
+
+@pytest.fixture(scope="module")
+def snapshots(churn_repo: Path) -> list[dict[str, str]]:
+    return read_csv(churn_repo, "snapshots.csv")
+
+
+def count(rows: list[dict[str, str]]) -> tuple[int, int]:
+    return len(rows), sum(1 for r in rows if r["churned_60d"] == "1")
+
+
+def test_snapshot_counts_and_customers(snapshots: list[dict[str, str]]) -> None:
+    assert count(snapshots) == (SNAPSHOTS["rows"], SNAPSHOTS["positives"])
+    per_customer: dict[str, int] = {}
+    for row in snapshots:
+        per_customer[row["customer_id"]] = per_customer.get(row["customer_id"], 0) + 1
+    assert len(per_customer) == SNAPSHOTS["customers"]
+    assert sum(1 for n in per_customer.values() if n > 1) == SNAPSHOTS["customers_with_several_rows"]
+
+
+def test_snapshot_rate_jumps_and_the_newest_labels_are_not_in(snapshots: list[dict[str, str]]) -> None:
+    before = [r for r in snapshots if r["snapshot_date"] < "2025-11-01"]
+    after = [r for r in snapshots if "2025-11-01" <= r["snapshot_date"] <= "2026-01-31"]
+    newest = [r for r in snapshots if r["snapshot_date"] > "2026-01-31"]
+    just_before = [r for r in snapshots if "2025-12-02" <= r["snapshot_date"] <= "2026-01-31"]
+    assert count(before) == (SNAPSHOTS["before_jump_rows"], SNAPSHOTS["before_jump_positives"])
+    assert count(after) == (SNAPSHOTS["after_jump_known_rows"], SNAPSHOTS["after_jump_known_positives"])
+    assert count(newest) == (SNAPSHOTS["unfinished_rows"], SNAPSHOTS["unfinished_positives"])
+    assert count(just_before) == (SNAPSHOTS["just_before_rows"], SNAPSHOTS["just_before_positives"])
+
+
+def test_snapshot_unknown_tenure_is_a_code(snapshots: list[dict[str, str]]) -> None:
+    coded = [r for r in snapshots if r["tenure_months"] == "999"]
+    assert count(coded) == (SNAPSHOTS["unknown_tenure_rows"], SNAPSHOTS["unknown_tenure_positives"])
+    assert (
+        max(int(r["tenure_months"]) for r in snapshots if r["tenure_months"] != "999")
+        == SNAPSHOTS["highest_real_tenure"]
+    )
+
+
+def test_snapshot_session_length_relates_to_churn_in_a_u(snapshots: list[dict[str, str]]) -> None:
+    known = [r for r in snapshots if r["snapshot_date"] <= "2026-01-31"]
+    ordered = sorted(known, key=lambda r: float(r["avg_session_min"]))
+    fifth = len(ordered) // 5
+
+    def rate(part: list[dict[str, str]]) -> float:
+        return sum(1 for r in part if r["churned_60d"] == "1") / len(part)
+
+    middle = rate(ordered[2 * fifth : 3 * fifth])
+    assert rate(ordered[:fifth]) > 2 * middle
+    assert rate(ordered[-fifth:]) > 2 * middle
+
+
+def test_snapshot_leak_filled_only_for_churners(snapshots: list[dict[str, str]]) -> None:
+    filled = [r for r in snapshots if r["retention_call_outcome"]]
+    assert count(filled) == (SNAPSHOTS["positives"], SNAPSHOTS["positives"])
+
+
+def test_snapshot_a_repeat_customer_is_the_same_customer_later(snapshots: list[dict[str, str]]) -> None:
+    by_customer: dict[str, list[dict[str, str]]] = {}
+    for row in snapshots:
+        by_customer.setdefault(row["customer_id"], []).append(row)
+    repeats = [sorted(rows, key=lambda r: r["snapshot_date"]) for rows in by_customer.values() if len(rows) > 1]
+    assert len(repeats) == SNAPSHOTS["customers_with_several_rows"]
+    for first, second in repeats:
+        assert first["snapshot_date"] < second["snapshot_date"]
+        assert (first["plan"], first["region"], first["email"]) == (second["plan"], second["region"], second["email"])
+        assert first["churned_60d"] == "0", "nobody is seen again after churning"
+
+
+def test_snapshot_annual_fee_repeats_the_monthly_fee(snapshots: list[dict[str, str]]) -> None:
+    for row in snapshots:
+        assert float(row["annual_fee_eur"]) == pytest.approx(float(row["monthly_fee_eur"]) * 12, abs=0.01)
+
+
+def test_snapshot_segments_levels_and_missing(snapshots: list[dict[str, str]]) -> None:
+    legacy = [r for r in snapshots if r["plan"] == "legacy"]
+    assert count(legacy) == (SNAPSHOTS["legacy_rows"], SNAPSHOTS["legacy_positives"])
+    assert len({r["campaign_code"] for r in snapshots}) == SNAPSHOTS["campaign_levels"]
+    missing = [r for r in snapshots if not r["nps_last"]]
+    assert count(missing) == (SNAPSHOTS["nps_missing_rows"], SNAPSHOTS["nps_missing_positives"])

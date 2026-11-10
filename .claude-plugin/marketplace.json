@@ -50,7 +50,7 @@
     {
       "name": "data-scientist",
       "source": "./plugins/data-scientist",
-      "description": "Four skills for data scientists: ds-frame, ds-dataset, ds-evaluate and ds-experiment.",
+      "description": "Five skills for data scientists: ds-frame, ds-explore, ds-dataset, ds-evaluate and ds-experiment.",
       "version": "0.1.0"
     }
   ]

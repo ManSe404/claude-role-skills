@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: explore-finds-what-matters
+tags: [data-scientist, ds-explore]
+context:
+  scaffold_script: fixture.sh

@@ -39,6 +39,7 @@ def test_every_pack_has_its_skills() -> None:
         "data-scientist/ds-dataset",
         "data-scientist/ds-evaluate",
         "data-scientist/ds-experiment",
+        "data-scientist/ds-explore",
         "data-scientist/ds-frame",
         "software-architect/arch-c4",
         "software-architect/arch-evolve",

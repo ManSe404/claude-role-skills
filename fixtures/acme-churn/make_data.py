@@ -17,6 +17,12 @@ The planted problems, recomputed from the CSVs by the tests:
   real, and the real winner is badly calibrated and much worse on the `legacy` plan.
 - experiment_clean.csv and experiment_broken.csv: arm counts and successes are exact. The clean run's primary metric is
   significant until it is corrected for four metrics; the broken run has a sample ratio mismatch.
+- snapshots.csv: the whole history before anyone splits it, for exploring. The churn rate jumps from 2025-11; the last
+  three months have labels that are not all known yet; `tenure_months` uses 999 for unknown; `avg_session_min` relates
+  to churn in a U, so a rank test sees nothing; the legacy plan churns more; `annual_fee_eur` repeats the monthly fee;
+  `campaign_code` has hundreds of levels and no signal; `is_internal_account` is nearly constant;
+  `retention_call_outcome` is only filled for customers who churned; some customers have several rows;
+  `account_manager` holds people's names.
 """
 
 from __future__ import annotations
@@ -40,6 +46,7 @@ LAST_NAMES = ["Borović", "Cerović", "Dubović", "Grabić", "Hrastić", "Javora
 ASCII = str.maketrans("ćčšžđ", "ccszd")
 PLANS = [("basic", 9.0, 0.34), ("plus", 19.0, 0.34), ("pro", 39.0, 0.20), ("legacy", 14.0, 0.12)]
 REGIONS = ["north", "south", "east", "west"]
+MANAGERS = ["Mila Borović", "Nenad Javorac", "Olga Lipić", "Pavle Grabić", "Rada Vrbić", "Sima Topolić"]
 REASONS = ["too expensive", "not using it", "switched provider", "missing a feature", "other"]
 TRAIN_MONTHS = [
     date(2025, 7, 1),
@@ -314,6 +321,152 @@ def experiment_rows(
     return done
 
 
+SNAPSHOT_ROWS = 6000
+SNAPSHOT_CUSTOMERS = 4500
+# SEED + 1 happened to give `region`, which has no effect here, a chance association (p 0.002), so the next one is used.
+SNAPSHOT_SEED = SEED + 2
+SNAPSHOT_MONTHS = [date(2025 + (m > 12), (m - 1) % 12 + 1, 1) for m in range(1, 17)]
+RATE_JUMP_FROM = date(2025, 11, 1)
+# Share of the churn that has been recorded by the last date in the file: a 60-day outcome is not all known yet.
+LABEL_KNOWN = {date(2026, 2, 1): 0.97, date(2026, 3, 1): 0.5, date(2026, 4, 1): 0.08}
+UNKNOWN_TENURE = 999
+UNKNOWN_TENURE_ROWS = 180
+SNAPSHOT_COLUMNS = [
+    "snapshot_id",
+    "customer_id",
+    "snapshot_date",
+    "plan",
+    "region",
+    "tenure_months",
+    "monthly_fee_eur",
+    "annual_fee_eur",
+    "logins_30d",
+    "tickets_90d",
+    "avg_session_min",
+    "discount_pct",
+    "is_internal_account",
+    "campaign_code",
+    "retention_call_outcome",
+    "nps_last",
+    "account_manager",
+    "full_name",
+    "email",
+    "phone",
+    "churned_60d",
+]
+
+
+def snapshot_row(
+    rng: random.Random,
+    index: int,
+    customer: str,
+    identity: dict[str, str],
+    month: date,
+    plan: tuple[str, float],
+    region: str,
+    tenure: int,
+) -> dict[str, str]:
+    engagement = normal(rng)
+    session = normal(rng)
+    name, fee = plan
+    logins = max(0, round(12 + 5 * engagement + 2 * normal(rng)))
+    tickets = poisson(rng, max(0.05, 1.1 - 0.5 * engagement))
+    risk = (
+        (-2.75 if month < RATE_JUMP_FROM else -1.95)
+        - 0.7 * engagement
+        + 0.25 * tickets
+        - 0.01 * tenure
+        + 0.5 * (session * session - 1)
+        + (0.95 if name == "legacy" else 0.0)
+    )
+    churned = rng.random() < expit(risk)
+    recorded = churned and rng.random() < LABEL_KNOWN.get(month, 1.0)
+    fee_paid = round(fee * (1 + 0.06 * normal(rng)), 2)
+    nps = "" if rng.random() < (0.5 if churned else 0.1) else str(min(10, max(0, round(6.5 + 2 * normal(rng)))))
+    return {
+        "snapshot_id": f"S{index:06d}",
+        "customer_id": customer,
+        "snapshot_date": month.isoformat(),
+        "plan": name,
+        "region": region,
+        "tenure_months": str(tenure),
+        "monthly_fee_eur": f"{fee_paid:.2f}",
+        "annual_fee_eur": f"{fee_paid * 12:.2f}",
+        "logins_30d": str(logins),
+        "tickets_90d": str(tickets),
+        "avg_session_min": f"{max(1.0, 20 + 9 * session):.1f}",
+        "discount_pct": choose(rng, ["0", "5", "10", "15", "20"]),
+        "is_internal_account": "1" if rng.random() < 0.004 else "0",
+        "campaign_code": f"CMP-{int(rng.random() * 400):03d}",
+        "retention_call_outcome": choose(rng, ["declined offer", "no answer", "accepted then left"])
+        if recorded
+        else "",
+        "nps_last": nps,
+        "account_manager": choose(rng, MANAGERS),
+        **identity,
+        "churned_60d": "1" if recorded else "0",
+    }
+
+
+def months_between(first: date, second: date) -> int:
+    return (second.year - first.year) * 12 + second.month - first.month
+
+
+def build_snapshots() -> list[dict[str, str]]:
+    """Its own generator, so that adding this file does not move a byte of the older ones.
+
+    A customer's second row is a later snapshot of the same customer: same plan and region, tenure moved on by the
+    months between, and never after the first row has been labelled as churned.
+    """
+    rng = random.Random(SNAPSHOT_SEED)
+    rows: list[dict[str, str]] = []
+    firsts: list[tuple[dict[str, str], tuple[str, float]]] = []
+    for i in range(SNAPSHOT_CUSTOMERS):
+        month = SNAPSHOT_MONTHS[int(rng.random() * len(SNAPSHOT_MONTHS))]
+        plan = weighted(rng, PLANS)
+        row = snapshot_row(
+            rng,
+            i + 1,
+            f"K{i:05d}",
+            person(rng, 300_000 + i),
+            month,
+            plan,
+            choose(rng, REGIONS),
+            1 + int(rng.random() * 48),
+        )
+        rows.append(row)
+        firsts.append((row, plan))
+    # Customers who can be seen again: not churned, and not on the last snapshot of the file.
+    eligible = [
+        i
+        for i in shuffled(SNAPSHOT_CUSTOMERS, rng)
+        if firsts[i][0]["churned_60d"] == "0" and firsts[i][0]["snapshot_date"] < SNAPSHOT_MONTHS[-1].isoformat()
+    ]
+    for offset, i in enumerate(eligible[: SNAPSHOT_ROWS - SNAPSHOT_CUSTOMERS]):
+        first, plan = firsts[i]
+        start = date.fromisoformat(first["snapshot_date"])
+        later = [m for m in SNAPSHOT_MONTHS if m > start]
+        month = later[int(rng.random() * len(later))]
+        identity = {k: first[k] for k in ("full_name", "email", "phone")}
+        tenure = int(first["tenure_months"]) + months_between(start, month)
+        rows.append(
+            snapshot_row(
+                rng,
+                SNAPSHOT_CUSTOMERS + offset + 1,
+                first["customer_id"],
+                identity,
+                month,
+                plan,
+                first["region"],
+                tenure,
+            )
+        )
+    rows.sort(key=lambda r: (r["snapshot_date"], r["snapshot_id"]))
+    for i in shuffled(len(rows), rng)[:UNKNOWN_TENURE_ROWS]:
+        rows[i]["tenure_months"] = str(UNKNOWN_TENURE)
+    return rows
+
+
 def write(path: Path, rows: list[dict[str, str]], columns: list[str]) -> None:
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=columns, lineterminator="\n")
@@ -351,6 +504,7 @@ def main(argv: list[str] | None = None) -> int:
     broken_columns = ["subscriber_id", "variant", "assigned_at", "renewed", "arpu_eur", "support_contact", "email"]
     broken = experiment_rows(rng, 2640, 2360, BROKEN_PROPORTIONS, 2.1, date(2026, 8, 1), 14)
     write(args.target / "experiment_broken.csv", broken, broken_columns)
+    write(args.target / "snapshots.csv", build_snapshots(), SNAPSHOT_COLUMNS)
     return 0
 
 

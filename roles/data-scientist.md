@@ -25,9 +25,11 @@ error costs) go above it.
 
 - `ds-frame`: before modelling, the decision, the target, the label, the cost of an error; a ladder from a
   rule up, the baseline that must be beaten, acceptance criteria.
+- `ds-explore`: one table and a target, before any split: the rate over time, labels not known yet, codes for unknown,
+  which features relate to the target and how, what to try and what to fix first.
 - `ds-dataset`: audit of a training set for leakage, the same data on both sides, drift and personal columns.
 - `ds-evaluate`: compare models from a file of predictions, with intervals, calibration, threshold, slices.
 - `ds-experiment`: size an A/B test and read one: split first, correction, guardrails, the call.
 
-General statistics, exploring a table and SQL are left to the `data` plugin; LLM solutions go to
+General statistics, a look at a table with no target and SQL are left to the `data` plugin; LLM solutions go to
 `ai-pattern`, and LLM evaluation is out of scope here.

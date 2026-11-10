@@ -27,7 +27,6 @@ from __future__ import annotations
 import argparse
 import json
 import random
-import re
 import sys
 from collections import Counter
 from dataclasses import dataclass
@@ -42,15 +41,10 @@ import data_profile
 import measure
 import model_stats as ms
 
-ALMOST_PERFECT = 0.95
-SUSPICIOUS = 0.85
 LOW_CARDINALITY = 10
 ID_LIKE_SHARE = 0.5
 MISSING_GAP = 0.05
 RARE_CLASS = 0.05
-OUTCOME_NAME = re.compile(
-    r"cancel|churn|outcome|resolution|refund|closed|terminat|end_?date|final|post_|_after|after_|future|next_", re.I
-)
 
 
 @dataclass
@@ -155,47 +149,13 @@ def column_kind(values: list[str | None]) -> str:
     return "id-like" if distinct > max(50, ID_LIKE_SHARE * len(present)) else "categorical"
 
 
-def shuffled(n: int, rng: random.Random) -> list[int]:
-    """Fisher-Yates over `random()` only, the one method whose sequence Python guarantees across versions."""
-    order = list(range(n))
-    for i in range(n - 1, 0, -1):
-        j = int(rng.random() * (i + 1))
-        order[i], order[j] = order[j], order[i]
-    return order
-
-
-def out_of_fold_rates(values: list[str | None], labels: list[bool], rng: random.Random) -> list[float]:
-    """Each row's score is its category's positive rate in the other half of the data.
-
-    In-sample rates would make any high-cardinality column look perfect; a rate from the other half cannot.
-    """
-    order = shuffled(len(values), rng)
-    halves = (order[: len(order) // 2], order[len(order) // 2 :])
-    scores = [0.0] * len(values)
-    for part, other in (halves, halves[::-1]):
-        counts: dict[str | None, list[int]] = {}
-        for i in other:
-            entry = counts.setdefault(values[i], [0, 0])
-            entry[0] += int(labels[i])
-            entry[1] += 1
-        total_rate = sum(entry[0] for entry in counts.values()) / max(1, len(other))
-        for i in part:
-            entry = counts.get(values[i], [])
-            scores[i] = entry[0] / entry[1] if entry else total_rate
-    return scores
-
-
-def strongest(auc: float | None) -> float | None:
-    return None if auc is None else max(auc, 1 - auc)
-
-
 def feature_strength(
     name: str, kind: str, values: list[str | None], labels: list[bool], rng: random.Random
 ) -> dict[str, Any]:
     """How well this one feature predicts the label on its own, and how much of that is whether it is present at all."""
-    presence = strongest(ms.roc_auc(labels, [0.0 if v is None else 1.0 for v in values]))
+    presence = ms.strongest(ms.roc_auc(labels, [0.0 if v is None else 1.0 for v in values]))
     if kind == "categorical":
-        strength = strongest(ms.roc_auc(labels, out_of_fold_rates(values, labels, rng)))
+        strength = ms.strongest(ms.roc_auc(labels, ms.out_of_fold_rates(values, labels, rng)))
         via = "category rates (out of fold)"
     else:
         if kind == "date":
@@ -204,7 +164,7 @@ def feature_strength(
         else:
             numbers = [ms.to_float(v) for v in values]
             pairs = [(n, y) for n, y in zip(numbers, labels, strict=True) if n is not None]
-        strength = strongest(ms.roc_auc([y for _, y in pairs], [v for v, _ in pairs]))
+        strength = ms.strongest(ms.roc_auc([y for _, y in pairs], [v for v, _ in pairs]))
         via = "rank (AUC) of the values"
     if presence is not None and (strength is None or presence > strength):
         strength, via = presence, "whether the value is present at all"
@@ -215,14 +175,14 @@ def feature_strength(
         "via": via,
         "present_share": round(sum(1 for v in values if v is not None) / len(values), 4),
         "flag": flag_of(strength),
-        "name_suggests_outcome": OUTCOME_NAME.search(name) is not None,
+        "name_suggests_outcome": ms.OUTCOME_NAME.search(name) is not None,
     }
 
 
 def flag_of(strength: float | None) -> str | None:
-    if strength is None or strength < SUSPICIOUS:
+    if strength is None or strength < ms.SUSPICIOUS:
         return None
-    return "almost perfect" if strength >= ALMOST_PERFECT else "suspiciously strong"
+    return "almost perfect" if strength >= ms.ALMOST_PERFECT else "suspiciously strong"
 
 
 def days_after(rows: list[measure.Row], column: str, reference: str) -> list[int]:

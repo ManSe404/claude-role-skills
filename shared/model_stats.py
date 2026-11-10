@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import math
 import random
+import re
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -28,6 +29,12 @@ LOG_LOSS_CLIP = 1e-15
 PSI_FLOOR = 1e-4
 PSI_STABLE = 0.10
 PSI_MAJOR = 0.25
+# How well one feature alone predicts the label: at this strength, read where the feature comes from.
+ALMOST_PERFECT = 0.95
+SUSPICIOUS = 0.85
+OUTCOME_NAME = re.compile(
+    r"cancel|churn|outcome|resolution|refund|closed|terminat|end_?date|final|post_|_after|after_|future|next_", re.I
+)
 
 # Armitage, McPherson and Rowe (1969): the true false-positive rate when a two-sided 5% test is read at this many
 # equally spaced looks and the first significant look ends it. Beyond 100 looks the rate keeps rising towards 1.
@@ -204,6 +211,44 @@ def bootstrap_weights(rng: random.Random, clusters: Sequence[int], n_clusters: i
     for _ in range(n_clusters):
         counts[int(draw() * n_clusters)] += 1.0
     return [counts[c] for c in clusters]
+
+
+# ---------------------------------------------------------------------------- one feature against the label
+
+
+def shuffled(n: int, rng: random.Random) -> list[int]:
+    """Fisher-Yates over `random()` only, the one method whose sequence Python guarantees across versions."""
+    order = list(range(n))
+    for i in range(n - 1, 0, -1):
+        j = int(rng.random() * (i + 1))
+        order[i], order[j] = order[j], order[i]
+    return order
+
+
+def out_of_fold_rates(values: Sequence[str | None], labels: Sequence[bool], rng: random.Random) -> list[float]:
+    """Each row's score is its category's positive rate in the other half of the data.
+
+    In-sample rates would make any high-cardinality column look perfect; a rate from the other half cannot.
+    """
+    order = shuffled(len(values), rng)
+    halves = (order[: len(order) // 2], order[len(order) // 2 :])
+    scores = [0.0] * len(values)
+    for part, other in (halves, halves[::-1]):
+        counts: dict[str | None, list[int]] = {}
+        for i in other:
+            entry = counts.setdefault(values[i], [0, 0])
+            entry[0] += int(labels[i])
+            entry[1] += 1
+        total_rate = sum(entry[0] for entry in counts.values()) / max(1, len(other))
+        for i in part:
+            entry = counts.get(values[i], [])
+            scores[i] = entry[0] / entry[1] if entry else total_rate
+    return scores
+
+
+def strongest(auc: float | None) -> float | None:
+    """An AUC folded so that 0.5 is no relation and 1.0 is perfect, whichever way the relation runs."""
+    return None if auc is None else max(auc, 1 - auc)
 
 
 # ---------------------------------------------------------------------------- proportions and means

@@ -1,0 +1,1008 @@
+{
+ "skill": "ds-explore",
+ "title": "acme-churn: what relates to 60-day churn, and what to fix first",
+ "subtitle": "Exploration of data/snapshots.csv before any split. Nothing in the repository was changed.",
+ "meta": {
+  "repo": "acme-churn",
+  "commit": "6ae5575",
+  "date": "2026-11-10",
+  "file": "data/snapshots.csv"
+ },
+ "verdict": {
+  "text": "Not ready to split. First re-run the extract so the 1,587 unfinished rows get real labels (or drop them), then remove `retention_call_outcome` and find out what changed in November 2025.",
+  "tone": "bad"
+ },
+ "stats": [
+  {
+   "label": "Rows",
+   "value": "6,000",
+   "note": "4,413 with a finished label",
+   "tone": "info"
+  },
+  {
+   "label": "Target rate",
+   "value": "12.35%",
+   "note": "finished labels; 11.08% on all rows",
+   "tone": "info"
+  },
+  {
+   "label": "Features with signal",
+   "value": "6 of 14",
+   "note": "one of them is the leak",
+   "tone": "info"
+  },
+  {
+   "label": "High findings",
+   "value": 4,
+   "tone": "bad"
+  }
+ ],
+ "sections": [
+  {
+   "id": "found",
+   "title": "What we found",
+   "intro": "Feature measures use the 4,413 rows dated through 2026-01-31, without the personal columns. The over-time view uses all 6,000.",
+   "blocks": [
+    {
+     "type": "findings",
+     "items": [
+      {
+       "severity": "high",
+       "title": "`retention_call_outcome` is the outcome itself",
+       "where": "snapshots.csv, column retention_call_outcome",
+       "evidence": "Filled on exactly the 665 positive rows and blank on all 5,335 negative rows. Strength 1.000 on its own.",
+       "fix": "Remove it before any split. It records what happened after the customer was already leaving.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "1,587 rows (26%) have labels that are not finished",
+       "where": "snapshot_date after 2026-01-31",
+       "evidence": "Rate 7.6% on those rows against 19.0% in January 2026. By month: February 16.0%, March 8.1%, April 0.65%. At an assumed extract on 2026-04-01 the windows are 59, 31 and 0 of the 60 days. [med] The March and April rates fit an extract within a few days of 1 April. Each of these rows is labelled no only because the answer is not in yet.",
+       "fix": "Best: run the extract again. Today is 2026-11-10, so snapshots through 2026-09-01 can have a complete window, which would also add labelled months after the step below. Otherwise drop them, and keep February only if the extract is confirmed to be 2026-04-02 or later.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "Churn stepped up in November 2025 and the table does not say why",
+       "where": "snapshot_date, target",
+       "evidence": "10.2% from January to October 2025 (3,246 rows) and 18.3% from November 2025 to January 2026 (1,167 rows). Chi-square across the 13 labelled months p 2.8e-08 (rows treated as independent). Without customers' earlier rows the step is still there, 14.9% to 23.9%. Plan, region, fee, logins, tickets and tenure do not shift, and all four plans rise: basic 10.3% to 16.8%, plus 8.3% to 17.4%, pro 11.3% to 16.4%, legacy 14.2% to 28.5%. The file holds one winter only: January rose year on year (13.5% to 24.3% without earlier rows), February did not (19.5% to 20.5%).",
+       "fix": "Ask the business what changed around 1 November 2025: price, product, billing, or the definition of a cancellation. Until then treat older rows as a different base rate. Do not calibrate on the pooled rate.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "The committed split and feature list would put these problems back",
+       "where": "model/split.py, model/features.py, model/extract.py",
+       "evidence": "`split.py` cuts at 2026-04-01: on this table the test set would be the 612 April rows with 4 positives, and training would include 975 unfinished February and March rows. `features.py` lists `cancellation_reason`, which exists only after a cancellation, and `days_since_last_login`, which `extract.py` builds from the latest login ever with no limit at the snapshot date. `extract.py` also joins NPS with no as-of date.",
+       "fix": "Do not reuse those three as they stand. Replace the split with the one under What to try, and leave both leaking columns out of the feature list.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "The strongest usable signal is a blank `nps_last`, and the field does not behave like its name",
+       "where": "nps_last",
+       "evidence": "On labelled rows churn is 43.2% when blank (653 rows) and 7.0% when filled. Strength 0.711, all of it from whether the value is present: the score itself is flat (rank strength 0.518). A blank alone flags 51.7% of churners at 43.2% precision, which meets the brief's bar. [med] It is not simply erased at cancellation: April rows, where almost nothing had happened yet, are already 18.0% blank, about what the blend of churners (50 to 55% blank) and non-churners (about 10%) gives. But 214 of the 1,354 customers with a score on their earlier row have a blank on the later one, which a true last score could not do, and later-row churn after that change is 45.3% against 9.7% when the score stays.",
+       "fix": "Ask the owner how the field is filled and what makes it blank. Use a missing flag, not the score, and only once it is confirmed to be known at the snapshot date.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "How rows were picked is unknown, and it changes the base rate",
+       "where": "customer_id, snapshot_date",
+       "evidence": "1,295 labelled rows are a customer's earlier row of two and none of them is positive. The other rows are 17.5% positive, 545 of 3,118, against 12.35% for all labelled rows. Most of those zeros are natural: a customer present more than 60 days later cannot have churned. But for 181 pairs one month apart a positive is possible, roughly 15 would be expected, and none occurs. [med] The sample seems to depend on the outcome. The file also has 272 to 612 rows a month against about 40,000 active subscribers in the brief. Features do not separate these rows: logins, tickets, session length and fee have about the same mean as other non-churners.",
+       "fix": "Ask how customers and dates were sampled. Keep the earlier rows, because dropping them would select on the future. Do not take a base rate for thresholds from this file until the sampling is known.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "1,500 of 4,500 customers have two rows",
+       "where": "customer_id",
+       "evidence": "3,000 rows belong to customers who appear twice, 1 to 15 months apart. A random split would put the same customer on both sides.",
+       "fix": "Split by time and keep each customer on one side.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "`avg_session_min` has a U shape that a linear term cannot see",
+       "where": "avg_session_min",
+       "evidence": "Churn is 27.3% at 8 minutes or less, 4.5% at 20 to 22 minutes and 28.3% above 32 minutes. Strength from bins 0.663, from ranks 0.501. The shape is in both periods, and the column has no known source (see below).",
+       "fix": "Use bins, the distance from about 20 minutes, or trees. Find out how it is computed before relying on the high end.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "`tenure_months` uses 999 for unknown",
+       "where": "tenure_months",
+       "evidence": "999 on 180 rows (3.0%), 143 of them labelled. Churn there is 10.5% (6.5% to 16.6%) against 12.4% elsewhere, so unknown does not behave differently. The next highest real value is 58.",
+       "fix": "Replace 999 with a missing value before any transform. A separate flag is not needed.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "Several columns have no known source",
+       "where": "avg_session_min, campaign_code, is_internal_account, account_manager, annual_fee_eur, retention_call_outcome",
+       "evidence": "These six are in the file but not in `model/extract.py`. So `snapshots.csv` comes from some other query, and it lacks three columns of the feature list (`payment_failures_90d`, `cancellation_reason`, `days_since_last_login`).",
+       "fix": "Find the query that built this file. Without it nobody can say when those columns were known.",
+       "status": "open"
+      },
+      {
+       "severity": "low",
+       "title": "Some customer attributes change on almost every row",
+       "where": "monthly_fee_eur, account_manager, discount_pct, campaign_code",
+       "evidence": "For the 1,500 customers with two rows the plan never changes, yet the fee differs on 1,493 (median 5.6%). The account manager matches on 280 and the discount on 304, about what chance gives with 6 and 5 levels. `campaign_code` matches on 2. None of them shows any signal.",
+       "fix": "Ask whether these are really as of the snapshot. Leave them out unless a reason appears.",
+       "status": "open"
+      },
+      {
+       "severity": "low",
+       "title": "`annual_fee_eur` is 12 times `monthly_fee_eur`",
+       "where": "annual_fee_eur, monthly_fee_eur, plan",
+       "evidence": "Equal to within a cent on all 6,000 rows. Each fee also largely repeats plan (0.95).",
+       "fix": "Drop the annual fee. Neither fee shows signal on its own.",
+       "status": "open"
+      },
+      {
+       "severity": "low",
+       "title": "Internal accounts are in the table",
+       "where": "is_internal_account",
+       "evidence": "29 rows, 22 labelled. Churn looks higher (22.7% labelled) but the group is too small to test after correction. The flag flips between the two rows of 18 customers.",
+       "fix": "Exclude them from training, as they are not customers. Ask what the flag means, given the flips.",
+       "status": "open"
+      },
+      {
+       "severity": "low",
+       "title": "`campaign_code` has 400 levels and no signal",
+       "where": "campaign_code",
+       "evidence": "Every level has 4 to 26 rows, so none can be tested. Strength 0.504 on labelled rows.",
+       "fix": "Leave it out, or group by campaign type if one exists.",
+       "status": "open"
+      },
+      {
+       "severity": "info",
+       "title": "Cleared: no duplicates",
+       "where": "whole table",
+       "evidence": "`snapshot_id` and (`customer_id`, `snapshot_date`) are each unique, and no two rows match on all other columns.",
+       "fix": "Nothing to do."
+      },
+      {
+       "severity": "info",
+       "title": "Cleared: the step is not a change of mix",
+       "where": "plan, region, fee, logins, tickets, tenure",
+       "evidence": "Means and shares are flat across the step, and the rate rises inside every plan. Feature strengths hold in both periods.",
+       "fix": "Nothing to do on the mix. The cause remains open."
+      },
+      {
+       "severity": "info",
+       "title": "Cleared: `tenure_months` is consistent over time",
+       "where": "tenure_months",
+       "evidence": "Across two rows of one customer it grows by exactly the months elapsed in all 1,414 pairs without a 999.",
+       "fix": "Nothing to do."
+      },
+      {
+       "severity": "info",
+       "title": "Cleared: this table does not overlap the existing train and test files",
+       "where": "data/train.csv, data/test.csv",
+       "evidence": "Compared on keys only: no shared customer or snapshot. Those files have other columns and 3,400 rows. [med] That is the row count the brief quotes, so the brief's figures describe those files and not this table.",
+       "fix": "Their holdout was not touched by this exploration."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "time",
+   "title": "The target over time",
+   "blocks": [
+    {
+     "type": "chart",
+     "kind": "line",
+     "title": "Churn rate per snapshot month",
+     "unit": "%",
+     "places": 1,
+     "x_label": "Snapshot month",
+     "categories": [
+      "2025-01",
+      "2025-02",
+      "2025-03",
+      "2025-04",
+      "2025-05",
+      "2025-06",
+      "2025-07",
+      "2025-08",
+      "2025-09",
+      "2025-10",
+      "2025-11",
+      "2025-12",
+      "2026-01",
+      "2026-02",
+      "2026-03",
+      "2026-04"
+     ],
+     "series": [
+      {
+       "name": "All rows",
+       "values": [
+        8.46,
+        12.2,
+        10.23,
+        7.49,
+        10.8,
+        11.85,
+        11.59,
+        10.91,
+        10.13,
+        8.76,
+        16.26,
+        19.32,
+        19.02,
+        15.99,
+        8.1,
+        0.65
+       ]
+      },
+      {
+       "name": "Without earlier rows",
+       "values": [
+        13.45,
+        19.46,
+        15.35,
+        10.7,
+        15.98,
+        17.03,
+        16.81,
+        14.98,
+        14.45,
+        12.2,
+        21.74,
+        25.4,
+        24.34,
+        20.49,
+        10.15,
+        0.65
+       ]
+      }
+     ],
+     "caption": "The fall from February 2026 on is unfinished labels, not good news. The second line leaves out a customer's earlier row of two, which is never positive."
+    },
+    {
+     "type": "table",
+     "title": "What the horizon check found (60 days, extract assumed on 2026-04-01)",
+     "columns": [
+      "Snapshots",
+      "Rows",
+      "Positives",
+      "Rate",
+      "Rate without earlier rows",
+      "Days of the window seen",
+      "Use for training"
+     ],
+     "rows": [
+      [
+       "2025-01 to 2025-10",
+       3246,
+       332,
+       "10.2%",
+       "14.9%",
+       "60 of 60",
+       "yes, older base rate"
+      ],
+      [
+       "2025-11 to 2026-01",
+       1167,
+       213,
+       "18.3%",
+       "23.9%",
+       "60 of 60",
+       "yes, higher base rate"
+      ],
+      [
+       "2026-02",
+       469,
+       75,
+       "16.0%",
+       "20.5%",
+       "59 of 60",
+       "only if the extract is 2026-04-02 or later"
+      ],
+      [
+       "2026-03",
+       506,
+       41,
+       "8.1%",
+       "10.1%",
+       "31 of 60",
+       "no"
+      ],
+      [
+       "2026-04",
+       612,
+       4,
+       "0.65%",
+       "0.65%",
+       "0 of 60",
+       "no"
+      ]
+     ]
+    },
+    {
+     "type": "text",
+     "text": "The assumed date is the last date in the file, because the extract date is recorded nowhere. 1,587 rows fall after the last fully known date of 2026-01-31."
+    }
+   ]
+  },
+  {
+   "id": "relates",
+   "title": "What relates to the target",
+   "intro": "Rows with a finished label only (4,413).",
+   "blocks": [
+    {
+     "type": "chart",
+     "kind": "bar",
+     "title": "How well each feature alone orders the rows by churn (0.5 none, 1.0 perfect)",
+     "places": 3,
+     "x_label": "Strength",
+     "categories": [
+      "retention_call_outcome",
+      "nps_last",
+      "logins_30d",
+      "avg_session_min",
+      "tickets_90d",
+      "plan",
+      "region",
+      "tenure_months",
+      "discount_pct",
+      "annual_fee_eur",
+      "monthly_fee_eur",
+      "account_manager",
+      "is_internal_account",
+      "campaign_code"
+     ],
+     "series": [
+      {
+       "name": "Strength",
+       "values": [
+        1.0,
+        0.7108,
+        0.6669,
+        0.6633,
+        0.6189,
+        0.5291,
+        0.5288,
+        0.5223,
+        0.5094,
+        0.5067,
+        0.5067,
+        0.5065,
+        0.5048,
+        0.5037
+       ]
+      }
+     ],
+     "caption": "4,413 rows with a finished label. Strength is always a little above 0.5, even for noise: the table below says which ones survive correction."
+    },
+    {
+     "type": "table",
+     "title": "Strength, interval and correction",
+     "columns": [
+      "Feature",
+      "Strength",
+      "Interval",
+      "Read through",
+      "Shape",
+      "Survives correction",
+      "Adjusted p",
+      "Before / from Nov 2025",
+      "Reading"
+     ],
+     "rows": [
+      [
+       "retention_call_outcome",
+       1.0,
+       "1.000 to 1.000",
+       "category rates (out of fold)",
+       "-",
+       "yes",
+       "<0.0001",
+       "1.00 / 1.00",
+       "filled only when the customer churned"
+      ],
+      [
+       "nps_last",
+       0.711,
+       "0.686 to 0.734",
+       "whether the value is present at all",
+       "flat",
+       "yes",
+       "<0.0001",
+       "0.70 / 0.72",
+       "only whether it is blank; the score is flat"
+      ],
+      [
+       "logins_30d",
+       0.667,
+       "0.644 to 0.694",
+       "rank of the values",
+       "falling",
+       "yes",
+       "<0.0001",
+       "0.68 / 0.66",
+       "28.9% at 0 to 5 logins, 5.8% at 20 or more"
+      ],
+      [
+       "avg_session_min",
+       0.663,
+       "0.641 to 0.687",
+       "bins of the values (out of fold)",
+       "not monotone",
+       "yes",
+       "<0.0001",
+       "0.67 / 0.62",
+       "U shape, high at both ends"
+      ],
+      [
+       "tickets_90d",
+       0.619,
+       "0.595 to 0.642",
+       "rank of the values",
+       "rising",
+       "yes",
+       "<0.0001",
+       "0.63 / 0.62",
+       "7.8% with none, 26.4% with 4 or more"
+      ],
+      [
+       "plan",
+       0.529,
+       "0.500 to 0.554",
+       "category rates (out of fold)",
+       "-",
+       "yes",
+       "0.0013",
+       "0.54 / 0.52",
+       "only legacy differs"
+      ],
+      [
+       "region",
+       0.529,
+       "0.506 to 0.561",
+       "category rates (out of fold)",
+       "-",
+       "no",
+       "1.0000",
+       "0.51 / 0.52",
+       "nothing the tests support"
+      ],
+      [
+       "tenure_months",
+       0.522,
+       "0.494 to 0.548",
+       "rank of the values",
+       "flat",
+       "no",
+       "0.9614",
+       "0.53 / 0.51",
+       "nothing the tests support"
+      ],
+      [
+       "discount_pct",
+       0.509,
+       "0.480 to 0.534",
+       "bins of the values (out of fold)",
+       "flat",
+       "no",
+       "1.0000",
+       "0.52 / 0.52",
+       "nothing the tests support"
+      ],
+      [
+       "annual_fee_eur",
+       0.507,
+       "0.481 to 0.528",
+       "rank of the values",
+       "flat",
+       "no",
+       "1.0000",
+       "0.51 / 0.53",
+       "nothing the tests support"
+      ],
+      [
+       "monthly_fee_eur",
+       0.507,
+       "0.481 to 0.534",
+       "rank of the values",
+       "flat",
+       "no",
+       "1.0000",
+       "0.51 / 0.51",
+       "nothing the tests support"
+      ],
+      [
+       "account_manager",
+       0.506,
+       "0.481 to 0.533",
+       "category rates (out of fold)",
+       "-",
+       "no",
+       "0.3552",
+       "0.52 / 0.54",
+       "nothing the tests support"
+      ],
+      [
+       "is_internal_account",
+       0.505,
+       "0.486 to 0.526",
+       "category rates (out of fold)",
+       "-",
+       "no",
+       "too small to test",
+       "0.52 / 0.50",
+       "nothing the tests support"
+      ],
+      [
+       "campaign_code",
+       0.504,
+       "0.480 to 0.530",
+       "category rates (out of fold)",
+       "-",
+       "no",
+       "too small to test",
+       "0.53 / 0.51",
+       "nothing the tests support"
+      ]
+     ]
+    },
+    {
+     "type": "text",
+     "text": "These are associations in one extract, one feature at a time. They do not show that any of these causes churn. `region` has an interval above 0.5 but does not survive correction, so it is not treated as real."
+    }
+   ]
+  },
+  {
+   "id": "shapes",
+   "title": "Shapes",
+   "blocks": [
+    {
+     "type": "chart",
+     "kind": "line",
+     "title": "Churn rate by average session length (minutes)",
+     "unit": "%",
+     "places": 1,
+     "x_label": "Average session, minutes",
+     "categories": [
+      "1 to 8",
+      "8 to 12.3",
+      "12.3 to 15.2",
+      "15.2 to 17.7",
+      "17.7 to 20.1",
+      "20.1 to 22.4",
+      "22.4 to 24.8",
+      "24.8 to 27.7",
+      "27.7 to 31.7",
+      "31.7 to 52.8"
+     ],
+     "series": [
+      {
+       "name": "Churn rate",
+       "values": [
+        27.31,
+        11.79,
+        10.02,
+        7.08,
+        6.12,
+        4.5,
+        8.39,
+        8.89,
+        11.24,
+        28.25
+       ]
+      }
+     ],
+     "caption": "Ten equal-sized bins, labelled rows. This is the only feature whose rate changes direction."
+    }
+   ]
+  },
+  {
+   "id": "segments",
+   "title": "Segments that differ",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Feature",
+      "Level",
+      "Rows",
+      "Positives",
+      "Rate",
+      "Interval",
+      "Rate elsewhere",
+      "Adjusted p",
+      "Differs"
+     ],
+     "rows": [
+      [
+       "plan",
+       "legacy",
+       504,
+       91,
+       "18.1%",
+       "14.9% to 21.6%",
+       "11.6%",
+       "0.0005",
+       "yes"
+      ],
+      [
+       "account_manager",
+       "level 5",
+       718,
+       110,
+       "15.3%",
+       "12.9% to 18.1%",
+       "11.8%",
+       "0.1148",
+       "no"
+      ],
+      [
+       "plan",
+       "plus",
+       1532,
+       162,
+       "10.6%",
+       "9.1% to 12.2%",
+       "13.3%",
+       "0.1163",
+       "no"
+      ],
+      [
+       "plan",
+       "basic",
+       1512,
+       182,
+       "12.0%",
+       "10.5% to 13.8%",
+       "12.5%",
+       "1.0000",
+       "no"
+      ],
+      [
+       "plan",
+       "pro",
+       865,
+       110,
+       "12.7%",
+       "10.7% to 15.1%",
+       "12.3%",
+       "1.0000",
+       "no"
+      ],
+      [
+       "region",
+       "east",
+       1161,
+       148,
+       "12.8%",
+       "10.9% to 14.8%",
+       "12.2%",
+       "1.0000",
+       "no"
+      ]
+     ]
+    },
+    {
+     "type": "text",
+     "text": "Six strongest differences among all levels tested, labelled rows. Only the legacy plan differs after correction. Its rate is 14.2% before November 2025 and 28.5% from then on, on 367 and 137 rows, so the widening is uncertain. [med]"
+    }
+   ]
+  },
+  {
+   "id": "quality",
+   "title": "Data quality",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Column",
+      "What",
+      "Evidence",
+      "What to do"
+     ],
+     "rows": [
+      [
+       "tenure_months",
+       "Code for unknown",
+       "999 on 180 rows (3.0%); churn 10.5% there against 12.4%",
+       "Replace with missing"
+      ],
+      [
+       "avg_session_min",
+       "Possible floor",
+       "Exactly 1.0 on 128 rows of all 6,000; 84 labelled rows, 41 churned (48.8%)",
+       "Ask whether 1.0 is a real value or a default"
+      ],
+      [
+       "is_internal_account",
+       "Near constant",
+       "One level covers 99.5%; 29 rows flagged",
+       "Exclude flagged rows from training"
+      ],
+      [
+       "campaign_code",
+       "High cardinality",
+       "400 levels, 4 to 26 rows each",
+       "Leave out, or group"
+      ],
+      [
+       "monthly_fee_eur, account_manager, discount_pct",
+       "Unstable per customer",
+       "Differ between a customer's two rows on most of the 1,500 customers",
+       "Ask whether they are as of the snapshot"
+      ],
+      [
+       "retention_call_outcome",
+       "Filled for one class",
+       "Filled only on positives, 3 levels",
+       "Remove"
+      ],
+      [
+       "all numeric columns",
+       "Outliers",
+       "None above the script's outlier check, apart from the 999 code",
+       "Nothing to do"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "missing",
+   "title": "Missing values",
+   "blocks": [
+    {
+     "type": "table",
+     "title": "Labelled rows",
+     "columns": [
+      "Column",
+      "Missing rows",
+      "Share",
+      "Rate when missing",
+      "Rate when present",
+      "Adjusted p",
+      "Carries signal"
+     ],
+     "rows": [
+      [
+       "retention_call_outcome",
+       3868,
+       "87.6%",
+       "0.0%",
+       "100.0%",
+       "<0.0001",
+       "yes"
+      ],
+      [
+       "nps_last",
+       653,
+       "14.8%",
+       "43.2%",
+       "7.0%",
+       "<0.0001",
+       "yes"
+      ]
+     ]
+    },
+    {
+     "type": "text",
+     "text": "No other column has missing values. The blank share of `nps_last` rises from about 14% to 18% at the November 2025 step, in line with the higher share of churners, and blanks by class hold steady in both periods."
+    }
+   ]
+  },
+  {
+   "id": "redundant",
+   "title": "Redundant features",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Column A",
+      "Column B",
+      "Value",
+      "Measure",
+      "What to do"
+     ],
+     "rows": [
+      [
+       "annual_fee_eur",
+       "monthly_fee_eur",
+       1.0,
+       "Spearman correlation",
+       "Keep monthly only"
+      ],
+      [
+       "plan",
+       "annual_fee_eur",
+       0.9533,
+       "correlation ratio on ranks",
+       "Know why you keep both"
+      ],
+      [
+       "plan",
+       "monthly_fee_eur",
+       0.9533,
+       "correlation ratio on ranks",
+       "Know why you keep both"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leakage",
+   "title": "Check for leakage next",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Column",
+      "Why to check",
+      "Current reading"
+     ],
+     "rows": [
+      [
+       "retention_call_outcome",
+       "Filled only when churned, strength 1.000",
+       "Remove, no audit needed"
+      ],
+      [
+       "nps_last",
+       "Blank carries most of the strength; goes blank between rows",
+       "Open: confirm it is known at the snapshot"
+      ],
+      [
+       "avg_session_min",
+       "Third strongest, not in the committed extract, high values look like churn",
+       "Open: find how and over which dates it is computed"
+      ],
+      [
+       "logins_30d, tickets_90d",
+       "Strong for a single feature",
+       "[med] `extract.py` joins them on the snapshot date, if this file used the same source"
+      ],
+      [
+       "discount_pct",
+       "Retention offers may be a response to risk",
+       "No signal here; check before adding it"
+      ],
+      [
+       "cancellation_reason, last_login_at",
+       "Not in this table, but in the committed feature list",
+       "Keep them out, both come from after the snapshot"
+      ]
+     ]
+    },
+    {
+     "type": "text",
+     "text": "Everything still open here should go through `ds-dataset` once a split exists."
+    }
+   ]
+  },
+  {
+   "id": "try",
+   "title": "What to try",
+   "blocks": [
+    {
+     "type": "list",
+     "items": [
+      "[high] Remove `retention_call_outcome` before any split.",
+      "[high] Train only on rows with a complete 60-day window: snapshots through 2026-01-01 today, or a fresh extract with snapshots through 2026-09-01.",
+      "[high] Split forward in time with at least 60 days between the last training snapshot and the first test snapshot, and keep each customer on one side.",
+      "[med] With this file as it is, the split that fits is training through 2025-09-01 and test on 2025-11-01 to 2026-01-01. That is a hard test because the step falls between them, so it tells you whether the ranking survives, not whether the probabilities do.",
+      "[med] Try first: `logins_30d`, `tickets_90d`, `avg_session_min` and a legacy-plan flag. All hold their strength on both sides of the step.",
+      "[med] Add a blank flag for `nps_last` only after the owner confirms when it is set. Use the flag, not the score.",
+      "[high] Give `avg_session_min` bins or a squared distance from about 20 minutes, or use trees. A linear term sees nothing.",
+      "[high] Replace 999 in `tenure_months` with a missing value and drop `annual_fee_eur`.",
+      "[high] Drop internal accounts and the three personal columns from the training rows.",
+      "[med] Leave out `region`, `discount_pct`, the fees, `account_manager` and `campaign_code` unless a combination shows value, as none has signal alone.",
+      "[med] Recalibrate on the most recent complete months and take the base rate for the cost threshold from a known sample, not from this file.",
+      "[high] The model must beat the team's rule of 4 or fewer logins: on labelled rows it has 28.5% precision and 19.6% recall (37.2% precision without customers' earlier rows). The brief's bar is at least one third of churners with at least 40% precision.",
+      "[guess] The November step may also change which features matter later on. Check again on later months once the labels are in."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "personal",
+   "title": "Personal columns",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Column",
+      "Kind"
+     ],
+     "rows": [
+      [
+       "full_name",
+       "person name"
+      ],
+      [
+       "email",
+       "e-mail"
+      ],
+      [
+       "phone",
+       "phone"
+      ],
+      [
+       "account_manager",
+       "staff, levels numbered on this page because the name suggests people"
+      ]
+     ]
+    },
+    {
+     "type": "text",
+     "text": "None of these was used in any measure of the target except `account_manager`, shown by numbered level only. Drop all of them before modelling."
+    }
+   ]
+  },
+  {
+   "id": "unchecked",
+   "title": "What was not checked",
+   "blocks": [
+    {
+     "type": "list",
+     "items": [
+      "Whether each feature is known at the moment of the prediction: there is no data dictionary, and six columns have no known source.",
+      "The true extract date: it is assumed from the last snapshot and supported only by the rates.",
+      "The cause of the November 2025 step, and whether it is a lasting change or seasonal, since the file holds one winter.",
+      "How rows were sampled, and whether the sample represents the active base.",
+      "The effect of past retention offers on these labels: the table does not show who received one.",
+      "Interactions between features: all strengths are one feature at a time.",
+      "Predictive power of a real model: nothing was trained.",
+      "`train.csv` and `test.csv` beyond their keys, and the other files in `data/`.",
+      "P-values treat rows as independent, and 1,500 customers have two rows, so read the intervals first. Those resample whole customers."
+     ]
+    }
+   ]
+  }
+ ],
+ "facts": {
+  "version": 1,
+  "scope": "acme-churn data/snapshots.csv, exploration before a split",
+  "data": [
+   {
+    "name": "full_name",
+    "class": "personal",
+    "where": [
+     "data/snapshots.csv"
+    ],
+    "rule": "drop before modelling"
+   },
+   {
+    "name": "email",
+    "class": "personal",
+    "where": [
+     "data/snapshots.csv"
+    ],
+    "rule": "drop before modelling"
+   },
+   {
+    "name": "phone",
+    "class": "personal",
+    "where": [
+     "data/snapshots.csv"
+    ],
+    "rule": "drop before modelling"
+   }
+  ],
+  "assumptions": [
+   "The extract date is taken as 2026-04-01, the last snapshot in the file."
+  ],
+  "open": [
+   "Re-run the extract or drop the 1,587 rows after 2026-01-31.",
+   "Remove retention_call_outcome.",
+   "Find what changed around 2025-11-01.",
+   "Confirm when nps_last goes blank.",
+   "Find the query that built snapshots.csv and how its rows were sampled."
+  ]
+ }
+}
