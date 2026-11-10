@@ -33,7 +33,7 @@
       "name": "cloud-architect",
       "source": "./plugins/cloud-architect",
       "description": "Three skills for cloud architects: cloud-map, cloud-design and cloud-review.",
-      "version": "0.2.0"
+      "version": "0.2.1"
     },
     {
       "name": "solutions-architect",
