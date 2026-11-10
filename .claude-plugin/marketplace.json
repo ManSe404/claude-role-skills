@@ -8,8 +8,8 @@
     {
       "name": "software-engineering",
       "source": "./plugins/software-engineering",
-      "description": "Five skills for software engineers: codebase-map, impact, bug-hunt, test-gap and dependency-audit.",
-      "version": "0.2.0"
+      "description": "Six skills for software engineers: codebase-map, impact, bug-hunt, test-gap, dependency-audit and code-audit.",
+      "version": "0.3.0"
     },
     {
       "name": "ai-architect",
@@ -27,7 +27,7 @@
       "name": "software-architect",
       "source": "./plugins/software-architect",
       "description": "Four skills for software architects: arch-style, arch-c4, arch-review and arch-evolve.",
-      "version": "0.2.0"
+      "version": "0.3.0"
     },
     {
       "name": "cloud-architect",

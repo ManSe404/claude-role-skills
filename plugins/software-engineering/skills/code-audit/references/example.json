@@ -1,0 +1,707 @@
+{
+ "skill": "code-audit",
+ "title": "acme-index, audited",
+ "subtitle": "The bugs in the code as it stands at acd5c88, each tied to the scenario that triggers it, and what to fix first.",
+ "meta": {
+  "repo": "acme-index",
+  "commit": "acd5c88",
+  "date": "2026-11-10"
+ },
+ "verdict": {
+  "text": "Not safe to build on yet: three bugs silently lose or corrupt the index (re-index deletes before it embeds, unreadable files become empty documents, chunk ids change in every process), and one poison job stalls a tenant's queue for ever. Fix those four first; each is a few lines and its test is written out below. Then fix the answer-stream contract and the run digest.",
+  "tone": "bad"
+ },
+ "stats": [
+  {
+   "label": "Files read",
+   "value": 17,
+   "note": "all tracked files",
+   "tone": "info"
+  },
+  {
+   "label": "Promises",
+   "value": 21,
+   "note": "docs, contracts, ADRs, CLAUDE.md",
+   "tone": "info"
+  },
+  {
+   "label": "Promises broken",
+   "value": 14,
+   "tone": "bad"
+  },
+  {
+   "label": "High findings",
+   "value": 6,
+   "tone": "bad"
+  },
+  {
+   "label": "Scan hits confirmed",
+   "value": "6 of 10",
+   "note": "4 were not bugs",
+   "tone": "info"
+  }
+ ],
+ "sections": [
+  {
+   "id": "findings",
+   "title": "Findings",
+   "intro": "Ordered by what reaches a user or the data: first what loses or corrupts the index, then what fails silently, then what fails loudly. Every finding was read in the code; the tests named in each fix are written out under *Tests that would catch these*.",
+   "blocks": [
+    {
+     "type": "findings",
+     "items": [
+      {
+       "severity": "high",
+       "title": "Re-index deletes the document before it embeds the new version",
+       "where": "src/acme_index/store.py:59",
+       "evidence": "`reindex` commits `DELETE FROM chunks WHERE doc_id = ?` in its own transaction (lines 59-60), then calls `self._embedder.embed` (line 61), then inserts in a second transaction (62-63). Scenario: the embedding service is down during a `reindex` job → `EmbedderError` after 4 attempts → the delete is already committed, so the document is **gone from search**; the worker retries 3 times, each retry deletes again, then dead-letters the job and the document stays gone until someone re-queues it. Even when embedding succeeds, a search on another connection misses the document while the embed call runs, and with no embedder timeout (see below) that window has no upper bound. [high]\n\nBreaks `docs/contracts.md:7` (\"Re-indexing a document never removes it from search before its new version is stored\"). `test_reindex_replaces_the_chunks` only covers the success path.",
+       "fix": "Embed first, then delete and insert in **one** `with self._conn:` block: `vectors = embed(...)`, then `with self._conn: DELETE ...; _insert_chunks(...)`. Test: `test_reindex_keeps_the_old_version_when_embedding_fails`.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "parse_document swallows every error and returns no paragraphs",
+       "where": "src/acme_index/parse.py:24",
+       "evidence": "`except Exception: return []` catches the function's own `ParseError` (line 23) and everything else: a missing file, a file that is not UTF-8, a `.pdf`, a corrupt `.docx`, and a `.docx` when `python-docx` is not installed (`ModuleNotFoundError`). The worker joins `[]` into `\"\"`; `split(doc_id, \"\")` returns no chunks and `embed([])` returns `[]`, so:\n\n- an `index` job stores nothing and is marked **done**: the document never appears in search, with no error and no dead-letter row;\n- a `reindex` job deletes every chunk of the document, inserts none and is marked **done**: a document that **was** searchable disappears without a trace. [high]\n\nBreaks `README.md:13` (\"Parse errors are reported, never hidden... does not end up in the index as an empty document\") and `CLAUDE.md` (\"do not return an empty result in place of an error\"). No test feeds an unreadable file.",
+       "fix": "Drop the blanket `except`. Keep `ParseError` for the unknown suffix, and convert `OSError`, `UnicodeDecodeError` and `ImportError` (\"install acme-index[docx]\") into `ParseError(f\"{path}: ...\")` with `from exc`. Have the worker treat `ParseError` as not retryable and dead-letter it at once. Tests: `test_unreadable_files_raise_parse_error_with_the_path`, `test_docx_without_python_docx_is_a_parse_error`, `test_a_reindex_of_an_unreadable_file_keeps_the_document`.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "Chunk ids use the built-in hash(), which changes in every process",
+       "where": "src/acme_index/chunks.py:25",
+       "evidence": "`hash(text)` of a `str` is salted per process (`PYTHONHASHSEED`); two runs of `hash(\"Novi Sad\") & 0xFFFFFFFFFFFF` here gave `22076787218741` and `201890457713007`. [high] Each worker start therefore builds different ids for the same chunk. Scenarios:\n\n- an `index` job for a document that an earlier worker process already indexed (re-queued, or redelivered after a crash before `done`) → `INSERT OR REPLACE` finds no matching id and **adds a second copy of every chunk**; search then fills `limit` with duplicates of one passage;\n- every chunk written before commit `acd5c88` has a SHA-1 id, so the first `index` of any existing document after deploying it duplicates it too.\n\n`reindex` is unaffected (it deletes by `doc_id`). Breaks ADR 0001 (\"the same input gives the same id in every process\", \"re-indexing overwrites, never duplicates\", and \"changing how ids are built ... needs a new ADR\"): `acd5c88` (\"Chunk ids without hashlib, about 3x faster\") replaced `hashlib.sha1` with no ADR. `test_the_same_text_gets_the_same_chunk_ids` passes for the wrong reason: both calls run in one process.",
+       "fix": "Restore the exact line from before `acd5c88`: `hashlib.sha1(text.encode(\"utf-8\")).hexdigest()[:12]`, so ids written before that commit match again. Then delete the duplicates written since it was deployed (or `reindex` the documents indexed since). If speed matters, a faster digest such as `blake2b` is a new id scheme and needs the ADR and a full re-index. Tests: `test_chunk_ids_follow_adr_0001`, `test_chunk_ids_are_the_same_in_every_process`.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "A failing job that is not an EmbedderError is retried forever and blocks the queue",
+       "where": "src/acme_index/worker.py:110",
+       "evidence": "Only the `except EmbedderError` branch counts retries; `except Exception` (lines 110-112) logs a warning, sleeps `backoff` and loops with no limit. Errors that reach it: a job `kind` with no handler (`KeyError` at line 102, e.g. a newer producer queues `delete`), a payload without `doc_id` or `path`, an embedder answer that is not JSON or has no `data` (a proxy's HTML page with status 200: `JSONDecodeError`), a read timeout (`TimeoutError`, which is not a `URLError`). `Queue.next` always returns the lowest id, so every job behind the poison job waits forever while the process looks alive and only logs a warning every 2 s. [high]\n\nBreaks `README.md:31` (\"A job is retried at most 3 times, then moved to the dead-letter table\"). The worker has no tests.",
+       "fix": "One counter for every failure: any `Exception` increments `retries`, waits `backoff * retries` and goes to `dead_letter` after `MAX_RETRIES`. Errors that cannot succeed on a retry (unknown kind, missing payload key, `ParseError`) go to `dead_letter` on the first failure. Tests: `test_a_job_of_unknown_kind_goes_to_dead_letter`, `test_a_job_with_a_bad_payload_goes_to_dead_letter`.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "The stored run digest is the planned one, not the digest of what ran",
+       "where": "src/acme_index/plans.py:73",
+       "evidence": "`execute` writes the pruned digest to `run[\"digest\"]` (line 91) but `Runs.finish` reads `run.get(\"_digest\")` (line 73), which nothing writes any more: commit `d016919` (\"one shape for the run dict, no private keys\") renamed the key on the writing side only. Scenario: a plan `fetch, parse, index` runs where no `index` handler exists → `index` is dropped, the returned dict carries the digest of `fetch, parse`, but the `runs` row keeps the digest of the full plan and status `done`. The record says the source was indexed when it was not. [high] ADR 0002 lets a run be skipped when the last successful run has the same digest, so once that skip is built, the next full run of this source would be skipped and the source never indexed. [med]\n\nBreaks ADR 0002 (\"the stored digest is the digest of what ran, not of what was planned\"). `test_a_plan_runs_its_steps_in_order_and_records_the_run` has a handler for every step, so both digests are equal and the test cannot see it.",
+       "fix": "In `finish`, write `run[\"digest\"]` unconditionally (`UPDATE runs SET digest = ?, status = ?, finished_at = ?`). Better: a small `Run` dataclass instead of a dict, so a renamed field is a type error. Test: `test_a_dropped_step_is_left_out_of_the_stored_digest`.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "The answer stream can end without an end or error event, or with end when it was cut off",
+       "where": "src/acme_index/answers.py:45",
+       "evidence": "Only `urllib.error.URLError` is caught. A malformed line (`json.loads` at line 41: `JSONDecodeError`), a message without `text` such as `{\"error\": \"overloaded\"}` (`KeyError` at line 44), a connection reset mid-stream (`ConnectionResetError`, `http.client.IncompleteRead`) or a read timeout (`TimeoutError`, not a `URLError`) escapes the generator as an exception after some tokens: no `error` event, and by the contract the client is left waiting. [high] And when the server closes the stream before `{\"done\": true}`, the loop ends normally and line 48 yields `end`: a **truncated answer is shown as complete**. [high]\n\nBreaks `docs/contracts.md:19-21` (\"Every answer stream ends with exactly one `end` or `error` event\"; `error` when the server \"sent something unreadable\"). The only test is the happy path.",
+       "fix": "Track whether `done` arrived; catch `Exception` around the request and the loop (not `BaseException`, so `GeneratorExit` still closes it) and yield one `error` with the reason; after the loop, yield `end` only if `done` was seen, otherwise `error` \"stream ended before done\". Tests: `test_a_malformed_line_ends_the_stream_with_an_error`, `test_a_message_without_text_...`, `test_a_stream_cut_before_done_is_an_error_not_an_end`.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "The embedder call has no timeout",
+       "where": "src/acme_index/embedder.py:53",
+       "evidence": "`urllib.request.urlopen(request)` gets no timeout, so it waits for ever on a service that accepts the connection and never answers. The constructor still takes `timeout=10.0` and stores it (line 28), but commit `86cd8f1` dropped `timeout=self._timeout` when it moved the call into `_post`. Scenario: the embedding service is overloaded → the worker hangs with no log line and never retries or dead-letters; if it hangs inside `reindex`, the document is out of search for as long as the hang lasts (finding 1); `Store.search` (line 85) hangs for the user too. [high]\n\nBreaks `CLAUDE.md` (\"Every outbound call has an explicit timeout\").",
+       "fix": "`urlopen(request, timeout=self._timeout)`, and catch `(urllib.error.URLError, TimeoutError)` in the retry loop: a read timeout raises `TimeoutError`, which is not a `URLError`, so without that it would escape the retry. Test: `test_the_embedder_sends_its_timeout`.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "Dead-lettering crashes the worker when a job id is used a second time",
+       "where": "src/acme_index/worker.py:81",
+       "evidence": "`dead_letter.id` is the primary key and takes `job.id`. `jobs.id` is an `INTEGER PRIMARY KEY` without `AUTOINCREMENT`, so SQLite reuses ids: when the queue is empty the next job gets id 1 again. Checked with the same schema in memory: two jobs both got id 1 and the second dead-letter insert raised `IntegrityError: UNIQUE constraint failed: dead_letter.id`. [high] Scenario: job 1 is dead-lettered while the embedder is down, the queue drains, a new job gets id 1 and also fails → the insert fails, the transaction rolls back (the job stays at the head of `jobs`), the exception is raised inside the `except EmbedderError` branch so nothing catches it, and the worker exits with a traceback. Every restart runs that job again, waits through 16 embedder attempts and crashes again.\n\nBreaks `README.md:31-32` (the dead-letter table keeps the job and its last error).",
+       "fix": "Give `dead_letter` its own key and keep the job id as a column (`id INTEGER PRIMARY KEY, job_id INTEGER, ..., failed_at TEXT`), and declare `jobs.id` `AUTOINCREMENT` so ids are never reused. `CREATE TABLE IF NOT EXISTS` will not change existing tenant files, so this needs a migration step. Test: `test_a_reused_job_id_can_be_dead_lettered_again`.",
+       "status": "open"
+      },
+      {
+       "severity": "low",
+       "title": "Embedder errors are misclassified and do not name the document",
+       "where": "src/acme_index/embedder.py:40",
+       "evidence": "`HTTPError` is a subclass of `URLError`, so a `400` (input too long) is retried 4 times and reported as \"embedder unreachable\", then the worker retries it 3 more times: 16 calls for an error no retry can fix, and a misleading message in `dead_letter`. A bad body (not JSON, no `data`, no `embedding`, a non-number) escapes as `JSONDecodeError`, `KeyError` or `ValueError` instead of `EmbedderError`; today that feeds the endless retry above. No message names the document id. [high]\n\nBreaks `src/acme_index/__init__.py:15` (`EmbedderError`: \"could not be reached or sent a bad answer\") and `CLAUDE.md` (\"Errors name the document id or the path\").",
+       "fix": "Retry only connection errors, timeouts and 5xx/429; raise `EmbedderError` at once for other 4xx. Wrap the body checks in `vectors` so every bad answer is an `EmbedderError`. Have the worker add the `doc_id` to the message it stores. Test: `test_a_body_that_is_not_json_is_an_embedder_error`.",
+       "status": "open"
+      },
+      {
+       "severity": "low",
+       "title": "A job's write and its done mark are separate commits on two connections",
+       "where": "src/acme_index/worker.py:140",
+       "evidence": "`main` opens one connection for `Store` and another for `Queue` on the same file, so the handler's insert and `Queue.done` cannot share a transaction. A crash between them runs the job again. `Queue.next` takes no claim, so a second worker on the same tenant takes the same job. [high] Today the rerun duplicates chunks (finding 3); once chunk ids are stable again, both `index` and `reindex` are idempotent and the rerun is harmless. [med]\n\nContract `docs/contracts.md:29` (\"never run again\") holds only by luck.",
+       "fix": "Write down \"at least once, handlers must be idempotent\" in the contract, or let `Store` and `Queue` share one connection and mark the job done in the handler's transaction. Say in the README whether two workers per tenant are allowed; if they are, claim the job with an `UPDATE ... RETURNING` before running it.",
+       "status": "open"
+      },
+      {
+       "severity": "low",
+       "title": "The runs row stores the source name, not the plan",
+       "where": "src/acme_index/plans.py:62",
+       "evidence": "The `plan` column gets `plan.source`. ADR 0002 says a run row holds \"the plan, its digest\" so we can \"know what its last run did\"; a SHA-256 cannot be reversed, so the table cannot say which steps ran. Also `Runs.load` with an unknown id fails with `TypeError` on `None` (line 82), not an `IndexingError`. [high]",
+       "fix": "Store the executed steps as canonical JSON in `plan` (or add a `steps` column) and raise `IndexingError(f\"run {run_id} not found\")` in `load`.",
+       "status": "open"
+      },
+      {
+       "severity": "low",
+       "title": "Upper-case suffixes are rejected",
+       "where": "src/acme_index/parse.py:19",
+       "evidence": "`path.suffix == \".docx\"` and `in {\".txt\", \".md\"}` are case-sensitive, so `Report.DOCX` or `NOTES.MD` are refused. Today that becomes an empty document through finding 2; once that is fixed it is a `ParseError` for a file that could be read. [high]",
+       "fix": "Compare `path.suffix.lower()`.",
+       "status": "open"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "promises",
+   "title": "Promises",
+   "intro": "What the README, CLAUDE.md, the contracts and the ADRs say the code guarantees, and the code that keeps each one.",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Promise",
+      "Where stated",
+      "Kept by",
+      "Status"
+     ],
+     "rows": [
+      [
+       "Every outbound call has an explicit timeout",
+       "`CLAUDE.md:7`",
+       "`answers.py:36` yes; `embedder.py:53` no",
+       "broken"
+      ],
+      [
+       "Errors name the document or path; raise `IndexingError`; never an empty result in place of an error",
+       "`CLAUDE.md:8-9`",
+       "`parse.py:24` returns `[]`; embedder messages name no document",
+       "broken"
+      ],
+      [
+       "SQL takes parameters",
+       "`CLAUDE.md:10`",
+       "every `execute` in `store.py`, `worker.py`, `plans.py` uses `?`",
+       "kept"
+      ],
+      [
+       "Standard library only; optional package imported inside the function",
+       "`CLAUDE.md:5`",
+       "`parse.py:29`",
+       "kept"
+      ],
+      [
+       "Parse errors are reported, never an empty document",
+       "`README.md:13`",
+       "nothing: `parse.py:24` returns `[]`",
+       "broken"
+      ],
+      [
+       "A job is retried at most 3 times, then dead-lettered",
+       "`README.md:31`",
+       "`worker.py:103-109` for `EmbedderError` only; `110-112` loops forever",
+       "broken"
+      ],
+      [
+       "The dead-letter table keeps the job with its last error",
+       "`README.md:31-32`",
+       "`worker.py:78-84`; fails on a reused job id",
+       "broken"
+      ],
+      [
+       "`backoff_seconds` before the first retry, default 2",
+       "`README.md:29`",
+       "`worker.py:50`, `109`",
+       "kept"
+      ],
+      [
+       "Chunk ids are the same in every process",
+       "ADR 0001:13; `chunks.py:3`",
+       "`chunks.py:25` uses `hash()`",
+       "broken"
+      ],
+      [
+       "Re-indexing overwrites, never duplicates",
+       "ADR 0001:13",
+       "`reindex` deletes by `doc_id`; an `index` of an existing document duplicates",
+       "broken"
+      ],
+      [
+       "Changing how ids are built needs a new ADR and a re-index",
+       "ADR 0001:20",
+       "`acd5c88` did neither",
+       "broken"
+      ],
+      [
+       "The stored digest is the digest of what ran",
+       "ADR 0002:14-15",
+       "`plans.py:73` reads `_digest`, never written",
+       "broken"
+      ],
+      [
+       "A failed step fails the run; the error names the step",
+       "ADR 0002:16",
+       "`plans.py:95-97`",
+       "kept"
+      ],
+      [
+       "A run row holds the plan",
+       "ADR 0002:13",
+       "`plans.py:62` stores the source name only",
+       "broken"
+      ],
+      [
+       "Re-indexing never removes a document from search before its new version is stored",
+       "`docs/contracts.md:7`",
+       "`store.py:59-63` commits the delete first",
+       "broken"
+      ],
+      [
+       "Search returns at most `limit` chunks, best first",
+       "`docs/contracts.md:8`",
+       "`store.py:90-91`",
+       "kept"
+      ],
+      [
+       "A tenant's chunks live only in its own file",
+       "`docs/contracts.md:9`",
+       "`worker.py:139-141`",
+       "kept"
+      ],
+      [
+       "Every answer stream ends with exactly one `end` or `error`; unreadable output is an `error`",
+       "`docs/contracts.md:19-21`",
+       "`answers.py:45` catches `URLError` only",
+       "broken"
+      ],
+      [
+       "`index` and `reindex` jobs carry `doc_id` and `path`",
+       "`docs/contracts.md:28`",
+       "the producer is outside this repo",
+       "not checked"
+      ],
+      [
+       "A job whose handler returned is never run again",
+       "`docs/contracts.md:29`",
+       "`worker.py:114`, a separate commit on a separate connection",
+       "broken"
+      ],
+      [
+       "`EmbedderError` when the service is unreachable or sends a bad answer",
+       "`src/acme_index/__init__.py:15`",
+       "`embedder.py:40` catches `URLError` only",
+       "broken"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "failure-paths",
+   "title": "Failure paths",
+   "intro": "Each main flow (index job, re-index job, search, answer stream, plan run) walked through a failure halfway.",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "What fails",
+      "What happens today",
+      "What should happen"
+     ],
+     "rows": [
+      [
+       "Embedder down during `reindex`",
+       "chunks deleted, job dead-lettered after ~16 calls, document out of search until re-queued",
+       "old chunks stay; job dead-lettered; document still searchable"
+      ],
+      [
+       "Embedder accepts and never answers",
+       "worker hangs for ever with no log; `search` hangs; inside `reindex` the document is out of search",
+       "timeout → `EmbedderError` → retries → dead-letter"
+      ],
+      [
+       "Embedder answers 200 with an HTML page",
+       "`JSONDecodeError` → retried every 2 s for ever; every later job waits",
+       "`EmbedderError`, counted, dead-lettered"
+      ],
+      [
+       "File missing, not UTF-8, `.pdf`, or `.docx` without python-docx",
+       "`index`: nothing stored, job done. `reindex`: document deleted, job done",
+       "`ParseError` with the path → dead-letter; old version kept"
+      ],
+      [
+       "Job with an unknown `kind` or a payload without `path`",
+       "`KeyError` → retried for ever; queue blocked",
+       "dead-lettered on the first failure"
+      ],
+      [
+       "Second permanent failure with a reused job id",
+       "`IntegrityError` → worker exits; job stays first; crash on every start",
+       "second dead-letter row; worker goes on"
+      ],
+      [
+       "Worker killed after the handler's commit, before `done`",
+       "job runs again in a new process → every chunk stored twice",
+       "rerun overwrites the same rows"
+      ],
+      [
+       "`index` of a document indexed by an earlier process or before `acd5c88`",
+       "every chunk stored twice; search returns duplicates",
+       "rows overwritten"
+      ],
+      [
+       "Model server sends a malformed line, an error message, or resets",
+       "exception escapes the generator; no `error` event; client waits",
+       "one `error` event, then the stream ends"
+      ],
+      [
+       "Model server closes the stream before `done`",
+       "`end` event: truncated answer shown as complete",
+       "`error` event"
+      ],
+      [
+       "Plan step with no handler",
+       "step dropped; run row keeps the planned digest and `done`",
+       "row keeps the digest of what ran"
+      ],
+      [
+       "Two workers on one tenant",
+       "both take the same job; with `hash()` ids, duplicates [med]",
+       "one claims it, or the README says one worker per tenant"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "title": "Structure",
+   "intro": "8 modules, 9 import edges, no cycles and no layer breaks: the shape is sound. The problems are in the code inside the modules, not in how they depend on each other. With 10 commits, hot spots and files that change together mean nothing yet.",
+   "blocks": [
+    {
+     "type": "graph",
+     "title": "Modules, outside systems and the problem spots",
+     "nodes": [
+      {
+       "id": "worker",
+       "label": "worker",
+       "note": "entry; endless retry, dead-letter id clash",
+       "group": "entry"
+      },
+      {
+       "id": "caller",
+       "label": "search / answer caller",
+       "note": "outside this repo",
+       "group": "boundary"
+      },
+      {
+       "id": "parse",
+       "label": "parse",
+       "note": "swallows every error → []",
+       "group": "affected"
+      },
+      {
+       "id": "store",
+       "label": "store",
+       "note": "reindex deletes before embed",
+       "group": "affected"
+      },
+      {
+       "id": "chunks",
+       "label": "chunks",
+       "note": "hash() ids differ per process",
+       "group": "affected"
+      },
+      {
+       "id": "embedder",
+       "label": "embedder",
+       "note": "no timeout; bad answers escape raw",
+       "group": "affected"
+      },
+      {
+       "id": "plans",
+       "label": "plans",
+       "note": "stored digest is the planned one",
+       "group": "affected"
+      },
+      {
+       "id": "answers",
+       "label": "answers",
+       "note": "stream can end without end/error",
+       "group": "affected"
+      },
+      {
+       "id": "errors",
+       "label": "acme_index (errors)",
+       "note": "IndexingError, ParseError, EmbedderError",
+       "group": "module"
+      },
+      {
+       "id": "sqlite",
+       "label": "tenant .sqlite",
+       "note": "chunks, doc_meta, jobs, dead_letter, runs",
+       "group": "data"
+      },
+      {
+       "id": "files",
+       "label": "document files",
+       "note": ".txt .md .docx",
+       "group": "data"
+      },
+      {
+       "id": "embed_svc",
+       "label": "embedding service",
+       "note": "POST /v1/embeddings",
+       "group": "external"
+      },
+      {
+       "id": "model_svc",
+       "label": "model server",
+       "note": "POST /v1/generate, NDJSON",
+       "group": "external"
+      },
+      {
+       "id": "docx",
+       "label": "python-docx",
+       "note": "optional",
+       "group": "external"
+      }
+     ],
+     "edges": [
+      {
+       "from": "worker",
+       "to": "parse",
+       "label": "parse_document"
+      },
+      {
+       "from": "worker",
+       "to": "store",
+       "label": "add_document / reindex"
+      },
+      {
+       "from": "worker",
+       "to": "embedder",
+       "label": "builds"
+      },
+      {
+       "from": "worker",
+       "to": "sqlite",
+       "label": "jobs (own connection)"
+      },
+      {
+       "from": "worker",
+       "to": "errors",
+       "label": "EmbedderError"
+      },
+      {
+       "from": "caller",
+       "to": "store",
+       "label": "search"
+      },
+      {
+       "from": "caller",
+       "to": "answers",
+       "label": "stream_answer"
+      },
+      {
+       "from": "store",
+       "to": "chunks",
+       "label": "split"
+      },
+      {
+       "from": "store",
+       "to": "embedder",
+       "label": "embed (Embeds)"
+      },
+      {
+       "from": "store",
+       "to": "sqlite",
+       "label": "chunks (own connection)"
+      },
+      {
+       "from": "parse",
+       "to": "files",
+       "label": "read"
+      },
+      {
+       "from": "parse",
+       "to": "docx",
+       "label": "import inside"
+      },
+      {
+       "from": "parse",
+       "to": "errors",
+       "label": "ParseError"
+      },
+      {
+       "from": "embedder",
+       "to": "embed_svc",
+       "label": "HTTP, no timeout"
+      },
+      {
+       "from": "embedder",
+       "to": "errors",
+       "label": "EmbedderError"
+      },
+      {
+       "from": "answers",
+       "to": "chunks",
+       "label": "Chunk"
+      },
+      {
+       "from": "answers",
+       "to": "model_svc",
+       "label": "HTTP stream"
+      },
+      {
+       "from": "plans",
+       "to": "sqlite",
+       "label": "runs"
+      },
+      {
+       "from": "plans",
+       "to": "errors",
+       "label": "IndexingError"
+      }
+     ]
+    },
+    {
+     "type": "table",
+     "title": "Cycles",
+     "columns": [
+      "Cycle",
+      "Where"
+     ],
+     "rows": [
+      [
+       "none",
+       "code_graph found no import cycle"
+      ]
+     ]
+    },
+    {
+     "type": "table",
+     "title": "Layer breaks",
+     "columns": [
+      "Break",
+      "Where"
+     ],
+     "rows": [
+      [
+       "none",
+       "errors live in `acme_index`, every module imports down to it"
+      ]
+     ]
+    },
+    {
+     "type": "table",
+     "title": "Hidden coupling",
+     "columns": [
+      "What is shared",
+      "Where",
+      "Risk"
+     ],
+     "rows": [
+      [
+       "The key of the run digest in the run dict",
+       "written `plans.py:91` as `digest`, read `plans.py:73` as `_digest`",
+       "already drifted: finding 5. A `Run` dataclass makes a rename a type error."
+      ],
+      [
+       "Job kinds and payload keys (`index`, `reindex`, `doc_id`, `path`)",
+       "`worker.py:93-94`, `126-131`, and the producer outside the repo (`docs/contracts.md:28`)",
+       "no shared model; a kind or key the worker does not know loops for ever today (finding 4)"
+      ],
+      [
+       "The tenant's SQLite file",
+       "`Store` and `Queue` each open their own connection (`worker.py:140-141`)",
+       "the job's write and its `done` mark cannot share one transaction (finding 10)"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "tests",
+   "title": "Tests that would catch these",
+   "intro": "Written to fail today and pass after the fix. They follow the repo's style (`unittest`, no network). None was added to the repo.",
+   "blocks": [
+    {
+     "type": "code",
+     "title": "Store: re-index keeps the old version when embedding fails (finding 1)",
+     "where": "tests/test_index.py",
+     "code": "from acme_index import EmbedderError\n\n\nclass FlakyEmbedder(FakeEmbedder):\n    fail = False\n\n    def embed(self, texts: list[str]) -> list[list[float]]:\n        if self.fail:\n            raise EmbedderError(\"embedder down\")\n        return super().embed(texts)\n\n\nclass ReindexFailureTests(unittest.TestCase):\n    def test_reindex_keeps_the_old_version_when_embedding_fails(self) -> None:\n        embedder = FlakyEmbedder()\n        with tempfile.TemporaryDirectory() as folder:\n            store = Store(Path(folder) / \"t.sqlite\", embedder)\n            store.add_document(\"a\", \"banana salata\")\n            embedder.fail = True\n            with self.assertRaises(EmbedderError):\n                store.reindex(\"a\", \"nova verzija\")\n            self.assertEqual(store.count(\"a\"), 1)  # today 0: the delete was already committed\n            store.close()"
+    },
+    {
+     "type": "code",
+     "title": "Parse: unreadable files raise ParseError with the path (finding 2)",
+     "where": "tests/test_index.py",
+     "code": "import sys\nfrom unittest import mock\n\nfrom acme_index import ParseError\n\n\nclass ParseErrorTests(unittest.TestCase):\n    def check_raises(self, path: Path) -> None:\n        with self.assertRaises(ParseError) as caught:\n            parse_document(path)\n        self.assertIn(str(path), str(caught.exception))\n\n    def test_unreadable_files_raise_parse_error_with_the_path(self) -> None:\n        with tempfile.TemporaryDirectory() as folder:\n            not_utf8 = Path(folder) / \"cp1250.txt\"\n            not_utf8.write_bytes(\"Čačak\".encode(\"cp1250\"))\n            self.check_raises(not_utf8)\n            self.check_raises(Path(folder) / \"missing.md\")\n            self.check_raises(Path(folder) / \"scan.pdf\")\n\n    def test_docx_without_python_docx_is_a_parse_error(self) -> None:\n        with mock.patch.dict(sys.modules, {\"docx\": None}):\n            self.check_raises(Path(\"report.docx\"))"
+    },
+    {
+     "type": "code",
+     "title": "Chunks: ids follow ADR 0001 and match across processes (finding 3)",
+     "where": "tests/test_index.py",
+     "code": "import hashlib\nimport os\nimport subprocess\nimport sys\n\nfrom acme_index.chunks import chunk_id\n\n\nclass ChunkIdTests(unittest.TestCase):\n    def test_chunk_ids_follow_adr_0001(self) -> None:\n        digest = hashlib.sha1(\"Novi Sad\".encode(\"utf-8\")).hexdigest()[:12]\n        self.assertEqual(chunk_id(\"doc\", 0, \"Novi Sad\"), f\"doc:0:{digest}\")\n\n    def test_chunk_ids_are_the_same_in_every_process(self) -> None:\n        code = \"from acme_index.chunks import split; print([c.id for c in split('doc', 'Novi Sad')])\"\n        outputs = set()\n        for seed in (\"1\", \"2\"):\n            env = dict(os.environ, PYTHONPATH=\"src\", PYTHONHASHSEED=seed)\n            done = subprocess.run([sys.executable, \"-c\", code], env=env, capture_output=True, text=True,\n                                  check=True, timeout=30)\n            outputs.add(done.stdout)\n        self.assertEqual(len(outputs), 1)"
+    },
+    {
+     "type": "code",
+     "title": "Worker: every failing job ends in dead_letter, and a reused id is fine (findings 2, 4, 8)",
+     "where": "tests/test_worker.py",
+     "code": "import sqlite3\nimport tempfile\nimport unittest\nfrom pathlib import Path\nfrom unittest import mock\n\nfrom acme_index.store import Store\nfrom acme_index.worker import Queue, Worker\nfrom test_index import FakeEmbedder\n\n\nclass GaveUp(BaseException):\n    \"\"\"Not an Exception, so the worker's `except Exception` cannot swallow it.\"\"\"\n\n\nclass WorkerTests(unittest.TestCase):\n    def setUp(self) -> None:\n        self.folder = tempfile.TemporaryDirectory()\n        path = Path(self.folder.name) / \"t.sqlite\"\n        self.store = Store(path, FakeEmbedder())\n        self.conn = sqlite3.connect(path)\n        self.queue = Queue(self.conn)\n        self.worker = Worker(self.queue, self.store, backoff_seconds=0)\n\n    def tearDown(self) -> None:\n        self.store.close()\n        self.conn.close()\n        self.folder.cleanup()\n\n    def drain_with_at_most(self, waits: int) -> None:\n        with mock.patch(\"acme_index.worker.time.sleep\", side_effect=[None] * waits + [GaveUp()]):\n            try:\n                self.worker.drain()\n            except GaveUp:\n                self.fail(f\"the worker was still retrying after {waits} waits\")\n\n    def dead_letters(self) -> int:\n        return self.conn.execute(\"SELECT COUNT(*) FROM dead_letter\").fetchone()[0]\n\n    def test_a_job_of_unknown_kind_goes_to_dead_letter(self) -> None:\n        self.queue.put(\"delete\", {\"doc_id\": \"a\"})\n        self.drain_with_at_most(3)\n        self.assertEqual(self.dead_letters(), 1)\n\n    def test_a_job_with_a_bad_payload_goes_to_dead_letter(self) -> None:\n        self.queue.put(\"index\", {\"doc_id\": \"a\"})  # no path\n        self.drain_with_at_most(3)\n        self.assertEqual(self.dead_letters(), 1)\n\n    def test_a_reindex_of_an_unreadable_file_keeps_the_document(self) -> None:\n        self.store.add_document(\"a\", \"banana salata\")\n        self.queue.put(\"reindex\", {\"doc_id\": \"a\", \"path\": str(Path(self.folder.name) / \"missing.md\")})\n        self.drain_with_at_most(3)\n        self.assertEqual(self.store.count(\"a\"), 1)  # today 0, and the job is marked done\n        self.assertEqual(self.dead_letters(), 1)\n\n    def test_a_reused_job_id_can_be_dead_lettered_again(self) -> None:\n        self.queue.put(\"index\", {\"doc_id\": \"a\", \"path\": \"a.txt\"})\n        self.queue.dead_letter(self.queue.next(), \"embedder down\")\n        self.queue.put(\"index\", {\"doc_id\": \"b\", \"path\": \"b.txt\"})  # SQLite gives it id 1 again\n        self.queue.dead_letter(self.queue.next(), \"embedder down\")  # today: IntegrityError\n        self.assertEqual(self.dead_letters(), 2)"
+    },
+    {
+     "type": "code",
+     "title": "Embedder: timeout is sent, a bad body is an EmbedderError (findings 7, 9)",
+     "where": "tests/test_clients.py",
+     "code": "from acme_index import EmbedderError\nfrom acme_index.embedder import Embedder\n\n\nclass EmbedderCallTests(unittest.TestCase):\n    def test_the_embedder_sends_its_timeout(self) -> None:\n        body = io.BytesIO(json.dumps({\"data\": [{\"embedding\": [1.0]}]}).encode(\"utf-8\"))\n        with mock.patch(\"urllib.request.urlopen\", return_value=body) as urlopen:\n            Embedder(\"http://embed.example.com\", timeout=3.0).embed([\"x\"])\n        self.assertEqual(urlopen.call_args.kwargs.get(\"timeout\"), 3.0)\n\n    def test_a_body_that_is_not_json_is_an_embedder_error(self) -> None:\n        with mock.patch(\"urllib.request.urlopen\", return_value=io.BytesIO(b\"<html>busy</html>\")):\n            with self.assertRaises(EmbedderError):\n                Embedder(\"http://embed.example.com\").embed([\"x\"])"
+    },
+    {
+     "type": "code",
+     "title": "Answers: the stream always ends with exactly one end or error (finding 6)",
+     "where": "tests/test_clients.py",
+     "code": "class AnswerEndTests(unittest.TestCase):\n    def stream(self, raw: bytes) -> list[dict]:\n        with mock.patch(\"urllib.request.urlopen\", return_value=io.BytesIO(raw)):\n            return list(Answerer(\"http://model.example.com\").stream_answer(\"Where?\", []))\n\n    def assert_ends_with_one_error(self, events: list[dict]) -> None:\n        closing = [event[\"type\"] for event in events if event[\"type\"] in (\"end\", \"error\")]\n        self.assertEqual(closing, [\"error\"])\n        self.assertEqual(events[-1][\"type\"], \"error\")\n\n    def test_a_malformed_line_ends_the_stream_with_an_error(self) -> None:\n        self.assert_ends_with_one_error(self.stream(b'{\"text\": \"Novi \"}\\nnot json\\n'))\n\n    def test_a_message_without_text_ends_the_stream_with_an_error(self) -> None:\n        self.assert_ends_with_one_error(self.stream(b'{\"error\": \"overloaded\"}\\n'))\n\n    def test_a_stream_cut_before_done_is_an_error_not_an_end(self) -> None:\n        self.assert_ends_with_one_error(self.stream(b'{\"text\": \"Novi \"}\\n'))"
+    },
+    {
+     "type": "code",
+     "title": "Plans: the stored digest is the digest of what ran (finding 5)",
+     "where": "tests/test_index.py",
+     "code": "class PlanDigestTests(unittest.TestCase):\n    def test_a_dropped_step_is_left_out_of_the_stored_digest(self) -> None:\n        runs = Runs(sqlite3.connect(\":memory:\"))\n        plan = Plan(\"wiki\", (Step(\"fetch\"), Step(\"index\")))\n        run = execute(plan, {\"fetch\": lambda params: None}, runs)\n        ran = plan.without({\"index\"}).digest()\n        self.assertEqual(run[\"digest\"], ran)\n        self.assertEqual(runs.load(run[\"id\"])[\"digest\"], ran)  # today: plan.digest()"
+    }
+   ]
+  },
+  {
+   "id": "leave-alone",
+   "title": "What to leave alone",
+   "blocks": [
+    {
+     "type": "list",
+     "items": [
+      "`Store.set_metadata` deletes then inserts (`store.py:68-73`): both run in one `with` transaction, so it is atomic. The scan flagged it; it is not a bug.",
+      "The embedder's retry loop (`embedder.py:35`) is bounded by `MAX_ATTEMPTS`; only which errors it retries is wrong (finding 9).",
+      "Dropping a step with no handler (`plans.py:88-91`) is what ADR 0002 decided; only the stored digest is wrong.",
+      "`# type: ignore[import-not-found]` on the optional `docx` import (`parse.py:29`) is right for an optional dependency.",
+      "The Markdown-heading TODO (`parse.py:36`) is feature work: chunks are cut by characters, so it hardly changes what is indexed. [med]",
+      "Brute-force cosine search and JSON vectors: ADR 0001 decided them and they fit the stated size.",
+      "The retry arithmetic itself: one try plus 3 retries, first wait `backoff × 1`, matches the README."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "not-covered",
+   "title": "What this audit did not cover",
+   "blocks": [
+    {
+     "type": "list",
+     "items": [
+      "Whatever puts jobs into the queue, and the service that calls `search` and `stream_answer`: not in this repo.",
+      "Prompt injection and what reaches the model through documents and questions: that is `ai-review`.",
+      "Speed above ADR 0001's 50,000 chunks per tenant.",
+      "Dependency versions and licences (`python-docx`): that is `dependency-audit`.",
+      "I did not run the repo's code or tests. Two platform facts were checked in a standalone Python: `hash()` of a string differs between processes, and SQLite reuses a job id and then rejects the second dead-letter insert.",
+      "Several workers on one tenant: read, not tested; the README does not say whether it is allowed."
+     ]
+    }
+   ]
+  }
+ ]
+}

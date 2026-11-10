@@ -17,7 +17,7 @@
 
   {"id": "arch-which-style", "prompt": "New logistics product, two teams of five people. Monolith, modular monolith or microservices? The requirements are in requirements.md.", "expect": ["arch-style"]},
   {"id": "arch-c4", "prompt": "From the code, draw the C4 context and container views of this system: the API, the worker and the web app.", "expect": ["arch-c4"]},
-  {"id": "arch-review", "prompt": "This codebase keeps getting harder to change. Find the structural problems: cycles, layer breaks, hot spots, coupling.", "expect": ["arch-review"]},
+  {"id": "structure-hard-to-change", "prompt": "This codebase keeps getting harder to change. Find the structural problems: cycles, layer breaks, hot spots, coupling.", "expect": ["code-audit"]},
   {"id": "arch-evolve", "prompt": "We need to go from this monolith to a few services without stopping delivery. Plan the steps so that each one leaves the system working.", "expect": ["arch-evolve"]},
 
   {"id": "cloud-map", "prompt": "Here is our Terraform for Azure. Show me what exists: subscriptions, networks, and what is exposed to the internet.", "expect": ["cloud-map"]},
@@ -44,7 +44,14 @@
   {"id": "draw-chatbot", "prompt": "Draw the architecture of our chatbot: model, retrieval and guardrails.", "expect": ["ai-architecture"]},
   {"id": "draw-containers", "prompt": "Show me which containers make up this system and what talks to what, from the code.", "expect": ["arch-c4"]},
 
-  {"id": "review-structure", "prompt": "Review the architecture of this repo.", "expect": ["arch-review"]},
+  {"id": "review-structure", "prompt": "Review the architecture of this repo.", "expect": ["code-audit", "codebase-map"]},
+  {"id": "design-proposal", "prompt": "Our design proposal for parcel booking v2 is in design/proposal.md with its ADRs in design/adr/. Review the design before we approve it.", "expect": ["arch-review"]},
+  {"id": "design-before-build", "prompt": "Nothing is built yet. Review this target architecture document for weak spots before the teams start: docs/target-architecture.md.", "expect": ["arch-review"]},
+  {"id": "design-docs-agree", "prompt": "Do the design doc and the ADRs in docs/ hold together? Find contradictions, missing decisions and goals without numbers.", "expect": ["arch-review"]},
+  {"id": "code-bugs", "prompt": "Go through the code of this service as it stands and find its bugs before we build more on it.", "expect": ["code-audit"]},
+  {"id": "code-keeps-promises", "prompt": "Our docs say re-indexing never loses a document and every outbound call has a timeout. Check whether the code actually keeps those promises.", "expect": ["code-audit"]},
+  {"id": "code-takeover", "prompt": "We take over this codebase next week. Review the code for correctness and error-handling problems.", "expect": ["code-audit"]},
+  {"id": "code-module", "prompt": "Review src/billing/ for bugs. It is already in production; this is not a pull request.", "expect": ["code-audit"]},
   {"id": "review-infra", "prompt": "Review the infrastructure code in infra/.", "expect": ["cloud-review"]},
   {"id": "review-data", "prompt": "Review this data platform.", "expect": ["data-review"]},
   {"id": "review-ai", "prompt": "Review this AI solution.", "expect": ["ai-review"]},
@@ -72,5 +79,8 @@
   {"id": "none-rename", "prompt": "Rename the variable foo to bar across the repo.", "expect": []},
   {"id": "none-what-is-rag", "prompt": "Explain what RAG is.", "expect": []},
   {"id": "none-train", "prompt": "Train a random forest on train.csv and save the model.", "expect": []},
-  {"id": "none-docker", "prompt": "How do I install Docker on Ubuntu?", "expect": []}
+  {"id": "none-docker", "prompt": "How do I install Docker on Ubuntu?", "expect": []},
+  {"id": "none-pr-review", "prompt": "Review this pull request before I merge it: the current branch against main.", "expect": []},
+  {"id": "none-staged-review", "prompt": "Look over my staged changes for bugs before I commit.", "expect": []},
+  {"id": "none-write-adr", "prompt": "Write an ADR for choosing Kafka over RabbitMQ for our events.", "expect": []}
 ]

@@ -8,6 +8,11 @@ This loads every pack, gives Claude one prompt from tools/selection_cases.json, 
 turn, so each case is one model call: the first decision and nothing after it. `expect` lists the skills that are a
 right answer; an empty list means none of ours should fire, and a skill from elsewhere is then still a pass.
 
+Every pack is loaded from this repository with --plugin-dir, which replaces an installed copy of the same name. A case
+whose start event shows a pack loaded from anywhere else is an error, not a result. A skill picked from another plugin
+(the account's own plugins, such as `engineering:code-review`) keeps its full name in `picked_full`, and the summary
+counts those picks in `picked_elsewhere`, so the same run shows which requests other plugins take.
+
 Offering only Skill pushes Claude towards a skill, so `--all-tools` offers its ordinary tools as well. Then a first call
 to Read or Grep is counted as `looked_first`: the case neither picked a skill nor refused one, and it fails only if a
 skill was expected, because one turn cannot show what it would have done next.
@@ -30,6 +35,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 CASES = ROOT / "tools" / "selection_cases.json"
+OUR_PACKS = {p.parent.parent.name for p in ROOT.glob("plugins/*/.claude-plugin/plugin.json")}
 TIMEOUT_SECONDS = 180
 PER_CASE_BUDGET_USD = "1"
 
@@ -40,6 +46,7 @@ class Outcome:
     run: int
     expect: list[str]
     picked: str | None = None
+    picked_full: str | None = None
     cost: float = 0.0
     model: str | None = None
     skills_listed: int | None = None
@@ -62,7 +69,9 @@ def parse_stream(lines: list[str]) -> dict[str, Any]:
     """The first Skill call of a stream-json transcript, its cost, its model and how many skills it could see."""
     found: dict[str, Any] = {
         "picked": None,
+        "picked_full": None,
         "first_tool": None,
+        "plugins": [],
         "cost": 0.0,
         "model": None,
         "skills_listed": None,
@@ -77,6 +86,9 @@ def parse_stream(lines: list[str]) -> dict[str, Any]:
         if kind == "system" and event.get("subtype") == "init":
             found["model"] = event.get("model")
             found["skills_listed"] = len(event.get("skills", []))
+            found["plugins"] = [
+                {"name": str(p.get("name", "")), "path": str(p.get("path", ""))} for p in event.get("plugins", [])
+            ]
         elif kind == "assistant":
             for block in event.get("message", {}).get("content", []):
                 if block.get("type") == "text" and not found["text"]:
@@ -86,7 +98,8 @@ def parse_stream(lines: list[str]) -> dict[str, Any]:
                 if found["first_tool"] is None:
                     found["first_tool"] = block.get("name")
                 if block.get("name") == "Skill" and found["picked"] is None:
-                    found["picked"] = bare_name(str(block.get("input", {}).get("skill", "")))
+                    found["picked_full"] = str(block.get("input", {}).get("skill", ""))
+                    found["picked"] = bare_name(found["picked_full"])
         elif kind == "result":
             found["cost"] = float(event.get("total_cost_usd") or 0.0)
     return found
@@ -97,6 +110,26 @@ def judge(picked: str | None, expect: list[str], ours: set[str]) -> bool:
     if expect:
         return picked in expect
     return picked is None or picked not in ours
+
+
+def from_elsewhere(picked_full: str | None, ours: set[str]) -> str | None:
+    """The full name of a pick that is not one of our skills, such as `engineering:code-review`; None for ours."""
+    if not picked_full:
+        return None
+    pack, _, name = picked_full.rpartition(":")
+    if pack:
+        return None if pack in OUR_PACKS else picked_full
+    return None if name in ours else picked_full
+
+
+def foreign_packs(loaded: list[dict[str, str]], plugins: list[Path]) -> list[str]:
+    """Our packs that the session loaded from somewhere other than this repository, such as an installed copy."""
+    wanted = {p.name: p.resolve() for p in plugins}
+    return sorted(
+        f"{item['name']} from {item['path']}"
+        for item in loaded
+        if item["name"] in wanted and Path(item["path"]).resolve() != wanted[item["name"]]
+    )
 
 
 def run_case(
@@ -120,10 +153,14 @@ def run_case(
             return outcome
     found = parse_stream(done.stdout.splitlines())
     outcome.picked, outcome.cost, outcome.model = found["picked"], found["cost"], found["model"]
+    outcome.picked_full = found["picked_full"]
     outcome.skills_listed, outcome.text = found["skills_listed"], found["text"]
     outcome.first_tool = found["first_tool"]
     if found["model"] is None:
         outcome.error = (done.stderr or done.stdout)[-300:]
+        return outcome
+    if foreign := foreign_packs(found["plugins"], plugins):
+        outcome.error = "not the repository's packs: " + "; ".join(foreign)
         return outcome
     outcome.passed = judge(outcome.picked, outcome.expect, ours)
     return outcome
@@ -135,6 +172,11 @@ def summarise(outcomes: list[Outcome]) -> dict[str, Any]:
     should_not = [o for o in finished if not o.expect]
     wrong_skill = [o for o in should_fire if not o.passed and o.picked is not None]
     silent = [o for o in should_fire if o.picked is None]
+    ours = our_skills()
+    elsewhere: dict[str, int] = {}
+    for o in finished:
+        if (name := from_elsewhere(o.picked_full, ours)) is not None:
+            elsewhere[name] = elsewhere.get(name, 0) + 1
     return {
         "cases_run": len(outcomes),
         "errors": len(outcomes) - len(finished),
@@ -146,6 +188,7 @@ def summarise(outcomes: list[Outcome]) -> dict[str, Any]:
         "wrong_skill": len(wrong_skill),
         "no_skill_when_one_was_expected": len(silent),
         "looked_first": sum(1 for o in finished if o.first_tool not in (None, "Skill")),
+        "picked_elsewhere": dict(sorted(elsewhere.items())),
         "cost_usd": round(sum(o.cost for o in outcomes), 4),
     }
 
@@ -183,7 +226,7 @@ def main(argv: list[str] | None = None) -> int:
             outcomes.append(outcome)
             spent += outcome.cost
             mark = "ok  " if outcome.passed else ("ERR " if outcome.error else "MISS")
-            print(f"{mark} {outcome.case:26} picked={outcome.picked}  first={outcome.first_tool}", flush=True)
+            print(f"{mark} {outcome.case:26} picked={outcome.picked_full}  first={outcome.first_tool}", flush=True)
             if spent < args.budget:
                 job = next(pending, None)
                 if job is not None:

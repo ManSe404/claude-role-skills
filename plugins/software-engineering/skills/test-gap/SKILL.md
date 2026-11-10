@@ -13,7 +13,8 @@ hooks:
 # Test gap
 
 The job: where a missing test hurts most, and the first tests to write, each case with its
-expected result decided before any test code. It writes tests only after the yes.
+expected result decided before any test code. It writes tests only after the yes. To find the bugs
+themselves use `code-audit`.
 
 Input: a repository or a folder in it. Optional: a coverage report.
 

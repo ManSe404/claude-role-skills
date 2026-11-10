@@ -13,7 +13,8 @@ hooks:
 # Codebase map
 
 The job: an unknown repository on one page, drawn from what the code does, not from what the
-names suggest. It writes nothing but the page.
+names suggest. It writes nothing but the page. To look for bugs in it use `code-audit`; to review a
+design that is not built yet, `arch-review`.
 
 Input: a repository or a folder in it. Default: the current directory.
 

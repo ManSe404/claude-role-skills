@@ -13,7 +13,8 @@ hooks:
 # Bug hunt
 
 The job: from the symptom to the root cause, proven, and a test that fails for exactly that
-reason. It proposes the fix and writes it only after the yes.
+reason. It proposes the fix and writes it only after the yes. With no symptom yet, to look for bugs
+across the code, use `code-audit`.
 
 Input: the error text or a log file, a failing test, or a bug report. Ask for the trace and
 when it started if they are missing.

@@ -1,5 +1,5 @@
 ---
 type: regex
-pattern: "using Acme\\.Logistics\\.Infrastructure;"
-target: {source: file, path: acme-logistics/src/Acme.Logistics/Domain/Parcel.cs}
+pattern: 'A customer is never charged twice for one booking\.'
+target: {source: file, path: acme-design/design/proposal.md}
 ---

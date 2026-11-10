@@ -13,7 +13,7 @@ hooks:
 # Impact
 
 The job: what one change reaches, and the order that keeps everything working while it lands.
-It writes nothing but the page.
+It writes nothing but the page. To look for bugs in the code as it stands use `code-audit`.
 
 Input: a name (function, class, module, endpoint, setting, column) and what will change about it
 (signature, behaviour, meaning, removal, rename). Or the current diff: then every changed public

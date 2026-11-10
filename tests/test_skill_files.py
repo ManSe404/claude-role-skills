@@ -55,6 +55,7 @@ def test_every_pack_has_its_skills() -> None:
         "software-architect/arch-review",
         "software-architect/arch-style",
         "software-engineering/bug-hunt",
+        "software-engineering/code-audit",
         "software-engineering/codebase-map",
         "software-engineering/dependency-audit",
         "software-engineering/impact",

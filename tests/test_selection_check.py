@@ -73,6 +73,8 @@ def test_the_first_skill_call_is_the_answer() -> None:
     found = check.parse_stream(["not json", *lines])
     assert found == {
         "picked": "first",
+        "picked_full": "pack:first",
+        "plugins": [],
         "first_tool": "Skill",
         "cost": 0.12,
         "model": "m",
@@ -112,3 +114,39 @@ def test_summary_separates_the_kinds_of_miss() -> None:
     assert summary["no_skill_when_one_was_expected"] == 2
     assert summary["looked_first"] == 1
     assert summary["cost_usd"] == 0.5
+
+
+def test_a_pick_from_another_plugin_keeps_its_full_name() -> None:
+    assert check.from_elsewhere("engineering:code-review", OURS) == "engineering:code-review"
+    assert check.from_elsewhere("code-review", OURS) == "code-review"
+    assert check.from_elsewhere("software-engineering:code-audit", OURS) is None
+    assert check.from_elsewhere("code-audit", OURS) is None
+    assert check.from_elsewhere(None, OURS) is None
+
+
+def test_the_summary_counts_picks_from_other_plugins() -> None:
+    outcomes = [
+        check.Outcome("a", 1, [], picked="code-review", picked_full="engineering:code-review", passed=True),
+        check.Outcome("b", 1, [], picked="code-review", picked_full="engineering:code-review", passed=True),
+        check.Outcome("c", 1, ["arch-review"], picked="arch-review", picked_full="software-architect:arch-review"),
+    ]
+    assert check.summarise(outcomes)["picked_elsewhere"] == {"engineering:code-review": 2}
+
+
+def test_a_pack_loaded_from_an_installed_copy_is_caught() -> None:
+    plugins = [ROOT / "plugins" / "software-engineering", ROOT / "plugins" / "data-analyst"]
+    loaded = [
+        {"name": "software-engineering", "path": str(ROOT / "plugins" / "software-engineering")},
+        {"name": "data-analyst", "path": "/home/someone/.claude/plugins/cache/x/data-analyst/0.2.0"},
+        {"name": "engineering", "path": "/somewhere/else"},
+    ]
+    assert check.foreign_packs(loaded, plugins) == [
+        "data-analyst from /home/someone/.claude/plugins/cache/x/data-analyst/0.2.0"
+    ]
+
+
+def test_the_start_event_lists_the_plugins() -> None:
+    found = check.parse_stream(
+        stream({"type": "system", "subtype": "init", "model": "m", "plugins": [{"name": "a", "path": "/p/a", "x": 1}]})
+    )
+    assert found["plugins"] == [{"name": "a", "path": "/p/a"}]

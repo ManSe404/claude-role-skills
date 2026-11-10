@@ -1,0 +1,16 @@
+[project]
+name = "acme-index"
+version = "0.1.0"
+description = "Index documents for search and stream answers over them."
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+docx = ["python-docx>=1.1"]
+
+[project.scripts]
+acme-index-worker = "acme_index.worker:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

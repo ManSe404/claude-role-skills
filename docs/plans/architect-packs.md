@@ -63,7 +63,10 @@ problems come from the code and the git history, and end in a clickable page.
 - `arch-style`: monolith, modular monolith, services, event-driven, serverless, ruled out from the
   simplest up against the team, deployment, scale and consistency needs.
 - `arch-c4`: context, containers and components, from a brief or from code, as nested boxes.
-- `arch-review`: cycles, layer breaks, coupling, files that always change together, hot spots.
+- `arch-review`: a design reviewed from its documents and ADRs before it is built: waiting chains against latency
+  goals, data written by two parts, promises with no mechanism, goals without numbers, contradictions, open
+  decisions. Since 2026-11-10; the structure of existing code (cycles, layer breaks, hot spots) moved to the
+  software-engineering skill `code-audit`, see [code-audit.md](code-audit.md).
 - `arch-evolve`: from the current design to a target in safe steps, with ADRs.
 
 ## 3. cloud-architect

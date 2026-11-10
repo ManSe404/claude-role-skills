@@ -40,6 +40,10 @@ Never: draws a box or link from code as checked unless it was read; quotes a set
 
 ### 3. `arch-review`: what is wrong with the structure
 
+**Changed 2026-11-10:** `arch-review` now reviews design documents only, before a system is built, with its own
+`design_inventory.py`; the measurement of existing code described below moved into the software-engineering skill
+`code-audit`. See [code-audit.md](code-audit.md). The rest of this section is the original plan.
+
 `code_graph.py --git`: cycles, layer breaks, fan-in and fan-out, instability, files that always change
 together, hot spots (change rate × size), modules only one person touches. `containers.py`: services
 sharing a store, synchronous loops. Then what a script cannot see, checked against quality-attribute

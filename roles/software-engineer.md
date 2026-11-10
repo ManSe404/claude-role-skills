@@ -28,3 +28,5 @@ the software-engineering skills; the project's own facts (stack, commands, stand
 - `bug-hunt`: from an error to the root cause, with a failing test.
 - `test-gap`: which tests to write first, with expected results.
 - `dependency-audit`: vulnerable, outdated, unused and abandoned dependencies, and the upgrade waves.
+- `code-audit`: the bugs in the code as it stands, and the promises in its docs that no code keeps.
+  A diff or a pull request is a change review, not this.

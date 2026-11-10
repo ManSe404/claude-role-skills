@@ -22,7 +22,7 @@ addopts = "-q"
 [tool.ruff]
 line-length = 120
 target-version = "py311"
-extend-exclude = ["fixtures/acme-orders/files", "fixtures/acme-assist/files", "fixtures/acme-data/files", "fixtures/acme-logistics/files", "fixtures/acme-cloud/files", "fixtures/acme-sales/files", "fixtures/acme-churn/files", "plugins/*/evals"]
+extend-exclude = ["fixtures/acme-orders/files", "fixtures/acme-assist/files", "fixtures/acme-data/files", "fixtures/acme-logistics/files", "fixtures/acme-cloud/files", "fixtures/acme-sales/files", "fixtures/acme-churn/files", "fixtures/acme-index/files", "plugins/*/evals"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]

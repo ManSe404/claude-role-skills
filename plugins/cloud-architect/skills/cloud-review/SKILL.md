@@ -13,7 +13,7 @@ hooks:
 # Cloud review
 
 The job: find what is wrong with cloud infrastructure, prove each problem from the code or the export, and say what
-to fix first. It changes nothing. For the software's structure use `arch-review`; for a data platform, `data-review`;
+to fix first. It changes nothing. For the software's code use `code-audit`, for its design `arch-review`; for a data platform, `data-review`;
 for an AI solution, `ai-review`.
 
 Input: a repository, a saved export, or both, and any requirements or brief. Default: the current repository.

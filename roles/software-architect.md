@@ -20,5 +20,6 @@ the software-architect skills; the project's own facts (teams, constraints, stan
 
 - `arch-style`: what shape the system should have, decided by elimination, with fitness rules and an ADR.
 - `arch-c4`: the system drawn in C4, from a brief or from the code.
-- `arch-review`: what makes the structure hard to change, measured, with file:line findings.
+- `arch-review`: a design reviewed before it is built, from its documents and ADRs: what will make it
+  fail or hard to change, and what to decide first. Code that exists goes to `code-audit`.
 - `arch-evolve`: the way from today to a target, in steps that each leave the system working.

@@ -1,7 +1,7 @@
 ---
 name: arch-review
-description: Use before a major change, when you take over a codebase, or when a system has become hard to change, to review its software structure with measurements - cycles between modules, layer breaks, dumping grounds, files that always change together, hot spots, shared tables, synchronous loops between services, code only one person knows - with file:line findings and what to fix first.
-argument-hint: "[repository] [layers, innermost first]"
+description: Use before a software design is approved or built - a design document, a proposal, a target architecture or a set of ADRs - to review it for what will make the system fail or hard to change - synchronous chains that miss their latency goals, data written by two parts, promises with no mechanism, quality goals without numbers, outside dependencies with no failure plan, documents that contradict each other, boundaries by technical layer and decisions left open - each shown from the documents, with what to decide first. Not for code that exists.
+argument-hint: "[design documents or folder] [the goals that matter most]"
 hooks:
   PreToolUse:
     - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
@@ -12,39 +12,51 @@ hooks:
 
 # Architecture review
 
-The job: find what makes a system's structure hard to change, prove each finding with a number or
-file:line, and say what to fix first. It changes nothing. For one planned change use `impact`; for
-a bug use `bug-hunt`; for an AI solution use `ai-review`; for a data platform use `data-review`.
+The job: find what in a design will make the system fail or hard to change, before it is built,
+show each finding from the documents, and say what to decide first. It changes nothing. It reviews
+documents, not code: code that exists goes to `code-audit` for its bugs and structure, or to
+`codebase-map` to map it. Choosing the style goes to `arch-style`; drawing it to `arch-c4`.
 
-Input: a repository, optionally its layers from the innermost out. Default: the current repository.
+Input: the design documents: a proposal, a target architecture, ADRs, a brief with its design.
+Default: the design folders of the current repository (`design/`, `docs/`, `adr/`); ask for them if
+there are none. Optional: the goals that matter most.
 
 ## Steps
 
-1. Read [references/smells.md](references/smells.md): each problem, how to confirm it and how to fix it.
-2. Measure: `python3 "${CLAUDE_SKILL_DIR}/scripts/code_graph.py" REPO --git` (add
-   `--layers domain,application,infrastructure,api` to name them) and
-   `python3 "${CLAUDE_SKILL_DIR}/scripts/containers.py" REPO`, output to your scratchpad.
-3. Confirm every hit by reading it. A number shows where to look; the finding is what you read there.
-4. Walk what a script cannot see: boundaries around layers instead of business areas, a shared
-   library that carries business rules, failure handling between services, and two or three quality
-   scenarios that matter here ("a release of billing with shipments unchanged").
-5. Findings: severity by what it costs the next change, file:line, the number, the fix, and what
-   makes the fix safe. A hot spot or a one-person module is a risk to manage, not a defect.
-6. Order: what blocks everything else first, then what grows worse with time, then the rest. Say
-   what you would leave alone.
-7. Write the page JSON, with `facts`, render it, and say where to open it.
+1. Read [references/design-checks.md](references/design-checks.md): each problem, how to confirm it
+   in a document, and how to fix it.
+2. Inventory: `python3 "${CLAUDE_SKILL_DIR}/scripts/design_inventory.py" PATH...`, output to your
+   scratchpad. It lists the documents, the ADRs and their status, the parts and links, who writes
+   which data, the promises, the quality goals with and without numbers, the stated latencies and
+   the open items. A line in it is a place to read, not a finding.
+3. Read every document whole. Draw the design as written: the parts, what calls what and whether
+   the caller waits, who owns and writes which data, and the outside systems it depends on.
+4. Walk the checks: every promise has a mechanism; every quality goal has a number and a load; a
+   chain of waiting calls fits its latency goal (show the sum); every piece of data has one writer;
+   every outside dependency has a timeout and a fallback; the documents agree with each other and
+   with the accepted ADRs; boundaries follow business areas, not technical layers; no open decision
+   blocks the rest.
+5. Quality scenarios: two or three that matter here ("peak day with one carrier down"), what the
+   design does in each, and what stops it.
+6. Findings: severity by what it costs to change after building. Each has the document and line,
+   the evidence (a short quote, or the arithmetic), the fix as a change to the design or a decision
+   to take, and what makes the fix safe.
+7. Order: the decisions to take before building, then the changes to the design, then what can
+   wait. Say what you would leave alone.
+8. Write the page JSON, with `facts`, render it, and say where to open it.
 
 ## Output
 
 One page. Read [references/page-format.md](references/page-format.md) for the format and
 [references/example.json](references/example.json) for a filled page.
 
-Sections in this order: Findings (a `findings` block, high first), Where they sit (a `nested` block with
-the problem spots flagged, or a `graph` of the modules), Measurements (tables: modules by fan-in, fan-out
-and instability; hidden coupling; hot spots; owners), Quality scenarios (table: scenario, what happens
-today, what stops it), Order of the fixes (list), What to leave alone (list), What this review did not
-cover (list). Stats on top: modules, cycles, layer breaks, hidden couplings. The verdict says in two
-sentences whether this structure can take the next change, and what it most needs.
+Sections in this order: Findings (a `findings` block, high first), The design as written (an
+`architecture` block, links marked by whether the caller waits, problem spots flagged), Promises and
+goals (table: statement, where, mechanism or number, status), Quality scenarios (table: scenario,
+what the design does, what stops it), Decisions to take first (list), What to leave alone (list), What
+this review did not cover (list). Stats on top: documents, parts, promises without a mechanism, goals
+without a number, contradictions, open decisions. The verdict says in two sentences whether the design
+can be approved as it is, and what must be decided first.
 
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
 files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/arch-review-<YYYY-MM-DD>.*`. Write the
@@ -52,7 +64,7 @@ page in the language of the request; Serbian pages in Latin script.
 
 ## Reads
 
-- the repository and its git history, read-only
+- the design documents, ADRs and briefs, read-only
 
 ## Writes
 
@@ -60,7 +72,8 @@ page in the language of the request; Serbian pages in Latin script.
 
 ## Never
 
-- Never changes a file.
-- Never reports a finding it did not read in the code; a number alone is a place to look.
-- Never judges a person: authors appear only to show where knowledge is concentrated. Never shows a
-  secret or opens a `.env` file.
+- Never changes a document.
+- Never reviews code: if the design is already built, it says the review covers the documents only
+  and points to `code-audit`.
+- Never reports a finding it did not read in the documents; a line in the inventory is a place to look.
+- Never shows a secret or opens a `.env` file.

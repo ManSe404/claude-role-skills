@@ -1,1096 +1,419 @@
 {
- "skill": "arch-review",
- "title": "acme-logistics, architecture review",
- "subtitle": "What makes this system hard to change, and what to fix first.",
- "meta": {
-  "repo": "acme-logistics",
-  "commit": "432aa50",
-  "date": "2026-11-10"
- },
- "verdict": {
-  "text": "Not safely yet: there are no tests, pricing lives in two codebases, and the worker can mark a shipment delivered without the invoice that should follow. It most needs tests around delivery and the API as the only writer of shipments, which also removes the loop between the API and the worker.",
-  "tone": "warn"
- },
- "stats": [
-  {
-   "label": "Modules",
-   "value": 16,
-   "note": "C#, Python and TypeScript",
-   "tone": "info"
+  "skill": "arch-review",
+  "title": "Parcel booking v2, design review",
+  "subtitle": "What in this design will make it fail or hard to change, and what to decide before approving it.",
+  "meta": {"repo": "acme-design", "commit": "7c061c4", "date": "2026-11-10"},
+  "verdict": {
+    "text": "Not as it is: the Book call waits on a 400–800 ms carrier quote against a 500 ms p95 goal, an accepted ADR contradicts how Tracking gets its data, and two promises customers rely on (no double charge, one owner of shipment status) have no mechanism. Decide first how booking gets the live quote, whether ADR-0002's central Data Service stays, and supersede ADR-0003; most other findings follow from those three.",
+    "tone": "bad"
   },
-  {
-   "label": "Cycles",
-   "value": 2,
-   "note": "both inside Acme.Logistics",
-   "tone": "bad"
+  "stats": [
+    {"label": "Documents", "value": 7, "note": "proposal, quality goals, 4 ADRs, README", "tone": "info"},
+    {"label": "Parts", "value": 14, "note": "10 components, 1 store, 3 outside systems", "tone": "info"},
+    {"label": "Promises without a mechanism", "value": 3, "note": "no double charge, event order, rollback", "tone": "bad"},
+    {"label": "Goals without a number", "value": 1, "note": "availability and scale", "tone": "warn"},
+    {"label": "Contradictions", "value": 3, "note": "ADR-0003, ADR-0002 vs ADR-0001, live quote vs 500 ms", "tone": "bad"},
+    {"label": "Open decisions", "value": 4, "note": "ADR-0004 and three questions in §16", "tone": "warn"}
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "Parcel booking v2 at Acme Logistics, design documents at commit 7c061c4 (no code exists yet)",
+    "components": [
+      {"id": "web", "label": "Web app", "tech": "not stated", "kind": "channel"},
+      {"id": "mobile", "label": "Mobile app", "tech": "Android and iOS", "kind": "channel"},
+      {"id": "booking", "label": "Booking service", "tech": "not stated", "kind": "service"},
+      {"id": "pricing", "label": "Pricing service", "tech": "not stated", "kind": "service"},
+      {"id": "gateway", "label": "Carrier Gateway", "tech": "not stated", "kind": "service"},
+      {"id": "tracking", "label": "Tracking service", "tech": "not stated", "kind": "service"},
+      {"id": "billing", "label": "Billing service", "tech": "not stated", "kind": "service"},
+      {"id": "address", "label": "Address Validator", "tech": "not stated", "kind": "service"},
+      {"id": "dataservice", "label": "Data Service", "tech": "REST over all tables", "kind": "store"},
+      {"id": "pricingdb", "label": "Pricing database", "tech": "SQL", "kind": "store"},
+      {"id": "broker", "label": "Message broker", "tech": "not chosen (ADR-0004)", "kind": "store"}
+    ],
+    "decisions": [
+      {"title": "How booking meets 500 ms at p95", "chosen": "Recommended: live quote before Book, held under a quote id", "because": "the carrier quote alone is 400–800 ms"},
+      {"title": "Where services keep their data", "chosen": "Recommended: supersede ADR-0002, one schema per service, data team reviews migrations", "because": "the central Data Service makes every data change wait for a fifth team and is on every request"},
+      {"title": "How Tracking learns of bookings and scans", "chosen": "Recommended: supersede ADR-0003 with events", "because": "polling the Booking service never sees a carrier scan"},
+      {"title": "Owner of shipments.status", "chosen": "Recommended: Tracking owns the journey, Billing owns payment state", "because": "the payment notice arrives while the parcel travels and overwrites its status"},
+      {"title": "Charge retries", "chosen": "Recommended: booking number as idempotency key, Billing owns retries", "because": "a retry after a timeout can charge again"},
+      {"title": "Message broker", "chosen": "Not chosen; decide after consumers no longer rely on order", "because": "the three options differ on ordering"}
+    ],
+    "assumptions": [
+      "The 400–800 ms carrier quote time is a typical range, so the p95 is at or above 800 ms.",
+      "The payment notice arrives within minutes of the charge, long before delivery.",
+      "Carrier scans identify a parcel by the carrier's tracking number from the label."
+    ],
+    "open": [
+      "ADR-0004: which broker, retention for replay",
+      "Label printing at the counter (proposal §16)",
+      "Who answers customers about a charge outside office hours (proposal §16)",
+      "Cash payments at the counter (proposal §16)",
+      "Whether the current payment provider accepts an idempotency key",
+      "How long the carriers honour a live quote"
+    ]
   },
-  {
-   "label": "Layer breaks",
-   "value": 1,
-   "note": "Domain to Infrastructure",
-   "tone": "warn"
-  },
-  {
-   "label": "Hidden couplings",
-   "value": 4,
-   "note": "all between API and web",
-   "tone": "warn"
-  }
- ],
- "sections": [
-  {
-   "id": "findings",
-   "title": "Findings",
-   "blocks": [
+  "sections": [
     {
-     "type": "findings",
-     "items": [
-      {
-       "severity": "high",
-       "title": "Two writers for shipment status, and the worker's path skips the invoice",
-       "where": "worker/src/acme_worker/tracking.py:24, worker/src/acme_worker/db.py:11, src/Acme.Logistics/Shipments/ShipmentService.cs:107",
-       "evidence": "`tables_shared`: `shipments` is written by the API (`ShipmentRepository.cs:34`, `:68`) and the worker (`db.py:11`). When the carrier says delivered, the worker sets `Delivered` directly (`tracking.py:24`). [high]\n\nThe invoice is issued only in `MarkDeliveredAsync` (`ShipmentService.cs:118`), and `ApplyTrackingUpdateAsync` acts only on `in_transit` (`:133`). So that path issues no invoice and publishes no `shipment.delivered`. Nothing in this repo calls `POST /delivered`. [high]\n\nThe worker also skips the cancelled check at `:110`. Its literal `\"Delivered\"` has to match the C# enum, because `Enum.Parse` at `:225` throws on anything else. [high]",
-       "fix": "Make the API the only writer. The worker reports what the carrier said, and the API runs one delivery transition that issues the invoice once.\n\n**Safe when:** `MarkDeliveredAsync` is idempotent first and covered by a test (nothing in the code stops a second call from issuing a second invoice), the API ships before the worker, and someone counts delivered shipments with no invoice, because those need a business decision.",
-       "status": "open"
-      },
-      {
-       "severity": "high",
-       "title": "A tracking request waits on itself through the worker",
-       "where": "src/Acme.Logistics/Shipments/ShipmentService.cs:124, worker/src/acme_worker/api_client.py:8",
-       "evidence": "`loops`: api and worker call each other. `GET /tracking` stays open while the API calls the worker (`:124`), and the worker calls the carrier and then calls back into the API (`tracking.py:26`). The first request finishes only after a second request to the same API has. [high] Under load, waiting requests compete with the callbacks they wait for. [med]\n\nAny failure becomes a 500: `do_POST` has no error handling (`__main__.py:20`), `TrackAsync` has no catch, and the `\"unknown\"` fallback at `:127` covers only an empty body. The worker's timeouts add up to 25 s (carrier 10, database 5, notice 5, API 5). The API's call sets none, so the .NET default of 100 s applies. [high]\n\nThe read also has side effects: each call on a delivered parcel writes the status again and sends the customer another notice (`tracking.py:23`-`25`). The `shipment.booked` consumer only logs (`tracking.py:38`), so this request is the only thing that ever asks the carrier, although the README says the worker follows parcels. [high]",
-       "fix": "Break the worker-to-API direction. The API already holds the answer at `:126`, so it applies it there, and `/track` becomes a read-only question to the carrier. Send the notice from a consumer of `shipment.delivered`, so it goes out once. Set a timeout just above the carrier's 10 s and return the last known status on failure.\n\n**Safe when:** a flow test with a fake carrier covers delivered, in transit and carrier down, and the worker ships after the API.",
-       "status": "open"
-      },
-      {
-       "severity": "high",
-       "title": "A broker outage fails bookings after the row is saved",
-       "where": "src/Acme.Logistics/Shipments/ShipmentService.cs:73, src/Acme.Logistics/Infrastructure/MessageBus.cs:21, src/Acme.Logistics/Infrastructure/Database.cs:17",
-       "evidence": "Each `Database` call opens its own connection (`Database.cs:17`, `:23`, `:29`), and the repo has no `BeginTransaction` or `TransactionScope`, so no two writes can be atomic. [high]\n\n`BookAsync` saves (`:73`) then publishes (`:74`). `MarkDeliveredAsync` updates (`:116`), publishes (`:117`), then invoices (`:118`). If RabbitMQ is down, `CreateConnection` throws outside the `Retry` (`MessageBus.cs:21`, `:25`). The request fails with the row saved, and a second click books a second shipment. [high]\n\nThe queue buys little for this risk today: of four event types only `shipment.booked` has a consumer, and that consumer only logs. [high]",
-       "fix": "Add a transaction method to `Database` and an outbox table written in the same transaction as the state change. A small background loop publishes from it.\n\n**Safe when:** a flow test stops the broker during a booking and shows that the booking succeeds and the event arrives once the broker is back.",
-       "status": "open"
-      },
-      {
-       "severity": "high",
-       "title": "No tests and no seams, so no fix on this page is safe yet",
-       "where": "src/Acme.Logistics/Shipments/ShipmentService.cs:35",
-       "evidence": "0 of 37 tracked files are tests, and there is no CI configuration. [high]\n\nThe C# code has 0 interfaces. `ShipmentService` takes five concrete classes (`:35`-`:40`), and the worker and API addresses are literals (`:124`, `api_client.py:8`), while every other address is a setting. A test therefore needs the whole stack. [high]",
-       "fix": "Start where the next changes land: a table of inputs and expected prices for `PricingRules` (a pure function, so no seam is needed) and one flow test from delivered to invoice under Docker Compose. Add an interface only where a test needs one.\n\n**Safe because:** tests only, no production code changes.",
-       "status": "open"
-      },
-      {
-       "severity": "medium",
-       "title": "Every pricing rule is written twice, in C# and TypeScript",
-       "where": "src/Acme.Logistics/Shipments/PricingRules.cs:7, web/src/app/shipments/pricing.ts:10",
-       "evidence": "`hidden_coupling`: the two files changed together in 6 of 6 commits (confidence 1.0), with no import between them. All 8 constants and the formula are copies. A rule with a new input touched 5 files (`1eb006b`, `d23225b`). [high]\n\nThe copies already disagree on rounding. A 0.1 kg parcel of 25x55x75 cm sent express is 2222.02 RSD from the API and 2222.03 RSD in the browser, because the raw price is exactly 2222.025 and .NET rounds a midpoint to even while `Math.round` rounds it up. I simulated 22.4 million inputs in Python, and about 0.4% differ by 0.01 RSD. [high]\n\n`book()` ignores the price the API returns (`shipments.ts:44`), so staff never see the difference. [high]",
-       "fix": "Add `POST /api/shipments/quote` that calls `PricingRules`, show its answer on the form, and delete `pricing.ts`.\n\n**Safe when:** the price table passes against the endpoint, the API ships first, and the form calls it on input change with a debounce, because `estimate()` at `shipments.ts:15` runs on every change detection.",
-       "status": "open"
-      },
-      {
-       "severity": "medium",
-       "title": "Shipments and Billing depend on each other",
-       "where": "src/Acme.Logistics/Billing/BillingService.cs:4, src/Acme.Logistics/Shipments/ShipmentService.cs:2",
-       "evidence": "`cycles`: Billing and Shipments. `ShipmentService` calls `IssueInvoiceAsync` (`:118`) and returns an `Invoice` (`:107`). `BillingService` takes a whole `Shipment` (`BillingService.cs:17`) but uses only its id, price and status (`:19`, `:25`, `:29`-`:30`). [high]\n\nNeither area can be tested without the other, and because both sit in one assembly the compiler allows it. [high]",
-       "fix": "Billing takes only what it needs: `IssueInvoiceAsync(Guid shipmentId, Money net)`. The delivered check moves to the caller, which already sets the status (`:115`). That removes `using Acme.Logistics.Shipments` from Billing and leaves one direction. Keep the call synchronous, because `POST /delivered` returns the invoice (`ShipmentsController.cs:51`).\n\n**Safe when:** the delivery flow test stays green, and a dependency test fails on any new cycle.",
-       "status": "open"
-      },
-      {
-       "severity": "medium",
-       "title": "The domain entity Parcel writes SQL",
-       "where": "src/Acme.Logistics/Domain/Parcel.cs:23",
-       "evidence": "`layer_breaks`: 1, Domain to Infrastructure. With `ShipmentRepository.cs:2` it closes the second cycle. `ReweighAsync` takes a `Database` and runs `UPDATE parcels` (`:23`-`:28`). [high]\n\nIt came in with the reweigh feature (`b76f90e`). It has one caller (`ShipmentService.cs:149`), which is also the only use of `_database` in that class. [high]",
-       "fix": "Make it `Reweigh(decimal)`, which only changes the object, add `UpdateParcelWeightAsync` to `ShipmentRepository`, and drop `_database` from `ShipmentService`.\n\n**Safe because:** one caller, and it removes a cycle and the only layer break.",
-       "status": "open"
-      },
-      {
-       "severity": "medium",
-       "title": "ShipmentService is where every kind of change lands (a risk to manage)",
-       "where": "src/Acme.Logistics/Shipments/ShipmentService.cs:24",
-       "evidence": "`hot_spots`: 9 of 16 commits, 230 lines, score 2070, which is 4.7 times the next file.\n\nIt is big because it does too much: booking and validation (`:49`, `:165`), delivery and invoicing (`:107`), tracking over HTTP (`:121`), depot reweighing (`:141`), label text (`:153`) and row mapping (`:200`). `LabelText` and `ListInTransitAsync` have no caller in this repo. [high]",
-       "fix": "Split along what has changed together: booking, tracking and depot, one group per change, with the controllers unchanged.\n\n**Safe when:** the tests and the Billing fix are in first. Splitting it before then only moves the risk.",
-       "status": "open"
-      },
-      {
-       "severity": "medium",
-       "title": "The database schema is not in this repository",
-       "where": "docker-compose.yml:32",
-       "evidence": "The code uses three tables and a sequence (`shipments`, `parcels`, `invoices`, `invoice_numbers`). The repo has no `CREATE` or `ALTER` statement and no migrations. [high]\n\nThe `db` service has no init script, so the stack the README starts has no tables. [high] Any new column needs a step nobody can review here, while two deployables depend on `shipments`. [med]",
-       "fix": "Export the current schema as a baseline migration and make every later change a migration in this repo, owned by the API.\n\n**Safe because:** a baseline changes nothing in production. Check it by creating a fresh database and running the flow test on it.",
-       "status": "open"
-      },
-      {
-       "severity": "low",
-       "title": "Helpers mixes tax, retries, dates and text",
-       "where": "src/Acme.Logistics/Common/Helpers.cs:18",
-       "evidence": "`modules`: fan-in 4, instability 0.0, and 3 commits by 3 authors on a 38-line file. The VAT rate is here (`:20`) with one caller (`BillingService.cs:25`), and `Retry` is here with one caller (`MessageBus.cs:25`). `FormatDate` and `CleanText` are general. Nothing is blocked today. [high]",
-       "fix": "Move `AddVat` into Billing and `Retry` into `MessageBus`, and leave the other two.\n\n**Safe because:** moves only, and the compiler finds every caller.",
-       "status": "open"
-      },
-      {
-       "severity": "low",
-       "title": "A source change can ship without reaching the API image",
-       "where": "src/Acme.Api/Dockerfile:3",
-       "evidence": "The image copies a `publish/` folder built beforehand (`Dockerfile:3`, `README.md:17`), and git ignores that folder. `docker compose up --build` packs whatever was published last, with no warning. [high]",
-       "fix": "Build inside the image with a multi-stage Dockerfile, and set the compose build context to `./src` so the library is included.\n\n**Safe when:** `docker compose up --build` after a source edit shows the edit.",
-       "status": "open"
-      },
-      {
-       "severity": "info",
-       "title": "Billing knowledge sits with one author (a risk to manage)",
-       "where": "src/Acme.Logistics/Billing/",
-       "evidence": "`owners`: 3 of 3 commits by one author, Dunja Petrak (`one_person`: true). VAT, invoice numbering and credit notes are not described in the README or the docs, and have no tests. [high]\n\nThe worker has one commit in all, by one author, which is too little history to call.",
-       "fix": "Have someone else pair on the next billing change, and write down the VAT, numbering and credit-note rules.",
-       "status": "open"
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "where",
-   "title": "Where they sit",
-   "intro": "Flagged boxes and links are the problem spots. Click a box for its card, or step through a flow.",
-   "blocks": [
-    {
-     "type": "nested",
-     "title": "Containers, then inside the API",
-     "levels": [
-      {
-       "id": "containers",
-       "label": "Containers",
-       "open": [
-        "system"
-       ],
-       "note": "What runs, and who calls whom."
-      },
-      {
-       "id": "inside-api",
-       "label": "Inside the API",
-       "open": [
-        "system",
-        "api",
-        "lib"
-       ],
-       "note": "The modules of the API and the library."
-      }
-     ],
-     "boxes": [
-      {
-       "id": "staff",
-       "label": "Counter staff",
-       "kind": "user",
-       "note": "Use the web app."
-      },
-      {
-       "id": "client",
-       "label": "Other callers",
-       "kind": "user",
-       "note": "Whatever calls tracking, /delivered, /cancel, /reweigh and /credit. Nothing in this repo does. [guess]",
-       "flag": "warn",
-       "details": [
-        [
-         "Why flagged",
-         "The web app and the worker have no call to these endpoints, so the real path to an invoice is outside this repo."
-        ]
-       ]
-      },
-      {
-       "id": "system",
-       "label": "Acme Logistics",
-       "kind": "service",
-       "note": "Parcel delivery for businesses."
-      },
-      {
-       "id": "web",
-       "label": "Web app",
-       "parent": "system",
-       "kind": "channel",
-       "tech": "Angular 17",
-       "flag": "warn",
-       "note": "Booking form and lists.",
-       "details": [
-        [
-         "Why flagged",
-         "Holds a copy of the pricing rules (`pricing.ts`)."
-        ]
-       ]
-      },
-      {
-       "id": "api",
-       "label": "API",
-       "parent": "system",
-       "kind": "service",
-       "tech": ".NET 8",
-       "flag": "bad",
-       "note": "Controllers and the Acme.Logistics library.",
-       "details": [
-        [
-         "Why flagged",
-         "Half of the API and worker loop, and it writes state and events without a transaction."
-        ]
-       ]
-      },
-      {
-       "id": "worker",
-       "label": "Tracking worker",
-       "parent": "system",
-       "kind": "service",
-       "tech": "Python 3.12",
-       "flag": "bad",
-       "note": "Asks the carrier and sends delivery notices.",
-       "details": [
-        [
-         "Why flagged",
-         "Writes the API's table directly and calls back into the API."
-        ]
-       ]
-      },
-      {
-       "id": "db",
-       "label": "Database",
-       "parent": "system",
-       "kind": "store",
-       "tech": "PostgreSQL 16",
-       "flag": "bad",
-       "note": "shipments, parcels, invoices.",
-       "details": [
-        [
-         "Why flagged",
-         "`shipments` has two writers, and the schema is not in this repo."
-        ]
-       ]
-      },
-      {
-       "id": "queue",
-       "label": "Message broker",
-       "parent": "system",
-       "kind": "store",
-       "tech": "RabbitMQ 3",
-       "flag": "warn",
-       "note": "Topic exchange acme.events.",
-       "details": [
-        [
-         "Why flagged",
-         "Its outage fails the write path, and only one of four event types has a consumer."
-        ]
-       ]
-      },
-      {
-       "id": "carrier",
-       "label": "Carrier API",
-       "kind": "system",
-       "note": "Where a parcel is."
-      },
-      {
-       "id": "notify",
-       "label": "Notification API",
-       "kind": "system",
-       "note": "Sends the delivery notice."
-      },
-      {
-       "id": "controllers",
-       "label": "Controllers",
-       "parent": "api",
-       "kind": "service",
-       "note": "HTTP endpoints."
-      },
-      {
-       "id": "lib",
-       "label": "Acme.Logistics",
-       "parent": "api",
-       "kind": "service",
-       "note": "One assembly, used only by the API."
-      },
-      {
-       "id": "shipments",
-       "label": "Shipments",
-       "parent": "lib",
-       "kind": "service",
-       "flag": "bad",
-       "note": "295 lines, fan-in 2, fan-out 4.",
-       "details": [
-        [
-         "Why flagged",
-         "Cycle with Billing, and `ShipmentService` is the hot spot."
-        ]
-       ]
-      },
-      {
-       "id": "billing",
-       "label": "Billing",
-       "parent": "lib",
-       "kind": "service",
-       "flag": "bad",
-       "note": "93 lines, fan-in 2, fan-out 4.",
-       "details": [
-        [
-         "Why flagged",
-         "Cycle with Shipments, and one author so far."
-        ]
-       ]
-      },
-      {
-       "id": "domain",
-       "label": "Domain",
-       "parent": "lib",
-       "kind": "service",
-       "flag": "bad",
-       "note": "Money and Parcel.",
-       "details": [
-        [
-         "Why flagged",
-         "`Parcel` writes SQL: the one layer break and the second cycle."
-        ]
-       ]
-      },
-      {
-       "id": "infra",
-       "label": "Infrastructure",
-       "parent": "lib",
-       "kind": "service",
-       "flag": "warn",
-       "note": "Database, MessageBus, ShipmentRepository.",
-       "details": [
-        [
-         "Why flagged",
-         "Part of the Domain cycle, and `Database` offers no transaction."
-        ]
-       ]
-      },
-      {
-       "id": "common",
-       "label": "Common",
-       "parent": "lib",
-       "kind": "service",
-       "flag": "warn",
-       "note": "Helpers, fan-in 4.",
-       "details": [
-        [
-         "Why flagged",
-         "Four unrelated helpers, including the VAT rate."
-        ]
-       ]
-      }
-     ],
-     "links": [
-      {
-       "from": "staff",
-       "to": "web",
-       "label": "uses"
-      },
-      {
-       "from": "web",
-       "to": "controllers",
-       "label": "JSON/HTTP"
-      },
-      {
-       "from": "client",
-       "to": "controllers",
-       "label": "/delivered etc."
-      },
-      {
-       "from": "controllers",
-       "to": "shipments",
-       "label": "calls"
-      },
-      {
-       "from": "controllers",
-       "to": "billing",
-       "label": "calls"
-      },
-      {
-       "from": "shipments",
-       "to": "billing",
-       "label": "issues invoice",
-       "flag": "bad"
-      },
-      {
-       "from": "billing",
-       "to": "shipments",
-       "label": "reads Shipment",
-       "flag": "bad"
-      },
-      {
-       "from": "shipments",
-       "to": "infra",
-       "label": "saves"
-      },
-      {
-       "from": "billing",
-       "to": "infra",
-       "label": "raw SQL"
-      },
-      {
-       "from": "domain",
-       "to": "infra",
-       "label": "SQL in entity",
-       "flag": "bad"
-      },
-      {
-       "from": "infra",
-       "to": "domain",
-       "label": "row types",
-       "flag": "bad"
-      },
-      {
-       "from": "billing",
-       "to": "common",
-       "label": "VAT",
-       "flag": "warn"
-      },
-      {
-       "from": "infra",
-       "to": "db",
-       "label": "SQL"
-      },
-      {
-       "from": "infra",
-       "to": "queue",
-       "label": "publish",
-       "flag": "warn"
-      },
-      {
-       "from": "shipments",
-       "to": "worker",
-       "label": "POST /track",
-       "flag": "bad"
-      },
-      {
-       "from": "worker",
-       "to": "controllers",
-       "label": "POST /tracking",
-       "flag": "bad"
-      },
-      {
-       "from": "worker",
-       "to": "db",
-       "label": "UPDATE status",
-       "flag": "bad"
-      },
-      {
-       "from": "queue",
-       "to": "worker",
-       "label": "shipment.booked"
-      },
-      {
-       "from": "worker",
-       "to": "carrier",
-       "label": "GET status"
-      },
-      {
-       "from": "worker",
-       "to": "notify",
-       "label": "POST notice"
-      }
-     ],
-     "flows": [
-      {
-       "id": "track",
-       "title": "Open tracking: the request that waits on itself",
-       "variants": [
-        "containers"
-       ],
-       "steps": [
+      "id": "findings",
+      "title": "Findings",
+      "blocks": [
         {
-         "from": "client",
-         "to": "api",
-         "text": "`GET /api/shipments/{id}/tracking`. The web app has no call for this, so the caller is outside the repo. [guess]"
-        },
-        {
-         "from": "api",
-         "to": "worker",
-         "text": "`POST http://worker:8081/track`, holding the first request open. No timeout is set."
-        },
-        {
-         "from": "worker",
-         "to": "carrier",
-         "text": "Asks the carrier, with a 10 s timeout."
-        },
-        {
-         "from": "worker",
-         "to": "db",
-         "text": "If delivered: `UPDATE shipments` directly. No invoice follows."
-        },
-        {
-         "from": "worker",
-         "to": "notify",
-         "text": "If delivered: a notice to the customer, every time this runs."
-        },
-        {
-         "from": "worker",
-         "to": "api",
-         "text": "`POST /api/shipments/{id}/tracking`: a second request to the same API while the first still waits."
-        },
-        {
-         "from": "api",
-         "to": "queue",
-         "text": "Publishes `shipment.tracked`, which nothing consumes."
+          "type": "findings",
+          "items": [
+            {
+              "severity": "high",
+              "title": "The Book call cannot meet 500 ms at p95: it waits on a 400–800 ms carrier quote",
+              "where": "design/proposal.md:174-180, design/proposal.md:126, design/quality-goals.md:8",
+              "evidence": "The booking waits, in order: the Address Validator, up to 50 ms (`proposal.md:174`); the Pricing service (`:175`), which reads the contract discount through the Data Service (`:113`) and waits for the Carrier Gateway (`:176`), which waits for the carrier, 400–800 ms (`:126`). Then the booking is written through the Data Service (`:178`) and `ShipmentBooked` is published (`:179`). [high]\n\nStated times only: 50 + 400 = **450 ms** at the carrier's best, 50 + 800 = **850 ms** at its worst, before any of the network hops, the Data Service write and the publish. The goal is **500 ms at p95** (`quality-goals.md:8`), measured from request to confirmation (`:17`). A p95 sits at the slow end of the carrier's range, so the design misses the goal by up to 1.7× before counting a single hop. [high]\n\nThe goal at `proposal.md:27` puts the carrier's live quote in the confirmation, so with this flow the two goals cannot both hold. [high]",
+              "fix": "Take the carrier out of the Book call: ask for the live quote when the form is complete (a review step), hold it under a quote id with an expiry, and let `POST /bookings` reference the quote id. The Book call then waits on the Address Validator, one write and a publish. Call the Address Validator and Pricing in parallel rather than in turn. If that is not acceptable, agree a new number for Fast booking with its owner, Jelena Savkov.\n\n**Safe when:** the carriers honour a quote for the expiry chosen (check the contracts, which this project may not change, `proposal.md:34`), the quote id is bound to the parcel's weight, zone and carrier, and the commercial team agrees what happens when a quote expires before Book.",
+              "status": "open"
+            },
+            {
+              "severity": "high",
+              "title": "`shipments.status` has two writers, and the payment notice overwrites where the parcel is",
+              "where": "design/proposal.md:215, design/proposal.md:186, design/proposal.md:192-196",
+              "evidence": "§8 lists two writers for one field: `shipments.status` | Tracking service, Billing service (`proposal.md:215`). Tracking sets in transit and delivered from scans (`:186`); Billing sets invoiced (`:195`) and paid (`:196`). [high]\n\nThe card is charged right after the confirmation (`:192`), so the payment notice arrives while the parcel is still travelling, possibly before Tracking has created the shipment from `ShipmentBooked` [med]. The sequence is then paid → in transit (next scan) → delivered → invoiced: the field ends at invoiced for a parcel that was paid, and meanwhile the tracking page (`:188`) showed paid instead of where the parcel is. [high]\n\nThe Data Service API is `PATCH /tables/{table}` for every service (`:249`), so nothing enforces the owners in §8 either. [high]",
+              "fix": "Split the field: Tracking owns the journey (booked, in transit, delivered); Billing owns the payment state (charged, invoiced, paid) in its own record. The tracking page reads the first, finance the second.\n\n**Safe when:** decided before either team builds against the shared field, and the store only lets the one owner write each field.",
+              "status": "open"
+            },
+            {
+              "severity": "high",
+              "title": "\"Never charged twice\" has no mechanism, and the retries make a second charge likely",
+              "where": "design/proposal.md:192-200, design/proposal.md:247, design/quality-goals.md:12",
+              "evidence": "\"If the charge call times out after 2 seconds, the Booking service retries the charge, up to three times\" (`proposal.md:198`), then \"A customer is never charged twice for one booking\" (`:200`; goal owned by Ivana Kerac, `quality-goals.md:12`). [high]\n\nA timeout does not say whether the charge happened: Billing may have charged the card and answered late. Neither §7.3 nor `POST /charges` (`:247`) names an idempotency key, and Billing's own timeout towards the provider is not stated. With a provider answering in 3 s, one booking sends up to **4** charge requests, each of which may succeed. [high]\n\nAfter the retries \"the Billing service e-mails the customer a payment link\" (`:199`), but it is Booking that decided the charge failed; if Billing was the slow part, the customer can pay the link on top. [high] The charge is also a call made after the confirmation (`:192`) with no durable record: if the Booking service stops in between, nobody charges and no link goes out. [med]",
+              "fix": "Use the booking number as the idempotency key on `POST /charges`. Billing records the charge under that key before calling the provider (unique on booking number), passes the same key to the provider, and on a repeat returns the stored result instead of charging again. Better: Billing starts the charge from `ShipmentBooked` and owns the retries and the payment-link decision, so Booking no longer calls Billing at all.\n\n**Safe when:** the current payment provider (kept, `proposal.md:36`) accepts an idempotency key or a lookup by merchant reference. Check this before approving.",
+              "status": "open"
+            },
+            {
+              "severity": "high",
+              "title": "Accepted ADR-0003 has Tracking poll Booking; the proposal has it consume events, and polling never sees a scan",
+              "where": "design/adr/0003-tracking-polls-booking.md:3-25, design/proposal.md:134, design/proposal.md:184-186, design/adr/0001-split-booking-into-services.md:20",
+              "evidence": "ADR-0003 is **accepted** (`:3`): \"The Tracking service polls the REST API of the Booking service every minute, at `GET /bookings/changes?since=`\" (`:20`), with the benefit that it \"does not depend on the event format or on a broker\" (`:25`). [high]\n\nThe proposal, which names the ADRs as its decisions (`proposal.md:8`), has Tracking receive every status change from the broker (`:134`), create the shipment on `ShipmentBooked` (`:184`) and update status from `CarrierScan` (`:186`). Accepted ADR-0001 also has the services exchange events through a broker (`:20`). `GET /bookings/changes` is not in the interfaces table (§10). [high]\n\nPolling the Booking service cannot meet ADR-0003's own context, \"every status change of a shipment\" (`:9`): scans go to the Carrier Gateway (`proposal.md:127`), never to Booking. Built as accepted, the tracking page never moves past booked and the 2-minute tracking goal (`quality-goals.md:13`) fails. [high]",
+              "fix": "Write a new ADR, \"Tracking consumes events\", superseding ADR-0003, and mark ADR-0003 superseded. Keep what ADR-0003 valued: decide how long events are kept so Tracking can replay after an outage (ADR-0004's open question, `:27`).\n\n**Safe when:** both the tracking and booking teams build from the new ADR; the event rules in the events finding below are part of it.",
+              "status": "open"
+            },
+            {
+              "severity": "high",
+              "title": "ADR-0002's Data Service puts a fifth team into every release and onto every request",
+              "where": "design/adr/0002-central-data-service.md:17-25, design/proposal.md:144-147, design/proposal.md:249, design/adr/0001-split-booking-into-services.md:24",
+              "evidence": "v2 exists because \"every release waits for all four\" teams (`proposal.md:14`), and ADR-0001 promises \"Each team releases its service on its own schedule\" (`:24`). ADR-0002 puts every table except tariffs behind one Data Service run by the data team (`:17-19`): \"A new table, a new column or a new query is a request in the data team's backlog, released with the Data Service every two weeks\" (`proposal.md:147`). Any feature that stores something new waits for a fifth team's release. [high]\n\n\"The Data Service is on the path of every request that reads or writes data\" (`ADR-0002:25`): five services call it (`proposal.md:89-93`), the Book call twice, and it has no availability target. [high]\n\nIts API is `GET` and `PATCH /tables/{table}` (`proposal.md:249`): services still depend on tables and columns, the problem ADR-0002 set out to fix (`:11`). Two calls share no transaction, so Billing's invoice and status writes (`proposal.md:194-195`) and Booking's write and publish (`:178-179`) can half-happen, and an outbox is impossible because no service has a store of its own. [high]",
+              "fix": "Supersede ADR-0002: each service owns its tables in its own schema (they can share one database server) and reads no other service's schema; data crosses by API or event. Keep ADR-0002's real aim, every schema change reviewed, by making the data team a required reviewer of every migration.\n\nIf ADR-0002 stays, the design must add transactions or an outbox inside the Data Service, per-table write permissions matching §8, an availability target, and ADR-0001's \"own schedule\" must be reworded.\n\n**Safe when:** decided now. Nothing is built, so nothing has to move; after January 2027 every service is written against the Data Service API.",
+              "status": "open"
+            },
+            {
+              "severity": "high",
+              "title": "Events: order is expected from a broker not yet chosen, and duplicates and lost publishes are not handled",
+              "where": "design/proposal.md:231-234, design/proposal.md:178-179, design/proposal.md:194, design/adr/0004-message-broker.md:21",
+              "evidence": "\"The Tracking service relies on the message broker to deliver the events of one shipment in the order they were published\" (`proposal.md:232`), while \"Which broker product we run is to be decided later\" (`:234`; ADR-0004 `:21`). The three options differ on exactly this [med]. Publish order would not be enough anyway: the Gateway publishes in the order callbacks arrive, not the order the carrier scanned [med].\n\nNothing says what a consumer does with a duplicate. Billing issues the invoice when `ShipmentDelivered` arrives (`:194`); a redelivered event or a second delivered scan gives a second invoice. [high]\n\nThe booking is written (`:178`), then `ShipmentBooked` is published (`:179`), as two steps. If the publish fails, the booking stays confirmed but Tracking never creates the shipment: no `ShipmentDelivered`, so no invoice. [high]",
+              "fix": "Make consumers independent of order and duplicates so that any broker works. Every event gets an id. Tracking applies a scan only if its time (already in every event, `:231`) is later than the shipment's current status, and delivered never goes back. Billing issues at most one invoice per shipment (a unique key). Publish through an outbox written in the same transaction as the booking, which depends on the ADR-0002 decision.\n\n**Safe when:** the event time is the carrier's scan time, not the time the Gateway received the callback.",
+              "status": "open"
+            },
+            {
+              "severity": "high",
+              "title": "No timeout or fallback for the carriers or the payment provider",
+              "where": "design/proposal.md:175-177, design/proposal.md:125-128, design/proposal.md:139, design/proposal.md:194",
+              "evidence": "The only timeouts in the documents are the Address Validator's 50 ms (`:153`) and the charge call's 2 s (`:198`). Booking → Pricing → Carrier Gateway → carrier are three nested waits (`:175-177`) with no timeout at any hop, and nothing says what the customer sees when a carrier does not answer. Billing → Payment provider (`:139`) has none either. [high]\n\nScans arrive as callbacks (`:127`). Nothing says whether a carrier retries when the Gateway is down, or how a missed scan is noticed. A lost delivered scan means no `ShipmentDelivered`, so no invoice (`:194`). [high]\n\nThe Address Validator shows the design knows how: a budget, a fallback and a flag for a person (`:153-155`). [high]",
+              "fix": "For each outside dependency write down the timeout, the retry and what the user sees. Timeouts shrink inwards (carrier < Gateway < Pricing < Booking) so no caller gives up before its callee. When a quote fails: offer another carrier, or confirm at the tariff estimate, which is a rule for the commercial team. For scans: get each carrier's callback retry policy, and add a check that asks the carrier's scan API about shipments with no scan for a set time.\n\n**Safe when:** the commercial team agrees which price applies when the live quote fails.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "No flow registers the parcel with the carrier or makes its label",
+              "where": "design/proposal.md:170-180, design/proposal.md:129, design/proposal.md:166, design/proposal.md:245, design/proposal.md:291",
+              "evidence": "Booking (§7.1) asks the carrier for a quote only; no step tells the carrier the parcel exists. The Gateway \"writes each label to `labels`\" (`:129`) but no flow asks for one, and its only endpoint is `POST /quotes` (`:245`). Counter staff print labels (`:166`), yet whether label printing moves to the Gateway is an open question (`:291`). [high]\n\nThe label carries the carrier's tracking number (`:304`), which is what a carrier's scan refers to [med]; without it the Gateway cannot put the shipment number on a `CarrierScan` (`:231`). The first rollout step is three counters (`:270`).",
+              "fix": "Add the step: on `ShipmentBooked`, the Gateway registers the shipment with the carrier and stores the label, the carrier's tracking number and the mapping it needs for scans. Keep it out of the Book call, which already misses its goal. Add the label endpoint to §10 and decide where the counter prints.\n\n**Safe when:** decided before the January counter step.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "Availability and scale have no number, and no load is sized anywhere",
+              "where": "design/quality-goals.md:9, design/quality-goals.md:17, design/quality-goals.md:24",
+              "evidence": "\"The platform must be highly available and scale for peak season\" (`:9`) has no percentage and no load. Peak season has dates (`:24`) but no bookings per hour, and nothing estimates what web and mobile booking add to today's counter volume. Fast booking's p95 is taken \"over all bookings of a day\" (`:17`), which hides the peak hour. The Data Service and the broker are on every path and have no target. [high]",
+              "fix": "Per journey (book, tracking page, invoices): an availability number, the peak load it must hold (bookings per minute at the busiest hour), and p95 per hour rather than per day.\n\n**Safe when:** the figures come from the counter app's own peak, which runs from mid-November (`:24`); this season can be measured now, before v2 goes live.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "The broker is still undecided two months before go-live, and the teams have not run one",
+              "where": "design/adr/0004-message-broker.md:3-27, design/proposal.md:266, design/proposal.md:270, design/proposal.md:285",
+              "evidence": "ADR-0004 is Proposed: \"To be decided later, after the platform team has tried each option\" (`:21`). All services go live in January 2027 (`proposal.md:270`), and \"The teams have not run a message broker before\" (`:285`). The \"small interface of their own\" (`:22`) hides the client API, not the delivery guarantees. Of its open questions, night on-call (`:26`) is already answered by §12, \"the platform team covers nights and weekends\" (`proposal.md:266`); retention for replay (`:27`) is needed once Tracking consumes events. [high]",
+              "fix": "Set a date for the decision that leaves time for a trial and runbooks before January, record the night on-call from §12 in the ADR, and decide retention. Once the event rules above are in place, the choice is about operations only.\n\n**Safe when:** the trial covers a redelivery and a consumer restart, not only the happy path.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "Going back to the counter app has no path for parcels already booked in v2",
+              "where": "design/proposal.md:270-276, design/proposal.md:13",
+              "evidence": "\"Until June 2027 the counter app stays ready to take bookings again\" (`:276`). From January, bookings at three counters live in v2's Data Service while the counter app keeps its own database (`:13`). Nothing says who tracks and invoices parcels booked in v2 if you switch back, or how finance sees both systems' invoices for those months. [high] While both systems book, the carriers' scan callbacks have to reach both [guess].",
+              "fix": "Write the rollback rule: switching back stops new bookings in v2 only; v2's Tracking and Billing keep running for parcels already booked there until they are delivered and invoiced. Say how finance reports across both systems from January to June.\n\n**Safe when:** v2's Tracking and Billing can run with booking switched off.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "Inbound callbacks from carriers and the payment provider are not authenticated",
+              "where": "design/proposal.md:255-260, design/proposal.md:127, design/proposal.md:50",
+              "evidence": "§11 covers customers, staff, service tokens and cards. Scan callbacks (`:127`) and payment notices (`:50`) come in from outside, and §11 says nothing about them. A forged delivered scan would issue an invoice (`:194`); a forged payment notice would mark a shipment paid (`:196`). [high]",
+              "fix": "Verify each callback as its sender allows (signature, shared secret or mutual TLS), and accept a scan only for a tracking number the Gateway issued.\n\n**Safe when:** each carrier's and the provider's callback security has been checked; some may offer only an IP allow-list.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "Cash at the counter is not designed, and the counters go first",
+              "where": "design/proposal.md:293, design/proposal.md:192, design/proposal.md:270",
+              "evidence": "\"Do cash payments at the counter go through the Billing service as well?\" is open (`:293`). The charge flow always charges a card (`:192`), and the first rollout step puts walk-in customers at three counters on v2 (`:270`). [high]",
+              "fix": "Decide before January: either Billing records a cash payment, so there is still one invoice flow, or the first counter step serves card payers only.",
+              "status": "open"
+            },
+            {
+              "severity": "low",
+              "title": "Contract discounts have no named writer and sit in another team's table",
+              "where": "design/proposal.md:113, design/proposal.md:213, design/proposal.md:44",
+              "evidence": "Pricing reads the contract discount from `customers` (`:113`), which only Booking writes (`:213`). Nobody is named to enter contract terms; the commercial team sets tariffs only (`:44`). The read also adds a Data Service call to the Book call. [high]",
+              "fix": "Keep contract discounts with the tariffs in the Pricing database, entered in the same admin page, so a quote reads nothing from `customers`. Check that no personal data comes with them (`:260`).",
+              "status": "open"
+            },
+            {
+              "severity": "low",
+              "title": "The tracking goal has no percentile and depends on an unstated carrier delay",
+              "where": "design/quality-goals.md:13, design/quality-goals.md:20",
+              "evidence": "\"A carrier scan shows on the tracking page within 2 minutes\" (`:13`), measured from the carrier's scan time (`:20`). It has no percentile, and the carriers' delay before they send a callback is not stated anywhere. [high]",
+              "fix": "Add a percentile, and either measure from the moment the Gateway receives the callback or state each carrier's callback delay.",
+              "status": "open"
+            },
+            {
+              "severity": "low",
+              "title": "The interfaces table misses endpoints the design relies on",
+              "where": "design/proposal.md:236-253",
+              "evidence": "§10 has no `GET /bookings/changes` (ADR-0003 `:20`), no label endpoint, no scan callback, no payment notice endpoint and no tariff admin. [high]",
+              "fix": "Add them once the tracking and label decisions are taken, with the callbacks' authentication.",
+              "status": "open"
+            }
+          ]
         }
-       ]
-      },
-      {
-       "id": "book",
-       "title": "Book a shipment: saved before it can fail",
-       "variants": [
-        "containers"
-       ],
-       "steps": [
+      ]
+    },
+    {
+      "id": "design",
+      "title": "The design as written",
+      "intro": "Drawn from the proposal's §5 diagram and §6–§7 text. A label with \"waits\" is a synchronous call where the caller waits; the other links are events or callbacks. Flagged parts carry findings.",
+      "blocks": [
         {
-         "from": "web",
-         "to": "api",
-         "text": "`POST /api/shipments`."
-        },
-        {
-         "from": "api",
-         "to": "db",
-         "text": "Saves the shipment."
-        },
-        {
-         "from": "api",
-         "to": "queue",
-         "text": "Publishes `shipment.booked`. If the broker is down the request fails here, with the row already saved."
-        },
-        {
-         "from": "queue",
-         "to": "worker",
-         "text": "The worker logs one line. That is all it does with the event."
+          "type": "architecture",
+          "title": "Parcel booking v2",
+          "zones": [
+            {"id": "people", "label": "People and apps"},
+            {"id": "services", "label": "Services"},
+            {"id": "data", "label": "Data and events"},
+            {"id": "outside", "label": "Outside systems"}
+          ],
+          "components": [
+            {"id": "customer", "label": "Customers", "zone": "people", "kind": "user", "note": "Book, pay and follow parcels."},
+            {"id": "staff", "label": "Counter staff", "zone": "people", "kind": "user", "note": "Book for walk-in customers and print labels."},
+            {"id": "commercial", "label": "Commercial team", "zone": "people", "kind": "human", "note": "Sets tariffs in the Pricing admin page."},
+            {"id": "web", "label": "Web app", "zone": "people", "kind": "channel", "note": "Booking, tracking and invoices; counter role adds labels."},
+            {"id": "mobile", "label": "Mobile app", "zone": "people", "kind": "channel", "note": "Android and iOS, from May 2027."},
+            {"id": "booking", "label": "Booking service", "zone": "services", "kind": "service", "flag": "bad", "note": "Takes a booking, checks the address, gets the price, confirms, then charges.", "details": [["Why flagged", "The Book call waits on a 400–800 ms carrier quote against 500 ms p95; it retries charges with no idempotency key."], ["Team", "booking"]]},
+            {"id": "address", "label": "Address Validator", "zone": "services", "kind": "service", "note": "Register in memory, 50 ms budget with a fallback.", "details": [["Fails how", "After 50 ms the address is accepted as typed and flagged for staff."], ["Team", "booking"]]},
+            {"id": "pricing", "label": "Pricing service", "zone": "services", "kind": "service", "flag": "warn", "note": "Tariff plus live carrier quote; tariff alone for the estimate.", "details": [["Why flagged", "Waits on the Gateway with no timeout; reads contract discounts from another team's table."], ["Team", "pricing"]]},
+            {"id": "gateway", "label": "Carrier Gateway", "zone": "services", "kind": "service", "flag": "warn", "note": "Only part that talks to the carriers: quotes, labels, scans.", "details": [["Why flagged", "No timeout or fallback towards carriers; no flow creates labels; callbacks not authenticated."], ["Team", "pricing"]]},
+            {"id": "tracking", "label": "Tracking service", "zone": "services", "kind": "service", "flag": "bad", "note": "Keeps shipment status, serves the tracking page.", "details": [["Why flagged", "Accepted ADR-0003 says it polls Booking; the proposal says events. Relies on broker ordering."], ["Team", "tracking"]]},
+            {"id": "billing", "label": "Billing service", "zone": "services", "kind": "service", "side_effect": true, "flag": "bad", "note": "Charges cards, issues invoices, follows payments.", "details": [["Why flagged", "Second writer of shipments.status; no duplicate handling for invoices or charges."], ["Team", "billing"]]},
+            {"id": "dataservice", "label": "Data Service", "zone": "data", "kind": "store", "flag": "bad", "note": "Every table except tariffs, behind GET and PATCH /tables/{table}.", "details": [["Why flagged", "On every request, no availability target, no transactions; every data change waits for its two-week release."], ["Team", "data"]]},
+            {"id": "pricingdb", "label": "Pricing database", "zone": "data", "kind": "store", "note": "Table tariffs, read through a 15-minute cache."},
+            {"id": "broker", "label": "Message broker", "zone": "data", "kind": "store", "flag": "warn", "note": "Product not chosen (ADR-0004, Proposed).", "details": [["Why flagged", "Tracking relies on its ordering, which the options do not share."], ["Team", "platform"]]},
+            {"id": "carriers", "label": "Carrier APIs", "zone": "outside", "kind": "system", "flag": "warn", "note": "Brzopak, Kolibri Kurir, Tranzit Plus. Quote 400–800 ms.", "details": [["Fails how", "Not stated."]]},
+            {"id": "payment", "label": "Payment provider", "zone": "outside", "kind": "system", "side_effect": true, "flag": "warn", "note": "Charges cards, sends payment notices.", "details": [["Fails how", "Not stated; idempotency support not checked."]]},
+            {"id": "postal", "label": "Postal register", "zone": "outside", "kind": "system", "note": "Streets and house numbers, loaded nightly."}
+          ],
+          "links": [
+            {"from": "customer", "to": "web", "label": "book, follow", "trust": "untrusted"},
+            {"from": "customer", "to": "mobile", "label": "book, follow", "trust": "untrusted"},
+            {"from": "staff", "to": "web", "label": "counter role"},
+            {"from": "commercial", "to": "pricing", "label": "tariffs"},
+            {"from": "web", "to": "booking", "label": "REST, waits"},
+            {"from": "mobile", "to": "booking", "label": "REST, waits"},
+            {"from": "web", "to": "tracking", "label": "REST, waits"},
+            {"from": "mobile", "to": "tracking", "label": "REST, waits"},
+            {"from": "booking", "to": "address", "label": "waits ≤50 ms"},
+            {"from": "booking", "to": "pricing", "label": "quote, waits"},
+            {"from": "pricing", "to": "gateway", "label": "quote, waits"},
+            {"from": "pricing", "to": "pricingdb", "label": "SQL, cached"},
+            {"from": "gateway", "to": "carriers", "label": "HTTPS, waits"},
+            {"from": "carriers", "to": "gateway", "label": "scan callback", "trust": "untrusted"},
+            {"from": "booking", "to": "billing", "label": "charge, 2 s"},
+            {"from": "billing", "to": "payment", "label": "charge, waits"},
+            {"from": "payment", "to": "billing", "label": "payment notice", "trust": "untrusted"},
+            {"from": "booking", "to": "broker", "label": "ShipmentBooked"},
+            {"from": "gateway", "to": "broker", "label": "CarrierScan"},
+            {"from": "broker", "to": "tracking", "label": "status events"},
+            {"from": "tracking", "to": "broker", "label": "Delivered evt"},
+            {"from": "broker", "to": "billing", "label": "Delivered evt"},
+            {"from": "booking", "to": "dataservice", "label": "REST, waits"},
+            {"from": "pricing", "to": "dataservice", "label": "REST, waits"},
+            {"from": "gateway", "to": "dataservice", "label": "REST, waits"},
+            {"from": "tracking", "to": "dataservice", "label": "REST, waits"},
+            {"from": "billing", "to": "dataservice", "label": "REST, waits"},
+            {"from": "address", "to": "postal", "label": "nightly load"}
+          ],
+          "flows": [
+            {"id": "book", "title": "Book a parcel (§7.1)", "steps": [
+              {"from": "web", "to": "booking", "text": "The client sends the booking; the clock for the 500 ms p95 goal starts."},
+              {"from": "booking", "to": "address", "text": "Address check, waits up to 50 ms, then accepts the address as typed."},
+              {"from": "booking", "to": "pricing", "text": "Waits for the final price."},
+              {"from": "pricing", "to": "dataservice", "text": "Reads the contract discount from customers: another waiting hop."},
+              {"from": "pricing", "to": "gateway", "text": "Waits for the live quote, no timeout stated."},
+              {"from": "gateway", "to": "carriers", "text": "Carrier quote: 400–800 ms. With the address check, 450–850 ms before any hop."},
+              {"from": "booking", "to": "dataservice", "text": "Writes bookings."},
+              {"from": "booking", "to": "broker", "text": "Publishes ShipmentBooked, a separate step from the write: no outbox."},
+              {"from": "booking", "to": "billing", "text": "After the confirmation, charges the card; on a 2 s timeout retries up to three times, with no idempotency key."}
+            ]},
+            {"id": "track", "title": "Track a parcel (§7.2)", "steps": [
+              {"from": "broker", "to": "tracking", "text": "ShipmentBooked arrives (ADR-0003 says polling instead)."},
+              {"from": "tracking", "to": "dataservice", "text": "Creates the shipment."},
+              {"from": "carriers", "to": "gateway", "text": "Scan callback, not authenticated, no retry policy stated."},
+              {"from": "gateway", "to": "broker", "text": "Publishes CarrierScan; order relied on from a broker not chosen."},
+              {"from": "broker", "to": "tracking", "text": "CarrierScan arrives."},
+              {"from": "tracking", "to": "dataservice", "text": "Sets shipments.status: in transit or delivered."},
+              {"from": "tracking", "to": "broker", "text": "Publishes ShipmentDelivered."},
+              {"from": "web", "to": "tracking", "text": "The tracking page reads the status."}
+            ]},
+            {"id": "charge", "title": "Charge and invoice (§7.3)", "steps": [
+              {"from": "booking", "to": "billing", "text": "Charge request after the confirmation."},
+              {"from": "billing", "to": "payment", "text": "Charges the card; Billing's timeout not stated."},
+              {"from": "payment", "to": "billing", "text": "Payment notice, likely while the parcel is in transit."},
+              {"from": "billing", "to": "dataservice", "text": "Sets shipments.status to paid: the second writer of that field."},
+              {"from": "broker", "to": "billing", "text": "ShipmentDelivered arrives; no duplicate handling."},
+              {"from": "billing", "to": "dataservice", "text": "Writes the invoice, then sets status to invoiced: two calls, no transaction."}
+            ]}
+          ]
         }
-       ]
-      }
-     ]
-    },
-    {
-     "type": "list",
-     "title": "What the scripts could not see",
-     "items": [
-      "**Boundaries:** `Shipments` and `Billing` follow business areas, while `Domain`, `Infrastructure` and `Common` follow technical layers. It is mixed, but not the thing costing you today. [high]",
-      "**Shared library:** `Acme.Logistics` is referenced only by the API (`Acme.Api.csproj:10`). The API and the worker share the database and some strings instead, so that is where their coupling sits. [high]",
-      "**Failure handling:** a chain with no fallback and writes with no transaction, in the second and third findings. No unbounded retry exists: `Retry` stops at 3 attempts. [high]",
-      "**Deployment order:** the schema and the `publish/` step both have to happen outside what `docker compose up --build` does. [high]",
-      "**Tests:** there are none, so there are also none that need the whole stack running. [high]"
-     ]
-    }
-   ]
-  },
-  {
-   "id": "measurements",
-   "title": "Measurements",
-   "intro": "Counted by the scripts over 24 source files and 16 commits. A number shows where to look, and the findings above are what the code showed there.",
-   "blocks": [
-    {
-     "type": "table",
-     "title": "Modules by fan-in, fan-out and instability",
-     "columns": [
-      "Module",
-      "Files",
-      "Lines",
-      "Fan-in",
-      "Fan-out",
-      "Instability"
-     ],
-     "rows": [
-      [
-       "Acme.Logistics.Common",
-       1,
-       39,
-       4,
-       0,
-       0.0
-      ],
-      [
-       "Acme.Logistics.Infrastructure",
-       3,
-       133,
-       3,
-       2,
-       0.4
-      ],
-      [
-       "Acme.Logistics.Domain",
-       2,
-       58,
-       3,
-       1,
-       0.25
-      ],
-      [
-       "Acme.Logistics.Billing",
-       2,
-       93,
-       2,
-       4,
-       0.67
-      ],
-      [
-       "Acme.Logistics.Shipments",
-       3,
-       295,
-       2,
-       4,
-       0.67
-      ],
-      [
-       "web/app/api",
-       1,
-       47,
-       2,
-       0,
-       0.0
-      ],
-      [
-       "acme_worker.tracking",
-       1,
-       43,
-       1,
-       3,
-       0.75
-      ],
-      [
-       "web/app/invoices",
-       1,
-       28,
-       1,
-       1,
-       0.5
-      ],
-      [
-       "web/app/shipments",
-       2,
-       86,
-       1,
-       1,
-       0.5
-      ],
-      [
-       "acme_worker.api_client",
-       1,
-       13,
-       1,
-       0,
-       0.0
-      ],
-      [
-       "acme_worker.db",
-       1,
-       14,
-       1,
-       0,
-       0.0
-      ],
-      [
-       "acme_worker.notifications",
-       1,
-       14,
-       1,
-       0,
-       0.0
-      ],
-      [
-       "Acme.Api.Controllers",
-       2,
-       126,
-       0,
-       3,
-       1.0
-      ],
-      [
-       "web/app",
-       1,
-       16,
-       0,
-       2,
-       1.0
-      ],
-      [
-       "acme_worker.__main__",
-       1,
-       35,
-       0,
-       1,
-       1.0
-      ],
-      [
-       "acme_worker",
-       1,
-       4,
-       0,
-       0,
-       null
       ]
-     ]
     },
     {
-     "type": "text",
-     "text": "The dangerous case is a much-used module with high instability. The nearest here are Billing and Shipments (fan-in 2, instability 0.67), and they are the ones in a cycle."
-    },
-    {
-     "type": "table",
-     "title": "Hidden coupling: files that change together with no import between them",
-     "columns": [
-      "File",
-      "Changes with",
-      "Commits together",
-      "Confidence"
-     ],
-     "rows": [
-      [
-       "src/Acme.Logistics/Shipments/PricingRules.cs",
-       "web/src/app/shipments/pricing.ts",
-       6,
-       1.0
-      ],
-      [
-       "src/Acme.Logistics/Shipments/ShipmentService.cs",
-       "web/src/app/shipments/pricing.ts",
-       4,
-       0.67
-      ],
-      [
-       "src/Acme.Logistics/Shipments/PricingRules.cs",
-       "web/src/app/shipments/shipments.ts",
-       3,
-       0.75
-      ],
-      [
-       "src/Acme.Logistics/Shipments/ShipmentService.cs",
-       "web/src/app/shipments/shipments.ts",
-       3,
-       0.75
+      "id": "promises",
+      "title": "Promises and goals",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["Statement", "Where", "Mechanism or number", "Status"],
+          "rows": [
+            ["A booking is confirmed in under 500 ms at p95", "quality-goals.md:8", "The Book call waits on a 400–800 ms carrier quote; 450–850 ms before any hop", "Not met by the design"],
+            ["The final price, with the carrier's live quote, in the confirmation", "proposal.md:27", "The live quote is fetched inside the Book call", "Conflicts with the 500 ms goal"],
+            ["Highly available and scales for peak season", "quality-goals.md:9", "None: no percentage, no load", "No number"],
+            ["Quotes at most 15 minutes behind the tariff table", "quality-goals.md:10, proposal.md:118", "Read-through cache, 15-minute expiry; accepted 2026-10-29", "Has a mechanism"],
+            ["Address check adds at most 50 ms", "quality-goals.md:11, proposal.md:153-155", "50 ms budget, address accepted as typed and flagged for staff", "Has a mechanism"],
+            ["A customer is never charged twice for one booking", "quality-goals.md:12, proposal.md:200", "None; the charge is retried after a timeout with no key", "No mechanism"],
+            ["A carrier scan shows within 2 minutes", "quality-goals.md:13", "Events (proposal) or polling Booking (ADR-0003), which never sees scans; no percentile", "Contradicted"],
+            ["Each team releases on its own schedule", "proposal.md:28, ADR-0001:24", "Services per team, but every data change waits for the Data Service's two-week release", "Undercut by ADR-0002"],
+            ["Events of one shipment arrive in publish order", "proposal.md:232", "Left to a broker not yet chosen", "No mechanism"],
+            ["Invoices are issued without work at the counter", "proposal.md:30", "Invoice on ShipmentDelivered; no dedupe, a lost scan or publish means no invoice", "Partly"],
+            ["The counter app stays ready to take bookings again until June 2027", "proposal.md:276", "None for parcels already booked in v2", "No mechanism"],
+            ["Card numbers never reach Acme", "proposal.md:259", "The provider keeps cards; Billing stores a payment token", "Has a mechanism"],
+            ["Breaking changes get a new version in the path", "proposal.md:253", "Path versioning, old version kept until clients move", "Has a mechanism"]
+          ]
+        }
       ]
-     ]
     },
     {
-     "type": "table",
-     "title": "Hot spots: top 8 of 15, by commits times lines",
-     "columns": [
-      "File",
-      "Commits",
-      "Lines",
-      "Score"
-     ],
-     "rows": [
-      [
-       "src/Acme.Logistics/Shipments/ShipmentService.cs",
-       9,
-       230,
-       2070
-      ],
-      [
-       "src/Acme.Api/Controllers/ShipmentsController.cs",
-       5,
-       88,
-       440
-      ],
-      [
-       "src/Acme.Logistics/Shipments/PricingRules.cs",
-       6,
-       40,
-       240
-      ],
-      [
-       "src/Acme.Logistics/Billing/BillingService.cs",
-       3,
-       78,
-       234
-      ],
-      [
-       "web/src/app/shipments/pricing.ts",
-       6,
-       35,
-       210
-      ],
-      [
-       "web/src/app/shipments/shipments.ts",
-       4,
-       51,
-       204
-      ],
-      [
-       "web/src/app/api/client.ts",
-       4,
-       47,
-       188
-      ],
-      [
-       "src/Acme.Logistics/Common/Helpers.cs",
-       3,
-       39,
-       117
+      "id": "scenarios",
+      "title": "Quality scenarios",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["Scenario", "What the design does", "What stops it"],
+          "rows": [
+            ["Peak-season evening, one carrier's quote API hangs", "Each booking for that carrier waits in Booking → Pricing → Gateway with no timeout at any hop and no stated message to the customer. Waiting requests hold capacity in three services, which slows bookings for the other two carriers as well [med]. If that carrier's scan callbacks stop too, its delivered parcels are not invoiced.", "No timeout per hop, no fallback price, no peak load to size for."],
+            ["The payment provider answers in 3 s for an hour", "Booking times out at 2 s and retries up to three times: up to 4 charge requests per booking, each of which may succeed. Then Billing e-mails a payment link that the customer may also pay.", "No idempotency key on `POST /charges` or towards the provider; Booking, not Billing, decides that the charge failed."],
+            ["The Data Service is down for ten minutes, or its release goes wrong", "Booking cannot write bookings, Pricing cannot read discounts, Tracking cannot store scans, Billing cannot invoice: every flow stops at once. Nothing says whether events consumed in that window are retried or lost.", "The Data Service is on every path (ADR-0002:25), with no availability target and no way to degrade."]
+          ]
+        }
       ]
-     ]
     },
     {
-     "type": "table",
-     "title": "Owners: where knowledge is concentrated",
-     "columns": [
-      "Module",
-      "Commits",
-      "Authors",
-      "Top author",
-      "Top share",
-      "One person"
-     ],
-     "rows": [
-      [
-       "Acme.Logistics.Shipments",
-       11,
-       2,
-       "Tamara Brankov",
-       0.64,
-       "no"
-      ],
-      [
-       "Acme.Api.Controllers",
-       7,
-       3,
-       "Tamara Brankov",
-       0.57,
-       "no"
-      ],
-      [
-       "web/app/shipments",
-       7,
-       2,
-       "Aleksa Mirkov",
-       0.57,
-       "no"
-      ],
-      [
-       "web/app/api",
-       4,
-       3,
-       "Aleksa Mirkov",
-       0.5,
-       "no"
-      ],
-      [
-       "Acme.Logistics.Billing",
-       3,
-       1,
-       "Dunja Petrak",
-       1.0,
-       "yes"
-      ],
-      [
-       "Acme.Logistics.Common",
-       3,
-       3,
-       "Dunja Petrak",
-       0.33,
-       "no"
-      ],
-      [
-       "Acme.Logistics.Domain",
-       3,
-       2,
-       "Tamara Brankov",
-       0.67,
-       "no"
-      ],
-      [
-       "Acme.Logistics.Infrastructure",
-       2,
-       2,
-       "Aleksa Mirkov",
-       0.5,
-       "no"
-      ],
-      [
-       "web/app",
-       2,
-       2,
-       "Dunja Petrak",
-       0.5,
-       "no"
-      ],
-      [
-       "web/app/invoices",
-       1,
-       1,
-       "Dunja Petrak",
-       1.0,
-       "no"
-      ],
-      [
-       "acme_worker (6 modules)",
-       1,
-       1,
-       "Aleksa Mirkov",
-       1.0,
-       "too little history"
+      "id": "decide-first",
+      "title": "Decisions to take first",
+      "blocks": [
+        {
+          "type": "list",
+          "title": "Before approval",
+          "ordered": true,
+          "items": [
+            "**How the Book call meets its goal.** Live quote before Book, held under a quote id, or a new number for Fast booking. Owners: Jelena Savkov, with the commercial team on quote validity.",
+            "**Keep or supersede ADR-0002.** This decides whether outboxes and transactions are possible and whether ADR-0001's independent release holds, so it comes before any service is built.",
+            "**How Tracking learns of bookings and scans.** Supersede ADR-0003 with events, including how long events are kept for replay.",
+            "**One owner for `shipments.status`.** Split the journey (Tracking) from the payment state (Billing).",
+            "**Charge idempotency.** The booking number as the key, provider support confirmed, Billing owning retries and the payment link. Owner: Ivana Kerac.",
+            "**Event rules any broker satisfies.** Event id, ordering by event time, monotonic status, at most one invoice per shipment, outbox."
+          ]
+        },
+        {
+          "type": "list",
+          "title": "Then change the design",
+          "ordered": true,
+          "items": [
+            "Availability and peak load numbers, measured on the counter app during the peak season that starts now.",
+            "The carrier registration and label step, and cash at the counter, before the January counter step.",
+            "A timeout, a retry and what the user sees, for every outside dependency.",
+            "Authentication for scan callbacks and payment notices.",
+            "The rollback rule for parcels already booked in v2.",
+            "Contract discounts moved to Pricing; a percentile on the tracking goal; §10 completed."
+          ]
+        },
+        {
+          "type": "list",
+          "title": "Can wait",
+          "items": [
+            "**The broker product (ADR-0004)**, once consumers no longer depend on order, with a fixed date that leaves time for a trial before January.",
+            "**Who answers customers about a charge outside office hours** (`proposal.md:292`): a support question, not an architecture one."
+          ]
+        }
       ]
-     ]
-    }
-   ]
-  },
-  {
-   "id": "scenarios",
-   "title": "Quality scenarios",
-   "blocks": [
-    {
-     "type": "table",
-     "columns": [
-      "Scenario",
-      "What happens today",
-      "What stops it"
-     ],
-     "rows": [
-      [
-       "The next pricing rule (6 of the 16 commits so far were one)",
-       "The same change goes into `PricingRules.cs` and `pricing.ts`, and a rule with a new input touched 5 files. Web and API have to ship together. [high]",
-       "No quote endpoint, and no test comparing the two copies."
-      ],
-      [
-       "A release of billing with shipments unchanged",
-       "Not possible. Both compile into `Acme.Logistics` and ship in the one API image, and `BillingService.cs:17` takes a `Shipment`. [high]",
-       "The Billing and Shipments cycle. Separate release is not needed at this size, but one-way dependency is."
-      ],
-      [
-       "The carrier API is down and someone opens tracking",
-       "The worker's handler fails with no response, `TrackAsync` throws, and the caller gets a 500 after up to 10 s, although the last known status is in the database. Bookings keep working, because they never touch the carrier. [high]",
-       "The synchronous chain, and the fallback at `ShipmentService.cs:127` that only covers an empty body."
-      ]
-     ]
-    }
-   ]
-  },
-  {
-   "id": "order",
-   "title": "Order of the fixes",
-   "intro": "What blocks everything else first, then what grows worse with time, then the rest.",
-   "blocks": [
-    {
-     "type": "list",
-     "ordered": true,
-     "items": [
-      "**Tests first.** A price table and one delivered-to-invoice flow test. Every fix below relies on them.",
-      "**The schema into the repo.** Idempotent invoicing and the outbox both need a schema change someone can review.",
-      "**One writer, one delivery path, no loop.** Three deploys: the API learns to apply `delivered` once and uses the answer it already holds, then the worker drops its database write and callback, then remove the worker's database setting.",
-      "**Transaction and outbox.** Removes partial writes and the broker's hold on the write path.",
-      "**Quote endpoint, then delete `pricing.ts`.** This cost grows with every rule, so it comes first among the things that are not failures.",
-      "**`Parcel` without SQL.** One caller. It can go earlier if someone is nearby.",
-      "**Billing stops importing Shipments.** Leaves one direction.",
-      "**Split `ShipmentService`.** Only after the tests and the step above.",
-      "**Tidy when nearby:** `Helpers` and the multi-stage Dockerfile.",
-      "**Alongside all of it:** pair on the next billing change and write down the billing rules."
-     ]
-    }
-   ]
-  },
-  {
-   "id": "leave-alone",
-   "title": "What to leave alone",
-   "blocks": [
-    {
-     "type": "list",
-     "items": [
-      "**One API, one worker, one repo.** Do not split into services for this: 3 authors, 16 commits, one database. Removing the cycles gives you the boundaries without the operating cost.",
-      "**`PricingRules.cs` as plain code.** It is 39 lines read top to bottom, and each rule was a small edit. It needs one home, not a rule engine.",
-      "**`Money.cs`.** Small, depends on nothing else in the repo, and changed once.",
-      "**The thin `Database` wrapper.** Add a transaction method to it. It does not need an ORM or a generic repository.",
-      "**The folder layout.** The mix of business and technical folders is costing nothing yet, so do not reshuffle it by itself.",
-      "**The web app's structure.** `web/app/api` is one clean entry point and there are no cycles.",
-      "**RabbitMQ.** Keep it. Once `shipment.delivered` has a real consumer it earns its place."
-     ]
-    }
-   ]
-  },
-  {
-   "id": "not-covered",
-   "title": "What this review did not cover",
-   "blocks": [
-    {
-     "type": "list",
-     "items": [
-      "**Running it.** Nothing was built, run or load-tested. Flows are described as the code is written, and the failure behaviour comes from reading it.",
-      "**The database itself.** The schema is not in the repo, so I saw no columns, foreign keys, constraints or triggers. How many delivered shipments have no invoice is unknown.",
-      "**Line-level bugs.** Two seen in passing and not run, worth a `bug-hunt`: `BookAsync` saves no `parcels` row although every read inner-joins `parcels`, and `ShipmentRow` has 9 constructor parameters against 13 selected columns with no mapping code in the repo. Unless the database or something unseen covers these, a booked shipment cannot be read back. [med]",
-      "**Security.** `Program.cs` sets up no authentication, and I did not review further.",
-      "**The web app's build.** `angular.json` and the bootstrap files are not in the repo.",
-      "**Long-run history.** 16 commits from 2026-03-03 to 2026-10-15 is short, so the coupling numbers show direction rather than a settled pattern."
-     ]
     },
     {
-     "type": "list",
-     "title": "Assumptions I made instead of asking",
-     "items": [
-      "The next changes look like the past ones: more pricing rules and shipment features. I found no planned change for this repo.",
-      "The two briefs in `docs/briefs` are new systems that do not reuse this code. If the Acme Couriers app reuses `Acme.Logistics`, the missing transaction becomes blocking, because that brief needs a booking and its invoice saved together.",
-      "Something outside this repo calls `/delivered`, `/cancel`, `/reweigh`, `/credit` and the tracking endpoint, since neither the web app nor the worker does. [guess]",
-      "Layers are the script's default, from the inside out: domain, application, infrastructure, api. The folders match them.",
-      "Production runs the same way as `docker-compose.yml`."
-     ]
+      "id": "leave-alone",
+      "title": "What to leave alone",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "**Services by team (ADR-0001).** Argued from four teams that block each other; the problem is the data decision around it, not the split.",
+            "**The Address Validator's 50 ms budget.** A timeout, a fallback and a flag for staff: the model the other dependencies should follow.",
+            "**The tariff cache with 15 minutes of staleness.** Accepted by its owner, with a reason (tariffs change weekly and take effect on Monday).",
+            "**The estimate from the tariff alone while the customer types.** It keeps the carrier out of the form.",
+            "**The Carrier Gateway as the only part that talks to carriers.** Keep it; it needs timeouts and the label step, not a different shape.",
+            "**Cards stay with the provider; Billing holds a token.**",
+            "**Path versioning for breaking changes.**",
+            "**The rollout in steps with four weeks without a severe incident between them.**"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "not-covered",
+      "title": "What this review did not cover",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "**Code.** None exists yet (`README.md:4`); this reviews the seven documents only.",
+            "**Load and cost.** The documents give no peak figures and no cost, so nothing was sized or priced.",
+            "**The carriers' and the payment provider's own terms.** Idempotency keys, quote validity, callback retries and callback security are not in the repo and must be checked with them.",
+            "**Security beyond §11.** No threat model was done; the callback finding is what the documents themselves show.",
+            "**Operations in detail.** Deployment, observability, backups and cluster capacity are described in one paragraph (§12) and were not reviewed further.",
+            "**The Web and Mobile apps' own design** and the user experience."
+          ]
+        },
+        {
+          "type": "list",
+          "title": "Assumptions I made instead of asking",
+          "items": [
+            "The 400–800 ms carrier time is a typical range, so the p95 is at or above 800 ms.",
+            "The payment notice arrives within minutes of the charge, long before delivery.",
+            "Carriers identify a scanned parcel by their own tracking number from the label."
+          ]
+        }
+      ]
     }
-   ]
-  }
- ],
- "facts": {
-  "version": 1,
-  "scope": "acme-logistics at commit 432aa50: API, Acme.Logistics library, web app and tracking worker",
-  "components": [
-   {
-    "id": "web",
-    "label": "Web app",
-    "tech": "Angular 17",
-    "kind": "channel"
-   },
-   {
-    "id": "api",
-    "label": "API",
-    "tech": ".NET 8 with the Acme.Logistics library",
-    "kind": "service"
-   },
-   {
-    "id": "worker",
-    "label": "Tracking worker",
-    "tech": "Python 3.12",
-    "kind": "service"
-   },
-   {
-    "id": "db",
-    "label": "Database",
-    "tech": "PostgreSQL 16",
-    "kind": "store"
-   },
-   {
-    "id": "queue",
-    "label": "Message broker",
-    "tech": "RabbitMQ 3",
-    "kind": "store"
-   }
-  ],
-  "decisions": [
-   {
-    "title": "Owner of the shipments table",
-    "chosen": "Recommended: the API is the only writer",
-    "because": "the worker's direct write skips the invoice and the cancelled check"
-   },
-   {
-    "title": "API and worker loop",
-    "chosen": "Recommended: remove the worker-to-API call",
-    "because": "the API already holds the carrier's answer"
-   },
-   {
-    "title": "Where pricing lives",
-    "chosen": "Recommended: the API only, behind a quote endpoint",
-    "because": "6 of 6 pricing commits had to change both copies"
-   },
-   {
-    "title": "Shape of the system",
-    "chosen": "Recommended: keep one API and one worker",
-    "because": "3 authors and one database do not justify more deployables"
-   }
-  ],
-  "assumptions": [
-   "The next changes look like the past ones: more pricing rules and shipment features. I found no planned change for this repo.",
-   "The two briefs in `docs/briefs` are new systems that do not reuse this code. If the Acme Couriers app reuses `Acme.Logistics`, the missing transaction becomes blocking, because that brief needs a booking and its invoice saved together.",
-   "Something outside this repo calls `/delivered`, `/cancel`, `/reweigh`, `/credit` and the tracking endpoint, since neither the web app nor the worker does.",
-   "Layers are the script's default, from the inside out: domain, application, infrastructure, api. The folders match them.",
-   "Production runs the same way as `docker-compose.yml`."
-  ],
-  "open": [
-   "How many delivered shipments have no invoice",
-   "Who calls /delivered, /cancel, /reweigh, /credit and the tracking endpoint",
-   "Where the database schema is kept today"
   ]
- }
 }

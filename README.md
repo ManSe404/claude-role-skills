@@ -15,6 +15,10 @@ the next ones is in [docs/plans/architect-packs.md](docs/plans/architect-packs.m
 | [bug-hunt](plugins/software-engineering/skills/bug-hunt/SKILL.md) | an error, a failing test or a bug report needs its root cause | the cause with evidence, the commit that brought it, a failing regression test, the same weakness elsewhere, fix options |
 | [test-gap](plugins/software-engineering/skills/test-gap/SKILL.md) | you need to know which tests to write first | code ranked by risk, change rate and missing coverage; missing cases with their expected results; weak and deleted tests |
 | [dependency-audit](plugins/software-engineering/skills/dependency-audit/SKILL.md) | you inherit a project, before a release, or after an alert | vulnerabilities and whether the code reaches them, outdated, unused and abandoned packages, licences, upgrade waves |
+| [code-audit](plugins/software-engineering/skills/code-audit/SKILL.md) | the code as it stands must be checked for bugs, before you build on it or release it | bugs read in the code, each with the scenario that triggers it and the test that would catch it; promises in the docs that no code keeps; what happens when a step fails halfway; cycles, layer breaks and hidden coupling |
+
+`code-audit` reviews code that exists, not a change: a diff or a pull request goes to a change review such as the
+built-in `/code-review`. A design that is not built yet goes to `arch-review`.
 
 ## AI solutions architect
 
@@ -70,7 +74,10 @@ of the Anthropic `data` plugin stay where they are.
 |---|---|---|
 | [arch-style](plugins/software-architect/skills/arch-style/SKILL.md) | a brief arrives or someone proposes microservices | what shape the system should have (one deployable, modular monolith, serverless, a few services, an event backbone, microservices), decided by elimination, with fitness rules and an ADR draft |
 | [arch-c4](plugins/software-architect/skills/arch-c4/SKILL.md) | a system must be drawn and explained | context, containers and components as boxes inside boxes, with zoom between levels and requests traced hop by hop |
-| [arch-review](plugins/software-architect/skills/arch-review/SKILL.md) | before a major change, or when a system has become hard to change | cycles, layer breaks, hidden coupling, hot spots, shared tables and synchronous loops, measured, with file:line findings and what to fix first |
+| [arch-review](plugins/software-architect/skills/arch-review/SKILL.md) | a design document, proposal or set of ADRs must be reviewed before it is approved or built | waiting chains checked against their latency goals, data written by two parts, promises with no mechanism, goals without numbers, dependencies with no failure plan, documents that contradict each other, open decisions; each shown from the documents, with what to decide first |
+
+`arch-review` reads documents, not code. The structure of code that exists (cycles, layer breaks, hidden coupling) is
+part of `code-audit`.
 | [arch-evolve](plugins/software-architect/skills/arch-evolve/SKILL.md) | a system must move to a new structure | steps that each leave the system working, with how each is verified and undone, and where to stop |
 
 ## Cloud architect

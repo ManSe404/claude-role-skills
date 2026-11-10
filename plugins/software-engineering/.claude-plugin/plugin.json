@@ -1,7 +1,7 @@
 {
   "name": "software-engineering",
-  "description": "Five skills for software engineers: codebase-map, impact, bug-hunt, test-gap and dependency-audit. Each counts with its own scripts and ends in one self-contained web page.",
-  "version": "0.2.0",
+  "description": "Six skills for software engineers: codebase-map, impact, bug-hunt, test-gap, dependency-audit and code-audit. Each counts with its own scripts and ends in one self-contained web page.",
+  "version": "0.3.0",
   "author": {
     "name": "Stefan Seman"
   },
