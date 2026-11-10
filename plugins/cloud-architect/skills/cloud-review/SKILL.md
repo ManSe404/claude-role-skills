@@ -1,6 +1,7 @@
 ---
 name: cloud-review
-description: Use before a release, an audit or a take-over of cloud infrastructure, from Terraform, Bicep, ARM templates or CloudFormation in a repository or a saved read-only export, to review it against the provider's Well-Architected pillars, with problems tied to file:line or a resource, marked on a drawing, with what to fix first.
+description: Reviews cloud infrastructure code or a saved export against the provider's Well-Architected pillars, with problems tied to file:line or a resource and what to fix first.
+when_to_use: Use before a release, an audit or a takeover of cloud infrastructure.
 argument-hint: "[repository] [saved export] [brief or requirements]"
 hooks:
   PreToolUse:

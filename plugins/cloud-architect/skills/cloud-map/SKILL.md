@@ -1,6 +1,7 @@
 ---
 name: cloud-map
-description: Use when you inherit cloud infrastructure or must explain it, from Terraform, Bicep, ARM templates or CloudFormation in a repository with no cloud login, or from a saved read-only export of an account, to draw the accounts, resource groups, networks and resources as clickable nested boxes, trace the request flows, show what the internet can reach, and list what is in code but not deployed and deployed but not in code.
+description: Draws cloud infrastructure from Terraform, Bicep, ARM, CloudFormation or a saved export as nested boxes, with request flows, what the internet reaches and drift between code and account.
+when_to_use: Use when you inherit cloud infrastructure or must explain it, from infrastructure code or a read-only export, with no cloud login.
 argument-hint: "[repository] [saved export]"
 hooks:
   PreToolUse:

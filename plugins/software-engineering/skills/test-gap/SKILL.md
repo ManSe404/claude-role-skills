@@ -1,6 +1,7 @@
 ---
 name: test-gap
-description: Use when you want to know which tests to write first, before a refactor or after an incident, to rank the code by risk, change rate and missing coverage, name the missing cases with their expected results written first, and check the existing tests for ones that assert nothing or are skipped.
+description: Ranks code by risk, change rate and missing coverage, names the missing test cases with their expected results written first, and finds tests that assert nothing.
+when_to_use: Use when deciding which tests to write first, before a refactor or after an incident.
 argument-hint: "[repo, folder or coverage report]"
 hooks:
   PreToolUse:

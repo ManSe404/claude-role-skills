@@ -1,6 +1,7 @@
 ---
 name: ds-dataset
-description: Use before trusting a predictive model built on a training set, when the train and test files (or one file with a split column) and the label are at hand, to audit it for target leakage, time leakage, the same entity on both sides of a split, duplicates across splits, missingness that differs by class, drift between train and test and personal columns. Not for profiling an ordinary table or asking what is in a file.
+description: Audits a training set for target and time leakage, entities on both sides of a split, duplicates across splits, drift and personal columns.
+when_to_use: Use before trusting a predictive model, when the train and test files and the label are at hand. Not for profiling an ordinary table.
 argument-hint: "[train file] [test file] [label column] [repository of the modelling code]"
 hooks:
   PreToolUse:

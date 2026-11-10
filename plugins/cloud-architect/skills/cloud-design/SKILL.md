@@ -1,6 +1,7 @@
 ---
 name: cloud-design
-description: Use before building or moving a system to the cloud, when a brief arrives or a platform is being picked, to decide what it should run on - a managed app platform, serverless containers, functions, Kubernetes or virtual machines, plus the data, network, region and availability - by eliminating options against the brief, with up to two variants or two clouds compared and costed from each provider's price list, each price with its date and source, and an ADR draft.
+description: Decides what a system should run on in the cloud and compares up to two variants or two clouds, costed from each provider's price list, with an ADR draft.
+when_to_use: Use before building or moving a system to the cloud, when a brief arrives or a platform such as AKS or App Service is being picked.
 argument-hint: "[brief file or text] [saved price table]"
 hooks:
   PreToolUse:

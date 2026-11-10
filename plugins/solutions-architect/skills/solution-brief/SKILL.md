@@ -1,6 +1,7 @@
 ---
 name: solution-brief
-description: Use when a client brief arrives that may span several areas - AI, data, software, cloud - and before any specialist decides one of them, to frame it once and say which specialists are needed and in which order, why any of them is not needed, and to write the exact skill calls to run next with the shared facts each must use. Not for a question inside one area; for that use ai-pattern, data-platform, arch-style or cloud-design directly.
+description: Frames a client brief that spans several areas once and says which specialist skills to run, in which order, with the shared facts each must use.
+when_to_use: Use when a brief arrives that may span AI, data, software and cloud, before any one area is decided. Not for a question inside one area.
 argument-hint: "[brief file or text]"
 hooks:
   PreToolUse:

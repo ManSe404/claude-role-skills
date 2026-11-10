@@ -1,6 +1,7 @@
 ---
 name: data-platform
-description: Use before building or rebuilding a data platform, when a brief or a list of sources arrives, to decide what it should be - reports on the source, one database with scheduled SQL, a warehouse, a lakehouse, a streaming path or a data mesh - by eliminating options against the brief's facts, ending in a decision page with sizing, the layers and an ADR draft.
+description: Decides what a data platform should be, from reports on the source to a warehouse, lakehouse or streaming path, by ruling options out against the brief, with sizing, layers and an ADR draft.
+when_to_use: Use before building or rebuilding a data platform, when a brief or a list of sources arrives, or when choosing between products such as Snowflake and Fabric.
 argument-hint: "[brief file or text] [samples folder]"
 hooks:
   PreToolUse:

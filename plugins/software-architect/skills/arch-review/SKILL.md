@@ -1,6 +1,7 @@
 ---
 name: arch-review
-description: Use before a software design is approved or built - a design document, a proposal, a target architecture or a set of ADRs - to review it for what will make the system fail or hard to change - synchronous chains that miss their latency goals, data written by two parts, promises with no mechanism, quality goals without numbers, outside dependencies with no failure plan, documents that contradict each other, boundaries by technical layer and decisions left open - each shown from the documents, with what to decide first. Not for code that exists.
+description: Reviews a software design from its documents and ADRs for what will make it fail or hard to change, such as waiting chains that miss latency goals, shared data, promises with no mechanism and open decisions.
+when_to_use: Use before a design document, proposal or set of ADRs is approved or built. Not for code that exists (use code-audit).
 argument-hint: "[design documents or folder] [the goals that matter most]"
 hooks:
   PreToolUse:

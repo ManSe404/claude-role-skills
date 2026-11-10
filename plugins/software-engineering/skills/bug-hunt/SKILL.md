@@ -1,6 +1,7 @@
 ---
 name: bug-hunt
-description: Use when an error, a stack trace, a failing test or a bug report needs its root cause, to go from the symptom to a cause shown with evidence, a failing test that reproduces it, the other places with the same weakness, and fix options - fixing only after the yes.
+description: Traces a failure from its symptom to the root cause with evidence and a failing test that reproduces it, finds the same weakness elsewhere and proposes fixes, fixing only after the yes.
+when_to_use: Use when an error, a stack trace, a failing test or a bug report needs its root cause.
 argument-hint: "[error text, log file, failing test or issue]"
 hooks:
   PreToolUse:

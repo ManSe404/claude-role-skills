@@ -70,8 +70,14 @@ def test_skill_shape(skill: Path) -> None:
     text = (skill / "SKILL.md").read_text(encoding="utf-8")
     meta = frontmatter(text)
     assert meta["name"] == skill.name
-    assert re.match(r"Use (when|before) ", meta["description"])
-    assert len(meta["description"]) <= 1024
+    # The listing Claude chooses from shows description + when_to_use, and an account with many skills is over the
+    # listing budget, so both stay short: what it does in one sentence, when to use it in one or two.
+    assert not meta["description"].startswith("Use "), "description says what it does; when goes in when_to_use"
+    assert re.match(r"Use (when|before) ", meta["when_to_use"])
+    assert len(re.findall(r"\.(?:\s|$)", meta["when_to_use"])) <= 2, "when_to_use is one or two sentences"
+    assert len(meta["description"]) + len(meta["when_to_use"]) <= 400
+    for value in (meta["description"], meta["when_to_use"]):
+        assert ": " not in value and "<" not in value and ">" not in value
     positions = [text.index(s) for s in SECTIONS]
     assert positions == sorted(positions), "sections out of order"
     assert len(text.splitlines()) < 120

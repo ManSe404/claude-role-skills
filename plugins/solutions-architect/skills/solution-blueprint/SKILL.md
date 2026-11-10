@@ -1,6 +1,7 @@
 ---
 name: solution-blueprint
-description: Use when the specialist pages for one project exist and must become one solution, across AI, data, software and cloud, to join their facts and find where they contradict each other - regions, costs, decisions, technologies, team sizes, what nobody covered - and write one page with the whole solution drawn, every conflict named with the side it recommends, and what to do first. Not for deciding one area; that is ai-pattern, data-platform, arch-style or cloud-design.
+description: Joins the specialist pages of one project into one solution, names every conflict between them with the side it recommends, and says what to do first.
+when_to_use: Use when the AI, data, software and cloud pages for one project exist. Not for deciding one area (use ai-pattern, data-platform, arch-style or cloud-design).
 argument-hint: "[pages folder or page JSON files]"
 hooks:
   PreToolUse:

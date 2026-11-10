@@ -1,6 +1,7 @@
 ---
 name: ai-architecture
-description: Use when an AI or LLM solution must be shown to a client or a team, from a design or from its repository, to draw it as one interactive page - components in zones, clickable details, request flows played step by step, a switch between variants such as RAG and agentic RAG, and the trust boundaries where untrusted text enters and what it can reach.
+description: Draws an AI or LLM solution as one interactive page, with components in zones, request flows step by step, variants and the trust boundaries untrusted text crosses.
+when_to_use: Use when an AI or LLM solution must be shown or explained to a client or a team, from its design or its repository.
 argument-hint: "[ai-pattern or ai-stack page JSON, a description, or a repo]"
 hooks:
   PreToolUse:

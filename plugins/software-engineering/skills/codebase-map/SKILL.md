@@ -1,6 +1,7 @@
 ---
 name: codebase-map
-description: Use when you open a repository you do not know yet, or must explain one to someone, to map it on one page from what the code does - its purpose, entry points, modules and imports, the main flows traced hop by hop, the outside systems, how to run and test it, its health and the open questions.
+description: Maps an unknown repository on one page from what the code does, with entry points, modules, flows traced hop by hop, outside systems, how to run it and open questions.
+when_to_use: Use when you open a repository you do not know yet, or must explain one to someone.
 argument-hint: "[repo or folder]"
 hooks:
   PreToolUse:

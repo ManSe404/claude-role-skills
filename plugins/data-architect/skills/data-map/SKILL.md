@@ -1,6 +1,7 @@
 ---
 name: data-map
-description: Use when you inherit a data platform or must explain one, from its SQL, dbt, notebooks and pipelines, to map the sources, layers and consumers, the table lineage read from the code, the owners, the tables nobody reads and where personal data travels.
+description: Maps a data platform from its SQL, dbt, notebooks and pipelines, with sources, layers, consumers, table lineage, owners, unused tables and where personal data travels.
+when_to_use: Use when you inherit a data platform or must explain one.
 argument-hint: "[repository of the data platform]"
 hooks:
   PreToolUse:

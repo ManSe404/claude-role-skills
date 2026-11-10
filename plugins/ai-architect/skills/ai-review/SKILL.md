@@ -1,6 +1,7 @@
 ---
 name: ai-review
-description: Use before a release, when you take over, or before you hand over an AI or LLM solution, to review its design in the code against the common failures - a pattern too big for the job, live state through retrieval, agent loops without limits, untrusted text reaching actions, keys in code, no evals, no tracing, no timeouts, personal data to outside models, unpinned models, unknown cost at volume - with file:line findings, fixes and the problem spots on the architecture.
+description: Reviews the code of an AI or LLM solution for the common failures, such as untrusted text reaching actions, agent loops without limits, no evals, no timeouts and unknown cost, with file:line fixes.
+when_to_use: Use before a release, a takeover or a handover of an AI or LLM solution. For general bugs in code use code-audit.
 argument-hint: "[repo] [brief]"
 hooks:
   PreToolUse:

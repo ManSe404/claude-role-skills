@@ -1,6 +1,7 @@
 ---
 name: data-review
-description: Use before a release, when you take over, or before you hand over a data platform, to review its models and loads in the code against the common failures - mixed grain, joins that multiply rows, loads that cannot be rerun, layers skipped, personal data served unmasked, money as floats, history overwritten, keys without tests - with file:line findings and fixes.
+description: Reviews the models and loads of a data platform for the common failures, such as mixed grain, joins that multiply rows, loads that cannot be rerun and personal data served unmasked, with file:line fixes.
+when_to_use: Use before a release, a takeover or a handover of a data platform.
 argument-hint: "[repository of the data platform] [samples folder]"
 hooks:
   PreToolUse:

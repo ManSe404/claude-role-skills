@@ -1,6 +1,7 @@
 ---
 name: code-audit
-description: Use when the code of a repository or module as it stands now must be reviewed for bugs - before you build on it, take it over or release it - to find correctness and failure-handling bugs, the places where the code breaks what its own docs, contracts and ADRs promise, and the structure that makes it hard to change, each with file:line, the scenario that triggers it and the test that would catch it. Not for a diff or pull request, one known failure, or a design that is not built yet.
+description: Reviews code as it stands for bugs, failure handling, promises in its docs that no code keeps and structure that makes it hard to change, each with file:line and the test that would catch it.
+when_to_use: Use before you build on, take over or release a repository or module. Not for a diff or pull request (a change review), one known failure (bug-hunt) or an unbuilt design (arch-review).
 argument-hint: "[repo, folder or module] [what worries you]"
 hooks:
   PreToolUse:

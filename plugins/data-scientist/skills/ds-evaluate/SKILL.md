@@ -1,6 +1,7 @@
 ---
 name: ds-evaluate
-description: Use when comparing trained predictive models from a file of predictions (an id, the label and one score column per model), to say which model is really better than the baseline and which difference is inside the noise, with confidence intervals, calibration, a threshold chosen from the cost of each error and the worst slices. Not for evaluating an LLM, retrieval tuning or traces, and not for a general question about a metric.
+description: Says which trained model is really better than the baseline and which differences are noise, with intervals, calibration, a cost-based threshold and the worst slices.
+when_to_use: Use when comparing predictive models from a file of predictions with the label. Not for evaluating an LLM or retrieval.
 argument-hint: "[predictions file(s)] [baseline column] [costs of a false positive and a false negative]"
 hooks:
   PreToolUse:

@@ -1,6 +1,7 @@
 ---
 name: number-moved
-description: Use when a reported business number changed between two periods, someone asks why, and the rows behind it are in a CSV or JSON Lines file, so the change can be checked against late or missing data and then split into effects that add up exactly. Not for an open question about a trend with no data file to count.
+description: Explains why a business number changed between two periods, checking for late or missing data first, then splitting the change into effects that add up exactly.
+when_to_use: Use when someone asks why a reported number moved and the rows behind it are in a CSV or JSON Lines file. Not for a trend question with no data file.
 argument-hint: "[data file] [the number and the two periods] [definition, repo or SQL behind it]"
 hooks:
   PreToolUse:

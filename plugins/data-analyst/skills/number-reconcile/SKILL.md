@@ -1,6 +1,7 @@
 ---
 name: number-reconcile
-description: Use when two numbers that should agree do not, from two systems, reports or extracts of the same figure, and the rows behind both are available, to find exactly where they part and account for the whole difference, or say exactly how much remains unexplained.
+description: Finds exactly where two numbers that should agree part ways and accounts for the whole difference, or says how much remains unexplained.
+when_to_use: Use when two systems, reports or extracts give different figures for the same thing and the rows behind both are available.
 argument-hint: "[file or query behind number A] [file or query behind number B] [the window] [the key that joins them]"
 hooks:
   PreToolUse:

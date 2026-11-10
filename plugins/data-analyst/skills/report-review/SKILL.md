@@ -1,6 +1,7 @@
 ---
 name: report-review
-description: Use before an analysis or report with its SQL or notebook and its printed numbers goes out, to check the counting behind them against the data - double counting, wrong denominators, filters that silently drop rows, mismatched time windows, partial periods, averages of averages, small samples, a Simpson's reversal, misleading charts. Not for general feedback on an analysis with no code or data behind it.
+description: Checks the counting behind an analysis against its data, such as double counting, wrong denominators, dropped rows, partial periods and misleading charts.
+when_to_use: Use before a report or analysis with its SQL or notebook goes out. Not for general feedback with no code or data behind it.
 argument-hint: "[report folder] [folder of sample data]"
 hooks:
   PreToolUse:

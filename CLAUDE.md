@@ -25,8 +25,11 @@ four specialist packs), `data-analyst` and `data-scientist` so far. `docs/plans/
 
 ## Rules for a skill
 
-- `SKILL.md` sections in this order: the job, input, Steps, Output, Reads, Writes, Never. The
-  description starts with "Use when" or "Use before" and says when, not how. Under 120 lines.
+- `SKILL.md` sections in this order: the job, input, Steps, Output, Reads, Writes, Never. Under 120 lines.
+- Claude picks a skill from its `description` and `when_to_use` alone; the body loads after. `description` says
+  in one sentence what the skill does. `when_to_use` starts with "Use when" or "Use before" and says in one or two
+  sentences when, and where a neighbouring request goes. Together under 400 characters: with many skills installed
+  the listing is over its budget and Claude Code cuts descriptions.
 - Scripts: Python 3.11+, standard library only, read-only, JSON on stdout, referenced as
   `${CLAUDE_SKILL_DIR}/scripts/<name>.py`. Every outbound call has a timeout and is opt-in.
 - Every SKILL.md frontmatter has the `hooks:` block that runs `scripts/guard.py` (a copy of `shared/guard.py`), with

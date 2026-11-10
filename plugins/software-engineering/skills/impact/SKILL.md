@@ -1,6 +1,7 @@
 ---
 name: impact
-description: Use before you change, rename or remove a function, class, module, endpoint, setting or database column, or on the current diff, to find everything the change reaches - direct and indirect callers, dynamic uses, public surfaces, stored data and outside consumers - and the safe order to make it.
+description: Finds everything a change reaches, including callers, dynamic uses, public surfaces, stored data and outside consumers, and the safe order to make it.
+when_to_use: Use before you change, rename or remove a function, class, module, endpoint, setting or column, or on the current diff.
 argument-hint: "[name and intended change, or the diff]"
 hooks:
   PreToolUse:

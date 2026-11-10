@@ -1,6 +1,7 @@
 ---
 name: metric-spec
-description: Use when two teams or reports show different numbers for what should be the same business metric, or before a metric goes on a dashboard or into a target, and the SQL, dbt models or report folder that compute it and a sample of its data are at hand, to write the one definition everyone will use.
+description: Writes the one definition of a business metric that everyone will use, from the SQL, dbt models or reports that compute it and a sample of its data.
+when_to_use: Use when two teams or reports show different numbers for the same metric, or before a metric goes on a dashboard or into a target.
 argument-hint: "[repository or report folder] [metric name] [folder of sample data]"
 hooks:
   PreToolUse:

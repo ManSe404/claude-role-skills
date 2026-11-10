@@ -1,6 +1,7 @@
 ---
 name: ds-experiment
-description: Use when an A/B test or randomised online experiment is being planned or has finished, to size it (sample size, minimum detectable effect) or to read the result from one file with a row per unit, checking for a sample ratio mismatch first and correcting for several metrics, with guardrails, a warning about peeking and a call of ship, do not ship or inconclusive. Not for a general significance question outside an experiment, or a before-and-after comparison.
+description: Sizes an A/B test or reads its result, checking the sample ratio first, correcting for several metrics and ending in ship, do not ship or inconclusive.
+when_to_use: Use when a randomised experiment is being planned or has finished. Not for a before-and-after comparison.
 argument-hint: "[plan numbers, or experiment file] [variant, unit and metric columns] [expected split, guardrails with margins]"
 hooks:
   PreToolUse:

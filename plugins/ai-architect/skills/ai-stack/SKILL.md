@@ -1,6 +1,7 @@
 ---
 name: ai-stack
-description: Use when the pattern of an AI or LLM solution is chosen and the tools must be picked, to choose the model per step, embeddings, retrieval store, orchestration, hosting, tracing, evals and guardrails against the client's constraints, in at most two variants, with monthly cost and latency computed from a dated price table, the lock-in, and what to check before the offer.
+description: Picks the models, embeddings, store, orchestration, hosting, tracing, evals and guardrails for an AI solution, in up to two variants, with monthly cost and latency from a dated price table.
+when_to_use: Use when the pattern of an AI or LLM solution is chosen and the tools must be picked, such as which vector database or which model.
 argument-hint: "[ai-pattern page JSON or a description] [constraints]"
 hooks:
   PreToolUse:

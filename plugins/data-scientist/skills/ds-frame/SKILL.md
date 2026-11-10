@@ -1,6 +1,7 @@
 ---
 name: ds-frame
-description: Use before building a predictive model, when someone asks for a model or a prediction and the decision it should change, the exact target, the label and what each error costs are still open, to decide whether a rule, a simple score or a real model is the right thing to build, name the baseline it must beat and write acceptance criteria. Not for an LLM or chatbot solution (use ai-pattern) and not for a general data question.
+description: Decides whether a rule, a simple score or a real model is the right thing to build, names the baseline to beat and writes acceptance criteria.
+when_to_use: Use before building a predictive model, when someone asks for one and the decision, target, label or error costs are still open. Not for an LLM solution (use ai-pattern).
 argument-hint: "[brief file or text] [folder of history data]"
 hooks:
   PreToolUse:

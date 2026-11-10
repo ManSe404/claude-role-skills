@@ -1,6 +1,7 @@
 ---
 name: ai-pattern
-description: Use before building an AI or LLM solution, when a brief or a use case arrives, to decide what it should be - no LLM, one model call, the whole corpus in the prompt, RAG, a workflow, agentic RAG, one agent or an orchestrator with subagents - by eliminating options against the brief's facts, naming the constraint that decides, and ending in a decision page with acceptance criteria and an ADR draft.
+description: Decides what an AI or LLM solution should be, from no LLM to RAG, a workflow or agents, by ruling options out against the brief, with acceptance criteria and an ADR draft.
+when_to_use: Use before building an AI or LLM solution, when a brief or use case arrives and the approach is still open.
 argument-hint: "[brief file or text] [documents folder]"
 hooks:
   PreToolUse:

@@ -1,6 +1,7 @@
 ---
 name: arch-c4
-description: Use when a software system must be drawn and explained, from a brief or from its repository, to produce a C4 view on one clickable page - the system in its context, the containers that run, the components inside the ones that matter - with zoom between levels, requests traced hop by hop and every box tied to the code or marked as a guess.
+description: Draws a software system in C4 on one clickable page, with context, containers and components, requests traced hop by hop and every box tied to the code or marked as a guess.
+when_to_use: Use when a software system must be drawn and explained, from a brief or from its repository.
 argument-hint: "[repository, or a brief or arch-style page]"
 hooks:
   PreToolUse:

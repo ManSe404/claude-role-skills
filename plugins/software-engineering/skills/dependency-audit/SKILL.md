@@ -1,6 +1,7 @@
 ---
 name: dependency-audit
-description: Use when you inherit a project, before a release, or when a vulnerability alert arrives, to audit its dependencies - which are vulnerable and whether the vulnerable code is reached, which are outdated, unpinned, unused or abandoned, which licences clash - and plan the upgrades in safe waves, without installing anything.
+description: Audits the dependencies of a project for vulnerabilities and whether the code reaches them, outdated, unused or abandoned packages and licence clashes, and plans upgrades in safe waves.
+when_to_use: Use when you inherit a project, before a release, or when a vulnerability alert arrives.
 argument-hint: "[repo or manifest]"
 hooks:
   PreToolUse:

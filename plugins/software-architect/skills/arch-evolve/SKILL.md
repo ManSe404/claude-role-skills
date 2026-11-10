@@ -1,6 +1,7 @@
 ---
 name: arch-evolve
-description: Use when a software system must move from its current structure to a target - splitting a monolith, extracting a service, untangling modules, replacing a part - to plan the way in steps that each leave the system working, with what changes, how each step is verified and undone, and what must stay true throughout.
+description: Plans the move from a system's current structure to a target in steps that each leave it working, with how each step is verified and undone.
+when_to_use: Use when splitting a monolith, extracting a service, untangling modules or replacing a part without stopping delivery.
 argument-hint: "[repository] [target, or an arch-style page]"
 hooks:
   PreToolUse:

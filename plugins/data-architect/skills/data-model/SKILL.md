@@ -1,6 +1,7 @@
 ---
 name: data-model
-description: Use when a subject area of a data platform must be modelled, from source schemas, DDL, dbt or sample files, to choose between one wide table, star schema, 3NF and Data Vault, state the grain of every fact, find the keys from the data, decide the history and mark personal data, ending in a clickable model and DDL drafts.
+description: Models a subject area of a data platform, choosing the modelling style, the grain of every fact, the keys and the history, ending in a clickable model and DDL drafts.
+when_to_use: Use when a subject area must be modelled from source schemas, DDL, dbt or sample files.
 argument-hint: "[DDL, dbt project or samples folder] [the questions it must answer]"
 hooks:
   PreToolUse:

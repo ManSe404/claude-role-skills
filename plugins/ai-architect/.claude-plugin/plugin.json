@@ -1,7 +1,7 @@
 {
   "name": "ai-architect",
   "description": "Four skills for AI solutions architects: ai-pattern, ai-stack, ai-architecture and ai-review. They decide what an AI solution should be, pick and price its stack, draw it as an interactive page and review one that exists. Each counts with its own scripts and ends in one self-contained web page.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": {
     "name": "Stefan Seman"
   },

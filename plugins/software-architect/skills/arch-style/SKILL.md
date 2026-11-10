@@ -1,6 +1,7 @@
 ---
 name: arch-style
-description: Use before building or restructuring a software system, when a brief arrives or someone proposes microservices, to decide what shape it should have - one deployable, a modular monolith, serverless functions, a few services, services with an event backbone or microservices - by eliminating options against the team and the brief's facts, ending in a decision page with fitness rules and an ADR draft.
+description: Decides what shape a software system should have, from one deployable to microservices, by ruling options out against the team and the brief, with fitness rules and an ADR draft.
+when_to_use: Use before building or restructuring a system, when a brief arrives or someone proposes microservices.
 argument-hint: "[brief file or text]"
 hooks:
   PreToolUse:

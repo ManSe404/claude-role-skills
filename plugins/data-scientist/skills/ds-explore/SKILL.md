@@ -1,6 +1,7 @@
 ---
 name: ds-explore
-description: Use before building a predictive model, when one table and the yes/no column to predict are at hand and nobody has looked at the data yet, to explore what relates to the target - how its rate moves over time, whether recent labels can be known yet, odd codes for unknown values, how strongly each feature relates to it with an interval, segments that differ, redundant features and columns to check for leakage. Not for a general look at a table with no target, and not for auditing an existing train and test split (use ds-dataset).
+description: Explores what relates to a yes/no target in one table before any model, including its rate over time, unknown codes, feature strength with intervals and columns to check for leakage.
+when_to_use: Use before building a predictive model when nobody has looked at the data yet. Not for a table with no target, or an existing train and test split (use ds-dataset).
 argument-hint: "[data file] [column to predict] [time column and how long until the outcome is known]"
 hooks:
   PreToolUse:
