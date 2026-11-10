@@ -20,8 +20,8 @@ Checked 2026-11-09:
 - `wjlgatech/data-architecture` (MIT): five knowledge skills and an orchestrator, covering Data
   Vault, star schema, 3NF, governance and strategy. No scripts, so nothing is measured.
 - `microsoft/skills-for-fabric` (53 SKILL.md): `e2e-medallion-architecture` builds on Fabric only.
-- Baraa's `data-engineering`: profile, contract, lineage and model pages for one running platform,
-  no decision on what the platform should be. His `model.html` shows an entity as its key plus
+- An existing data-engineering skill pack: profile, contract, lineage and model pages for one running
+  platform, no decision on what the platform should be. Its `model.html` shows an entity as its key plus
   "+ N more columns", which is the right idea for the `model` block.
 
 Nothing found joins the decision, a model checked against the data, lineage from the code and a

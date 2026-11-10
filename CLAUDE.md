@@ -14,8 +14,7 @@ four specialist packs), `data-analyst` and `data-scientist` so far. `docs/plans/
   there, then run `python3 tools/sync_shared.py`; a skill gets a copy when its SKILL.md names the file.
   Never edit the copies under a skill. A cloud provider is `shared/cloud/<provider>.md` and `.json`:
   nothing provider-specific goes in a SKILL.md or in the core of a script.
-- The page design is dark only, after Data With Baraa's skills; it lives in the CSS of
-  `render_page.py`. Check a change by rendering an `example.json` and looking at it.
+- The page design is dark only; it lives in the CSS of `render_page.py`. Check a change by rendering an `example.json` and looking at it.
 - `fixtures/<name>/` is a made-up project: `files/` (state after the last commit, `.fixture`
   suffix dropped on build), `history.py` (the commits) and `extras/` (logs and data, not committed).
 - `plugins/<role>/evals/` holds the eval cases for `claude plugin eval`.

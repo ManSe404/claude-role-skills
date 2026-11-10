@@ -180,14 +180,11 @@ What it does not do:
 
 ## How it is built
 
-The format of the skills follows Baraa's
-[claude-code-data-engineering-skills](https://github.com/DataWithBaraa/claude-code-data-engineering-skills):
-one repeated job per skill, a fixed set of sections, and a result you can open in a browser. Three
-things are different:
+Each skill does one repeated job, in a fixed set of sections, and ends in a page you open in a browser.
 
 - **Claude writes the content, a script draws the page.** Claude fills a JSON file and
   `render_page.py` turns it into the HTML, so a skill reads a short format description and a
-  small example, not a 250 KB reference page. Every value is escaped and nothing is fetched from
+  small example. Every value is escaped and nothing is fetched from
   the network: the fonts are inlined, so a page is one file you can send to anyone. Graphs are
   clickable: a node shows what leads to it and what it reaches, and `page.html#node=importer`
   opens the page traced. Long tables get a filter box, code blocks a copy button. The
@@ -229,8 +226,7 @@ tests/                              pytest for the scripts, the renderer, the fi
 
 ## The page design
 
-The pages use the dark violet design of Baraa's skills: a violet ground with a radial glow and a
-faint grid, panels with a purple edge, Bricolage Grotesque for text and JetBrains Mono for labels,
+The pages are dark violet: a violet ground with a radial glow and a faint grid, panels with a purple edge, Bricolage Grotesque for text and JetBrains Mono for labels,
 purple for what leads to a change and orange for what it reaches. All of it lives in one place, the
 CSS in `shared/render_page.py`, so every skill's page changes with it. The fonts are under the SIL
 Open Font License ([shared/fonts/OFL.txt](shared/fonts/OFL.txt)) and include Latin Extended, so
@@ -266,7 +262,7 @@ each (`--all-tools` to offer Claude's ordinary tools as well as Skill, `--budget
 
 ## License
 
-MIT, see [LICENSE](LICENSE). The page design follows Data With Baraa's skills (MIT) and the fonts
-are under the SIL Open Font License, see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Everything
+MIT, see [LICENSE](LICENSE). Notices for the page design and the fonts are in
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Everything
 in the fixtures and the example pages is fictional, except the public Azure and AWS list prices saved in
 `fixtures/acme-cloud` and `fixtures/acme-cloud-aws`.

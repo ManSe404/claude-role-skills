@@ -2805,9 +2805,8 @@ def _block(block: Json) -> str:
 
 # ---------------------------------------------------------------------------- page
 
-# The design follows the pages of Data With Baraa's claude-code-data-engineering-skills (MIT): a violet
-# ground with a radial glow and a faint grid, plates with a purple edge, Bricolage Grotesque for text and
-# JetBrains Mono for labels, purple for what leads to the change and orange for what it reaches. Dark only.
+# Dark only: a violet ground with a radial glow and a faint grid, plates with a purple edge, Bricolage Grotesque
+# for text and JetBrains Mono for labels, purple for what leads to the change and orange for what it reaches.
 
 LATIN = (
     "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, "
