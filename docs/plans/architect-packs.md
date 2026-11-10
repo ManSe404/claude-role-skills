@@ -37,78 +37,8 @@ reworked at the end. `ai-architect` gets it during step 1. Format in
 
 **2. Five skills will match "draw the architecture".** `codebase-map`, `ai-architecture`, `data-map`,
 `arch-c4` and `cloud-map`. Every description must name its subject (a repository, an AI solution, a
-data platform, a system's structure, cloud infrastructure). Whether Claude picks correctly has never
-been measured until the selection check below.
-
-Measured 2026-11-10 with `tools/selection_check.py`: all 8 packs loaded, 31 of ours among 66 skills visible, 62 prompts
-(12 that should fire nothing), one run each, first turn only, on Opus 5.5.
-
-| Tools offered | Right | Right skill when one was due | Wrong skill | Fired when none was due |
-|---|---|---|---|---|
-| Skill only | 60 of 62 | 50 of 50 | 0 | 2 (`Deploy this app to AWS` took `cloud-design`, a rename took `impact`) |
-| Ordinary tools too | 60 of 62 | 48 of 50 | 0 | 0 |
-
-With ordinary tools the two misses were a look around first (`Draw the architecture of this repository`, in an empty
-folder) and a direct answer (`AKS or App Service`). The two false fires came from offering only the Skill tool, so no
-description was changed. The two passes cost $16.85 in all. The prompts were written by the author of the descriptions, so
-this is a floor for confusion between skills, not a measure on strangers' wording.
-
-Evals run 2026-11-10 on Opus 5.5, one run per case, without the no-plugin comparison: 42 of 42 cases passed and the
-right skill fired in all 42, for $46.49 including the reruns. Getting there changed the evals and not the skills:
-
-- 45 graders read the whole trace, which holds the text of SKILL.md, so they proved nothing. They now check the shell
-  commands actually run.
-- `page-made` checks the JSON, because shell commands cannot write files in the eval sandbox. Rendering is covered by
-  the repository's tests, not by the evals.
-- Three `llm` graders were changed after reading the replies. `evaluate-calls-noise-noise` marked down a reply that
-  called the gain real and also warned that leakage inflates it. `map-unknown-repo` asked the judge to verify code it
-  cannot see. `aws-map-from-code` required details in the chat reply that belong on the page, so it is now looser.
-- The three `solutions-architect` cases had malformed files and needed the specialist packs loaded.
-
-What this does not show: variance between runs (one run each), what the skills add over plain Claude (no comparison
-run), and the content of the pages (a judge sees only the final reply). In a failed setup the three
-`solutions-architect` cases ran with no skill loaded and passed every grader except `skill-fired`, so those graders
-cannot tell the skill from plain Claude.
-
-### Against plain Claude (partial, 2026-11-10)
-
-The same cases run with the Skill tool withheld and no pack loaded, so Claude had the fixture, the prompt and its
-ordinary tools only. The account's usage limit stopped the run after 14 of 42 cases: software-engineering,
-ai-architect and four of five data-architect cases. The other 28 did not run. "Job checks" leave out `skill-fired`
-and the checks that a skill's script ran, which plain Claude cannot pass by definition.
-
-| Pack | Case | Job checks, skills | Job checks, plain | Plain missed | $ skills | $ plain |
-|---|---|---|---|---|---|---|
-| ai-architect | architecture-page | 3/3 | 2/3 | trust-path | 1.06 | 0.40 |
-| ai-architect | pattern-does-not-overbuild | 2/2 | 2/2 | - | 0.56 | 0.26 |
-| ai-architect | pattern-live-state | 3/3 | 3/3 | - | 0.77 | 0.91 |
-| ai-architect | review-finds-planted | 3/3 | 2/3 | planted | 1.26 | 0.65 |
-| ai-architect | stack-cost-from-script | 2/2 | 1/2 | priced-honestly | 0.66 | 0.27 |
-| data-architect | map-lineage-from-code | 3/3 | 2/3 | lineage | 1.17 | 0.46 |
-| data-architect | model-grain-and-keys | 2/2 | 2/2 | - | 1.17 | 0.63 |
-| data-architect | platform-does-not-overbuild | 2/2 | 2/2 | - | 0.70 | 0.19 |
-| data-architect | platform-names-the-constraint | 2/2 | 2/2 | - | 0.81 | 0.25 |
-| software-engineering | dependency-audit-asks-before-going-online | 2/2 | 2/2 | - | 0.51 | 0.31 |
-| software-engineering | impact-of-a-signature-change | 2/2 | 1/2 | reach | 0.73 | 0.42 |
-| software-engineering | map-unknown-repo | 3/3 | 3/3 | - | 0.90 | 0.36 |
-| software-engineering | root-cause-of-the-failed-import | 2/2 | 2/2 | - | 0.52 | 0.30 |
-| software-engineering | tests-to-write-first | 2/2 | 2/2 | - | 0.70 | 0.59 |
-
-Totals: every job check passed in 14 cases with the skills and in 9 without them, 33 of 33 checks against 28 of 33.
-The skills cost $11.53 against $6.00 and took 31 minutes against 20. Plain Claude never passed a check the skill
-failed.
-
-Where the skills made the difference: tracing untrusted text to a tool call in an AI architecture, finding planted
-problems in an AI review, pricing an AI stack from a script instead of from memory, table lineage read from SQL, and
-the reach of a signature change. Where plain Claude did as well: the decisions that start at the bottom of a ladder
-(AI pattern, data platform), the data model, the dependency audit, the codebase map, a root cause from a log, and which
-tests to write first. On those, the skills buy the page and the script's numbers, not a different answer.
-
-How far to trust it: one run per case, so a single flipped judge vote moves a row; a judge sees only the final reply,
-so the pages earn nothing; and three judge criteria were corrected after reading the skills' replies, one of them
-(`map-unknown-repo`) among these 14. Still to run: software-architect 5, data-scientist 6, cloud-architect 8,
-solutions-architect 3, data-analyst 5 and data-architect `review-finds-planted`, about $12. The plain runs use a copy
-of the eval folders without manifests, run with `--disallow-tools Skill`.
+data platform, a system's structure, cloud infrastructure). `tools/selection_check.py` measures whether Claude
+picks the right one with every pack loaded, which `claude plugin eval` cannot do, because it loads one pack at a time.
 
 **3. The simplest thing that passes.** Every deciding skill starts at the bottom of a ladder and
 climbs only for a requirement it can name. Every fixture includes a brief where the right answer is
@@ -204,17 +134,5 @@ next message, which is where "after the yes" happens.
   made python exit 2, which blocked every call. The command therefore looks in the plugin, the project and `~/.claude`,
   and does nothing if the guard is not there.
 
-Checked live on acme-churn with `ds-explore`, invoked first, as a plugin and as a skill copied into a project, on the
-Expert Group account:
-
-| Attempt | Result |
-|---|---|
-| `head -5` on the data file | refused, naming the personal columns |
-| the Read tool on it | refused |
-| Python printing one e-mail | ran, Claude saw `[e-mail removed]` |
-| Edit README.md | asked, so refused in `-p`, file unchanged |
-| `curl` | asked, so refused |
-
-A first live run proved less than it seemed. Claude ran `head` and the README edit before invoking the skill, and the
-project sat under `/tmp`, which the guard allows. Nothing is guarded before the skill is invoked.
-
+Each rule was checked in a live session, as a plugin and as a skill copied into a project. Nothing is guarded before
+the skill is invoked, even later in the same turn.
