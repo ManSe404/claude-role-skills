@@ -1,10 +1,19 @@
 {
   "name": "cloud-architect",
   "description": "Three skills for cloud architects: cloud-map, cloud-design and cloud-review. They draw the cloud infrastructure that exists from code in a repository with no login or from a read-only export, compare a brief across options with real prices, and review it against the provider's Well-Architected pillars. Each counts with its own scripts and ends in one self-contained web page. Azure first.",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "author": {
     "name": "Stefan Seman"
   },
   "license": "MIT",
-  "keywords": ["cloud-architecture", "azure", "terraform", "bicep", "well-architected", "cloud-cost", "infrastructure-as-code", "skills"]
+  "keywords": [
+    "cloud-architecture",
+    "azure",
+    "terraform",
+    "bicep",
+    "well-architected",
+    "cloud-cost",
+    "infrastructure-as-code",
+    "skills"
+  ]
 }

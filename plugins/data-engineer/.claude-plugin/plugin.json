@@ -1,10 +1,18 @@
 {
   "name": "data-engineer",
   "description": "Seven skills for data engineers who run a platform: source-profile, source-contract, pipeline-incident, data-quality, data-cost, data-migration and data-product. Each counts with its own scripts and ends in one self-contained web page.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "Stefan Seman"
   },
   "license": "MIT",
-  "keywords": ["data-engineering", "data-contracts", "data-quality", "incidents", "migration", "data-products", "skills"]
+  "keywords": [
+    "data-engineering",
+    "data-contracts",
+    "data-quality",
+    "incidents",
+    "migration",
+    "data-products",
+    "skills"
+  ]
 }

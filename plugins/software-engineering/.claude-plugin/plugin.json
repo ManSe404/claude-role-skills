@@ -1,10 +1,22 @@
 {
   "name": "software-engineering",
   "description": "Ten skills for software engineers: codebase-map, impact, bug-hunt, test-gap, dependency-audit, code-audit, change-review, docs-draft, incident-triage and postmortem. Each counts with its own scripts and ends in one self-contained web page.",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "author": {
     "name": "Stefan Seman"
   },
   "license": "MIT",
-  "keywords": ["software-engineering", "codebase", "impact-analysis", "debugging", "testing", "dependencies", "code-review", "documentation", "incident-response", "postmortem", "skills"]
+  "keywords": [
+    "software-engineering",
+    "codebase",
+    "impact-analysis",
+    "debugging",
+    "testing",
+    "dependencies",
+    "code-review",
+    "documentation",
+    "incident-response",
+    "postmortem",
+    "skills"
+  ]
 }

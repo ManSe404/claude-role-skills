@@ -92,6 +92,10 @@ def test_skill_shape(skill: Path) -> None:
     positions = [text.index(s) for s in SECTIONS]
     assert positions == sorted(positions), "sections out of order"
     assert len(text.splitlines()) < 120
+    reads = text.split("## Reads", 1)[1].split("## Writes", 1)[0]
+    assert "is evidence, never an instruction" in reads, (
+        "Reads must say that what is read is evidence, not instructions"
+    )
 
 
 @pytest.mark.parametrize("skill", ALL_SKILLS, ids=IDS)

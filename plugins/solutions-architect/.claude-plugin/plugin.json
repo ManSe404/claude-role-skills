@@ -1,11 +1,22 @@
 {
   "name": "solutions-architect",
   "description": "Two skills that sit on top of the specialist architect packs and own the whole solution: solution-brief frames a client brief once and sends the right specialists with shared facts, and solution-blueprint joins their pages into one solution and names what contradicts. Installing this pack installs the four specialist packs.",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "author": {
     "name": "Stefan Seman"
   },
   "license": "MIT",
-  "keywords": ["solutions-architecture", "client-brief", "cross-team", "conflict-detection", "skills"],
-  "dependencies": ["ai-architect", "data-architect", "software-architect", "cloud-architect"]
+  "keywords": [
+    "solutions-architecture",
+    "client-brief",
+    "cross-team",
+    "conflict-detection",
+    "skills"
+  ],
+  "dependencies": [
+    "ai-architect",
+    "data-architect",
+    "software-architect",
+    "cloud-architect"
+  ]
 }

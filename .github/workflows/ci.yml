@@ -1,0 +1,33 @@
+# Runs the same checks the README asks for before a push: format, lint, types, tests and the
+# shared-file sync. `claude plugin validate` and the evals stay out: they need the Claude CLI and money.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install
+        run: uv sync --frozen
+      - name: Format
+        run: uv run ruff format --check .
+      - name: Lint
+        run: uv run ruff check .
+      - name: Types
+        run: uv run mypy
+      - name: Shared files in sync
+        run: python3 tools/sync_shared.py --check
+      - name: Tests
+        run: uv run pytest -q

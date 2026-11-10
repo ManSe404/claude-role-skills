@@ -285,6 +285,16 @@ Those evals load one pack at a time, so they cannot show whether Claude picks th
 `uv run python tools/selection_check.py` does: it loads every pack and makes one model call per prompt, about 15 cents
 each (`--all-tools` to offer Claude's ordinary tools as well as Skill, `--budget` to cap it).
 
+## Results
+
+[docs/evals.md](docs/evals.md) sums up every eval run in the repository, pack by pack and case by case:
+outcome graders (what was produced) separately from "the skill fired", with the cost. It is written by
+`python3 tools/eval_table.py -o docs/evals.md`; run it after an eval. The runs so far have no plain-Claude
+arm (`--ablation none`), so the comparison column is empty until a run with `--ablation with-without` is kept.
+
+CI (`.github/workflows/ci.yml`) runs format, lint, types, the shared-file sync and the tests on every push and
+pull request. `claude plugin validate` and the evals stay out of it: they need the Claude CLI and money.
+
 ## License
 
 MIT, see [LICENSE](LICENSE). Notices for the page design and the fonts are in

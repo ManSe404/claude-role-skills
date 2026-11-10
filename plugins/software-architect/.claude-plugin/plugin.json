@@ -1,10 +1,19 @@
 {
   "name": "software-architect",
   "description": "Four skills for software architects: arch-style, arch-c4, arch-review and arch-evolve. They decide what shape a system should have, draw it in C4 from a brief or from the code, review a design before it is built, and plan the way to a target in safe steps. Each counts with its own scripts and ends in one self-contained web page.",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "author": {
     "name": "Stefan Seman"
   },
   "license": "MIT",
-  "keywords": ["software-architecture", "c4-model", "modular-monolith", "microservices", "coupling", "adr", "refactoring", "skills"]
+  "keywords": [
+    "software-architecture",
+    "c4-model",
+    "modular-monolith",
+    "microservices",
+    "coupling",
+    "adr",
+    "refactoring",
+    "skills"
+  ]
 }
