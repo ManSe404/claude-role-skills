@@ -1,0 +1,19 @@
+name: load_erp_orders
+description: Load the ERP order lines of the previous day into bronze.erp_orders and silver.orders.
+schedule: "30 6 * * *"
+timezone: Europe/Belgrade
+cluster: etl
+steps:
+  - task: wait_for_file
+    layer: landing
+    path: "sources/erp/{date}/orders.csv"
+    timeout_minutes: 180
+  - task: bronze.erp_orders
+    layer: bronze
+    run: python3 -m pipeline.loaders.erp orders
+    checks: checks/bronze.yaml
+  - task: silver.orders
+    layer: silver
+    sql: pipeline/silver/orders.sql
+    quarantine: checks/quarantine.yaml
+    checks: checks/silver.yaml

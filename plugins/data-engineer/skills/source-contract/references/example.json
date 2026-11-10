@@ -1,0 +1,492 @@
+{
+  "skill": "source-contract",
+  "title": "ERP orders contract, checked against the deliveries",
+  "subtitle": "Does contracts/erp.yaml (v0.3) describe what the ERP team really sends, before sign-off?",
+  "meta": {
+    "repo": "acme-pipeline",
+    "commit": "703a806",
+    "date": "2026-11-10"
+  },
+  "verdict": {
+    "tone": "bad",
+    "text": "No. It holds on format, key, code lists and frequency, but it is wrong about `amount` (decimal currency units, not integer cents, and a decimal comma since 3 Nov), about `sales_rep_code` (dropped on 4 Nov) and about the delivery time (07:06–07:37 every working day, not 06:00). The amount breaks loads first: `silver.orders` failed on every delivery from 3 Nov, and `gold.sales_daily` was not rebuilt after that."
+  },
+  "stats": [
+    {
+      "label": "Clauses checked",
+      "value": 20
+    },
+    {
+      "label": "Conflicts",
+      "value": 3,
+      "note": "with the ERP side; 1 more on ours",
+      "tone": "bad"
+    },
+    {
+      "label": "Open clauses",
+      "value": 2,
+      "note": "owner, change process",
+      "tone": "warn"
+    },
+    {
+      "label": "Late deliveries",
+      "value": "23 of 31",
+      "note": "every working day",
+      "tone": "bad"
+    },
+    {
+      "label": "Deliveries checked",
+      "value": 3,
+      "note": "files of 2–4 Nov; log 5 Oct–4 Nov",
+      "tone": "info"
+    }
+  ],
+  "sections": [
+    {
+      "id": "conflicts",
+      "title": "Conflicts",
+      "blocks": [
+        {
+          "type": "findings",
+          "items": [
+            {
+              "severity": "high",
+              "title": "`amount` is decimal currency units, not integer cents, and has a decimal comma since 3 Nov; silver.orders fails on it",
+              "where": "contracts/erp.yaml:46-48 · sources/erp/2026-11-02/orders.csv, 2026-11-03, 2026-11-04 · pipeline/silver/orders.sql:18 · ops/runs.jsonl:324, 333, 338",
+              "evidence": "All 2,452 amounts in the three deliveries break `integer (cents)`: 2 Nov 401 of 401 shaped `9.99`, 3 Nov 1,038 of 1,038 and 4 Nov 1,013 of 1,013 shaped `9,99`, quoted because they hold the delimiter. No thousands separator in any of them. Our code already reads the column as units: `cast(amount as numeric(12, 2))` at silver/orders.sql:18, with no division by 100 anywhere, so the `cents` clause matches neither the data nor the loader. The comma broke that cast: `silver.orders` failed on 3 Nov (twice) and 4 Nov with `invalid input syntax for type numeric: \"18846,00\"`, and `build_sales_daily` was skipped both days (runs.jsonl:322, 336). As of the last run record (4 Nov), `gold.sales_daily` has no orders dated 2 or 3 Nov. This is the same change the ERP vendor update made to invoices on 14 Sep; that incident's open item, \"check the other ERP amount columns\" (ops/incident-log.md:13), was this column.",
+              "fix": "Contract: `type: decimal`, `scale: 2`, `unit: units of currency`, `decimal_separator: \",\"` from 3 Nov, `thousands_separator: none`, confirmed with the ERP owner (Q4, Q5). Loader (ours, after your yes): silver/orders.sql:18 → `util.parse_amount(amount)`, as silver/invoices.sql:11 does. Then rerun `load_erp_orders` for 3 and 4 Nov and `build_sales_daily` after it (docs/howto/rerun-a-failed-job.md:8).",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "Working-day deliveries never arrive by `deliver_by: 06:00`",
+              "where": "contracts/erp.yaml:17 · ops/deliveries.jsonl:33 (07:06), :85, :120, :127 (07:37) · jobs/load_erp_orders.yaml:3, 10 · jobs/build_sales_daily.yaml:8",
+              "evidence": "23 of 31 orders files (5 Oct–4 Nov) arrived after 06:00, between 07:06 and 07:37: median 80 minutes late, at most 97. They were late on every working day (Mon 5, Tue 5, Wed 5, Thu 4, Fri 4) and on time on all 8 weekend days (05:38–05:47), so the ERP's working-day export runs after the promised time. Nothing has broken yet because `load_erp_orders` starts at 06:30 and waits up to 180 minutes (commit 3e47102). `gold.sales_daily` still started as late as 07:44 (runs.jsonl:5, 5 Oct), and finance reads it at 08:00.",
+              "fix": "Agree one of two things with the ERP owner (Q3): they move the working-day export so it lands before 06:00 (or 07:00), or the contract says what they can hold. The proposal below uses 07:45, 8 minutes after the latest arrival seen. At 07:45 the 08:00 finance read has little slack; take that up with finance.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "`sales_rep_code` dropped from the 4 Nov delivery, unannounced",
+              "where": "contracts/erp.yaml:56-57 · sources/erp/2026-11-04/orders.csv:1 (header) · pipeline/warehouse.py:46 · ops/runs.jsonl:337",
+              "evidence": "Present on 2 and 3 Nov, missing from 4 Nov (1 of 3 deliveries, the latest). The bronze load succeeded because the loader inserts only the delivered columns, so `bronze.erp_orders.sales_rep_code` is null from 4 Nov. `silver.orders` and `gold.sales_daily` do not select it, and no job, SQL or check in the repo reads it. Nothing breaks today, but the contract promises a column that is no longer sent.",
+              "fix": "Ask the ERP owner whether it is gone for good (Q6). If it is, remove it from the contract, as proposed below. If it was a mistake, they restore it and the column stays.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "No owner and no change process: two unannounced changes in three deliveries",
+              "where": "contracts/erp.yaml:7-8 · pipeline/config/sources.yaml:6",
+              "evidence": "`owner: TBD`, `change_process: TBD`. The registry names only a team (`owner_team: ERP team`). The decimal comma (3 Nov) and the dropped column (4 Nov) both reached us without notice. The first one stopped silver.",
+              "fix": "A named owner at the ERP team (Q1) and a notice period that covers ERP vendor updates (Q2); proposal below.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "Ours, not the ERP's: the `amount > 0` rule has no working check",
+              "where": "contracts/erp.yaml:60 · checks/silver.yaml:7",
+              "evidence": "The data holds the rule today: 0 of 2,452 amounts are zero or negative. The check that should enforce it queries `amount < amount`, which is never true, so a zero or negative amount would pass.",
+              "fix": "Platform side: change the condition to `amount <= 0`. Not a question for the ERP team.",
+              "status": "open"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "clauses",
+      "title": "Clause by clause",
+      "intro": "Files: the three orders deliveries kept on this host (2–4 Nov). Log: 31 orders entries in ops/deliveries.jsonl (5 Oct–4 Nov).",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Clause",
+            "The contract says",
+            "The deliveries show",
+            "file:line",
+            "Status"
+          ],
+          "rows": [
+            [
+              "owner",
+              "TBD",
+              "registry names only `ERP team`",
+              "erp.yaml:7 · sources.yaml:6",
+              "open"
+            ],
+            [
+              "change_process",
+              "TBD",
+              "comma on 3 Nov and dropped column on 4 Nov, both unannounced",
+              "erp.yaml:8",
+              "open"
+            ],
+            [
+              "path",
+              "sources/erp/{date}/orders.csv",
+              "all 3 files there",
+              "erp.yaml:10",
+              "holds"
+            ],
+            [
+              "content",
+              "order lines of the previous day",
+              "each file holds a single `order_date`, the day before (1, 2, 3 Nov)",
+              "erp.yaml:11",
+              "holds"
+            ],
+            [
+              "format, header",
+              "csv with header",
+              "csv with header, 3 of 3",
+              "erp.yaml:12, 15",
+              "holds"
+            ],
+            [
+              "delimiter",
+              "`,`",
+              "`,` in 3 of 3; amounts quoted since 3 Nov (no quoting clause)",
+              "erp.yaml:13",
+              "holds"
+            ],
+            [
+              "encoding",
+              "utf-8",
+              "utf-8 in 3 of 3",
+              "erp.yaml:14",
+              "holds"
+            ],
+            [
+              "frequency",
+              "daily",
+              "31 deliveries 5 Oct–4 Nov, no day missing; log rows match file rows (401, 1,038, 1,013)",
+              "erp.yaml:16",
+              "holds"
+            ],
+            [
+              "deliver_by",
+              "06:00",
+              "Mon–Fri 07:06–07:37 (23 of 23 late); Sat–Sun 05:38–05:47",
+              "erp.yaml:17 · deliveries.jsonl:33, 127",
+              "conflict"
+            ],
+            [
+              "timezone",
+              "Europe/Belgrade",
+              "log times carry the Belgrade offset",
+              "erp.yaml:18",
+              "holds"
+            ],
+            [
+              "key",
+              "order_id + line_no",
+              "0 duplicates in 3 of 3; the only candidate key in the profile",
+              "erp.yaml:19-21",
+              "holds"
+            ],
+            [
+              "required columns",
+              "6 columns required",
+              "0 empty values in any of them, 3 of 3",
+              "erp.yaml:23-49",
+              "holds"
+            ],
+            [
+              "order_date",
+              "date, YYYY-MM-DD",
+              "every value parses",
+              "erp.yaml:29-32",
+              "holds"
+            ],
+            [
+              "amount",
+              "integer, cents",
+              "decimal units: `9.99` on 2 Nov, `9,99` from 3 Nov; 2,452 of 2,452 break the type",
+              "erp.yaml:46-49",
+              "conflict"
+            ],
+            [
+              "currency",
+              "RSD, EUR, HUF",
+              "only these three (4 Nov: RSD 885, EUR 126, HUF 2)",
+              "erp.yaml:50-52",
+              "holds"
+            ],
+            [
+              "status",
+              "delivered, cancelled, on_hold",
+              "only these three (`on_hold` first seen 4 Nov, 3 rows)",
+              "erp.yaml:53-55",
+              "holds"
+            ],
+            [
+              "sales_rep_code",
+              "a string column",
+              "missing from 4 Nov",
+              "erp.yaml:56-57",
+              "conflict"
+            ],
+            [
+              "quality: key unique",
+              "order_id and line_no unique",
+              "0 rows break it; bronze check enforces it",
+              "erp.yaml:59 · checks/bronze.yaml:8-12",
+              "holds"
+            ],
+            [
+              "quality: amount > 0",
+              "amount > 0",
+              "0 rows break it; our silver check cannot fail",
+              "erp.yaml:60 · checks/silver.yaml:7",
+              "holds"
+            ],
+            [
+              "consumers",
+              "silver.orders, gold.sales_daily",
+              "confirmed in the jobs; `bronze.erp_orders` is not listed",
+              "erp.yaml:61-63 · jobs/load_erp_orders.yaml",
+              "holds"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "window",
+      "title": "Deliveries against the window",
+      "blocks": [
+        {
+          "type": "chart",
+          "kind": "bar",
+          "title": "Orders files by weekday, against deliver_by 06:00 (5 Oct–4 Nov)",
+          "unit": "deliveries",
+          "categories": [
+            "Mon",
+            "Tue",
+            "Wed",
+            "Thu",
+            "Fri",
+            "Sat",
+            "Sun"
+          ],
+          "series": [
+            {
+              "name": "Late",
+              "values": [
+                5,
+                5,
+                5,
+                4,
+                4,
+                0,
+                0
+              ]
+            },
+            {
+              "name": "On time",
+              "values": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                4,
+                4
+              ]
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Arrival range per weekday (ops/deliveries.jsonl)",
+          "columns": [
+            "Weekday",
+            "Deliveries",
+            "Earliest",
+            "Latest",
+            "Late"
+          ],
+          "rows": [
+            [
+              "Mon",
+              5,
+              "07:11 (19 Oct, line 57)",
+              "07:37 (26 Oct, line 85)",
+              5
+            ],
+            [
+              "Tue",
+              5,
+              "07:06 (13 Oct, line 33)",
+              "07:37 (3 Nov, line 120)",
+              5
+            ],
+            [
+              "Wed",
+              5,
+              "07:14 (21 Oct, line 65)",
+              "07:37 (4 Nov, line 127)",
+              5
+            ],
+            [
+              "Thu",
+              4,
+              "07:08 (15 Oct, line 41)",
+              "07:21 (8 Oct, line 13)",
+              4
+            ],
+            [
+              "Fri",
+              4,
+              "07:17 (16 Oct, line 45)",
+              "07:29 (23 Oct, line 73)",
+              4
+            ],
+            [
+              "Sat",
+              4,
+              "05:42 (31 Oct, line 105)",
+              "05:47 (24 Oct, line 77)",
+              0
+            ],
+            [
+              "Sun",
+              4,
+              "05:38 (18 Oct, line 53)",
+              "05:47 (25 Oct, line 81)",
+              0
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "columns",
+      "title": "Columns over time",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Column",
+            "Present in",
+            "Missing from",
+            "Breaking shapes"
+          ],
+          "rows": [
+            [
+              "amount",
+              "2, 3, 4 Nov",
+              "—",
+              "2 Nov `9.99` ×401 · 3 Nov `9,99` ×1,038 · 4 Nov `9,99` ×1,013"
+            ],
+            [
+              "sales_rep_code",
+              "2, 3 Nov",
+              "4 Nov",
+              "—"
+            ],
+            [
+              "the other 10 contract columns",
+              "2, 3, 4 Nov",
+              "—",
+              "—"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "contract",
+      "title": "The contract to agree",
+      "intro": "Version 0.3 with every fix applied. Comments mark changed and new clauses and point to the questions below. Nothing is written to the repository until you say yes.",
+      "blocks": [
+        {
+          "type": "code",
+          "where": "contracts/erp.yaml (proposed 0.4)",
+          "start": 1,
+          "highlight": [
+            4,
+            7,
+            8,
+            18,
+            22,
+            52,
+            53,
+            54,
+            55,
+            56,
+            64,
+            69
+          ],
+          "code": "# Data contract: the ERP orders delivery, between the ERP team and the data platform.\n# The invoices, returns and payments files will get their own sections once this one is agreed.\ncontract: erp_orders\nversion: \"0.4\"                      # CHANGED: was 0.3\nsource: erp\ndataset: orders\nowner: \"ERP team: <name, e-mail>\"   # CHANGED: was TBD. Q1\nchange_process:                     # CHANGED: was TBD. Q2\n  notice: 10 working days before the change ships\n  covers: columns, types, number and date formats, delimiter, encoding, delivery time, ERP vendor updates\n  announce_to: data platform team\n  agreed_by: the owners of both sides, in writing\ndelivery:\n  path: \"sources/erp/{date}/orders.csv\"\n  content: the order lines of the previous day\n  format: csv\n  delimiter: \",\"\n  quote: '\"'                        # NEW: a value holding the delimiter is quoted (every amount since 3 Nov)\n  encoding: utf-8\n  header: true\n  frequency: daily\n  deliver_by: \"07:45\"               # CHANGED: was 06:00; Mon-Fri arrived 07:06-07:37, Sat-Sun 05:38-05:47. Q3\n  timezone: Europe/Belgrade\nkey:\n  - order_id\n  - line_no\ncolumns:\n  - name: order_id\n    type: string\n    required: true\n  - name: line_no\n    type: integer\n    required: true\n  - name: order_date\n    type: date\n    format: YYYY-MM-DD\n    required: true\n  - name: store_id\n    type: string\n    required: true\n  - name: customer_id\n    type: string\n    required: true\n  - name: product_id\n    type: string\n    required: true\n  - name: quantity\n    type: integer\n  - name: weight_g\n    type: integer\n  - name: amount\n    type: decimal                   # CHANGED: was integer; every delivered value has two decimals\n    scale: 2                        # NEW\n    unit: units of currency         # CHANGED: was cents. Q5\n    decimal_separator: \",\"          # NEW: comma since the delivery of 3 Nov, point on 2 Nov. Q4\n    thousands_separator: none       # NEW: none in 2,452 values. Q4\n    required: true\n  - name: currency\n    type: string\n    allowed: [RSD, EUR, HUF]\n  - name: status\n    type: string\n    allowed: [delivered, cancelled, on_hold]\n  # REMOVED: sales_rep_code, missing from the delivery of 4 Nov and read by no job. Q6\nquality:\n  - \"order_id and line_no together are unique\"\n  - \"amount > 0\"\nconsumers:\n  - bronze.erp_orders               # NEW: the landing table load_erp_orders writes\n  - silver.orders\n  - gold.sales_daily\n"
+        }
+      ]
+    },
+    {
+      "id": "questions",
+      "title": "Questions for the source owner",
+      "blocks": [
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "Q1: Who at the ERP team owns the orders file and answers for it when it changes?",
+            "Q2: Will you announce changes to columns, number or date formats, or the delivery time 10 working days ahead, ERP vendor updates included?",
+            "Q3: On working days the file arrives 07:06–07:37 and on weekends before 05:47. Can the working-day export land by 06:00, or at least 07:00? If not, can you hold 07:45 every working day?",
+            "Q4: Is the decimal comma in `amount` since 3 Nov permanent, as it was for invoices after vendor update 2026.9? Will a thousands separator ever appear (invoices got one: `1.234,50`)? Could you send a decimal point instead?",
+            "Q5: Is `amount` always in units of `currency` with two decimals, never cents?",
+            "Q6: Was `sales_rep_code` removed on purpose on 4 Nov? Will it come back?",
+            "Q7 (outside the contract today): since 28 Oct, two store ids unknown to `ref.stores` hold 107–129 order lines a day in quarantine (109 of 401 on 2 Nov). Are these new stores, and can the ERP team announce new stores ahead?"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "not-covered",
+      "title": "What this check did not cover",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "Only three orders files are kept on this host (2–4 Nov; deliveries are git-ignored and ops files are kept 31 days). The amount format before 2 Nov is not checked, so I can't say whether `cents` ever held [guess].",
+            "The delivery log and run records end on 4 Nov. Whether the 5–10 Nov deliveries loaded is not known from here.",
+            "There is no metadata document for the ERP files in the repo (`sources/crm/README-vendor.md` is the CRM's), so I made no document comparison.",
+            "The invoices, returns and payments files (contract line 2) were not checked.",
+            "`weight_g` is 0 at minimum in the 3 and 4 Nov files. The contract has no rule for it and I did not count those rows.",
+            "The unknown store ids in quarantine are our reference data (`ref/stores.csv`, unchanged since the first commit), not a contract clause.",
+            "Doc drift outside the contract: docs/runbook.md:11 says `load_erp_orders` runs at 05:00; the job runs at 06:30.",
+            "No row values were read or shown; columns and counts only."
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "contracts/erp.yaml v0.3 (ERP orders) against sources/erp/2026-11-02..04/orders.csv and ops/deliveries.jsonl 2026-10-05..2026-11-04",
+    "data": [
+      {
+        "name": "ERP order lines",
+        "class": "business",
+        "where": [
+          "bronze.erp_orders",
+          "silver.orders",
+          "gold.sales_daily"
+        ]
+      }
+    ],
+    "assumptions": [
+      "amount is in units of the row's currency with two decimals, as silver/orders.sql reads it",
+      "the decimal comma from 3 Nov comes from an ERP vendor update, as with invoices on 14 Sep"
+    ],
+    "open": [
+      "owner and change process of the ERP orders feed",
+      "deliver_by: ERP moves the working-day export, or the contract says 07:45",
+      "amount decimal separator and thousands separator, confirmed by the ERP owner",
+      "sales_rep_code: removed for good or restored",
+      "silver.orders amount cast to util.parse_amount, and the rerun of 3 and 4 Nov",
+      "checks/silver.yaml:7 amount check that cannot fail"
+    ]
+  }
+}

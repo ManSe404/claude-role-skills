@@ -1,0 +1,12 @@
+name: rebuild_customers
+description: Reload silver.customers in full from the ERP replica.
+schedule: "15 4 * * *"
+timezone: Europe/Belgrade
+cluster: etl
+load: full
+steps:
+  - task: silver.customers
+    layer: silver
+    sql: pipeline/silver/customers.sql
+    quarantine: checks/quarantine.yaml
+    checks: checks/silver.yaml

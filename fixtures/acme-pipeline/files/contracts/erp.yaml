@@ -1,0 +1,63 @@
+# Data contract: the ERP orders delivery, between the ERP team and the data platform.
+# The invoices, returns and payments files will get their own sections once this one is agreed.
+contract: erp_orders
+version: "0.3"
+source: erp
+dataset: orders
+owner: TBD
+change_process: TBD
+delivery:
+  path: "sources/erp/{date}/orders.csv"
+  content: the order lines of the previous day
+  format: csv
+  delimiter: ","
+  encoding: utf-8
+  header: true
+  frequency: daily
+  deliver_by: "06:00"
+  timezone: Europe/Belgrade
+key:
+  - order_id
+  - line_no
+columns:
+  - name: order_id
+    type: string
+    required: true
+  - name: line_no
+    type: integer
+    required: true
+  - name: order_date
+    type: date
+    format: YYYY-MM-DD
+    required: true
+  - name: store_id
+    type: string
+    required: true
+  - name: customer_id
+    type: string
+    required: true
+  - name: product_id
+    type: string
+    required: true
+  - name: quantity
+    type: integer
+  - name: weight_g
+    type: integer
+  - name: amount
+    type: integer
+    unit: cents
+    required: true
+  - name: currency
+    type: string
+    allowed: [RSD, EUR, HUF]
+  - name: status
+    type: string
+    allowed: [delivered, cancelled, on_hold]
+  - name: sales_rep_code
+    type: string
+quality:
+  - "order_id and line_no together are unique"
+  - "amount > 0"
+consumers:
+  - silver.orders
+  - gold.sales_daily

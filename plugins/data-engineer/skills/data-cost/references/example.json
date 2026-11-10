@@ -1,0 +1,512 @@
+{
+ "skill": "data-cost",
+ "title": "acme-pipeline: where the money goes",
+ "subtitle": "The data platform's bill for 5 October to 4 November 2026, split per cluster, job, pipeline and table, and what can be cut with no use lost.",
+ "meta": {
+  "repo": "acme-pipeline",
+  "commit": "703a806",
+  "date": "2026-11-10",
+  "period": "2026-10-05 to 2026-11-04 (31 days)"
+ },
+ "verdict": {
+  "text": "About **EUR 434.57 a month (32.8 % of the bill)** can be cut once the owners sign off. That rises to **EUR 820.97 (61.9 %)** if the `dev-adhoc` cluster also stops at night. The biggest item by far is `dev-adhoc`: it ran 744 of 744 hours with no job on it and cost EUR 892.80, which is 67 % of the bill.",
+  "tone": "bad"
+ },
+ "stats": [
+  {
+   "label": "Total for the period",
+   "value": "EUR 1,326.74",
+   "note": "31 days, counted as one month",
+   "tone": "info"
+  },
+  {
+   "label": "Compute",
+   "value": "EUR 1,289.72",
+   "note": "dev-adhoc 892.80 + etl 396.92",
+   "tone": "info"
+  },
+  {
+   "label": "Storage a month",
+   "value": "EUR 37.02",
+   "note": "925.50 GB, 812 GB of it one unread table",
+   "tone": "warn"
+  },
+  {
+   "label": "Savings found a month",
+   "value": "EUR 434.57 – 820.97",
+   "note": "the low end needs no change to working hours",
+   "tone": "ok"
+  },
+  {
+   "label": "Share of the bill",
+   "value": "32.8 % – 61.9 %",
+   "note": "of EUR 1,326.74",
+   "tone": "ok"
+  }
+ ],
+ "sections": [
+  {
+   "id": "cuts",
+   "title": "What to cut",
+   "intro": "Each cut is confirmed in the job file, the SQL and the records. Every saving is a figure printed by `cost_breakdown.py` or a product of such figures, and the formula is shown. Nothing has been changed: each cut is a proposal for its owner.",
+   "blocks": [
+    {
+     "type": "findings",
+     "items": [
+      {
+       "severity": "high",
+       "title": "dev-adhoc cluster stays up 24/7 with no job on it: EUR 230.40 – 616.80 a month",
+       "where": "ops/usage.csv:7",
+       "evidence": "Billed for all 31 days at 24.00 h a day, 744 h × EUR 1.20 = **EUR 892.80**, or 67.3 % of the whole bill. No job in `jobs/` names it, and no job line in the usage export runs on it. The repository mentions it only in the price note at `ops/README.md:17`. 8 of the billed days were weekends, at EUR 230.40. Two consumers that may use it read only on weekdays: `analyst_adhoc` ran 115 queries and `key_account_team` 66, with 0 on weekends. Whether they run on this cluster is [guess].",
+       "fix": "Turn on auto-stop after some idle minutes, or put the cluster on a schedule that stops it at night and at weekends. Weekend stop alone saves **EUR 230.40 a month** (8 days × 24 h × EUR 1.20). Running it only 08:00–18:00 on weekdays saves **EUR 616.80** (892.80 − 230 h × EUR 1.20) [med]: the 08:00–18:00 window is an assumption, because the export does not record hourly use. **First ask** who uses `dev-adhoc` and when. The cluster has no owner on record. Sign-off: the data platform team lead.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "refresh_stock runs 288 times a day for a table read at most twice a day: EUR 132.99 a month",
+       "where": "jobs/refresh_stock.yaml:3",
+       "evidence": "`*/5 * * * *` gave 8,928 runs in the period for EUR 133.92, or EUR 0.0150 a run (10.1 % of the bill). Each run replaces the whole table (`create or replace`, `pipeline/gold/stock_levels.sql:2`). The query log shows one reader of `gold.stock_levels`: `stock_planner` with 54 queries, at most 2 a day. No job reads the table. **There is a conflict:** the job says it exists `so the store app shows current stock` (`jobs/refresh_stock.yaml:2`), and the check `stock_levels_fresh` fails when the table is `older than 15 minutes` (`checks/gold.yaml:17`). Yet `store_ops_app` never queries `gold.stock_levels` in the log. It reads only `gold.sales_daily`.",
+       "fix": "Refresh before the planner's reads (2 runs a day, or on demand): (8,928 − 62) runs × EUR 0.0150 = **EUR 132.99 a month**. If the store app does need stock through the day, an hourly refresh still saves (8,928 − 744) × EUR 0.0150 = EUR 122.76. `stock_levels_fresh` would have to be relaxed to match. Risk: the store app may read stock in a way the query log does not see [med]. Sign-off: the owner of the store operations app and the stock planner.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "rebuild_customers reloads 24,204 rows a day to pick up ~11 changes: up to EUR 38.70 a month",
+       "where": "jobs/rebuild_customers.yaml:6",
+       "evidence": "The job runs with `load: full`, and `pipeline/silver/customers.sql:2` truncates the table and inserts all of `erp_replica.customers`. Over 31 runs it wrote 750,333 rows and changed 347, which is **0.046 %**, at most 17 in one run (0.070 %). It cost EUR 46.14, or EUR 1.4884 a run. The source carries an `updated_at` column (`pipeline/silver/customers.sql:15`) that an incremental load can filter on.",
+       "fix": "Each day, merge on `customer_id` only the rows whose `updated_at` is newer than the last load. Once a week, reload in full to catch deletes. That saves most of the EUR 46.14: at most **EUR 38.70 a month** (46.14 − 5 weekly full reloads × EUR 1.4884), minus the small cost of the daily merges. Risk: deletes stay in silver for up to a week, which matters if the ERP replica deletes customers rather than flagging them. Sign-off: the data platform team, and the `key_account_team` as the table's direct reader.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "bronze.erp_orders_history_full: 812 GB that nothing reads, EUR 32.48 a month",
+       "where": "pipeline/bronze/erp_orders_history_full.sql:3",
+       "evidence": "This one table is 812 of 925.50 GB, or 87.7 % of storage, and costs EUR 32.48 a month. In the period it had 0 queries, no SQL reads it and no job writes it. The only mention of the name in the repository is its own DDL. The comment says it is `a one-off copy ... loaded on 2026-06-20 to reconcile the new silver.orders against the old reports. Drop it once finance has signed the reconciliation off.` There is no record of that sign-off anywhere in the repository. The old warehouse still holds `dw.orders`, loaded nightly by `load_dw_orders` (`legacy/inventory.csv`), so the copy can be rebuilt [med].",
+       "fix": "Drop the table once **finance** confirms the reconciliation is signed off: **EUR 32.48 a month**. If finance wants a trace, keep a dated compressed export in cold storage first. The table also holds an `audit_user` column, so dropping it removes one more copy of who changed each order line.",
+       "status": "open"
+      },
+      {
+       "severity": "info",
+       "title": "Not a cut: silver.returns has no reader in the log, but it is the documented home of returns",
+       "where": "docs/products/sales_daily.md:28",
+       "evidence": "`silver.returns` had 0 queries and no SQL reader in the period. It costs EUR 2.07 of `load_erp_finance` compute plus EUR 0.04 storage a month. However, the product document of `gold.sales_daily` sends readers there: `returns are not deducted, they are in silver.returns`. The legacy `month_end_margin` job, which waits for `the month's returns` (`legacy/jobs/month_end_margin.sql:1`), has yet to move to the platform.",
+       "fix": "Keep it. The saving would be EUR 2.11 a month, and the table is about to gain a reader.",
+       "status": "declined",
+       "reason": "It is read rarely but on purpose, and the margin migration will need it."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "where",
+   "title": "Where the money goes",
+   "blocks": [
+    {
+     "type": "chart",
+     "kind": "bar",
+     "title": "The period's EUR 1,326.74 by cluster, job and storage",
+     "unit": "EUR",
+     "places": 2,
+     "categories": [
+      "dev-adhoc (cluster, no jobs)",
+      "build_sales_daily (etl)",
+      "refresh_stock (etl)",
+      "rebuild_customers (etl)",
+      "Storage, all tables",
+      "load_erp_orders (etl)",
+      "load_erp_finance (etl)"
+     ],
+     "series": [
+      {
+       "name": "EUR",
+       "values": [
+        892.8,
+        182.36,
+        133.92,
+        46.14,
+        37.02,
+        21.5,
+        13.0
+       ]
+      }
+     ],
+     "caption": "Compute is EUR 1,289.72 and storage EUR 37.02. `ingest_crm` is disabled and cost nothing."
+    },
+    {
+     "type": "table",
+     "title": "By cluster",
+     "columns": [
+      "cluster",
+      "EUR",
+      "rate EUR/h",
+      "hours billed",
+      "jobs defined",
+      "jobs billed",
+      "share of bill"
+     ],
+     "rows": [
+      [
+       "dev-adhoc",
+       892.8,
+       1.2,
+       "744.00 (cluster up)",
+       0,
+       0,
+       "67.3 %"
+      ],
+      [
+       "etl",
+       396.92,
+       2.0,
+       "198.46 (job node hours)",
+       6,
+       5,
+       "29.9 %"
+      ]
+     ]
+    },
+    {
+     "type": "table",
+     "title": "By pipeline",
+     "columns": [
+      "pipeline",
+      "jobs",
+      "EUR"
+     ],
+     "rows": [
+      [
+       "sales",
+       "load_erp_orders + build_sales_daily",
+       203.86
+      ],
+      [
+       "stock",
+       "refresh_stock",
+       133.92
+      ],
+      [
+       "customers",
+       "rebuild_customers",
+       46.14
+      ],
+      [
+       "finance",
+       "load_erp_finance",
+       13.0
+      ],
+      [
+       "CRM",
+       "ingest_crm (disabled)",
+       0.0
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "well-spent",
+   "title": "Money well spent",
+   "intro": "These jobs are expensive, but their tables are read a lot. Do not cut them. `gold.sales_daily` is rebuilt in full although only 0.126 % of its rows change (at most 0.139 % in one run), so an incremental build is an improvement to weigh, not a cut.",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "job",
+      "EUR",
+      "table",
+      "consumers",
+      "reads",
+      "EUR a read"
+     ],
+     "rows": [
+      [
+       "build_sales_daily",
+       182.36,
+       "gold.sales_daily",
+       "bi_sales_board, store_ops_app, franchise_portal, regional_managers_report, finance_cash_plan",
+       3007,
+       0.06
+      ],
+      [
+       "load_erp_orders",
+       21.5,
+       "silver.orders (+ bronze.erp_orders)",
+       "analyst_adhoc; feeds build_sales_daily",
+       115,
+       0.11
+      ],
+      [
+       "load_erp_finance",
+       13.0,
+       "silver.invoices",
+       "finance_cash_plan (daily)",
+       31,
+       0.08
+      ],
+      [
+       "load_erp_finance",
+       13.0,
+       "silver.payments",
+       "finance_cash_plan (daily)",
+       31,
+       0.07
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "by-table",
+   "title": "By table",
+   "intro": "A job's compute is split over its tables by their share of run time in the run records. `refresh_stock` is the exception: it has no run records, so its single table takes all of it.",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "table",
+      "GB",
+      "storage EUR/month",
+      "compute EUR",
+      "total EUR",
+      "consumer reads",
+      "EUR a read"
+     ],
+     "rows": [
+      [
+       "gold.sales_daily",
+       2.25,
+       0.09,
+       182.36,
+       182.45,
+       3007,
+       0.06
+      ],
+      [
+       "gold.stock_levels",
+       0.25,
+       0.01,
+       133.92,
+       133.93,
+       54,
+       2.48
+      ],
+      [
+       "silver.customers",
+       0.5,
+       0.02,
+       46.14,
+       46.16,
+       66,
+       0.7
+      ],
+      [
+       "bronze.erp_orders_history_full",
+       812.0,
+       32.48,
+       0.0,
+       32.48,
+       0,
+       null
+      ],
+      [
+       "silver.orders",
+       38.75,
+       1.55,
+       11.37,
+       12.92,
+       115,
+       0.11
+      ],
+      [
+       "bronze.erp_orders",
+       46.5,
+       1.86,
+       10.13,
+       11.99,
+       0,
+       null
+      ],
+      [
+       "bronze.erp_invoices",
+       9.25,
+       0.37,
+       2.13,
+       2.5,
+       0,
+       null
+      ],
+      [
+       "silver.invoices",
+       7.5,
+       0.3,
+       2.18,
+       2.48,
+       31,
+       0.08
+      ],
+      [
+       "bronze.erp_returns",
+       1.25,
+       0.05,
+       2.3,
+       2.35,
+       0,
+       null
+      ],
+      [
+       "silver.payments",
+       2.75,
+       0.11,
+       2.18,
+       2.29,
+       31,
+       0.07
+      ],
+      [
+       "bronze.erp_payments",
+       3.5,
+       0.14,
+       2.14,
+       2.28,
+       0,
+       null
+      ],
+      [
+       "silver.returns",
+       1.0,
+       0.04,
+       2.07,
+       2.11,
+       0,
+       null
+      ],
+      [
+       "bronze.crm_customers / crm_contacts / crm_activities",
+       null,
+       null,
+       0.0,
+       0.0,
+       0,
+       null
+      ]
+     ]
+    },
+    {
+     "type": "text",
+     "text": "Bronze tables with no consumer reads are not waste: the pipeline itself reads them to build silver. `gold.stock_levels` costs **EUR 2.48 a read**, about 40 times as much as `gold.sales_daily`."
+    }
+   ]
+  },
+  {
+   "id": "adds-up",
+   "title": "How it adds up",
+   "blocks": [
+    {
+     "type": "kv",
+     "items": [
+      [
+       "Compute on tables (etl jobs)",
+       "EUR 396.92"
+      ],
+      [
+       "Compute on clusters with no job lines (dev-adhoc)",
+       "EUR 892.80"
+      ],
+      [
+       "Compute on jobs with no tables",
+       "EUR 0.00"
+      ],
+      [
+       "Compute total",
+       "EUR 1,289.72 (396.92 + 892.80, check passes)"
+      ],
+      [
+       "Storage for the period",
+       "EUR 37.02 (925.50 GB × EUR 0.04; 31 days counted as one month)"
+      ],
+      [
+       "Total",
+       "EUR 1,326.74 (1,289.72 + 37.02)"
+      ],
+      [
+       "Savings, low",
+       "EUR 434.57 = 230.40 + 132.99 + 38.70 + 32.48"
+      ],
+      [
+       "Savings, high",
+       "EUR 820.97 = 616.80 + 132.99 + 38.70 + 32.48"
+      ],
+      [
+       "Sources",
+       "ops/usage.csv (184 rows), ops/storage.csv (12), ops/query_log.csv (294), ops/runs.jsonl (344), jobs/*.yaml (6)"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "not-covered",
+   "title": "What this did not cover",
+   "blocks": [
+    {
+     "type": "list",
+     "items": [
+      "**Why the bill keeps growing.** `ops/` keeps 31 days only, so this page shows one month and cannot say what grew or since when. To find out, compare with the billing exports of earlier months. Two items to check first: when `dev-adhoc` first appeared, and when `bronze.erp_orders_history_full` was loaded (2026-06-20).",
+      "**Hours of use on dev-adhoc.** The export bills the cluster per day, so the night saving rests on an assumed 08:00–18:00 weekday window. Session or query records from the cluster would settle it.",
+      "**Rows changed by refresh_stock.** The job writes run records only on failure (`record_runs: failures`), so it is unknown whether its full replace every 5 minutes rewrites mostly unchanged rows. One day of full run records would show it.",
+      "**Compute of consumer queries.** The usage export has job and cluster lines only. If the BI board's and apps' reads are billed somewhere else, that spending is not in this total.",
+      "**The old cron host** still runs 17 legacy jobs (`legacy/inventory.csv`). Its cost is not in this export.",
+      "**ingest_crm** is disabled and cost nothing. Once the CRM contract is agreed it will add compute and storage, which this page does not price.",
+      "**Prices.** They are taken as the export states them (etl EUR 2.00/h, dev-adhoc EUR 1.20/h, storage EUR 0.04/GB). They were not compared with the provider's price list or other platforms."
+     ]
+    }
+   ]
+  }
+ ],
+ "facts": {
+  "version": 1,
+  "scope": "the Acme Foods data platform (acme-pipeline), billing period 2026-10-05 to 2026-11-04",
+  "costs": [
+   {
+    "item": "dev-adhoc cluster",
+    "monthly": 892.8,
+    "currency": "EUR",
+    "as_of": "2026-11-04",
+    "source": "ops/usage.csv, 31 days"
+   },
+   {
+    "item": "etl cluster (job compute)",
+    "monthly": 396.92,
+    "currency": "EUR",
+    "as_of": "2026-11-04",
+    "source": "ops/usage.csv, 31 days"
+   },
+   {
+    "item": "storage, all tables",
+    "monthly": 37.02,
+    "currency": "EUR",
+    "as_of": "2026-11-04",
+    "source": "ops/storage.csv"
+   },
+   {
+    "item": "platform total",
+    "monthly": 1326.74,
+    "currency": "EUR",
+    "as_of": "2026-11-04",
+    "source": "ops/usage.csv + ops/storage.csv"
+   }
+  ],
+  "assumptions": [
+   "The 31-day period counts as one month.",
+   "The night-stop saving on dev-adhoc assumes it is needed only 08:00–18:00 on weekdays (230 h a month)."
+  ],
+  "open": [
+   "Data platform team lead: who uses dev-adhoc and when, before auto-stop or a night and weekend schedule (EUR 230.40 – 616.80 a month).",
+   "Store operations app owner and the stock planner: does anything need gold.stock_levels fresher than twice a day or hourly? This decides refresh_stock and the 15-minute stock_levels_fresh check (EUR 122.76 – 132.99 a month).",
+   "Finance: sign-off of the silver.orders reconciliation, so bronze.erp_orders_history_full can be dropped (EUR 32.48 a month).",
+   "Data platform team and key_account_team: an incremental load for silver.customers with a weekly full reload (up to EUR 38.70 a month); does the ERP replica delete customers?",
+   "Billing exports older than 31 days, to show what made the bill grow."
+  ]
+ }
+}

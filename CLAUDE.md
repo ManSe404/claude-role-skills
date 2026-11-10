@@ -1,7 +1,7 @@
 # claude-role-skills
 
 Claude Code skills by role, one marketplace with one plugin per role: `software-engineering`,
-`ai-architect`, `data-architect`, `software-architect`, `cloud-architect`, `solutions-architect` (on top of the
+`ai-architect`, `data-architect`, `data-engineer`, `software-architect`, `cloud-architect`, `solutions-architect` (on top of the
 four specialist packs), `data-analyst` and `data-scientist` so far. `docs/plans/` holds the plans.
 
 ## Layout

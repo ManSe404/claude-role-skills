@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: contract-finds-conflicts
+tags: [data-engineer, source-contract]
+context:
+  scaffold_script: fixture.sh

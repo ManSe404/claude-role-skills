@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: quality-finds-useless-checks
+tags: [data-engineer, data-quality]
+context:
+  scaffold_script: fixture.sh

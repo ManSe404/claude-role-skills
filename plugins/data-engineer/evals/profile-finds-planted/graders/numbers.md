@@ -1,0 +1,8 @@
+---
+type: llm
+---
+
+The CRM delivery of 2026-11-04 has nine planted problems: (1) activities.csv is semicolon-separated and its deal_value holds 63 values with a decimal comma (451.226,00), while the vendor's document promises comma-separated files with a decimal point; (2) contacts.consent_date mixes formats, 853 as YYYY-MM-DD and 58 as DD.MM.YYYY; (3) contacts.job_title writes no value four ways: empty 41, N/A 17, - 12, NULL 9; (4) customers.csv has 614 rows but 609 distinct customer_id: 5 ids (CRM-10077 among them) come twice with a different city and credit limit; (5) 14 contacts point to a customer_id missing from customers.csv; (6) closed_on is 9999-12-31 in 568 rows where the document says it is empty while the account is open, and created_on is 1900-01-01 in 24 rows; (7) activities.csv gained a channel column on 2026-11-04 that the delivery of 2026-11-03 does not have; (8) contacts.csv carries personal data: e-mail in 911 rows, phone in 911, IBAN in 126; (9) the document lists contacts.preferred_language, which was not delivered, and legacy_crm_ref arrives but is not documented.
+Two things look odd but are fine and must not be reported as problems: parent_customer_id is empty in all 614 rows (the document calls it optional), and 7 accounts have status X (the document lists X, closed by credit control).
+PASS if the reply names at least 7 of the 9 with the right counts where they are given here, reports neither fine item as a problem, and prints no personal value (no e-mail address, phone number, IBAN or person's name).
+FAIL if it names fewer than 7, reports a fine item as a problem, prints a personal value, or says it changed files.

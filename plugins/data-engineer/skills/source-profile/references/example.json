@@ -1,0 +1,646 @@
+{
+  "skill": "source-profile",
+  "title": "Salaš CRM daily export, profiled",
+  "subtitle": "What the CRM vendor really delivers in the 3 and 4 November 2026 exports, and where it differs from sources/crm/README-vendor.md.",
+  "meta": {
+    "repo": "acme-pipeline",
+    "commit": "703a806",
+    "date": "2026-11-10"
+  },
+  "verdict": {
+    "text": "No: a loader built from the vendor's document cannot read this source as it arrives. `activities.csv` is semicolon-separated with decimal-comma amounts, 58 consent dates are `DD.MM.YYYY`, and `contacts.csv` lacks one documented column and carries an undocumented one. The worst problem downstream is that 5 `customer_id`s arrive twice with a different city and credit limit, so every join on the account multiplies rows.",
+    "tone": "bad"
+  },
+  "stats": [
+    {
+      "label": "Files",
+      "value": 3,
+      "note": "per delivery, 2 deliveries",
+      "tone": "info"
+    },
+    {
+      "label": "Rows",
+      "value": 1793,
+      "note": "4 November delivery",
+      "tone": "info"
+    },
+    {
+      "label": "Findings",
+      "value": 12,
+      "note": "5 high, 4 medium, 1 low, 2 info",
+      "tone": "bad"
+    },
+    {
+      "label": "Conflicts with the document",
+      "value": 8,
+      "note": "plus 1 case the document does not cover",
+      "tone": "bad"
+    },
+    {
+      "label": "Personal columns",
+      "value": 5,
+      "note": "all in contacts.csv",
+      "tone": "warn"
+    }
+  ],
+  "sections": [
+    {
+      "id": "findings",
+      "title": "Findings",
+      "intro": "Each count comes from `source_format.py` and `data_profile.py` and is the same in both deliveries unless a finding says otherwise. Line numbers refer to the 4 November files.",
+      "blocks": [
+        {
+          "type": "findings",
+          "items": [
+            {
+              "severity": "high",
+              "title": "activities.csv is semicolon-separated, not comma-separated",
+              "where": "sources/crm/2026-11-04/activities.csv:1",
+              "evidence": "Both deliveries write `activities.csv` with `;`. The other two files use `,`. The vendor's document (README-vendor.md:10) promises comma-separated files. The semicolon is probably there because `deal_value` contains commas. The draft loader passes no delimiter (`pipeline/loaders/crm.py:28`), so `read_delivery` falls back to `,` (`pipeline/loaders/common.py:45`). It would read the header as one column and the bronze insert would fail. [med] (read from the code, not run)",
+              "fix": "The contract states a delimiter per file. Either the vendor writes `,` with quoted amounts, or the contract records `;` for activities and the loader passes it.",
+              "status": "open"
+            },
+            {
+              "severity": "high",
+              "title": "deal_value uses a decimal comma and a point between thousands",
+              "where": "sources/crm/2026-11-04/activities.csv:6",
+              "evidence": "All 63 `deal_value` values on 4 November (and all 58 on 3 November) look like `NNN.NNN,NN`: a decimal comma with a point as thousands separator. None uses a decimal point. The document promises a decimal point (README-vendor.md:10, :57). A cast to decimal either rejects these values or reads the point as the decimal mark, which makes every offer a thousand times smaller. First row: `ACT-11040005`.",
+              "fix": "The contract sets a decimal point with no thousands separator, or it records the comma format and the loader converts it before any cast. Values only appear on `offer` rows, which matches the document.",
+              "status": "open"
+            },
+            {
+              "severity": "high",
+              "title": "58 consent dates are DD.MM.YYYY instead of YYYY-MM-DD",
+              "where": "sources/crm/2026-11-04/contacts.csv:16",
+              "evidence": "In `consent_date`, 853 rows are `YYYY-MM-DD` and 58 are `DD.MM.YYYY`, out of 911. On 3 November it was 847 and 58. The first part goes above 12 (line 29), so the format is day-first. The document promises `YYYY-MM-DD` (README-vendor.md:10, :41). An ISO parser rejects these 58 rows. The consent date is the basis for contacting the person, so it cannot simply be left empty.",
+              "fix": "The vendor fixes the 58 rows, or the contract allows `DD.MM.YYYY` and the loader converts both formats to a date. Either way, a row with an unparseable consent date goes to quarantine.",
+              "status": "open"
+            },
+            {
+              "severity": "high",
+              "title": "customer_id is not unique: 5 accounts arrive twice, with different city and credit limit",
+              "where": "sources/crm/2026-11-04/customers.csv:78",
+              "evidence": "5 ids appear on 10 rows: `CRM-10077` (lines 78, 105), `CRM-10129` (131, 360), `CRM-10266` (268, 466), `CRM-10402` (405, 523) and `CRM-10588` (593, 596). Both deliveries have them on the same lines. All 5 pairs share a `tax_id` but differ in `city` and `credit_limit`. The document says the id is unique (README-vendor.md:16). A join on `customer_id` turns 268 activities into 273 rows and 911 contacts into 914.",
+              "fix": "The vendor must say which copy is current and fix the extract. Until then, the contract names the rule for picking one copy, and the loader quarantines the rest. Without that, `credit_limit` is ambiguous for these accounts.",
+              "status": "open"
+            },
+            {
+              "severity": "high",
+              "title": "contacts.csv lacks preferred_language and carries an undocumented legacy_crm_ref",
+              "where": "sources/crm/2026-11-04/contacts.csv:1",
+              "evidence": "`preferred_language` is documented (README-vendor.md:42) but missing from both deliveries. `legacy_crm_ref` is not in the document, yet both deliveries include it, with 540 values and 371 empty out of 911. The draft `bronze.crm_contacts` was written from the document: it has `preferred_language` (`pipeline/bronze/crm_contacts.sql:13`) and no `legacy_crm_ref`. Because the insert takes its column list from the file header (`pipeline/warehouse.py:46`), it would fail on the unknown column. [med] (read from the code, not run)",
+              "fix": "The vendor says whether and when `preferred_language` will arrive, and what `legacy_crm_ref` is, including whether it identifies a person. The contract lists the columns that are actually delivered, and the loader selects columns by name.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "closed_on is 9999-12-31 for open accounts, where the document says empty",
+              "where": "sources/crm/2026-11-04/customers.csv:2",
+              "evidence": "568 rows have `9999-12-31` and none are empty. That is exactly the 568 accounts with status `A`. All 39 `I` and 7 `X` accounts have a real date. On 3 November there were 566. The meaning is consistent, but the form contradicts README-vendor.md:25 (\"empty while it is open\"). A filter like `closed_on is null` finds no open accounts, and an account's lifetime comes out at about 8,000 years.",
+              "fix": "The contract chooses between empty and `9999-12-31`, and the loader maps the placeholder to null.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "created_on is 1900-01-01 for 24 accounts",
+              "where": "sources/crm/2026-11-04/customers.csv:36",
+              "evidence": "24 of 614 rows have `created_on` = `1900-01-01`: 22 with status A, 1 with I and 1 with X. The document only says \"when the account was opened\" (README-vendor.md:24) and does not mention unknown dates. Account age and opening cohorts would show these accounts as 126 years old.",
+              "fix": "The contract says that `1900-01-01` means unknown, and the loader maps it to null. Ask the vendor whether the real dates exist, possibly in the legacy CRM.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "14 contacts point to accounts that are not in customers.csv",
+              "where": "sources/crm/2026-11-04/contacts.csv:3",
+              "evidence": "14 contacts point to 14 `customer_id`s with no row in `customers.csv`. Both deliveries have the same 14. All of them are in a `CRM-19xxx` range (first: `CT-50002` → `CRM-19002`), while `customers.csv` holds `CRM-10001` to `CRM-10609` with no gaps. The document calls customers a full extract (README-vendor.md:8), so these are real orphans and not late rows. [med] The 19xxx range looks like a separate account series that the extract leaves out.",
+              "fix": "Ask the vendor what the `CRM-19xxx` accounts are and whether `customers.csv` should include them. The contract says whether such contacts are kept or quarantined.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "channel was added on 4 November as the sixth column, which shifts the columns after it",
+              "where": "sources/crm/2026-11-04/activities.csv:1",
+              "evidence": "This change is announced: the document says `channel` arrives from release 2026.11 on 4 November (README-vendor.md:55), so it is consistent and not a broken promise. It is still drift for the loader. The column sits between `type` and `subject`, so `subject`, `deal_value` and `owner` each move one position. The 3 November rows have no channel at all. The draft `bronze.crm_activities` has no `channel` column (`pipeline/bronze/crm_activities.sql:2`), so the insert would fail. [med]",
+              "fix": "The loader reads columns by header name. The bronze table gets `channel`, empty for loads before 2026-11-04. The contract records the release date.",
+              "status": "open"
+            },
+            {
+              "severity": "low",
+              "title": "job_title writes 'no value' in four different ways",
+              "where": "sources/crm/2026-11-04/contacts.csv:31",
+              "evidence": "79 of 911 rows have no job title, written as empty (41), `N/A` (17, first at line 42), `-` (12, line 31) or `NULL` (9, line 41). The document allows the field to be empty (README-vendor.md:37) but does not mention these words. A loader would keep them as job titles.",
+              "fix": "The contract makes empty the only null value, and the loader maps `N/A`, `-` and `NULL` to null.",
+              "status": "open"
+            },
+            {
+              "severity": "info",
+              "title": "channel and subject follow type one-to-one",
+              "where": "sources/crm/2026-11-04/activities.csv:1",
+              "evidence": "In all 268 rows, `call` and `complaint` → `phone`, `offer` → `email`, and `visit` → `field`. `web` never appears. `subject` has exactly 4 values, with the same counts as `type` (97/73/63/35). [med] So `channel` looks derived from `type` rather than recorded, and `subject` looks like a template rather than what the account manager typed.",
+              "fix": "Ask the vendor whether `channel` is recorded or derived, before anyone reports on it.",
+              "status": "open"
+            },
+            {
+              "severity": "info",
+              "title": "parent_customer_id is empty for every account, including 100 franchise accounts",
+              "where": "sources/crm/2026-11-04/customers.csv:1",
+              "evidence": "All 614 rows are empty. The document calls the column optional (README-vendor.md:26), so this is consistent. However, 100 accounts are in segment `franchise`, which suggests chain head offices exist but are not linked. [guess]",
+              "fix": "Ask the vendor whether the chain hierarchy is filled in the CRM at all. The contract should not promise it.",
+              "status": "open"
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "title": "Hits dropped because the document allows them",
+          "text": "`parent_customer_id` is empty in every row (documented as optional, line 26). 82 activities have an empty `contact_id` (documented for activities with the account, line 52). 785 contacts have an empty `iban` (documented for non-sole-traders, line 40). `deal_value` is empty on all 205 non-offer rows (line 57). The arrival of `channel` is announced (line 55) and appears above only as drift."
+        }
+      ]
+    },
+    {
+      "id": "files",
+      "title": "The files",
+      "intro": "This is the 4 November delivery. All three files are UTF-8 without a byte order mark, with LF line endings, no quoted fields and no rows with too many or too few fields.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "File",
+            "Rows",
+            "Delimiter",
+            "Encoding",
+            "Decimal separator",
+            "Date formats",
+            "Key",
+            "Duplicated keys"
+          ],
+          "rows": [
+            [
+              "activities.csv",
+              268,
+              "`;`",
+              "UTF-8",
+              "comma, point between thousands (`deal_value`, 63)",
+              "YYYY-MM-DD (all)",
+              "activity_id",
+              0
+            ],
+            [
+              "contacts.csv",
+              911,
+              "`,`",
+              "UTF-8",
+              "none",
+              "YYYY-MM-DD 853, DD.MM.YYYY 58 (`consent_date`)",
+              "contact_id",
+              0
+            ],
+            [
+              "customers.csv",
+              614,
+              "`,`",
+              "UTF-8",
+              "point (`credit_limit`, 614)",
+              "YYYY-MM-DD (all); placeholders 1900-01-01 (24), 9999-12-31 (568)",
+              "customer_id",
+              5
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "document",
+      "title": "Against the vendor's document",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "What the document says",
+            "What the data shows",
+            "Where",
+            "Verdict"
+          ],
+          "rows": [
+            [
+              "Delivered every day by 05:00 (line 7)",
+              "Arrived 04:51–04:52 on 3 Nov and 04:46–04:47 on 4 Nov; row counts in the log match the files",
+              "ops/deliveries.jsonl:117",
+              "consistent"
+            ],
+            [
+              "customers and contacts are full extracts; activities hold the previous day (line 8)",
+              "No keys disappeared between the deliveries; activities share no id with the day before; every `activity_date` is the previous day (2 Nov, then 3 Nov)",
+              "2026-11-04/activities.csv",
+              "consistent"
+            ],
+            [
+              "Comma-separated (line 10)",
+              "`activities.csv` uses `;` in both deliveries",
+              "activities.csv:1",
+              "conflict"
+            ],
+            [
+              "Decimal point (lines 10, 57)",
+              "`deal_value` uses a decimal comma in all 63 values; `credit_limit` uses a point in all 614",
+              "activities.csv:6",
+              "conflict"
+            ],
+            [
+              "Dates as YYYY-MM-DD (line 10)",
+              "`consent_date` has 58 values as DD.MM.YYYY",
+              "contacts.csv:16",
+              "conflict"
+            ],
+            [
+              "UTF-8 (line 10)",
+              "All files decode as UTF-8, no BOM",
+              "all files",
+              "consistent"
+            ],
+            [
+              "`customer_id` unique (line 16)",
+              "5 ids appear twice, with different city and credit_limit",
+              "customers.csv:78",
+              "conflict"
+            ],
+            [
+              "`tax_id`: PIB, 9 digits (line 18)",
+              "All 614 are 9-digit integers; 5 repeat, the same 5 accounts as the duplicated ids",
+              "customers.csv:1",
+              "consistent"
+            ],
+            [
+              "`segment`: retail, horeca, franchise, prospect (line 19)",
+              "Only those 4: 260 / 131 / 100 / 123",
+              "customers.csv:1",
+              "consistent"
+            ],
+            [
+              "`status`: A, I, X (line 20)",
+              "568 / 39 / 7, nothing else",
+              "customers.csv:1",
+              "consistent"
+            ],
+            [
+              "`country`: ISO code (line 22)",
+              "`RS` in all 614",
+              "customers.csv:1",
+              "consistent"
+            ],
+            [
+              "`created_on`: when the account was opened (line 24)",
+              "24 rows are `1900-01-01`; the document does not mention unknown dates",
+              "customers.csv:36",
+              "not covered"
+            ],
+            [
+              "`closed_on`: empty while open (line 25)",
+              "`9999-12-31` in the 568 open accounts, 0 empty",
+              "customers.csv:2",
+              "conflict"
+            ],
+            [
+              "`parent_customer_id`: optional (line 26)",
+              "Empty in all 614",
+              "customers.csv:1",
+              "consistent"
+            ],
+            [
+              "`contact_id` unique (line 33)",
+              "911 distinct values in 911 rows",
+              "contacts.csv:1",
+              "consistent"
+            ],
+            [
+              "`job_title`: may be empty (line 37)",
+              "Empty written 4 ways: '', N/A, -, NULL (79 rows)",
+              "contacts.csv:31",
+              "conflict"
+            ],
+            [
+              "`iban`: sole traders only, otherwise empty (line 40)",
+              "126 of 911 filled",
+              "contacts.csv:1",
+              "consistent"
+            ],
+            [
+              "`preferred_language`: sr, hu or en (line 42)",
+              "Not delivered in either delivery",
+              "contacts.csv:1",
+              "conflict"
+            ],
+            [
+              "(not documented)",
+              "`legacy_crm_ref` delivered, 540 values",
+              "contacts.csv:1",
+              "conflict"
+            ],
+            [
+              "activities `contact_id` empty when the activity was with the account (line 52)",
+              "82 empty, no orphans among the other 186",
+              "activities.csv:1",
+              "consistent"
+            ],
+            [
+              "`type`: visit, call, offer, complaint (line 54)",
+              "Only those 4",
+              "activities.csv:1",
+              "consistent"
+            ],
+            [
+              "`channel` from release 2026.11, 4 Nov (line 55)",
+              "First appears 4 Nov: phone, field, email; `web` never appears",
+              "activities.csv:1",
+              "consistent"
+            ],
+            [
+              "`deal_value` empty except on offers (line 57)",
+              "Values on all 63 offers and on nothing else",
+              "activities.csv:6",
+              "consistent"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "history",
+      "title": "Since the last delivery",
+      "intro": "Comparison of 3 November (Tuesday) with 4 November (Wednesday). No weekday is missing between them.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "File",
+            "Rows 3 Nov",
+            "Rows 4 Nov",
+            "Columns added",
+            "Columns removed",
+            "Format changes",
+            "Keys new / gone"
+          ],
+          "rows": [
+            [
+              "activities.csv",
+              243,
+              268,
+              "`channel` (position 6)",
+              "none",
+              "none; `;` and decimal comma on both days",
+              "incremental: no ids in common"
+            ],
+            [
+              "contacts.csv",
+              905,
+              911,
+              "none",
+              "none",
+              "none; 58 DD.MM.YYYY dates on both days",
+              "6 / 0"
+            ],
+            [
+              "customers.csv",
+              612,
+              614,
+              "none",
+              "none",
+              "none; the same 5 duplicated ids on the same lines",
+              "2 / 0 (both created on or after 3 Nov)"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "personal",
+      "title": "Personal data",
+      "intro": "Counts only. The document names every personal column in contacts.csv and limits its use to account work (README-vendor.md:44).",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "File",
+            "Column",
+            "Kind",
+            "Rows with a value",
+            "Note"
+          ],
+          "rows": [
+            [
+              "contacts.csv",
+              "first_name",
+              "person name",
+              911,
+              "found by name"
+            ],
+            [
+              "contacts.csv",
+              "last_name",
+              "person name",
+              911,
+              "found by name"
+            ],
+            [
+              "contacts.csv",
+              "email",
+              "e-mail",
+              911,
+              "all 911 distinct, all pass the e-mail pattern; it is a candidate key"
+            ],
+            [
+              "contacts.csv",
+              "phone",
+              "phone",
+              911,
+              "901 distinct"
+            ],
+            [
+              "contacts.csv",
+              "iban",
+              "bank account",
+              126,
+              "all 126 pass the IBAN pattern; private accounts of sole traders, for the yearly bonus"
+            ],
+            [
+              "contacts.csv",
+              "legacy_crm_ref",
+              "unknown",
+              540,
+              "not documented and not flagged by the scripts; its meaning is unknown [guess]"
+            ],
+            [
+              "customers.csv",
+              "key_account_manager",
+              "employee code",
+              614,
+              "KAM-01..KAM-09: pseudonymous codes for Acme staff [med]"
+            ],
+            [
+              "activities.csv",
+              "owner",
+              "employee code",
+              268,
+              "the same KAM codes [med]"
+            ]
+          ]
+        },
+        {
+          "type": "text",
+          "text": "The scripts found no personal column in `customers.csv`. No `company_name` matches a sole-trader name form (0 of 614), so it looks like shop names rather than people [med]. For analysis, the platform probably needs none of the contact columns: names, `email`, `phone` and above all `iban` serve the account work and the bonus payment, not reporting [guess]. The contract should decide which of them reach bronze at all, and which are masked before silver."
+        }
+      ]
+    },
+    {
+      "id": "keys",
+      "title": "Keys and orphans",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "File",
+            "Key",
+            "Rows",
+            "Distinct",
+            "Duplicated keys",
+            "Reference",
+            "Rows with a value",
+            "Orphan rows"
+          ],
+          "rows": [
+            [
+              "customers.csv",
+              "customer_id",
+              614,
+              609,
+              "5 (10 rows)",
+              "none",
+              null,
+              null
+            ],
+            [
+              "contacts.csv",
+              "contact_id",
+              911,
+              911,
+              "0",
+              "customer_id → customers",
+              911,
+              14
+            ],
+            [
+              "activities.csv",
+              "activity_id",
+              268,
+              268,
+              "0",
+              "customer_id → customers",
+              268,
+              0
+            ],
+            [
+              "activities.csv",
+              "activity_id",
+              268,
+              268,
+              "0",
+              "contact_id → contacts",
+              186,
+              0
+            ]
+          ]
+        },
+        {
+          "type": "text",
+          "text": "Joins on `customer_id` multiply rows because of the duplicates: activities go from 268 to 273, contacts from 911 to 914. All 14 orphan contacts point into a `CRM-19xxx` range, which does not occur in `customers.csv`."
+        }
+      ]
+    },
+    {
+      "id": "contract",
+      "title": "What the contract must settle",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "**Delimiter**: `;` for `activities.csv` and `,` for the others, or `,` everywhere with quoted amounts. Columns are read by header name, never by position.",
+            "**Decimal separator**: `deal_value` with a decimal point and no thousands separator, or the comma format written down and converted by the loader.",
+            "**Date format**: `YYYY-MM-DD` only, including the 58 `DD.MM.YYYY` consent dates, or both formats allowed and converted.",
+            "**Null token**: empty is the only way to write no value; `N/A`, `-` and `NULL` in `job_title` are mapped to null.",
+            "**Key and duplicates**: `customer_id` is unique. For the 5 duplicated accounts, the vendor says which copy is current, or the contract names the rule for picking one.",
+            "**Orphans**: what the `CRM-19xxx` accounts are, whether `customers.csv` will include them, and whether contacts that point to them are kept or quarantined.",
+            "**Placeholders**: `closed_on` empty or `9999-12-31` for open accounts; `created_on` `1900-01-01` means unknown and is loaded as null.",
+            "**Columns that differ from the document**: whether and when `preferred_language` arrives; what `legacy_crm_ref` is and whether it is kept; `channel` from 2026-11-04, and whether it is recorded or derived from `type`.",
+            "**Personal data**: which of `first_name`, `last_name`, `email`, `phone` and `iban` the platform receives, where they are masked, how long they are kept, and the purpose limit from README-vendor.md:44.",
+            "**Delivery time**: by 05:00, met on both days (04:52 and 04:47), plus what happens on a missed day and at weekends.",
+            "**Full and incremental**: `customers` and `contacts` are full extracts and `activities` is the previous day, plus how a deleted account or contact is signalled (no delete marker exists today)."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "not-checked",
+      "title": "What this profile did not check",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "Only two deliveries (3 and 4 November) are in the repository. Deliveries from 5 to 10 November, weekend behaviour and a longer drift history were not seen.",
+            "What `legacy_crm_ref` means, what form it takes, and whether it identifies a person.",
+            "PIB check digits, IBAN check digits, and whether phone numbers and e-mail addresses are valid beyond the pattern match.",
+            "Which copy of a duplicated customer is current.",
+            "The range of the `deal_value` amounts and any outliers among them: the scripts did not parse the comma format as numbers.",
+            "Repeated `company_name` values: 555 distinct names in 614 rows, probably chain stores [guess].",
+            "The draft loader and bronze tables (`pipeline/loaders/crm.py`, `pipeline/bronze/crm_*.sql`) were read, not run. Their failures above come from reading the code."
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "Salaš CRM daily export (customers, contacts, activities) to acme-pipeline, deliveries of 2026-11-03 and 2026-11-04",
+    "data": [
+      {
+        "name": "contact person identity and contact details",
+        "class": "personal",
+        "where": [
+          "sources/crm/*/contacts.csv: first_name, last_name, email, phone"
+        ],
+        "rule": "account work only (README-vendor.md:44)"
+      },
+      {
+        "name": "sole trader bank account",
+        "class": "personal",
+        "where": [
+          "sources/crm/*/contacts.csv: iban"
+        ],
+        "rule": "yearly bonus payment only (README-vendor.md:40)"
+      },
+      {
+        "name": "Acme employee codes",
+        "class": "personal",
+        "where": [
+          "sources/crm/*/customers.csv: key_account_manager",
+          "sources/crm/*/activities.csv: owner"
+        ]
+      }
+    ],
+    "assumptions": [
+      "The two deliveries in the repository are representative of the daily export.",
+      "`DD.MM.YYYY` is day-first: at least one value has a first part above 12.",
+      "The draft loader would fail on the semicolon file and on the extra columns. This is read from the code, not run."
+    ],
+    "open": [
+      "Which copy of each of the 5 duplicated customer_ids is current (city and credit_limit differ)?",
+      "What are the CRM-19xxx accounts that 14 contacts point to, and why are they missing from customers.csv?",
+      "Will preferred_language be delivered, and from when?",
+      "What is legacy_crm_ref, and does it identify a person?",
+      "Can the vendor write deal_value with a decimal point and every date as YYYY-MM-DD?",
+      "Is channel recorded, or derived from type?",
+      "Is the chain hierarchy (parent_customer_id) filled in the CRM at all?",
+      "Which contact columns does the platform actually need?"
+    ]
+  }
+}

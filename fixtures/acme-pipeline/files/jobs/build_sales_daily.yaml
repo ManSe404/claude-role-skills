@@ -1,0 +1,13 @@
+name: build_sales_daily
+description: Rebuild gold.sales_daily for finance and the BI sales board.
+schedule: "0 7 * * *"
+timezone: Europe/Belgrade
+cluster: etl
+depends_on:
+  - load_erp_orders
+sla: "08:00"
+steps:
+  - task: gold.sales_daily
+    layer: gold
+    sql: pipeline/gold/sales_daily.sql
+    checks: checks/gold.yaml

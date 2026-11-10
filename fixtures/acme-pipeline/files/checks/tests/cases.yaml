@@ -1,0 +1,43 @@
+# Each check, tried once against rows that must make it warn or fail, before it went live.
+# bad_rows says what was fed in; result is what the check returned on that input.
+cases:
+  - check: erp_orders_not_empty
+    tried_on: "2026-07-20"
+    bad_rows: "an empty delivery, header only"
+    result: fail
+  - check: erp_orders_key_unique
+    tried_on: "2026-07-20"
+    bad_rows: "the same order line delivered twice"
+    result: fail
+  - check: orders_every_store_ordered
+    tried_on: "2026-07-20"
+    bad_rows: "a weekday with no order lines for S-004"
+    result: fail
+  - check: customers_email_format
+    tried_on: "2026-07-20"
+    bad_rows: "3 e-mails without @ or without a domain"
+    result: warn
+  - check: customers_id_unique
+    tried_on: "2026-07-20"
+    bad_rows: "one customer_id twice"
+    result: fail
+  - check: sales_daily_fresh
+    tried_on: "2026-07-20"
+    bad_rows: "built_at set to the day before"
+    result: fail
+  - check: sales_daily_key_unique
+    tried_on: "2026-07-20"
+    bad_rows: "one store, day and currency twice"
+    result: fail
+  - check: stock_levels_fresh
+    tried_on: "2026-07-20"
+    bad_rows: "refreshed_at 40 minutes old"
+    result: fail
+  - check: stock_levels_non_negative
+    tried_on: "2026-07-20"
+    bad_rows: "1 row with on_hand -4"
+    result: fail
+  - check: invoices_amount_parsed
+    tried_on: "2026-09-15"
+    bad_rows: "amounts 1.234,50 and 1234,50 and an empty amount"
+    result: fail

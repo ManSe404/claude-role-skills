@@ -1,0 +1,306 @@
+{
+  "skill": "data-migration",
+  "title": "acme-pipeline: moving the old cron estate onto the platform",
+  "subtitle": "Which of the 17 cron jobs in legacy/ to keep, rebuild or retire, and how to move them in waves that can be checked and rolled back.",
+  "meta": {"repo": "acme-pipeline", "commit": "703a806", "date": "2026-11-10", "inventory as of": "2026-11-04 06:00 (legacy/README.md)"},
+  "verdict": {
+    "tone": "warn",
+    "text": "The move is smaller than 17 jobs suggests: 10 retire (six dead, two already done by platform jobs, one copy, one folded into its partner), one moves as it is and six are rebuilt, in six waves. Before the orders chain can move, two things must be settled: the logistics partner's 05:30 feed has to keep reading the ERP directly at 01:00, because the platform's ERP file arrives at 05:38–07:37, and the platform needs a cost source for the month-end margin. The owners also have to confirm the dead jobs and name who reads the `dw.*` outputs."
+  },
+  "stats": [
+    {"label": "Jobs", "value": 17, "note": "all scripts found, none unlisted", "tone": "info"},
+    {"label": "Dead", "value": 6, "note": "silent 216–345 days", "tone": "warn"},
+    {"label": "Keep", "value": 1, "tone": "ok"},
+    {"label": "Rebuild", "value": 6, "tone": "warn"},
+    {"label": "Retire", "value": 10, "note": "after owner or reader confirms", "tone": "info"},
+    {"label": "Waves", "value": 6, "tone": "info"}
+  ],
+  "sections": [
+    {
+      "id": "findings",
+      "title": "Findings",
+      "intro": "Each finding was checked in the scripts, not just taken from the inventory script's output. Times are from the inventory export of 2026-11-04 06:00.",
+      "blocks": [
+        {"type": "findings", "items": [
+          {"severity": "high", "title": "The partner feed cannot be built on the platform's ERP orders file: it arrives too late",
+           "where": "legacy/jobs/send_partner_orders.sh:2, ops/deliveries.jsonl, jobs/load_erp_orders.yaml",
+           "evidence": "The partner \"plans the next day's deliveries\" from the file sent at 05:30. In the last 31 deliveries the platform's `sources/erp/<date>/orders.csv` arrived between 05:38 and 07:37, and on working days between 07:06 and 07:37. None arrived before 05:30. Today's feed instead reads `erp.order_lines` straight from the ERP database at 01:00 (`nightly_orders_extract.sh:4`). [high]",
+           "fix": "Rebuild the extract and the send as one platform job that still reads the ERP (through `ERP_DSN`, or `erp_replica` if it carries order lines) at 01:00. Do not feed the partner from `load_erp_orders`."},
+          {"severity": "high", "title": "If the 01:00 extract fails, the partner gets yesterday's orders under today's name",
+           "where": "legacy/jobs/send_partner_orders.sh:4, :7",
+           "evidence": "`DAY` comes from the clock, and `put` uploads whatever `/data/extracts/orders_latest.csv` holds. Cron runs at 05:30 whether or not the 01:00 extract ran, because the inventory's `depends_on` is not enforced by cron. A failed extract leaves the previous day's file, which goes out as `acme_orders_<today>.csv`. [med] The host's logs would show whether this has happened."},
+          {"severity": "high", "title": "Two jobs write `dw.stock_snapshot` at the same minute, and which one ends last decides the result",
+           "where": "legacy/jobs/load_stock_snapshot.sql:2-6, legacy/jobs/fix_stock_snapshot.sql:2-5, inventory.csv:8-9",
+           "evidence": "Both run at `0 3 * * *`. The load truncates the table and inserts today's stock. The fix sets negative `on_hand` to 0 where `snapshot_date = current_date`. If the fix runs before the insert commits, it updates 0 rows and the store report gets negative stock, which the fix exists to prevent. [high] that the race exists; [med] that it is lost on some nights, since psql commits each statement unless run with `-1`.",
+           "fix": "Rebuild as one step that writes `greatest(on_hand, 0)`, or that flags the negative rows if the report owner prefers. Retire `fix_stock_snapshot`."},
+          {"severity": "high", "title": "The price list loader reads the staging file through a link the inventory does not declare, and loads yesterday's prices if staging fails",
+           "where": "legacy/jobs/stage_price_list.sh:4-5, legacy/jobs/load_price_list.sql:2-4, inventory.csv:6",
+           "evidence": "`stage_price_list` writes `/data/staging/price_list.csv` at 02:00. `load_price_list` reads it at 02:20, but its `depends_on` is empty. If the copy from `/mnt/purchasing` fails, `set -eu` stops the stage step but leaves the old staged file, and the load truncates `dw.price_list` and reloads the old prices without any error. A slow copy could also leave a half-written file. The two jobs have different owners (m.lukic, d.vujic).",
+           "fix": "Rebuild as one platform job: copy, convert CP1250 to UTF-8, check the file date and row count, then load. The job must fail rather than load a stale file."},
+          {"severity": "high", "title": "The month-end margin needs `cost_amount`, which the platform's orders data does not have",
+           "where": "legacy/jobs/month_end_margin.sql:10-11, pipeline/silver/orders.sql:7, sources/erp/2026-11-04/orders.csv:1",
+           "evidence": "The margin is `sum(amount) - sum(cost_amount)` from `dw.orders`. Neither `silver.orders` nor the ERP orders file has a cost column. Until a cost source exists on the platform, `dw.orders`, and with it `load_dw_orders` and the legacy extract, cannot be retired. [high]",
+           "fix": "Agree a cost source with the ERP team, either a contract change to add cost to `orders.csv` or a replica table, before wave 6."},
+          {"severity": "medium", "title": "Six jobs are dead: still in the crontab, but with no successful run for 216 to 345 days",
+           "where": "legacy/inventory.csv:10, :14-18",
+           "evidence": "`old_loyalty_points`: last run 2026-02-28, 249 runs missed. `store_kpi_v1`: 2026-04-02, 215 missed. `promo_export_2025`: 2026-03-30, 31 missed. `supplier_scorecard`: 2025-11-24, 49 missed. `fax_order_import`: 2025-12-19, 4,086 missed. `cleanup_tmp_tables`: 2026-01-11, 42 missed. Two of them read inputs no job writes (`dw.orders_v1`, `dw.supplier_deliveries`). Because the lines are still in the crontab, these jobs probably start and fail on every schedule [med].",
+           "fix": "Retire each one after its owner confirms. Keep the script and a snapshot of its last output."},
+          {"severity": "medium", "title": "The fax import may have stopped while orders kept arriving",
+           "where": "legacy/jobs/fax_order_import.sh:4-6",
+           "evidence": "The job loads files the fax-to-mail gateway saves in `/data/fax_inbox/` and moves them to `done/`. If the gateway still saves files, every fax order since 2025-12-19 is still in the inbox and was never loaded into `dw.fax_orders`. [guess] The folder was not inspected.",
+           "fix": "Before retiring, count the `*.csv` files in `/data/fax_inbox/` that have not been moved to `done/`."},
+          {"severity": "medium", "title": "The two sales exports are the same query, written to two files",
+           "where": "legacy/jobs/export_store_sales.sql:1-7, legacy/jobs/export_sales_by_store.sql:1-7",
+           "evidence": "The scripts are byte-identical (sha256 `1d719033a25a`). Both say \"for finance\" and write the last 7 days per store and day, one to `/data/exports/store_sales.csv` (d.vujic, 05:00) and one to `/data/exports/finance/sales_by_store.csv` (t.krsmanovic, 05:15). Finance already reads `gold.sales_daily` every day for the cash plan (31 of 31 days in `ops/query_log.csv`).",
+           "fix": "Keep one export, built from `gold.sales_daily.gross_revenue`, only if someone still picks the file up. Point the readers of the other file at it."},
+          {"severity": "medium", "title": "`daily_customer_sync` duplicates the platform's `rebuild_customers` and keeps a second copy of personal data",
+           "where": "legacy/jobs/daily_customer_sync.sql:2-6, jobs/rebuild_customers.yaml, checks/quarantine.yaml:9-13",
+           "evidence": "Both jobs reload the ERP customer master in full. `dw.customers` holds `tax_id`, `email` and `phone`. `silver.customers` leaves out quarantined rows: 3 customers a day without a tax id since 2026-10-20. It is also ready at 04:15 instead of 00:45.",
+           "fix": "Retire the legacy job once the readers of `dw.customers` accept the 04:15 time and the 3 quarantined rows."},
+          {"severity": "medium", "title": "Nobody knows who reads most of the old outputs",
+           "where": "ops/query_log.csv",
+           "evidence": "No job reads 13 of the outputs, including `dw.customers`, `dw.price_list`, `dw.stock_snapshot`, `dw.margin_monthly` and both export files. The query log only covers platform tables, so the readers of the old warehouse are not on record anywhere in the repo.",
+           "fix": "Get a week of query log from the old warehouse, and the file-access or pickup log for `/data/exports`, before waves 2 to 4."},
+          {"severity": "medium", "title": "The SFTP password is passed on the command line",
+           "where": "legacy/jobs/send_partner_orders.sh:5",
+           "evidence": "`lftp -u \"acme_export,${SFTP_PASSWORD}\"`: the value comes from the host environment, so there is no literal in the script. While the job runs, though, the password shows in the host's process list.",
+           "fix": "Put the password in the platform's secret store, use key-based login if the partner supports it, and rotate the password at cutover."},
+          {"severity": "low", "title": "`cleanup_tmp_tables` drops every `dw.tmp_*` table, not only those older than a week",
+           "where": "legacy/jobs/cleanup_tmp_tables.sql:1, :6-10",
+           "evidence": "The comment says \"older than a week\", but the loop drops every match without checking age. It is retired anyway, since nothing on the platform writes `dw.tmp_*`."},
+          {"severity": "low", "title": "The crontab lines themselves are not in the repo",
+           "where": "legacy/README.md",
+           "evidence": "The exports are written \"by the cron line\", so the CSV delimiter, header and encoding cannot be read from the repo, and neither can the job's MAILTO or log target. The README also says some owners have left, without saying which."}
+        ]}
+      ]
+    },
+    {
+      "id": "estate",
+      "title": "The estate",
+      "intro": "Status is taken at 2026-11-04 06:00. A job counts as dead after three missed runs and 180 days of silence. `month_end_margin` is on schedule: it runs on the 15th.",
+      "blocks": [
+        {"type": "table",
+         "columns": ["Job", "Cadence", "Last run", "Status", "Reads", "Writes", "Rating", "Why"],
+         "rows": [
+           ["nightly_orders_extract", "daily 01:00", "2026-11-04 01:00", "on schedule", "erp.order_lines (ERP database)", "/data/extracts/orders_latest.csv", "keep", "Runs, has two readers and does one thing. It moves as a 01:00 ERP extract, because the partner cannot wait for the ERP file."],
+           ["load_dw_orders", "daily 01:30", "2026-11-04 01:30", "on schedule", "orders_latest.csv", "dw.orders", "retire", "Replaced by `load_erp_orders` → `silver.orders`. It stays on until the margin has a cost source (wave 6)."],
+           ["send_partner_orders", "daily 05:30", "2026-11-04 05:30", "on schedule", "orders_latest.csv", "sftp.partner.example.org /inbound/acme/", "rebuild", "Outside consumer. It sends whatever file is there and passes the password on the command line. Rebuild it to depend on the extract and to check the file."],
+           ["export_sales_by_store", "daily 05:15", "2026-11-04 05:15", "on schedule", "dw.orders, dw.stores", "/data/exports/finance/sales_by_store.csv", "rebuild", "Keep one export, from `gold.sales_daily`, if finance still picks it up."],
+           ["export_store_sales", "daily 05:00", "2026-11-04 05:00", "on schedule", "dw.orders, dw.stores", "/data/exports/store_sales.csv", "retire", "Byte-identical copy of the other export. Its readers are pointed at the surviving file."],
+           ["month_end_margin", "monthly, 15th 02:30", "2026-10-15 02:30", "on schedule", "dw.orders (amount, cost_amount)", "dw.margin_monthly", "rebuild", "Needs a cost column that the platform's orders data lacks."],
+           ["daily_customer_sync", "daily 00:45", "2026-11-04 00:45", "on schedule", "erp.customers", "dw.customers", "retire", "Already done by the platform's `rebuild_customers` → `silver.customers`."],
+           ["stage_price_list", "daily 02:00", "2026-11-04 02:00", "on schedule", "/mnt/purchasing/cenovnik/price_list_current.csv (CP1250)", "/data/staging/price_list.csv", "rebuild", "Merge with the load into one job with the dependency declared."],
+           ["load_price_list", "daily 02:20", "2026-11-04 02:20", "on schedule", "/data/staging/price_list.csv", "dw.price_list", "rebuild", "Reads the staging file without a declared link, and loads stale prices if staging fails."],
+           ["load_stock_snapshot", "daily 03:00", "2026-11-04 03:00", "on schedule", "erp.stock", "dw.stock_snapshot", "rebuild", "Races with the fix at the same minute. Rebuild as one step, or point the report at `gold.stock_levels`."],
+           ["fix_stock_snapshot", "daily 03:00", "2026-11-04 03:00", "on schedule", "—", "dw.stock_snapshot (update)", "retire", "Its rule moves into the rebuilt snapshot step."],
+           ["old_loyalty_points", "daily 04:00", "2026-02-28 04:00", "dead (249 missed)", "loyalty.transactions (old card system)", "dw.loyalty_points", "retire", "Dead. Owner s.jankov to confirm."],
+           ["store_kpi_v1", "daily 06:00", "2026-04-02 06:00", "dead (215 missed)", "dw.orders_v1 (no job writes it)", "dw.store_kpi_v1", "retire", "Dead and replaced by the BI sales board. Owner b.stanar to confirm."],
+           ["promo_export_2025", "weekly Mon 06:00", "2026-03-30 06:00", "dead (31 missed)", "dw.promotions", "/data/exports/promo_2025.csv", "retire", "Dead, for a past year. Owner s.jankov or marketing to confirm the agency no longer reads it."],
+           ["supplier_scorecard", "weekly Mon 07:00", "2025-11-24 07:00", "dead (49 missed)", "dw.supplier_deliveries (no job writes it)", "dw.supplier_scorecard", "retire", "Dead, and its input stopped. If purchasing still wants it, it is new work, not part of the move."],
+           ["fax_order_import", "every 30 min 08-16, Mon-Fri", "2025-12-19 16:30", "dead (4,086 missed)", "/data/fax_inbox/*.csv", "dw.fax_orders", "retire", "Dead. First check that no orders are waiting in the inbox."],
+           ["cleanup_tmp_tables", "weekly Sun 23:00", "2026-01-11 23:00", "dead (42 missed)", "information_schema", "drops dw.tmp_*", "retire", "Dead. Nothing on the platform writes `dw.tmp_*`."]
+         ]}
+      ]
+    },
+    {
+      "id": "links",
+      "title": "Links between jobs",
+      "intro": "Built from what each script reads and writes, not from `depends_on`. The price list link is the only one the inventory does not declare. The cron line enforces none of them: each job simply starts at its own time.",
+      "blocks": [
+        {"type": "graph",
+         "nodes": [
+           {"id": "erp", "label": "ERP database", "note": "erp.order_lines, erp.customers, erp.stock; ERP_DSN", "group": "external"},
+           {"id": "share", "label": "Purchasing file share", "note": "/mnt/purchasing/cenovnik, CP1250", "group": "external"},
+           {"id": "partner", "label": "Partner SFTP", "note": "sftp.partner.example.org", "group": "external"},
+           {"id": "fax", "label": "Fax gateway inbox", "note": "/data/fax_inbox", "group": "external"},
+           {"id": "loyalty", "label": "Old loyalty system", "note": "loyalty.transactions", "group": "external"},
+           {"id": "j_extract", "label": "nightly_orders_extract", "note": "keep", "group": "safe"},
+           {"id": "f_orders", "label": "orders_latest.csv", "group": "data"},
+           {"id": "j_loaddw", "label": "load_dw_orders", "note": "retire (wave 6)", "group": "module"},
+           {"id": "j_partner", "label": "send_partner_orders", "note": "rebuild", "group": "affected"},
+           {"id": "t_orders", "label": "dw.orders", "group": "data"},
+           {"id": "t_stores", "label": "dw.stores", "note": "no job writes it", "group": "data"},
+           {"id": "j_exp1", "label": "export_store_sales", "note": "retire (copy)", "group": "module"},
+           {"id": "j_exp2", "label": "export_sales_by_store", "note": "rebuild", "group": "affected"},
+           {"id": "f_exports", "label": "/data/exports CSVs", "note": "readers unknown", "group": "data"},
+           {"id": "j_margin", "label": "month_end_margin", "note": "rebuild", "group": "affected"},
+           {"id": "t_margin", "label": "dw.margin_monthly", "note": "readers unknown", "group": "data"},
+           {"id": "j_cust", "label": "daily_customer_sync", "note": "retire", "group": "module"},
+           {"id": "t_cust", "label": "dw.customers", "note": "personal data", "group": "data"},
+           {"id": "j_stage", "label": "stage_price_list", "note": "rebuild", "group": "affected"},
+           {"id": "f_price", "label": "staging/price_list.csv", "group": "data"},
+           {"id": "j_loadprice", "label": "load_price_list", "note": "rebuild", "group": "affected"},
+           {"id": "t_price", "label": "dw.price_list", "group": "data"},
+           {"id": "j_stock", "label": "load_stock_snapshot", "note": "rebuild", "group": "affected"},
+           {"id": "j_fix", "label": "fix_stock_snapshot", "note": "retire", "group": "module"},
+           {"id": "t_stock", "label": "dw.stock_snapshot", "note": "both at 03:00", "group": "data"},
+           {"id": "j_fax", "label": "fax_order_import", "note": "dead", "group": "unknown"},
+           {"id": "j_loyal", "label": "old_loyalty_points", "note": "dead", "group": "unknown"},
+           {"id": "j_kpi", "label": "store_kpi_v1", "note": "dead; reads dw.orders_v1", "group": "unknown"},
+           {"id": "j_promo", "label": "promo_export_2025", "note": "dead", "group": "unknown"},
+           {"id": "j_supp", "label": "supplier_scorecard", "note": "dead; reads dw.supplier_deliveries", "group": "unknown"},
+           {"id": "j_clean", "label": "cleanup_tmp_tables", "note": "dead", "group": "unknown"}
+         ],
+         "edges": [
+           {"from": "erp", "to": "j_extract", "label": "01:00"},
+           {"from": "j_extract", "to": "f_orders"},
+           {"from": "f_orders", "to": "j_loaddw", "label": "01:30"},
+           {"from": "f_orders", "to": "j_partner", "label": "05:30"},
+           {"from": "j_partner", "to": "partner", "label": "SFTP"},
+           {"from": "j_loaddw", "to": "t_orders"},
+           {"from": "t_orders", "to": "j_exp1"},
+           {"from": "t_orders", "to": "j_exp2"},
+           {"from": "t_stores", "to": "j_exp1"},
+           {"from": "t_stores", "to": "j_exp2"},
+           {"from": "j_exp1", "to": "f_exports"},
+           {"from": "j_exp2", "to": "f_exports"},
+           {"from": "t_orders", "to": "j_margin", "label": "15th"},
+           {"from": "j_margin", "to": "t_margin"},
+           {"from": "erp", "to": "j_cust"},
+           {"from": "j_cust", "to": "t_cust"},
+           {"from": "share", "to": "j_stage", "label": "02:00"},
+           {"from": "j_stage", "to": "f_price"},
+           {"from": "f_price", "to": "j_loadprice", "label": "02:20, undeclared"},
+           {"from": "j_loadprice", "to": "t_price"},
+           {"from": "erp", "to": "j_stock", "label": "03:00"},
+           {"from": "j_stock", "to": "t_stock", "label": "truncate + insert"},
+           {"from": "j_fix", "to": "t_stock", "label": "update, 03:00"},
+           {"from": "fax", "to": "j_fax"},
+           {"from": "loyalty", "to": "j_loyal"}
+         ]}
+      ]
+    },
+    {
+      "id": "waves",
+      "title": "Waves",
+      "intro": "Each wave keeps the old cron line and the old target untouched until it is signed off. A rebuilt reader that no longer reads an old table (for example an export built from `gold.sales_daily`) can move before that table's old writer. The orders chain is split so that the old extract keeps feeding `load_dw_orders` until wave 6.",
+      "blocks": [
+        {"type": "steps", "items": [
+          {"title": "Wave 1: retire the six dead jobs (runs alongside the others)",
+           "text": "`old_loyalty_points`, `store_kpi_v1`, `promo_export_2025`, `supplier_scorecard`, `fax_order_import`, `cleanup_tmp_tables`. Each one only after its owner (or the team lead, where the owner has left) says yes. First count the waiting files in `/data/fax_inbox/`. Archive each script and take a row count and snapshot of its last output. Comment out the cron line, but do not delete it or drop the tables.",
+           "where": "legacy/inventory.csv:10, :14-18"},
+          {"title": "Wave 2: customers",
+           "text": "Point the readers of `dw.customers` at `silver.customers`, which the platform already rebuilds daily at 04:15. Parallel run for 14 days, then disable `daily_customer_sync`. Readers must accept the 04:15 time and the quarantined rows. This is the smallest internal group and makes a good first move.",
+           "where": "legacy/jobs/daily_customer_sync.sql, jobs/rebuild_customers.yaml"},
+          {"title": "Wave 3: price list and stock snapshot (two independent groups)",
+           "text": "Price list: one platform job that copies from the purchasing share, converts CP1250 to UTF-8, checks the file and loads, replacing `stage_price_list` and `load_price_list`. The platform needs read access to `/mnt/purchasing` first. Stock: one step that writes the 03:00 snapshot with the negative-stock rule applied, replacing `load_stock_snapshot` and `fix_stock_snapshot`. If the store report's owner agrees, point the report at `gold.stock_levels` instead and build nothing. Parallel run 14 days each.",
+           "where": "legacy/jobs/stage_price_list.sh, load_price_list.sql, load_stock_snapshot.sql, fix_stock_snapshot.sql"},
+          {"title": "Wave 4: sales exports",
+           "text": "One export from `gold.sales_daily` (gross revenue for the last 7 days per store and day) replaces both files, but only if finance still picks a file up. Otherwise both retire, because finance already reads the table. `gold.sales_daily` is ready by 08:00, not 05:00, so finance must accept the later time. Parallel run 14 days.",
+           "where": "legacy/jobs/export_store_sales.sql, export_sales_by_store.sql, jobs/build_sales_daily.yaml"},
+          {"title": "Wave 5: partner feed",
+           "text": "A platform job extracts yesterday's order lines from the ERP at 01:00, checks the order date and row count, and sends to the partner at 05:30, replacing `send_partner_orders`. The password moves to the secret store. During the parallel run (21 days) the new file goes to a test folder the partner provides. Cut over on a date agreed with the partner, mid-week. The old `nightly_orders_extract` stays on, because `load_dw_orders` still reads its file.",
+           "where": "legacy/jobs/nightly_orders_extract.sh, send_partner_orders.sh"},
+          {"title": "Wave 6: month-end margin and the end of `dw.orders`",
+           "text": "Needs the agreed cost source first. Rebuild `month_end_margin` on `silver.orders` plus cost, with a parallel run that covers one real 15th: 2026-12-15 if the cost source lands by early December, otherwise 2027-01-15. After sign-off, retire `load_dw_orders` and the old `nightly_orders_extract`.",
+           "where": "legacy/jobs/month_end_margin.sql, load_dw_orders.sql"}
+        ]}
+      ]
+    },
+    {
+      "id": "acceptance",
+      "title": "Acceptance and rollback",
+      "intro": "The numbers are agreed before each parallel run starts. During the run both versions run, the new output goes nowhere outside, and the numbers are compared daily. Rollback always means re-enabling the old cron line and pointing the readers back. The old target is not touched until sign-off.",
+      "blocks": [
+        {"type": "table",
+         "columns": ["Wave", "Check", "Number", "How compared", "Rollback"],
+         "rows": [
+           ["1 Dead jobs", "Owner's yes; inbox empty; last output kept", "6 of 6 confirmed; 0 waiting files in /data/fax_inbox; row count of each last table recorded", "Written confirmation; `ls` of the inbox; archived script and table snapshot", "Uncomment the cron line; the tables were never dropped"],
+           ["2 Customers", "Rows and keys", "Per day for 14 days: rows in dw.customers = rows in silver.customers + that day's `missing_tax_id` quarantine count (3 recently); customer_id sets equal apart from the quarantined ids", "Daily query on both tables plus ops/quarantine.jsonl", "Re-enable `daily_customer_sync`; point readers back at dw.customers"],
+           ["2 Customers", "Values", "0 differing rows on name, tax_id, email, phone, city, segment after the same trim and lower-casing", "Hash of each row, joined on customer_id", "As above"],
+           ["2 Customers", "Delivery time", "Readers accept 04:15 instead of 00:45", "Readers' written OK", "As above"],
+           ["3 Price list", "Rows and sum", "14 days: rows and sum(price_rsd) equal; rows equal sorted by product_id, valid_from", "Daily compare of dw.price_list with the new table", "Re-enable `stage_price_list` and `load_price_list`"],
+           ["3 Price list", "Stale-file test", "1 drill: with the source file missing, the new job fails and loads nothing", "Run on a test copy of the share", "As above"],
+           ["3 Stock", "Rows, sum, negatives", "14 days: rows equal; sum(greatest(on_hand,0)) equal; 0 rows with on_hand < 0 in the new table. Days when the old table still had negatives are recorded as evidence of the race", "Daily compare after 03:30", "Re-enable both 03:00 lines"],
+           ["4 Exports", "Rows and revenue per store and day", "14 days: same 30 stores; rows equal; revenue equal to the cent for every store and day (old `sum(amount)` against `gross_revenue`); file equal by row, sorted", "Diff of the sorted CSVs", "Re-enable both export lines; the old files were never removed"],
+           ["4 Exports", "Delivery time", "Finance accepts 08:00 instead of 05:00, or the file retires", "Finance's written OK", "As above"],
+           ["5 Partner", "File equal", "21 days: rows equal and file equal by row (sorted by order_id, line_no) against the old file; order_date = yesterday on every row", "Daily diff of the old file against the test-folder file", "Re-enable `send_partner_orders` (the old extract is still running); tell the partner"],
+           ["5 Partner", "Delivery time and failure drill", "In the partner's folder by 05:30 on 21 of 21 days; 1 drill where a failed extract sends nothing and raises an alert", "Upload time in the SFTP log; drill on the test folder", "As above"],
+           ["6 Margin", "One real month-end", "On the 15th: revenue, cost and margin per store equal to the cent for the month", "Compare dw.margin_monthly with the new table", "Re-enable `month_end_margin`; dw.margin_monthly untouched"],
+           ["6 Orders", "dw.orders against silver.orders", "30 days: rows and sum(amount) per day equal, apart from rows explained by `unknown_store_id` quarantine and by corrections (`on conflict do nothing` never updates a line)", "Daily query; each difference explained by order_id", "Re-enable `load_dw_orders` and the old extract"]
+         ]}
+      ]
+    },
+    {
+      "id": "questions",
+      "title": "Questions before each wave",
+      "blocks": [
+        {"type": "list", "items": [
+          "**Wave 1, s.jankov (or their lead):** can `old_loyalty_points` and `promo_export_2025` retire? Does the marketing agency still pick up `promo_2025.csv`?",
+          "**Wave 1, r.basaric (or their lead):** does the fax gateway still save files in `/data/fax_inbox/`, and are any waiting since 2025-12-19? Does purchasing still need the supplier scorecard, and why did `dw.supplier_deliveries` stop?",
+          "**Wave 1, b.stanar and m.lukic:** confirm that `store_kpi_v1` is replaced by the BI sales board and that `cleanup_tmp_tables` can go.",
+          "**Wave 1, host admin:** which owners on record have left? Please send the crontab lines themselves (output redirects, MAILTO) and the cron log of the failing dead jobs.",
+          "**Wave 2, t.krsmanovic:** who reads `dw.customers`? Can they live with 04:15 and without the customers that have no tax id?",
+          "**Wave 3, d.vujic and m.lukic:** who reads `dw.price_list`? Can the platform get read access to `/mnt/purchasing/cenovnik`?",
+          "**Wave 3, b.stanar and the store report's owner:** should negative stock be zeroed or flagged? Can the report read `gold.stock_levels` instead of a 03:00 snapshot?",
+          "**Wave 4, finance (d.vujic, t.krsmanovic):** does anyone still pick up `store_sales.csv` or `finance/sales_by_store.csv`, and does 08:00 work?",
+          "**Wave 5, m.lukic and the logistics partner:** who is the partner's contact? Can they give us a test folder, does key login work, and which switch date suits them?",
+          "**Wave 5, platform team:** can a job reach the ERP database at 01:00, or does `erp_replica` carry `order_lines`? Where does `SFTP_PASSWORD` live in the secret store?",
+          "**Wave 6, d.vujic and the ERP team:** where will cost per order line come from on the platform? Who reads `dw.margin_monthly`?"
+        ]}
+      ]
+    },
+    {
+      "id": "not-covered",
+      "title": "What this did not cover",
+      "blocks": [
+        {"type": "list", "items": [
+          "No job was run, disabled or changed, and no table was queried. All the acceptance numbers are still to be measured.",
+          "The crontab itself, the host's logs and its environment were not seen. The inventory and the scripts are the only sources.",
+          "Readers of the old warehouse and of `/data/exports`: the query log in the repo covers platform tables only.",
+          "The fax inbox, the purchasing share and the partner's SFTP were not inspected.",
+          "The platform's own jobs, the CRM, and whether `dw.stores` matches `ref/stores.csv` (to be checked in wave 4)."
+        ]}
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "the old cron estate of Acme Foods (legacy/), moving onto the acme-pipeline platform",
+    "data": [
+      {"name": "customer master", "class": "personal", "where": ["dw.customers", "silver.customers"], "rule": "one copy after wave 2"},
+      {"name": "order lines to the partner", "class": "business", "where": ["sftp.partner.example.org /inbound/acme/"], "rule": "outside consumer"}
+    ],
+    "components": [
+      {"id": "cron-host", "label": "Old reporting host (cron)", "tech": "cron, sh, psql", "kind": "compute"},
+      {"id": "dw", "label": "Old warehouse dw.*", "tech": "PostgreSQL", "kind": "store"},
+      {"id": "erp-db", "label": "ERP database (erp.*)", "tech": "PostgreSQL via ERP_DSN", "kind": "external"},
+      {"id": "partner-sftp", "label": "Logistics partner SFTP", "tech": "sftp.partner.example.org", "kind": "external"},
+      {"id": "purchasing-share", "label": "Purchasing file share", "tech": "/mnt/purchasing/cenovnik, CP1250", "kind": "external"},
+      {"id": "fax-inbox", "label": "Fax-to-mail gateway inbox", "tech": "/data/fax_inbox", "kind": "external"},
+      {"id": "loyalty", "label": "Old loyalty card system", "tech": "loyalty.transactions", "kind": "external"}
+    ],
+    "decisions": [
+      {"title": "nightly_orders_extract", "chosen": "keep", "because": "the partner needs a 01:00 ERP read; the ERP file arrives 05:38–07:37"},
+      {"title": "load_dw_orders", "chosen": "retire", "because": "replaced by load_erp_orders; after wave 6"},
+      {"title": "send_partner_orders", "chosen": "rebuild", "because": "outside consumer; no file check; password on the command line"},
+      {"title": "export_sales_by_store", "chosen": "rebuild", "because": "one export from gold.sales_daily, if still read"},
+      {"title": "export_store_sales", "chosen": "retire", "because": "identical copy"},
+      {"title": "month_end_margin", "chosen": "rebuild", "because": "needs a cost source on the platform"},
+      {"title": "daily_customer_sync", "chosen": "retire", "because": "replaced by rebuild_customers"},
+      {"title": "stage_price_list", "chosen": "rebuild", "because": "merged with load_price_list into one job"},
+      {"title": "load_price_list", "chosen": "rebuild", "because": "undeclared link; loads stale prices if staging fails"},
+      {"title": "load_stock_snapshot", "chosen": "rebuild", "because": "races with fix_stock_snapshot at 03:00"},
+      {"title": "fix_stock_snapshot", "chosen": "retire", "because": "folded into the rebuilt snapshot"},
+      {"title": "old_loyalty_points", "chosen": "retire", "because": "dead since 2026-02-28"},
+      {"title": "store_kpi_v1", "chosen": "retire", "because": "dead since 2026-04-02; replaced by the BI sales board"},
+      {"title": "promo_export_2025", "chosen": "retire", "because": "dead since 2026-03-30"},
+      {"title": "supplier_scorecard", "chosen": "retire", "because": "dead since 2025-11-24; input stopped"},
+      {"title": "fax_order_import", "chosen": "retire", "because": "dead since 2025-12-19; check the inbox first"},
+      {"title": "cleanup_tmp_tables", "chosen": "retire", "because": "dead since 2026-01-11"}
+    ],
+    "assumptions": [
+      "The inventory's last_run is the last successful run, as legacy/README.md says.",
+      "Cron does not enforce depends_on; each line runs at its own time."
+    ],
+    "open": [
+      "Owners' yes for the six dead jobs; which owners have left",
+      "Waiting files in /data/fax_inbox",
+      "Readers of dw.customers, dw.price_list, dw.stock_snapshot, dw.margin_monthly and the /data/exports files",
+      "Platform access to the ERP at 01:00 and to /mnt/purchasing",
+      "Cost source for the month-end margin",
+      "Partner's contact, test folder and switch date",
+      "Finance's OK for an 08:00 export, or retiring both"
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+job,script,schedule,owner,last_run,target,depends_on
+daily_customer_sync,jobs/daily_customer_sync.sql,45 0 * * *,t.krsmanovic,2026-11-04 00:45,dw.customers,
+nightly_orders_extract,jobs/nightly_orders_extract.sh,0 1 * * *,b.stanar,2026-11-04 01:00,/data/extracts/orders_latest.csv,
+load_dw_orders,jobs/load_dw_orders.sql,30 1 * * *,b.stanar,2026-11-04 01:30,dw.orders,nightly_orders_extract
+stage_price_list,jobs/stage_price_list.sh,0 2 * * *,m.lukic,2026-11-04 02:00,/data/staging/price_list.csv,
+load_price_list,jobs/load_price_list.sql,20 2 * * *,d.vujic,2026-11-04 02:20,dw.price_list,
+month_end_margin,jobs/month_end_margin.sql,30 2 15 * *,d.vujic,2026-10-15 02:30,dw.margin_monthly,load_dw_orders
+load_stock_snapshot,jobs/load_stock_snapshot.sql,0 3 * * *,b.stanar,2026-11-04 03:00,dw.stock_snapshot,
+fix_stock_snapshot,jobs/fix_stock_snapshot.sql,0 3 * * *,m.lukic,2026-11-04 03:00,dw.stock_snapshot,
+old_loyalty_points,jobs/old_loyalty_points.sql,0 4 * * *,s.jankov,2026-02-28 04:00,dw.loyalty_points,
+export_store_sales,jobs/export_store_sales.sql,0 5 * * *,d.vujic,2026-11-04 05:00,/data/exports/store_sales.csv,load_dw_orders
+export_sales_by_store,jobs/export_sales_by_store.sql,15 5 * * *,t.krsmanovic,2026-11-04 05:15,/data/exports/finance/sales_by_store.csv,load_dw_orders
+send_partner_orders,jobs/send_partner_orders.sh,30 5 * * *,m.lukic,2026-11-04 05:30,sftp://sftp.partner.example.org/inbound/acme/,nightly_orders_extract
+store_kpi_v1,jobs/store_kpi_v1.sql,0 6 * * *,b.stanar,2026-04-02 06:00,dw.store_kpi_v1,
+promo_export_2025,jobs/promo_export_2025.sh,0 6 * * 1,s.jankov,2026-03-30 06:00,/data/exports/promo_2025.csv,
+supplier_scorecard,jobs/supplier_scorecard.sql,0 7 * * 1,r.basaric,2025-11-24 07:00,dw.supplier_scorecard,
+fax_order_import,jobs/fax_order_import.sh,*/30 8-16 * * 1-5,r.basaric,2025-12-19 16:30,dw.fax_orders,
+cleanup_tmp_tables,jobs/cleanup_tmp_tables.sql,0 23 * * 0,m.lukic,2026-01-11 23:00,dw.tmp_*,

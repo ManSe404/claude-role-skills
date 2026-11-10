@@ -1,0 +1,829 @@
+{
+ "skill": "data-product",
+ "title": "gold.sales_daily: the consumer guide",
+ "subtitle": "What a team that reads gold.sales_daily needs to know, checked against the SQL, a 29-day sample, the query log, the checks and the run records, and what its documents get wrong.",
+ "meta": {
+  "repo": "acme-pipeline",
+  "commit": "703a806",
+  "date": "2026-11-10"
+ },
+ "verdict": {
+  "tone": "bad",
+  "text": "Consumers cannot rely on it today. It has not been rebuilt since 2 November 07:35, store S-031 has been missing from it since 27 October, and the document gets the grain wrong. Its starter query adds EUR to HUF for the four Szeged stores. First fix the amount parse in `silver.orders` and add S-031 to `ref.stores`, then rerun the loads. Before any new team reads the table, correct the grain in the document and take `customer_email` out."
+ },
+ "stats": [
+  {
+   "label": "Rows in the sample",
+   "value": 904,
+   "note": "4 Oct to 1 Nov 2026, built 2 Nov 07:35",
+   "tone": "info"
+  },
+  {
+   "label": "Consumers",
+   "value": 5,
+   "note": "query log, 5 Oct to 4 Nov",
+   "tone": "info"
+  },
+  {
+   "label": "Reads in 31 days",
+   "value": 3007,
+   "note": "4 hourly readers, finance once a day",
+   "tone": "info"
+  },
+  {
+   "label": "Conflicts",
+   "value": 6,
+   "note": "document against SQL, data, BI, job or runbook",
+   "tone": "bad"
+  },
+  {
+   "label": "Personal columns",
+   "value": 1,
+   "note": "customer_email, in all 904 rows",
+   "tone": "bad"
+  }
+ ],
+ "sections": [
+  {
+   "id": "findings",
+   "title": "Findings",
+   "blocks": [
+    {
+     "type": "findings",
+     "items": [
+      {
+       "severity": "high",
+       "title": "Stale since 2 November: silver.orders fails on a decimal comma",
+       "where": "pipeline/silver/orders.sql:18",
+       "evidence": "The last good build ended 2026-11-02T07:35, so the table holds orders up to 1 November. The builds of 3 and 4 November were skipped (`load_erp_orders failed for this delivery`), and `sales_daily_fresh` failed both days. `silver.orders` failed on 3 November (two attempts) and on 4 November with `invalid input syntax for type numeric: \"18846,00\"`, because the ERP now sends amounts with a decimal comma. All 1,038 and 1,013 lines of those deliveries have it. This is the same cause as the incident of 2026-09-14 (ops/incident-log.md:5). Its open item, `check the other ERP amount columns` (ops/incident-log.md:13), was never done. The run records end on 4 November, so the state on 10 November is not known.",
+       "fix": "Cast with `util.parse_amount` (pipeline/functions/parse_amount.sql) in `silver.orders`, as `silver.invoices` has done since 15 September. Then reload the deliveries from 3 November on and run `build_sales_daily` by hand: it does not start by itself after a manual run (docs/howto/rerun-a-failed-job.md:8). Tell the five consumers which days were missing.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "Store S-031 has been missing since 27 October: its order lines go to quarantine",
+       "where": "checks/quarantine.yaml:4",
+       "evidence": "From the delivery of 2026-10-28 on, about 100–125 lines a day with `store_id` S-031 were moved to quarantine by the `unknown_store_id` rule: 665 lines up to 2 November, and 115 and 109 more in the files of 3 and 4 November. Before that the rule caught 3–7 lines a day, all with S-000. `ref/stores.csv` has 30 stores and no S-031. Delivered lines grew from about 910 to about 1,020 a day at the same time. That is about 11% of the lines, none of them in `gold.sales_daily`. No check reports how many rows the quarantine takes. `orders_every_store_ordered` (checks/silver.yaml:13) only looks at stores already in `ref.stores`. [med] that S-031 is a new franchise store: README.md:3 still says 30 stores.",
+       "fix": "Ask the ERP team or store operations what S-031 is. If it is a store, add it to `ref/stores.csv` and reload the deliveries from 28 October on. Add a check that fails when the quarantine takes more than a few lines a day.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "The documented grain is wrong: it is one row per store, day and currency",
+       "where": "docs/products/sales_daily.md:5",
+       "evidence": "The document says `one row per store and day`. On the sample, 42 of the 862 store-days have two rows: an EUR row and an HUF row, for the four Szeged stores S-027 to S-030. The SQL groups by `o.currency` (pipeline/gold/sales_daily.sql:21). The key check tests `sales_date, store_id, currency` (checks/gold.yaml:11), which is unique on all 904 rows. The document's starter query (docs/products/sales_daily.md:37-41) groups by `store_id` alone, so it adds HUF amounts to EUR amounts for those four stores.",
+       "fix": "Change the grain in the document to `one row per store, day and currency`. Group the starter query by `store_id, currency` as well.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "The currency column says EUR for Szeged; the table also has HUF",
+       "where": "docs/products/sales_daily.md:23",
+       "evidence": "The document says `RSD for the Serbian stores, EUR for the Szeged stores`. In the sample, currency counts are RSD 754, EUR 108 and HUF 42. All 42 HUF rows belong to the four Szeged stores, on 22 days between 4 and 31 October. Each HUF row has one order and `kg_eq` 0. The source contract allows HUF (contracts/erp.yaml:52). `ref/stores.csv` gives EUR for all four HU stores. The BI board does not convert currencies (reports/bi/metrics.md:13). [guess] the HUF lines are a local charge with no goods behind them, such as a fee or a deposit.",
+       "fix": "List the three currencies in the document. Ask the ERP team what the HUF lines are and write it down. Never sum amounts across currencies.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "Net revenue has two definitions: the BI board deducts returns, the table does not",
+       "where": "reports/bi/metrics.md:8",
+       "evidence": "BI defines Net revenue as `gross revenue minus cancellations minus returns`. The product document (docs/products/sales_daily.md:28) says returns are not deducted. The SQL (pipeline/gold/sales_daily.sql:13) does not deduct them; it sums every line whose status is not `cancelled`. Board users therefore read a net revenue that still includes returns, and so does `Average order value` (reports/bi/metrics.md:10). The SQL also counts `on_hold` lines as net revenue, which neither definition mentions. Three such lines first appear in the file of 4 November.",
+       "fix": "The BI team and finance settle one definition (`metric-spec`). Until then the BI document should say that returns are not deducted. The product document should say that on-hold lines are counted.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "Every reader gets the franchisees' e-mail",
+       "where": "pipeline/gold/sales_daily.sql:16",
+       "evidence": "`customer_email` comes from `silver.customers` through the left join at pipeline/gold/sales_daily.sql:20. It is filled in all 904 sample rows, with 30 distinct addresses. All five consumers read the table, 3,007 queries in 31 days, including the franchise portal and the store operations app. The stated purpose is `for finance's follow-ups` (docs/products/sales_daily.md:31). The document gives no legal reason and no access restriction.",
+       "fix": "Drop `customer_email` from the served table. Finance can join `customer_id`, which stays in the table, to a restricted contacts table. Ask the franchise portal team whether one franchisee can see another franchisee's rows.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "The document promises no time; the job and the runbook do, but differently",
+       "where": "docs/products/sales_daily.md:7",
+       "evidence": "The document says `daily, after the ERP load`. The job has `sla: \"08:00\"` (jobs/build_sales_daily.yaml:8), and `sales_daily_fresh` tests it at 08:00 (checks/gold.yaml:3-7). The runbook gives `load_erp_orders` at 05:00 (docs/runbook.md:11), but the job runs at 06:30 (jobs/load_erp_orders.yaml:3) since 3e47102 (5 October). Weekday files arrived between 07:06 and 07:37 against the contract's `deliver_by: \"06:00\"` (contracts/erp.yaml:17). On those days the build ends around 07:35, about 25 minutes before the SLA. The 29 successful builds all met 08:00.",
+       "fix": "Write the promise in the document: built by 08:00 Europe/Belgrade every day, with orders up to the day before. Correct the runbook.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "One source check can never fail, and the table's totals are not checked",
+       "where": "checks/silver.yaml:7",
+       "evidence": "`orders_amount_positive` selects `where ... amount < amount`, which is never true, so it passed 29 times without testing anything. It has no bad-data case in checks/tests/cases.yaml. Only two checks cover the table itself, freshness and the key. No check compares its totals with `silver.orders` or the delivery, watches the quarantine volume, limits the currencies to a known set or covers stores that are missing from `ref.stores`.",
+       "fix": "Change the query to `amount <= 0` and try it on a bad row. Add a check that the table's line count and gross amount per day match `silver.orders`, and a check on the quarantine volume.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "No owner, no contract of its own, no change process",
+       "where": "docs/products/sales_daily.md:8",
+       "evidence": "Questions go to `the data platform team`, with no person and no channel. The only contract that names the table is the ERP source contract, which lists it as a consumer (contracts/erp.yaml:61-63) and has `owner: TBD`. The SQL, the document and the job have not changed since 807306e (2026-07-20), and nothing says how five consumers would hear of a change.",
+       "fix": "Name an owner and agree the contract draft under Releases and contract.",
+       "status": "open"
+      },
+      {
+       "severity": "info",
+       "title": "kg_eq looks unconverted, but the ERP's weight_g already converts pieces",
+       "where": "pipeline/gold/sales_daily.sql:14",
+       "evidence": "The document says `pieces converted by product weight` (docs/products/sales_daily.md:29). The SQL takes `sum(o.weight_g) / 1000.0` as the ERP delivers it, and nothing in the pipeline converts pieces. All 42 HUF rows have `kg_eq` 0. BI's Tonnage, `kg_eq / 1000` (reports/bi/metrics.md:11), is consistent with the SQL.",
+       "status": "declined",
+       "reason": "`weight_g` is the line's weight: on the order lines of 2 November, `weight_g` divided by `quantity` gives one fixed weight per product for all 24 products (90 pieces of P-1020 are 139,500 g, 1,550 g a piece). The pieces are converted in the ERP, the SQL sums the converted weights, and the document is right."
+      },
+      {
+       "severity": "low",
+       "title": "The job and the SQL name two consumers; the log shows five",
+       "where": "jobs/build_sales_daily.yaml:2",
+       "evidence": "The job description and the SQL comment (pipeline/gold/sales_daily.sql:1) name finance and the BI sales board. The query log also shows `store_ops_app`, `franchise_portal` and `regional_managers_report`, 744 reads each. The product document (docs/products/sales_daily.md:12-14) does list all five.",
+       "fix": "Name all five in the job description so that whoever on call changes the job knows who is affected.",
+       "status": "open"
+      },
+      {
+       "severity": "low",
+       "title": "The source contract says amounts are integer cents; they arrive as decimals",
+       "where": "contracts/erp.yaml:46-48",
+       "evidence": "The contract has `type: integer`, `unit: cents`. The deliveries carry decimals with a dot up to 2 November and with a comma since 3 November, and the sample has 105 rows with cents. `gross_revenue` and the other amounts are in currency units, not cents.",
+       "fix": "Correct the source contract (`source-contract`), and write in the product document that amounts are in currency units with two decimals.",
+       "status": "open"
+      },
+      {
+       "severity": "low",
+       "title": "A day without orders has no row",
+       "where": "pipeline/gold/sales_daily.sql:18-21",
+       "evidence": "Of the 870 store-days in the sample, 8 have no row: S-027 to S-030, twice each, on Fridays and Sundays. The document does not say that a missing row means no orders. Averages per day are wrong unless the days are counted from a calendar.",
+       "fix": "Say it in the document; the starter queries below count days from a calendar.",
+       "status": "open"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "what-it-is",
+   "title": "What it is",
+   "blocks": [
+    {
+     "type": "text",
+     "text": "What each Acme Market franchise store ordered from Acme Foods per day: the number of orders and lines, gross, cancelled and net amounts, and the weight. The 26 Serbian stores order in RSD, the 4 Szeged stores in EUR and sometimes HUF.\n\n**Built by** job `build_sales_daily` (jobs/build_sales_daily.yaml) at 07:00 Europe/Belgrade, after `load_erp_orders`. The job rebuilds the whole table from `pipeline/gold/sales_daily.sql`. Its sources are `silver.orders` (the ERP order lines, one ERP file a day holding the previous day's lines), `ref.stores` (kept by hand) and `silver.customers` (the ERP customer master).\n\n**For whom:** finance's cash plan, which reads it once a morning, and four hourly readers: the BI sales board, the store operations app, the franchise portal and the regional managers' report.\n\n**What it leaves out:** returns (in `silver.returns`), the lines of stores missing from `ref.stores` (quarantined, see Findings), and days on which a store did not order (no row, not a zero row)."
+    }
+   ]
+  },
+  {
+   "id": "grain",
+   "title": "Grain and model",
+   "blocks": [
+    {
+     "type": "kv",
+     "items": [
+      [
+       "Grain in the document",
+       "one row per store and day (docs/products/sales_daily.md:5): **wrong**"
+      ],
+      [
+       "Real grain",
+       "one row per `sales_date`, `store_id` and `currency` [high]: unique on all 904 sample rows, the key the check tests (checks/gold.yaml:11), and the SQL's GROUP BY minus columns that depend on the store"
+      ],
+      [
+       "Where it splits",
+       "42 store-days of S-027, S-028, S-029 and S-030 have an EUR row and an HUF row"
+      ],
+      [
+       "What it does to a sum",
+       "summing over store and day adds HUF to EUR; always group by `currency` too"
+      ],
+      [
+       "Days without orders",
+       "no row; 8 of 870 store-days in the sample, Szeged stores on Fridays and Sundays"
+      ],
+      [
+       "History",
+       "none: the job rebuilds the whole table every day, so a past day changes if `silver.orders` changes"
+      ],
+      [
+       "Size",
+       "about 25,200 rows (rows written by the build of 2 November); the sample is the last 29 days"
+      ]
+     ]
+    },
+    {
+     "type": "model",
+     "title": "gold.sales_daily and its sources",
+     "areas": [
+      {
+       "id": "gold",
+       "label": "Gold (served)"
+      },
+      {
+       "id": "silver",
+       "label": "Silver and reference"
+      }
+     ],
+     "tables": [
+      {
+       "id": "sales_daily",
+       "label": "gold.sales_daily",
+       "kind": "fact",
+       "area": "gold",
+       "grain": "one row per sales_date, store_id and currency",
+       "flag": "bad",
+       "history": "full rebuild daily",
+       "note": "stale since 2 Nov; S-031 missing since 27 Oct",
+       "columns": [
+        {
+         "name": "sales_date",
+         "type": "date",
+         "key": "pk",
+         "note": "order_date of the lines"
+        },
+        {
+         "name": "store_id",
+         "type": "text",
+         "key": "pk"
+        },
+        {
+         "name": "currency",
+         "type": "text",
+         "key": "pk",
+         "note": "RSD, EUR, HUF"
+        },
+        {
+         "name": "store_name",
+         "type": "text"
+        },
+        {
+         "name": "orders",
+         "type": "integer",
+         "note": "count(distinct order_id)"
+        },
+        {
+         "name": "order_lines",
+         "type": "integer"
+        },
+        {
+         "name": "gross_revenue",
+         "type": "numeric(12,2)",
+         "note": "all lines"
+        },
+        {
+         "name": "cancelled_amount",
+         "type": "numeric(12,2)",
+         "note": "status = cancelled"
+        },
+        {
+         "name": "net_revenue",
+         "type": "numeric(12,2)",
+         "note": "status <> cancelled; returns not deducted"
+        },
+        {
+         "name": "kg_eq",
+         "type": "numeric",
+         "note": "sum(weight_g)/1000"
+        },
+        {
+         "name": "customer_id",
+         "type": "text",
+         "key": "fk",
+         "note": "from ref.stores"
+        },
+        {
+         "name": "customer_email",
+         "type": "text",
+         "personal": true,
+         "mask": "none: served to every reader"
+        },
+        {
+         "name": "built_at",
+         "type": "timestamp",
+         "note": "one value per build"
+        }
+       ]
+      },
+      {
+       "id": "silver_orders",
+       "label": "silver.orders",
+       "kind": "table",
+       "area": "silver",
+       "grain": "one row per order line (order_id, line_no)",
+       "flag": "bad",
+       "history": "replaced per load_date",
+       "note": "fails on the decimal comma since 3 Nov",
+       "columns": [
+        {
+         "name": "order_id",
+         "key": "pk"
+        },
+        {
+         "name": "line_no",
+         "key": "pk"
+        },
+        {
+         "name": "order_date"
+        },
+        {
+         "name": "store_id",
+         "key": "fk"
+        },
+        {
+         "name": "amount",
+         "type": "numeric(12,2)"
+        },
+        {
+         "name": "currency"
+        },
+        {
+         "name": "status",
+         "note": "delivered, cancelled, on_hold"
+        },
+        {
+         "name": "weight_g"
+        },
+        {
+         "name": "load_date"
+        }
+       ]
+      },
+      {
+       "id": "stores",
+       "label": "ref.stores",
+       "kind": "dimension",
+       "area": "silver",
+       "grain": "one row per store",
+       "flag": "warn",
+       "note": "30 stores, kept by hand; no S-031",
+       "columns": [
+        {
+         "name": "store_id",
+         "key": "pk"
+        },
+        {
+         "name": "store_name"
+        },
+        {
+         "name": "country"
+        },
+        {
+         "name": "currency",
+         "note": "EUR for HU, not HUF"
+        },
+        {
+         "name": "customer_id",
+         "key": "fk"
+        },
+        {
+         "name": "active"
+        }
+       ]
+      },
+      {
+       "id": "customers",
+       "label": "silver.customers",
+       "kind": "dimension",
+       "area": "silver",
+       "grain": "one row per ERP customer",
+       "history": "truncate and reload daily",
+       "columns": [
+        {
+         "name": "customer_id",
+         "key": "pk"
+        },
+        {
+         "name": "email",
+         "personal": true
+        },
+        {
+         "name": "name",
+         "personal": true
+        },
+        {
+         "name": "phone",
+         "personal": true
+        },
+        {
+         "name": "tax_id"
+        }
+       ]
+      }
+     ],
+     "relations": [
+      {
+       "from": "silver_orders",
+       "to": "stores",
+       "on": "store_id",
+       "cardinality": "n:1",
+       "label": "inner join: unknown stores drop out"
+      },
+      {
+       "from": "stores",
+       "to": "customers",
+       "on": "customer_id",
+       "cardinality": "n:1",
+       "label": "left join, brings the e-mail"
+      },
+      {
+       "from": "sales_daily",
+       "to": "stores",
+       "on": "store_id",
+       "cardinality": "n:1",
+       "label": "aggregates lines per store"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "metrics",
+   "title": "Metric definitions",
+   "intro": "The middle column is what every reader gets today. A conflict needs its owner's decision; this page does not pick one.",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Metric",
+      "What the SQL computes",
+      "Other definitions",
+      "Conflict"
+     ],
+     "rows": [
+      [
+       "orders",
+       "`count(distinct o.order_id)` per store, day and currency (sql:9). No order mixes currencies in the files checked, so summing over currencies does not count an order twice",
+       "docs/products/sales_daily.md:24, reports/bi/metrics.md:9: number of orders",
+       "none"
+      ],
+      [
+       "order_lines",
+       "`count(*)` of the lines (sql:10), cancelled ones included",
+       "docs/products/sales_daily.md:25",
+       "none"
+      ],
+      [
+       "gross_revenue",
+       "`sum(o.amount)` of all lines, any status (sql:11), in currency units",
+       "docs/products/sales_daily.md:26; reports/bi/metrics.md:7 `everything the stores ordered`; contracts/erp.yaml:48 says cents",
+       "unit only: the contract says cents, the data is in currency units"
+      ],
+      [
+       "cancelled_amount",
+       "sum of lines with `status = 'cancelled'` (sql:12)",
+       "docs/products/sales_daily.md:27",
+       "none"
+      ],
+      [
+       "net_revenue",
+       "sum of lines with `status <> 'cancelled'` (sql:13): delivered and on-hold lines, returns **not** deducted. gross = net + cancelled on all 904 sample rows",
+       "docs/products/sales_daily.md:28: returns not deducted; reports/bi/metrics.md:8: minus returns",
+       "**yes**: BI deducts returns, the SQL does not. BI and finance decide"
+      ],
+      [
+       "Average order value (BI)",
+       "not in the table; the board divides net revenue by orders",
+       "reports/bi/metrics.md:10",
+       "inherits the net revenue conflict; compute it per currency"
+      ],
+      [
+       "kg_eq",
+       "`sum(o.weight_g) / 1000.0` (sql:14), the ERP's weight as delivered",
+       "docs/products/sales_daily.md:29: pieces converted by product weight; reports/bi/metrics.md:11: Tonnage = kg_eq / 1000",
+       "none: `weight_g` is already the line weight (quantity × the product's weight a piece), so the ERP converts pieces"
+      ],
+      [
+       "currency",
+       "`o.currency` from the ERP line (sql:8): RSD, EUR, HUF",
+       "docs/products/sales_daily.md:23: RSD and EUR only; ref/stores.csv: EUR for HU",
+       "**yes**: HUF is not documented"
+      ],
+      [
+       "sales_date",
+       "`o.order_date` (sql:5): the day of the order, not of delivery or invoice",
+       "docs/products/sales_daily.md:20",
+       "none"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "queries",
+   "title": "Starter queries",
+   "intro": "Each groups by currency, or filters on one. Check freshness first while the table is late.",
+   "blocks": [
+    {
+     "type": "code",
+     "title": "1. Is today's build there?",
+     "code": "select max(built_at) as built_at, max(sales_date) as last_day\nfrom gold.sales_daily;\n-- built_at should be today before 08:00 Europe/Belgrade, last_day yesterday"
+    },
+    {
+     "type": "code",
+     "title": "2. Net revenue per store for a month, in each currency",
+     "code": "select store_id, store_name, currency,\n       sum(orders)       as orders,\n       sum(net_revenue)  as net_revenue\nfrom gold.sales_daily\nwhere sales_date >= date '2026-10-01'\n  and sales_date <  date '2026-11-01'\ngroup by store_id, store_name, currency\norder by currency, net_revenue desc;"
+    },
+    {
+     "type": "code",
+     "title": "3. Daily totals per currency, never across currencies",
+     "code": "select sales_date, currency,\n       sum(orders)            as orders,\n       sum(gross_revenue)     as gross_revenue,\n       sum(cancelled_amount)  as cancelled_amount,\n       sum(net_revenue)       as net_revenue,\n       sum(kg_eq) / 1000.0    as tonnes\nfrom gold.sales_daily\nwhere sales_date >= current_date - 7\ngroup by sales_date, currency\norder by sales_date, currency;"
+    },
+    {
+     "type": "code",
+     "title": "4. Average order value per currency, as a ratio of sums",
+     "code": "select currency,\n       sum(net_revenue) / nullif(sum(orders), 0) as avg_order_value\nfrom gold.sales_daily\nwhere sales_date >= date '2026-10-01'\n  and sales_date <  date '2026-11-01'\ngroup by currency;\n-- returns are not deducted here; see Metric definitions"
+    },
+    {
+     "type": "code",
+     "title": "5. Average per calendar day, counting days without orders as zero",
+     "code": "-- a store with no orders on a day has no row; count the days from a calendar\nselect store_id, currency,\n       sum(net_revenue) / (date '2026-11-01' - date '2026-10-01') as net_revenue_per_day\nfrom gold.sales_daily\nwhere sales_date >= date '2026-10-01'\n  and sales_date <  date '2026-11-01'\ngroup by store_id, currency;"
+    }
+   ]
+  },
+  {
+   "id": "quality",
+   "title": "Quality and freshness",
+   "blocks": [
+    {
+     "type": "table",
+     "title": "Checks that cover the table or what it is built from (results 5 Oct – 4 Nov)",
+     "columns": [
+      "Check",
+      "What it covers",
+      "Results",
+      "Tried on bad data"
+     ],
+     "rows": [
+      [
+       "sales_daily_fresh (checks/gold.yaml:3)",
+       "`built_at` is today by 08:00",
+       "29 pass, 2 fail (3 and 4 Nov)",
+       "yes, 2026-07-20 (checks/tests/cases.yaml:24)"
+      ],
+      [
+       "sales_daily_key_unique (checks/gold.yaml:8)",
+       "store, day and currency are unique",
+       "29 pass, last 2 Nov; not run when the build is skipped",
+       "yes, 2026-07-20 (checks/tests/cases.yaml:28)"
+      ],
+      [
+       "orders_every_store_ordered (checks/silver.yaml:9)",
+       "every store in `ref.stores` has lines Mon–Sat",
+       "23 pass, 1 fail (24 Oct)",
+       "yes (checks/tests/cases.yaml:12); blind to stores not in `ref.stores`, such as S-031"
+      ],
+      [
+       "orders_amount_positive (checks/silver.yaml:4)",
+       "meant: amount > 0; the query `amount < amount` tests nothing",
+       "29 pass",
+       "no"
+      ],
+      [
+       "unknown_store_id (checks/quarantine.yaml:4)",
+       "moves lines of unknown stores out of silver",
+       "810 lines: S-031 665 since 28 Oct, S-000 145",
+       "no; nothing alerts on the volume"
+      ],
+      [
+       "customers_id_unique (checks/silver.yaml:21)",
+       "the customer join cannot multiply rows",
+       "31 pass",
+       "yes (checks/tests/cases.yaml:20)"
+      ]
+     ]
+    },
+    {
+     "type": "kv",
+     "title": "Freshness",
+     "items": [
+      [
+       "Promised in the document",
+       "nothing: `daily, after the ERP load`"
+      ],
+      [
+       "SLA in the job",
+       "built by 08:00 Europe/Belgrade (jobs/build_sales_daily.yaml:8)"
+      ],
+      [
+       "What a build holds",
+       "orders up to the day before: the ERP file of day D has the lines of D−1"
+      ],
+      [
+       "Last good build",
+       "2026-11-02 07:35:14, orders up to 2026-11-01"
+      ],
+      [
+       "Missed",
+       "2026-11-03 and 2026-11-04, skipped because `silver.orders` failed on the decimal comma; later days not in the records"
+      ],
+      [
+       "Margin on weekdays",
+       "ERP file 07:06–07:37, build done about 07:35; on weekends the file comes about 05:45"
+      ],
+      [
+       "Hourly readers",
+       "four consumers read 24 times a day a table that changes once a day"
+      ]
+     ]
+    },
+    {
+     "type": "list",
+     "title": "What no check covers",
+     "items": [
+      "Totals against `silver.orders` or the ERP file: a store dropping out (S-031) passes every check.",
+      "The share of lines moved to quarantine.",
+      "The set of currencies, and that a store keeps to its own currency.",
+      "Amounts above zero: the check meant to test it cannot fail.",
+      "That `net_revenue` = `gross_revenue` − `cancelled_amount` (it holds on all 904 sample rows today)."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "consumers",
+   "title": "Consumers",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Consumer",
+      "Reads in 31 days",
+      "How often",
+      "Named in"
+     ],
+     "rows": [
+      [
+       "bi_sales_board",
+       744,
+       "24 a day, every day",
+       "document, job, SQL comment"
+      ],
+      [
+       "store_ops_app",
+       744,
+       "24 a day, every day",
+       "document only"
+      ],
+      [
+       "franchise_portal",
+       744,
+       "24 a day, every day",
+       "document only"
+      ],
+      [
+       "regional_managers_report",
+       744,
+       "24 a day, every day",
+       "document only"
+      ],
+      [
+       "finance_cash_plan",
+       31,
+       "once a day, every day",
+       "document, job, SQL comment"
+      ]
+     ]
+    },
+    {
+     "type": "callout",
+     "tone": "warn",
+     "text": "All five read `customer_email`. The franchise portal and the store operations app may show the table to franchisees and store staff [guess]: ask both teams what they show."
+    }
+   ]
+  },
+  {
+   "id": "releases",
+   "title": "Releases and contract",
+   "blocks": [
+    {
+     "type": "steps",
+     "title": "History",
+     "items": [
+      {
+       "title": "2026-07-20 807306e",
+       "text": "The table, its document, the job and the bad-data cases of its checks. None of the three files has changed since.",
+       "where": "pipeline/gold/sales_daily.sql"
+      },
+      {
+       "title": "2026-09-28 3dba311",
+       "text": "ERP orders source contract 0.3, which lists the table as a consumer; owner and change process TBD.",
+       "where": "contracts/erp.yaml"
+      },
+      {
+       "title": "2026-10-05 3e47102",
+       "text": "`load_erp_orders` moved to 06:30 and waits for the file; the runbook still says 05:00.",
+       "where": "jobs/load_erp_orders.yaml:3"
+      },
+      {
+       "title": "2026-10-27",
+       "text": "Lines of store S-031 start going to quarantine; the table stops counting them. No release, no notice.",
+       "where": "ops/quarantine.jsonl"
+      },
+      {
+       "title": "2026-11-03",
+       "text": "ERP amounts switch to a decimal comma; the table stops being built.",
+       "where": "ops/runs.jsonl"
+      }
+     ]
+    },
+    {
+     "type": "callout",
+     "tone": "info",
+     "text": "No release notes, no version and no change process. **Draft for the owner** below: the table's own contract, which does not exist yet."
+    },
+    {
+     "type": "kv",
+     "title": "Contract draft: gold.sales_daily (for the owner to agree)",
+     "items": [
+      [
+       "Owner",
+       "DRAFT: a named person in the data platform team, plus a channel for questions"
+      ],
+      [
+       "Metric owners",
+       "DRAFT: finance and the BI team for net revenue; the ERP team for what the HUF lines mean"
+      ],
+      [
+       "Grain and key",
+       "one row per `sales_date`, `store_id`, `currency`; no row when a store did not order"
+      ],
+      [
+       "Columns",
+       "`sales_date` date; `store_id`, `store_name`, `currency` (RSD, EUR, HUF), `customer_id` text; `orders`, `order_lines` integer; `gross_revenue`, `cancelled_amount`, `net_revenue` numeric(12,2) in currency units; `kg_eq` numeric; `built_at` timestamp"
+      ],
+      [
+       "Personal data",
+       "none: `customer_email` removed, contacts served from a restricted table"
+      ],
+      [
+       "Freshness",
+       "built by 08:00 Europe/Belgrade every day, with orders up to the day before; a late build is announced to the consumers by 08:30"
+      ],
+      [
+       "Completeness",
+       "every store that ordered in the ERP file appears; quarantined lines reported daily"
+      ],
+      [
+       "Checks",
+       "key unique; fresh by 08:00; line count and gross amount per day equal `silver.orders`; currencies in the agreed set; quarantine below an agreed share"
+      ],
+      [
+       "Changes",
+       "a breaking change (a column, the grain, a definition) announced to the five consumers two weeks ahead, with a release note in the document"
+      ],
+      [
+       "Consumers",
+       "bi_sales_board, store_ops_app, franchise_portal, regional_managers_report, finance_cash_plan"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "not-checked",
+   "title": "What this did not check",
+   "blocks": [
+    {
+     "type": "list",
+     "items": [
+      "The warehouse itself: only the 29-day sample (904 of about 25,200 rows), the ERP files of 2–4 November and the ops records, which end on 4 November. Whether the table has been rebuilt since then is not known.",
+      "What the HUF lines are, and whether S-031 is a real store.",
+      "What the franchise portal and the store operations app show, and to whom.",
+      "The BI board's own queries: only its metric document.",
+      "`silver.returns`, and how a reader could deduct returns.",
+      "The legal basis for serving the e-mail."
+     ]
+    }
+   ]
+  }
+ ],
+ "facts": {
+  "version": 1,
+  "scope": "gold.sales_daily in acme-pipeline, the served daily sales table of Acme Foods",
+  "data": [
+   {
+    "name": "franchisee e-mail (customer_email)",
+    "class": "personal",
+    "where": [
+     "gold.sales_daily",
+     "silver.customers"
+    ],
+    "rule": "draft: not in the served table; finance reads it from a restricted table"
+   }
+  ],
+  "components": [
+   {
+    "id": "sales_daily",
+    "label": "gold.sales_daily",
+    "tech": "SQL full rebuild, job build_sales_daily",
+    "kind": "store"
+   }
+  ],
+  "assumptions": [
+   "The ops records (runs, checks, quarantine, query log) cover 5 Oct – 4 Nov 2026 and are complete for that window."
+  ],
+  "open": [
+   "Net revenue: BI deducts returns (reports/bi/metrics.md:8), the SQL does not (pipeline/gold/sales_daily.sql:13); BI and finance decide.",
+   "Grain: the document says store and day, the table is store, day and currency; the owner corrects the document and the starter query.",
+   "Currency: HUF lines for the Szeged stores are not documented; the ERP team says what they are.",
+   "Store S-031 is quarantined since 27 Oct; store operations confirm it and the data platform team adds it to ref.stores.",
+   "customer_email is served to all five consumers; the owner removes it or restricts it and states its purpose.",
+   "The table has no owner, no SLA in its document and no contract of its own."
+  ]
+ }
+}

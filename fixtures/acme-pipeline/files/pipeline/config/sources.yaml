@@ -1,0 +1,6 @@
+# The sources the loaders accept. A loader refuses a source that has no contract registered here.
+sources:
+  erp:
+    contract: contracts/erp.yaml
+    landing: sources/erp
+    owner_team: ERP team

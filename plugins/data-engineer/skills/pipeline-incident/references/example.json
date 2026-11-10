@@ -1,0 +1,511 @@
+{
+  "skill": "pipeline-incident",
+  "title": "load_erp_orders: no sales since Monday 2 November",
+  "subtitle": "Why gold.sales_daily stopped at the build of 2 November 07:35, what else is wrong in it, and what to do.",
+  "meta": {
+    "repo": "acme-pipeline",
+    "commit": "703a806",
+    "date": "2026-11-10",
+    "run": "load_erp_orders-2026-11-03-1"
+  },
+  "verdict": {
+    "tone": "bad",
+    "text": "`load_erp_orders` has failed at `silver.orders` on every run since 3 November. The ERP orders file switched `amount` to a decimal comma (1038 of 1038 lines) and `pipeline/silver/orders.sql:18` casts the text straight to numeric, so `build_sales_daily` was skipped and `gold.sales_daily` still holds the build of Monday 2 November 07:35. First, switch that line to `util.parse_amount`, the safe parse from the 14 September incident that was never applied to orders. Then load 3 November onward again and rebuild sales_daily. Separately, add store S-031: 665 of its order lines have been held in quarantine since 28 October, so the figures were already short before the failure."
+  },
+  "stats": [
+    {
+      "label": "Failed runs",
+      "value": 3,
+      "note": "3 Nov 06:30, 3 Nov 09:12 retry, 4 Nov 06:30",
+      "tone": "bad"
+    },
+    {
+      "label": "Order lines held back",
+      "value": 2051,
+      "note": "1038 + 1013, in bronze, not in silver",
+      "tone": "bad"
+    },
+    {
+      "label": "S-031 lines in quarantine",
+      "value": 665,
+      "note": "28 Oct – 2 Nov, before the failure",
+      "tone": "warn"
+    },
+    {
+      "label": "Tables late",
+      "value": 2,
+      "note": "silver.orders, gold.sales_daily",
+      "tone": "bad"
+    },
+    {
+      "label": "Days past the 08:00 SLA",
+      "value": 2,
+      "note": "3 and 4 Nov; the records end 4 Nov 07:49",
+      "tone": "bad"
+    },
+    {
+      "label": "Places with the same cast",
+      "value": 2,
+      "note": "silver.payments, silver.returns",
+      "tone": "warn"
+    }
+  ],
+  "sections": [
+    {
+      "id": "what-happened",
+      "title": "What happened",
+      "intro": "Run records from `ops/runs.jsonl`, local time (Europe/Belgrade). The records end on 4 November at 07:49; nothing later is visible.",
+      "blocks": [
+        {
+          "type": "steps",
+          "title": "Run load_erp_orders-2026-11-03-1, task by task",
+          "items": [
+            {
+              "title": "06:30–07:38 wait_for_file: warning",
+              "text": "orders.csv arrived at 07:37, 67 minutes after the start. The job waits up to 180 minutes, so this is normal on a working day.",
+              "where": "jobs/load_erp_orders.yaml"
+            },
+            {
+              "title": "07:38–07:40 bronze.erp_orders: success",
+              "text": "1038 rows read, 1038 written. Bronze keeps every column as text, so the new format passes. Checks `erp_orders_not_empty` and `erp_orders_key_unique` passed.",
+              "where": "pipeline/bronze/erp_orders.sql"
+            },
+            {
+              "title": "07:40 silver.orders: failed",
+              "text": "`invalid input syntax for type numeric: \"18846,00\"` at line 18, column `amount`. 0 rows written.",
+              "where": "pipeline/silver/orders.sql:18"
+            },
+            {
+              "title": "07:00 build_sales_daily: skipped",
+              "text": "`skipped: load_erp_orders failed for this delivery`. gold.sales_daily was not rebuilt.",
+              "where": "jobs/build_sales_daily.yaml"
+            },
+            {
+              "title": "08:00 sales_daily_fresh: fail",
+              "text": "`last built 2026-11-02 07:35, due 08:00 daily`. This alarm worked.",
+              "where": "checks/gold.yaml"
+            }
+          ]
+        },
+        {
+          "type": "steps",
+          "title": "Later runs",
+          "items": [
+            {
+              "title": "3 Nov 09:12 load_erp_orders attempt 2: failed",
+              "text": "A manual retry on the same file failed with the same error and the same value, `\"18846,00\"`. It proves nothing new, which `docs/howto/rerun-a-failed-job.md` step 3 predicts.",
+              "where": "ops/runs.jsonl"
+            },
+            {
+              "title": "4 Nov 06:30 load_erp_orders: failed",
+              "text": "The 4 November file has 1013 lines and the same error on `\"5388,00\"`. build_sales_daily was skipped again, and sales_daily_fresh failed at 08:00.",
+              "where": "ops/runs.jsonl"
+            },
+            {
+              "title": "3 and 4 Nov load_erp_finance: success",
+              "text": "Invoices, returns and payments loaded both days. Their files still use the old format, or are parsed safely (see below).",
+              "where": "jobs/load_erp_finance.yaml"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "root-cause",
+      "title": "Root cause",
+      "blocks": [
+        {
+          "type": "findings",
+          "items": [
+            {
+              "severity": "high",
+              "title": "The ERP orders file switched `amount` to a decimal comma on 3 November, and silver.orders casts it directly",
+              "where": "pipeline/silver/orders.sql:18",
+              "evidence": "[high] `cast(amount as numeric(12, 2))` reads the delivered text. Delivery of 2 Nov: 401 of 401 amounts like `1234.50`. Delivery of 3 Nov: 1038 of 1038 like `1234,50`, with no thousands dot. Delivery of 4 Nov: 1013 of 1013 the same. The errors name `18846,00` and `5388,00`. No commit falls between the last good run and the failure: the one before is 21 Oct, and the next, 4 Nov 10:30, touches only `legacy/`. No column was added or removed between 2 and 3 Nov. So the changed input met the failing line, and nothing else changed.",
+              "fix": "Line 18 becomes `util.parse_amount(amount) as amount` (fix 1).",
+              "status": "open"
+            },
+            {
+              "severity": "high",
+              "title": "The open item of the 14 September incident was never closed",
+              "where": "ops/incident-log.md",
+              "evidence": "[high] That incident had the same error, on `silver.invoices`. Its fix, `util.parse_amount`, is called in one file only, `pipeline/silver/invoices.sql:11`. The log entry left `Open: check the other ERP amount columns.` orders.sql, payments.sql and returns.sql kept the bare cast. This incident is that open item.",
+              "fix": "Fix 2: parse_amount in every ERP amount column, then close the item in the log.",
+              "status": "open"
+            },
+            {
+              "severity": "high",
+              "title": "Separate from the failure: store S-031 is missing from ref.stores, so its orders have been in quarantine since 28 October",
+              "where": "checks/quarantine.yaml (rule unknown_store_id), ref/stores.csv",
+              "evidence": "[high] `unknown_store_id` held back 3–7 lines a day until 27 Oct, all `S-000`. From 28 Oct it held back 107–129 a day, as `S-031` first appeared that day. That is 665 S-031 lines from 28 Oct to 2 Nov. In the RSD amount of each delivery, S-031 is 25.5% on 2 Nov, 13.9% on 3 Nov and 12.4% on 4 Nov. `ref/stores.csv` has not changed since 2026-06-08; its last store is S-030. No check fires: `orders_every_store_ordered` only looks at stores already in ref.stores. gold.sales_daily also inner-joins ref.stores (`pipeline/gold/sales_daily.sql:19`). So the figures finance saw from 28 Oct to 1 Nov were already short. [med] S-031 is a new store: about 110 lines a day in RSD, the same shape every day.",
+              "fix": "Confirm S-031 with the ERP team, add it to ref.stores, then reload 28 Oct onward.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "The contract neither describes nor guards the amount format",
+              "where": "contracts/erp.yaml:46-48",
+              "evidence": "[high] The contract says `amount: type integer, unit: cents`, but the file has always written decimals (401 of 401 `1234.50` on 2 Nov). `owner: TBD` and `change_process: TBD` (lines 7–8). `deliver_by: \"06:00\"` (line 17), yet working-day files arrive at 07:06–07:37. The loader only checks that a contract is registered (`pipeline/loaders/common.py:31-36`); it never checks columns or formats. A format change therefore reaches silver unannounced and unchecked.",
+              "fix": "Fix 2: agree the contract with the ERP team, and make the bronze loader check column list and amount format against it.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "The orders amount check compares the amount with itself",
+              "where": "checks/silver.yaml:7",
+              "evidence": "[high] `where ... amount < amount` is never true, so `orders_amount_positive` passes on any data. It reported `pass` with 0 rows every day up to 2 Nov.",
+              "fix": "`amount <= 0 or amount is null`, plus an `orders_amount_parsed` check like `invoices_amount_parsed`.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "The ERP also dropped `sales_rep_code` from orders.csv on 4 November",
+              "where": "contracts/erp.yaml:56",
+              "evidence": "[high] There are 12 columns on 2 and 3 Nov and 11 on 4 Nov. silver.orders does not select it, so it is not the cause. It is a second unannounced change in two days.",
+              "fix": "Raise it in the e-mail to the ERP team.",
+              "status": "open"
+            },
+            {
+              "severity": "low",
+              "title": "The runbook names a make target that no longer exists",
+              "where": "docs/runbook.md:31",
+              "evidence": "[high] The runbook says `make backfill DATE=...`. The Makefile has only `backfill-day JOB=... DATE=...`, renamed in 8aafd83 on 12 Oct.",
+              "fix": "Correct the line.",
+              "status": "open"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "not-it",
+      "title": "What it was not",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Suspect",
+            "Why it looked guilty",
+            "Why it is not",
+            "Numbers"
+          ],
+          "rows": [
+            [
+              "Late file (wait_for_file warning)",
+              "The same run warned that orders.csv came 67 minutes late",
+              "The job waits up to 180 minutes, bronze loaded the file, and the warning is routine on working days",
+              "23 of 32 runs warned; on 21 of those 23, silver.orders loaded fine"
+            ],
+            [
+              "A code change",
+              "The failure started on a Tuesday after a quiet week",
+              "No commit falls between the last good run (2 Nov) and the failure (3 Nov)",
+              "Previous commit 21 Oct; next 4 Nov 10:30, legacy/ only"
+            ],
+            [
+              "The dropped `sales_rep_code` column",
+              "The 4 Nov file changed shape",
+              "3 Nov failed with the column present, and silver.orders never selects it",
+              "12 columns on 3 Nov (failed), 11 on 4 Nov"
+            ],
+            [
+              "S-031 quarantine",
+              "Quarantine jumped 30× a week before",
+              "Loads succeeded with it from 28 Oct to 2 Nov; it shortens the figures but does not stop the load",
+              "107–129 lines a day since 28 Oct"
+            ],
+            [
+              "CRM deliveries",
+              "New CRM files started on 3 Nov, the same morning",
+              "`ingest_crm` is disabled (`jobs/ingest_crm.yaml:6`), and rebuild_customers succeeded",
+              "3 CRM files a day from 3 Nov, not loaded"
+            ],
+            [
+              "load_erp_finance",
+              "It also casts ERP amounts",
+              "It loaded on 3 and 4 Nov: invoices use parse_amount; payments and returns still write `1234.50`",
+              "payments 105/105 and 82/82, returns 15/15 and 17/17 with a decimal point"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "impact",
+      "title": "Impact",
+      "intro": "As of the last record, 4 November 07:49. Each delivery holds the orders of the previous day, so gold.sales_daily ends at sales date 1 November.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Table or job",
+            "Last good",
+            "Missed since",
+            "Consumers"
+          ],
+          "rows": [
+            [
+              "silver.orders (load_erp_orders)",
+              "2 Nov 07:27, delivery of 2 Nov (orders of 1 Nov)",
+              "Deliveries of 3 and 4 Nov: 2051 lines in bronze only",
+              "build_sales_daily; analyst_adhoc (115 queries in 31 days)"
+            ],
+            [
+              "gold.sales_daily (build_sales_daily)",
+              "2 Nov 07:35",
+              "08:00 SLA missed on 3 and 4 Nov; 2 runs skipped",
+              "finance_cash_plan (each morning), bi_sales_board, store_ops_app, franchise_portal and regional_managers_report (hourly, 744 queries each)"
+            ],
+            [
+              "gold.sales_daily, store S-031",
+              "never in it",
+              "Delivery of 28 Oct: 665 lines quarantined up to 2 Nov; 115 and 109 more in the 3 and 4 Nov files",
+              "the same five consumers"
+            ],
+            [
+              "silver.invoices, silver.returns, silver.payments",
+              "4 Nov 07:49",
+              "not affected",
+              "finance (cash plan)"
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "warn",
+          "text": "`sources/` keeps only the last three deliveries per source (`docs/howto/backfill.md`). If the platform has moved past 6 November, the 3 November file is already gone from `sources/`, and `backfill-day` will wait 180 minutes for it and fail. Its rows are still in bronze, which loaded on both days. The S-031 days, 28 Oct to 1 Nov, are already out of `sources/`. [med] They are in bronze, but that is not checked in the warehouse."
+        }
+      ]
+    },
+    {
+      "id": "same-weakness",
+      "title": "The same weakness elsewhere",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "file:line",
+            "Expression",
+            "Status"
+          ],
+          "rows": [
+            [
+              "pipeline/silver/orders.sql:18",
+              "`cast(amount as numeric(12, 2))`",
+              "Failing: 1038/1038 and 1013/1013 decimal comma"
+            ],
+            [
+              "pipeline/silver/payments.sql:9",
+              "`cast(amount as numeric(12, 2))`",
+              "Waiting: payments.csv still `1234.50` (82, 105, 82 of 82, 105, 82). Fails the day the ERP switches this export"
+            ],
+            [
+              "pipeline/silver/returns.sql:10",
+              "`cast(amount as numeric(12, 2))`",
+              "Waiting: returns.csv still `1234.50` (9, 15, 17 of 9, 15, 17)"
+            ],
+            [
+              "pipeline/silver/invoices.sql:11",
+              "`util.parse_amount(amount)`",
+              "Safe since 15 Sep; invoices arrive as `1.234,50` (288 of 318 on 3 Nov)"
+            ],
+            [
+              "pipeline/silver/orders.sql:11,16,17",
+              "`cast(line_no / quantity / weight_g as integer)`",
+              "[med] The same bare cast of delivered text. Integers today; a thousands dot (weight_g reaches 148800) would fail them the same way"
+            ],
+            [
+              "checks/silver.yaml",
+              "no `amount is null` check for orders, payments or returns",
+              "Only invoices has `invoices_amount_parsed` (line 26)"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "options",
+      "title": "Workaround and two fixes",
+      "intro": "The engineer decides. Nothing has been run, released or changed.",
+      "blocks": [
+        {
+          "type": "decision",
+          "factors": [
+            "Effort",
+            "Risk",
+            "Gets the missing days in",
+            "Closes the weakness",
+            "Needs the source"
+          ],
+          "options": [
+            {
+              "label": "Rerun load_erp_orders as is",
+              "status": "eliminated",
+              "eliminated_by": "Risk",
+              "why": "The same input fails the same way: the 09:12 retry proved it.",
+              "cells": [
+                {
+                  "rating": "pass",
+                  "text": "minutes"
+                },
+                {
+                  "rating": "fail",
+                  "text": "fails again"
+                },
+                {
+                  "rating": "fail",
+                  "text": "no"
+                },
+                {
+                  "rating": "fail",
+                  "text": "no"
+                },
+                {
+                  "rating": "pass",
+                  "text": "no"
+                }
+              ]
+            },
+            {
+              "label": "Workaround: hotfix line 18, load each failed day again, rebuild sales_daily",
+              "status": "viable",
+              "why": "After a yes, the on-call engineer deploys fix 1's one-line change. Then: `make backfill-day JOB=load_erp_orders DATE=2026-11-03`, the same for 04 and each later failed day, then `make run JOB=build_sales_daily` (it does not start by itself after a manual run), then `make status JOB=load_erp_orders`. Secure the 3 Nov and later files before they rotate out of `sources/`. Never edit a delivered file by hand. S-031 stays in quarantine until it is in ref.stores.",
+              "cells": [
+                {
+                  "rating": "pass",
+                  "text": "1–2 hours"
+                },
+                {
+                  "rating": "pass",
+                  "text": "low: delete-then-insert per day, rerunnable"
+                },
+                {
+                  "rating": "pass",
+                  "text": "yes, if the files or bronze still hold the days"
+                },
+                {
+                  "rating": "weak",
+                  "text": "orders only"
+                },
+                {
+                  "rating": "pass",
+                  "text": "no"
+                }
+              ]
+            },
+            {
+              "label": "Fix 1, narrow: orders.sql uses util.parse_amount",
+              "status": "viable",
+              "why": "One line, plus a test with `18846,00`, `1.234,50`, `1234.50` and an empty value, expecting 18846.00, 1234.50, 1234.50 and null. Add an `orders_amount_parsed` check. That test would have caught this on 15 September.",
+              "cells": [
+                {
+                  "rating": "pass",
+                  "text": "2–3 hours with the test"
+                },
+                {
+                  "rating": "pass",
+                  "text": "low: in use on invoices since 15 Sep"
+                },
+                {
+                  "rating": "pass",
+                  "text": "with the workaround"
+                },
+                {
+                  "rating": "weak",
+                  "text": "orders only; payments and returns wait"
+                },
+                {
+                  "rating": "pass",
+                  "text": "no"
+                }
+              ]
+            },
+            {
+              "label": "Fix 2, everywhere: every ERP amount, the contract at the door, checks that can fail",
+              "status": "viable",
+              "why": "Use parse_amount in payments.sql:9 and returns.sql:10, which closes the 14 Sep open item. Correct `orders_amount_positive`. The bronze loader checks the column list and the amount format against `contracts/erp.yaml` and stops before silver with a clear error. The contract gets the real amount format, an owner, a change notice and a realistic delivery time. Alert when a quarantine rule holds back several times its usual rows. Add S-031 to ref.stores and reload from 28 Oct.",
+              "cells": [
+                {
+                  "rating": "weak",
+                  "text": "1–2 days, plus agreement with the ERP team"
+                },
+                {
+                  "rating": "weak",
+                  "text": "medium: a stricter loader can stop loads that pass today"
+                },
+                {
+                  "rating": "pass",
+                  "text": "yes, including S-031"
+                },
+                {
+                  "rating": "pass",
+                  "text": "yes"
+                },
+                {
+                  "rating": "weak",
+                  "text": "yes: contract, S-031, format plans"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "drafts",
+      "title": "Drafts (not sent)",
+      "blocks": [
+        {
+          "type": "code",
+          "title": "E-mail to the consumers of gold.sales_daily",
+          "code": "To: finance (cash plan); owners of the BI sales board, store operations app, franchise portal, regional managers' report\nSubject: Sales figures stopped at Sunday 1 November; we are on it\n\nHello,\n\nThe daily sales table (gold.sales_daily) has not refreshed since Monday 2 November at 07:35. The figures you see end with the orders of Sunday 1 November. Orders from Monday 2 November onward are missing.\n\nWhat happened: from 3 November the ERP sends order amounts in a different number format (a comma instead of a point), and our nightly load rejects them. No data is lost. Both days' files were received and stored, and invoices, returns and payments are up to date.\n\nWhen: we expect the missing days back on [date and time, to be set by the platform team] once the correction is in. We will write again when the table is complete.\n\nOne more thing to know: orders of store S-031 have not been in the figures since 28 October, because the store is not yet in our store list. That is about 103–123 order lines a day, roughly 12–26% of the RSD order amount on the days we checked. We are confirming the store with the ERP team and will add its orders back to 28 October.\n\nQuestions to the data platform team.\n"
+        },
+        {
+          "type": "code",
+          "title": "E-mail to the source owner (ERP team)",
+          "code": "To: ERP team (owner of the orders, invoices, returns and payments exports)\nSubject: orders.csv changed format on 3 November; please confirm, and three things to agree\n\nHello,\n\nThe daily orders export changed in two ways this week, without notice to us:\n\n1. Amount format. From the delivery of 3 November, `amount` in orders.csv is written with a decimal comma: 1038 of 1038 lines on 3 November and 1013 of 1013 on 4 November. Until 2 November it was a decimal point (401 of 401). There is no thousands separator in orders. Invoices have used 1.234,50 since September. Payments and returns still use a decimal point (105 and 15 lines on 3 November).\n2. Column dropped. From the delivery of 4 November, orders.csv no longer has `sales_rep_code`: 11 columns instead of 12.\n\nWe also see a store code S-031 in the orders since 28 October that is not in our store list: about 110 lines a day. Is it a new store? Please send its name, city, currency, opening date and franchisee customer id.\n\nWhat we would like to agree, in the orders contract we are drafting together:\n- Is the decimal comma permanent (a vendor update?), and will payments and returns follow? If so, when?\n- One amount format for all four files, written into the contract. Today the draft says integer cents, which no file has ever used.\n- A notice of [N] working days before any change to columns or formats, and a named owner on your side.\n- The delivery time. The draft says 06:00; on working days the files arrive between 07:06 and 07:37.\n\nWe do not need a resend: we have both files.\n\nThanks,\nData platform team\n"
+        },
+        {
+          "type": "code",
+          "title": "Incident-log entry (to be added to ops/incident-log.md, newest first, after a yes)",
+          "code": "## 2026-11-03: load_erp_orders failed in silver.orders\n\n- What failed: the 06:30 run of `load_erp_orders` stopped at task `silver.orders` with\n  `invalid input syntax for type numeric: \"18846,00\"`. The retry at 09:12 and the run of 4 November failed the same\n  way. `build_sales_daily` was skipped both days; gold.sales_daily stayed at its build of 2 November 07:35 and\n  missed 08:00 on 3 and 4 November.\n- Cause: from the delivery of 3 November the ERP orders export writes `amount` with a decimal comma (1038 of 1038\n  lines; 401 of 401 with a decimal point on 2 November). `pipeline/silver/orders.sql` line 18 cast the delivered\n  text straight to numeric. `util.parse_amount`, the fix of 2026-09-14, was used only in silver.invoices.\n- Fix: [to fill in: orders.sql uses util.parse_amount since <date>; deliveries of <dates> loaded again on <date>;\n  gold.sales_daily rebuilt on <date>].\n- Open: silver.payments and silver.returns still cast the amount directly; the contract's amount format, owner and\n  change process; store S-031 is not in ref.stores, so 665 order lines from 28 October to 2 November are in\n  quarantine; check `orders_amount_positive` compares the amount with itself; `sales_rep_code` dropped from\n  orders.csv on 4 November.\n"
+        }
+      ]
+    },
+    {
+      "id": "not-checked",
+      "title": "What this trace did not check",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "Anything after 4 November 07:49. The run records, checks and deliveries end there, and `sources/erp` holds only 2–4 November. If today's platform still fails, it has missed every day since 3 November (5 working days to 10 November). Whether someone has fixed it meanwhile is not visible here.",
+            "The warehouse itself: whether bronze still holds the 3 and 4 November partitions and 28 Oct–1 Nov, and what silver.orders holds now.",
+            "The deployed runner against git. For the failed tasks the records show rows_read 1038 and 1013, while `pipeline/runner.py` writes 0 on failure. `runner.py` quarantines before the SQL, yet `quarantine.jsonl` has no silver.orders rows for 3 and 4 November. [med] The host may run different code.",
+            "Whether S-031 is a real store, and whether S-000 (3–7 lines a day since at least 5 October) is a placeholder code. [guess]",
+            "Who ran the 09:12 retry, and whether `ACME_ALERT_EMAIL` received the failures.",
+            "Currencies: the 3 and 4 November files carry 1 and 2 HUF lines, while the product document says the Szeged stores are in EUR. Not traced.",
+            "gold.sales_daily serves the franchisee's e-mail (`customer_email`) to the franchise portal and the store operations app. That is outside this trace; it belongs in a data review."
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "acme-pipeline, job load_erp_orders and its dependant build_sales_daily, runs of 2–4 November 2026",
+    "assumptions": [
+      "ops/ and sources/erp are a snapshot taken on 4 November around 10:30; the platform state on 10 November is unknown",
+      "\"Since Monday morning\" means Monday 2 November, the last build of gold.sales_daily (07:35)",
+      "S-031 is a new franchise store [med]"
+    ],
+    "open": [
+      "Has load_erp_orders failed every day from 5 to 10 November too?",
+      "Are the 3 Nov+ files still in sources/, and are 28 Oct – 4 Nov still in bronze?",
+      "Is the decimal comma permanent, and will payments and returns follow?",
+      "S-031: name, city, currency, opening date, franchisee",
+      "Who owns the ERP contract (owner: TBD)",
+      "Does the deployed runner match pipeline/runner.py?"
+    ]
+  }
+}

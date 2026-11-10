@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: migration-plans-waves
+tags: [data-engineer, data-migration]
+context:
+  scaffold_script: fixture.sh

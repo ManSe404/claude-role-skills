@@ -1,0 +1,10 @@
+name: refresh_stock
+description: Refresh gold.stock_levels from the ERP replica, so the store app shows current stock.
+schedule: "*/5 * * * *"
+timezone: Europe/Belgrade
+cluster: etl
+record_runs: failures  # 288 runs a day: only failed runs are written to ops/runs.jsonl
+steps:
+  - task: gold.stock_levels
+    layer: gold
+    sql: pipeline/gold/stock_levels.sql

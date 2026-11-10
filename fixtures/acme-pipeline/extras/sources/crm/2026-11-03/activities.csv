@@ -1,0 +1,244 @@
+activity_id;customer_id;contact_id;activity_date;type;subject;deal_value;owner
+ACT-11030001;CRM-10233;CT-50143;2026-11-02;visit;Obilazak prodavnice;;KAM-05
+ACT-11030002;CRM-10018;CT-50877;2026-11-02;complaint;Reklamacija na isporuku;;KAM-04
+ACT-11030003;CRM-10421;CT-50683;2026-11-02;offer;Ponuda za novogodišnji asortiman;90.559,00;KAM-02
+ACT-11030004;CRM-10399;;2026-11-02;visit;Obilazak prodavnice;;KAM-05
+ACT-11030005;CRM-10596;;2026-11-02;offer;Ponuda za novogodišnji asortiman;419.224,00;KAM-07
+ACT-11030006;CRM-10560;;2026-11-02;call;Dogovor o porudžbini;;KAM-05
+ACT-11030007;CRM-10212;;2026-11-02;offer;Ponuda za novogodišnji asortiman;322.181,00;KAM-09
+ACT-11030008;CRM-10186;CT-50607;2026-11-02;call;Dogovor o porudžbini;;KAM-01
+ACT-11030009;CRM-10033;CT-50515;2026-11-02;offer;Ponuda za novogodišnji asortiman;377.520,00;KAM-05
+ACT-11030010;CRM-10316;;2026-11-02;call;Dogovor o porudžbini;;KAM-01
+ACT-11030011;CRM-10276;;2026-11-02;complaint;Reklamacija na isporuku;;KAM-09
+ACT-11030012;CRM-10383;;2026-11-02;complaint;Reklamacija na isporuku;;KAM-01
+ACT-11030013;CRM-10166;CT-50843;2026-11-02;offer;Ponuda za novogodišnji asortiman;225.026,00;KAM-06
+ACT-11030014;CRM-10032;CT-50373;2026-11-02;visit;Obilazak prodavnice;;KAM-08
+ACT-11030015;CRM-10084;CT-50020;2026-11-02;visit;Obilazak prodavnice;;KAM-01
+ACT-11030016;CRM-10530;;2026-11-02;visit;Obilazak prodavnice;;KAM-06
+ACT-11030017;CRM-10199;;2026-11-02;offer;Ponuda za novogodišnji asortiman;153.437,00;KAM-07
+ACT-11030018;CRM-10175;CT-50605;2026-11-02;offer;Ponuda za novogodišnji asortiman;464.610,00;KAM-06
+ACT-11030019;CRM-10499;CT-50795;2026-11-02;call;Dogovor o porudžbini;;KAM-05
+ACT-11030020;CRM-10597;;2026-11-02;call;Dogovor o porudžbini;;KAM-02
+ACT-11030021;CRM-10442;CT-50057;2026-11-02;call;Dogovor o porudžbini;;KAM-08
+ACT-11030022;CRM-10387;CT-50875;2026-11-02;visit;Obilazak prodavnice;;KAM-08
+ACT-11030023;CRM-10462;CT-50624;2026-11-02;call;Dogovor o porudžbini;;KAM-01
+ACT-11030024;CRM-10328;CT-50182;2026-11-02;call;Dogovor o porudžbini;;KAM-01
+ACT-11030025;CRM-10295;;2026-11-02;offer;Ponuda za novogodišnji asortiman;353.066,00;KAM-09
+ACT-11030026;CRM-10515;CT-50744;2026-11-02;visit;Obilazak prodavnice;;KAM-02
+ACT-11030027;CRM-10047;;2026-11-02;call;Dogovor o porudžbini;;KAM-08
+ACT-11030028;CRM-10375;;2026-11-02;call;Dogovor o porudžbini;;KAM-06
+ACT-11030029;CRM-10139;CT-50101;2026-11-02;offer;Ponuda za novogodišnji asortiman;329.235,00;KAM-03
+ACT-11030030;CRM-10043;CT-50433;2026-11-02;call;Dogovor o porudžbini;;KAM-09
+ACT-11030031;CRM-10460;CT-50595;2026-11-02;visit;Obilazak prodavnice;;KAM-09
+ACT-11030032;CRM-10389;;2026-11-02;visit;Obilazak prodavnice;;KAM-01
+ACT-11030033;CRM-10172;CT-50197;2026-11-02;offer;Ponuda za novogodišnji asortiman;175.553,00;KAM-05
+ACT-11030034;CRM-10275;CT-50596;2026-11-02;visit;Obilazak prodavnice;;KAM-06
+ACT-11030035;CRM-10389;;2026-11-02;visit;Obilazak prodavnice;;KAM-02
+ACT-11030036;CRM-10459;CT-50167;2026-11-02;offer;Ponuda za novogodišnji asortiman;408.589,00;KAM-09
+ACT-11030037;CRM-10552;CT-50487;2026-11-02;call;Dogovor o porudžbini;;KAM-05
+ACT-11030038;CRM-10524;CT-50792;2026-11-02;call;Dogovor o porudžbini;;KAM-09
+ACT-11030039;CRM-10144;CT-50689;2026-11-02;complaint;Reklamacija na isporuku;;KAM-01
+ACT-11030040;CRM-10473;CT-50258;2026-11-02;call;Dogovor o porudžbini;;KAM-07
+ACT-11030041;CRM-10334;CT-50806;2026-11-02;offer;Ponuda za novogodišnji asortiman;399.849,00;KAM-06
+ACT-11030042;CRM-10451;;2026-11-02;call;Dogovor o porudžbini;;KAM-05
+ACT-11030043;CRM-10102;CT-50579;2026-11-02;visit;Obilazak prodavnice;;KAM-03
+ACT-11030044;CRM-10105;CT-50302;2026-11-02;visit;Obilazak prodavnice;;KAM-08
+ACT-11030045;CRM-10563;;2026-11-02;complaint;Reklamacija na isporuku;;KAM-06
+ACT-11030046;CRM-10412;;2026-11-02;offer;Ponuda za novogodišnji asortiman;166.744,00;KAM-07
+ACT-11030047;CRM-10607;;2026-11-02;offer;Ponuda za novogodišnji asortiman;401.834,00;KAM-01
+ACT-11030048;CRM-10036;CT-50534;2026-11-02;call;Dogovor o porudžbini;;KAM-01
+ACT-11030049;CRM-10078;CT-50469;2026-11-02;call;Dogovor o porudžbini;;KAM-07
+ACT-11030050;CRM-10292;CT-50703;2026-11-02;visit;Obilazak prodavnice;;KAM-02
+ACT-11030051;CRM-10045;CT-50658;2026-11-02;visit;Obilazak prodavnice;;KAM-04
+ACT-11030052;CRM-10034;;2026-11-02;visit;Obilazak prodavnice;;KAM-07
+ACT-11030053;CRM-10250;CT-50542;2026-11-02;visit;Obilazak prodavnice;;KAM-01
+ACT-11030054;CRM-10434;;2026-11-02;offer;Ponuda za novogodišnji asortiman;380.171,00;KAM-01
+ACT-11030055;CRM-10561;;2026-11-02;visit;Obilazak prodavnice;;KAM-02
+ACT-11030056;CRM-10161;CT-50038;2026-11-02;call;Dogovor o porudžbini;;KAM-04
+ACT-11030057;CRM-10572;;2026-11-02;call;Dogovor o porudžbini;;KAM-02
+ACT-11030058;CRM-10206;CT-50096;2026-11-02;visit;Obilazak prodavnice;;KAM-09
+ACT-11030059;CRM-10437;CT-50715;2026-11-02;visit;Obilazak prodavnice;;KAM-05
+ACT-11030060;CRM-10469;;2026-11-02;visit;Obilazak prodavnice;;KAM-04
+ACT-11030061;CRM-10063;;2026-11-02;offer;Ponuda za novogodišnji asortiman;378.661,00;KAM-09
+ACT-11030062;CRM-10291;CT-50207;2026-11-02;visit;Obilazak prodavnice;;KAM-06
+ACT-11030063;CRM-10420;CT-50312;2026-11-02;call;Dogovor o porudžbini;;KAM-09
+ACT-11030064;CRM-10335;;2026-11-02;offer;Ponuda za novogodišnji asortiman;25.815,00;KAM-03
+ACT-11030065;CRM-10312;;2026-11-02;call;Dogovor o porudžbini;;KAM-02
+ACT-11030066;CRM-10489;CT-50242;2026-11-02;offer;Ponuda za novogodišnji asortiman;177.426,00;KAM-03
+ACT-11030067;CRM-10372;CT-50664;2026-11-02;call;Dogovor o porudžbini;;KAM-05
+ACT-11030068;CRM-10338;CT-50414;2026-11-02;visit;Obilazak prodavnice;;KAM-02
+ACT-11030069;CRM-10541;CT-50435;2026-11-02;call;Dogovor o porudžbini;;KAM-05
+ACT-11030070;CRM-10584;;2026-11-02;offer;Ponuda za novogodišnji asortiman;428.037,00;KAM-02
+ACT-11030071;CRM-10477;CT-50621;2026-11-02;offer;Ponuda za novogodišnji asortiman;279.557,00;KAM-08
+ACT-11030072;CRM-10348;CT-50465;2026-11-02;call;Dogovor o porudžbini;;KAM-09
+ACT-11030073;CRM-10340;CT-50377;2026-11-02;call;Dogovor o porudžbini;;KAM-02
+ACT-11030074;CRM-10430;CT-50271;2026-11-02;visit;Obilazak prodavnice;;KAM-02
+ACT-11030075;CRM-10003;CT-50860;2026-11-02;offer;Ponuda za novogodišnji asortiman;477.766,00;KAM-05
+ACT-11030076;CRM-10531;CT-50821;2026-11-02;offer;Ponuda za novogodišnji asortiman;244.231,00;KAM-08
+ACT-11030077;CRM-10335;CT-50545;2026-11-02;complaint;Reklamacija na isporuku;;KAM-03
+ACT-11030078;CRM-10223;CT-50599;2026-11-02;visit;Obilazak prodavnice;;KAM-05
+ACT-11030079;CRM-10266;;2026-11-02;call;Dogovor o porudžbini;;KAM-08
+ACT-11030080;CRM-10330;CT-50505;2026-11-02;call;Dogovor o porudžbini;;KAM-01
+ACT-11030081;CRM-10600;CT-50030;2026-11-02;visit;Obilazak prodavnice;;KAM-08
+ACT-11030082;CRM-10072;CT-50801;2026-11-02;offer;Ponuda za novogodišnji asortiman;234.107,00;KAM-08
+ACT-11030083;CRM-10309;CT-50562;2026-11-02;call;Dogovor o porudžbini;;KAM-06
+ACT-11030084;CRM-10351;CT-50686;2026-11-02;visit;Obilazak prodavnice;;KAM-08
+ACT-11030085;CRM-10070;CT-50527;2026-11-02;offer;Ponuda za novogodišnji asortiman;61.463,00;KAM-06
+ACT-11030086;CRM-10151;;2026-11-02;visit;Obilazak prodavnice;;KAM-01
+ACT-11030087;CRM-10098;CT-50476;2026-11-02;call;Dogovor o porudžbini;;KAM-02
+ACT-11030088;CRM-10050;;2026-11-02;call;Dogovor o porudžbini;;KAM-05
+ACT-11030089;CRM-10335;CT-50545;2026-11-02;call;Dogovor o porudžbini;;KAM-05
+ACT-11030090;CRM-10427;CT-50696;2026-11-02;offer;Ponuda za novogodišnji asortiman;440.884,00;KAM-05
+ACT-11030091;CRM-10070;CT-50304;2026-11-02;visit;Obilazak prodavnice;;KAM-08
+ACT-11030092;CRM-10036;CT-50534;2026-11-02;call;Dogovor o porudžbini;;KAM-07
+ACT-11030093;CRM-10557;CT-50087;2026-11-02;offer;Ponuda za novogodišnji asortiman;391.791,00;KAM-09
+ACT-11030094;CRM-10155;CT-50800;2026-11-02;complaint;Reklamacija na isporuku;;KAM-06
+ACT-11030095;CRM-10381;CT-50641;2026-11-02;offer;Ponuda za novogodišnji asortiman;305.111,00;KAM-01
+ACT-11030096;CRM-10085;;2026-11-02;call;Dogovor o porudžbini;;KAM-03
+ACT-11030097;CRM-10162;;2026-11-02;offer;Ponuda za novogodišnji asortiman;406.081,00;KAM-01
+ACT-11030098;CRM-10217;CT-50229;2026-11-02;call;Dogovor o porudžbini;;KAM-07
+ACT-11030099;CRM-10092;CT-50412;2026-11-02;visit;Obilazak prodavnice;;KAM-03
+ACT-11030100;CRM-10389;;2026-11-02;call;Dogovor o porudžbini;;KAM-09
+ACT-11030101;CRM-10132;CT-50097;2026-11-02;complaint;Reklamacija na isporuku;;KAM-09
+ACT-11030102;CRM-10370;CT-50558;2026-11-02;offer;Ponuda za novogodišnji asortiman;312.159,00;KAM-08
+ACT-11030103;CRM-10525;CT-50047;2026-11-02;complaint;Reklamacija na isporuku;;KAM-09
+ACT-11030104;CRM-10582;CT-50879;2026-11-02;complaint;Reklamacija na isporuku;;KAM-06
+ACT-11030105;CRM-10448;CT-50152;2026-11-02;call;Dogovor o porudžbini;;KAM-05
+ACT-11030106;CRM-10090;CT-50155;2026-11-02;call;Dogovor o porudžbini;;KAM-08
+ACT-11030107;CRM-10261;;2026-11-02;complaint;Reklamacija na isporuku;;KAM-03
+ACT-11030108;CRM-10081;CT-50240;2026-11-02;call;Dogovor o porudžbini;;KAM-02
+ACT-11030109;CRM-10360;;2026-11-02;visit;Obilazak prodavnice;;KAM-04
+ACT-11030110;CRM-10367;CT-50576;2026-11-02;offer;Ponuda za novogodišnji asortiman;14.993,00;KAM-06
+ACT-11030111;CRM-10155;CT-50648;2026-11-02;offer;Ponuda za novogodišnji asortiman;409.347,00;KAM-07
+ACT-11030112;CRM-10472;CT-50541;2026-11-02;offer;Ponuda za novogodišnji asortiman;15.547,00;KAM-01
+ACT-11030113;CRM-10532;CT-50842;2026-11-02;visit;Obilazak prodavnice;;KAM-08
+ACT-11030114;CRM-10472;CT-50541;2026-11-02;visit;Obilazak prodavnice;;KAM-05
+ACT-11030115;CRM-10285;CT-50654;2026-11-02;call;Dogovor o porudžbini;;KAM-07
+ACT-11030116;CRM-10140;CT-50003;2026-11-02;call;Dogovor o porudžbini;;KAM-04
+ACT-11030117;CRM-10568;CT-50359;2026-11-02;complaint;Reklamacija na isporuku;;KAM-02
+ACT-11030118;CRM-10447;CT-50249;2026-11-02;call;Dogovor o porudžbini;;KAM-03
+ACT-11030119;CRM-10174;CT-50079;2026-11-02;offer;Ponuda za novogodišnji asortiman;158.291,00;KAM-07
+ACT-11030120;CRM-10413;;2026-11-02;visit;Obilazak prodavnice;;KAM-03
+ACT-11030121;CRM-10383;;2026-11-02;call;Dogovor o porudžbini;;KAM-07
+ACT-11030122;CRM-10390;;2026-11-02;visit;Obilazak prodavnice;;KAM-05
+ACT-11030123;CRM-10259;CT-50078;2026-11-02;visit;Obilazak prodavnice;;KAM-09
+ACT-11030124;CRM-10495;;2026-11-02;call;Dogovor o porudžbini;;KAM-06
+ACT-11030125;CRM-10332;CT-50730;2026-11-02;call;Dogovor o porudžbini;;KAM-07
+ACT-11030126;CRM-10445;;2026-11-02;complaint;Reklamacija na isporuku;;KAM-03
+ACT-11030127;CRM-10395;;2026-11-02;complaint;Reklamacija na isporuku;;KAM-06
+ACT-11030128;CRM-10085;;2026-11-02;offer;Ponuda za novogodišnji asortiman;23.732,00;KAM-05
+ACT-11030129;CRM-10036;CT-50585;2026-11-02;complaint;Reklamacija na isporuku;;KAM-07
+ACT-11030130;CRM-10062;;2026-11-02;offer;Ponuda za novogodišnji asortiman;454.768,00;KAM-09
+ACT-11030131;CRM-10233;CT-50143;2026-11-02;call;Dogovor o porudžbini;;KAM-04
+ACT-11030132;CRM-10002;CT-50898;2026-11-02;visit;Obilazak prodavnice;;KAM-01
+ACT-11030133;CRM-10288;;2026-11-02;complaint;Reklamacija na isporuku;;KAM-02
+ACT-11030134;CRM-10070;CT-50304;2026-11-02;visit;Obilazak prodavnice;;KAM-06
+ACT-11030135;CRM-10505;CT-50884;2026-11-02;complaint;Reklamacija na isporuku;;KAM-06
+ACT-11030136;CRM-10023;CT-50235;2026-11-02;visit;Obilazak prodavnice;;KAM-04
+ACT-11030137;CRM-10252;;2026-11-02;visit;Obilazak prodavnice;;KAM-07
+ACT-11030138;CRM-10175;CT-50434;2026-11-02;call;Dogovor o porudžbini;;KAM-07
+ACT-11030139;CRM-10110;CT-50458;2026-11-02;call;Dogovor o porudžbini;;KAM-08
+ACT-11030140;CRM-10082;CT-50059;2026-11-02;offer;Ponuda za novogodišnji asortiman;252.552,00;KAM-06
+ACT-11030141;CRM-10046;CT-50535;2026-11-02;visit;Obilazak prodavnice;;KAM-05
+ACT-11030142;CRM-10358;;2026-11-02;offer;Ponuda za novogodišnji asortiman;48.439,00;KAM-02
+ACT-11030143;CRM-10208;CT-50747;2026-11-02;complaint;Reklamacija na isporuku;;KAM-06
+ACT-11030144;CRM-10437;CT-50374;2026-11-02;visit;Obilazak prodavnice;;KAM-07
+ACT-11030145;CRM-10290;;2026-11-02;offer;Ponuda za novogodišnji asortiman;457.038,00;KAM-06
+ACT-11030146;CRM-10543;;2026-11-02;visit;Obilazak prodavnice;;KAM-06
+ACT-11030147;CRM-10073;CT-50511;2026-11-02;offer;Ponuda za novogodišnji asortiman;275.409,00;KAM-01
+ACT-11030148;CRM-10573;CT-50150;2026-11-02;call;Dogovor o porudžbini;;KAM-04
+ACT-11030149;CRM-10008;CT-50896;2026-11-02;visit;Obilazak prodavnice;;KAM-02
+ACT-11030150;CRM-10361;;2026-11-02;call;Dogovor o porudžbini;;KAM-06
+ACT-11030151;CRM-10221;CT-50415;2026-11-02;call;Dogovor o porudžbini;;KAM-02
+ACT-11030152;CRM-10199;;2026-11-02;visit;Obilazak prodavnice;;KAM-03
+ACT-11030153;CRM-10324;CT-50437;2026-11-02;offer;Ponuda za novogodišnji asortiman;31.188,00;KAM-09
+ACT-11030154;CRM-10209;CT-50294;2026-11-02;call;Dogovor o porudžbini;;KAM-04
+ACT-11030155;CRM-10275;CT-50596;2026-11-02;visit;Obilazak prodavnice;;KAM-04
+ACT-11030156;CRM-10568;CT-50359;2026-11-02;offer;Ponuda za novogodišnji asortiman;23.961,00;KAM-09
+ACT-11030157;CRM-10416;CT-50094;2026-11-02;offer;Ponuda za novogodišnji asortiman;106.015,00;KAM-05
+ACT-11030158;CRM-10598;CT-50163;2026-11-02;complaint;Reklamacija na isporuku;;KAM-01
+ACT-11030159;CRM-10501;;2026-11-02;offer;Ponuda za novogodišnji asortiman;239.826,00;KAM-08
+ACT-11030160;CRM-10242;CT-50027;2026-11-02;call;Dogovor o porudžbini;;KAM-03
+ACT-11030161;CRM-10370;;2026-11-02;visit;Obilazak prodavnice;;KAM-05
+ACT-11030162;CRM-10557;CT-50087;2026-11-02;call;Dogovor o porudžbini;;KAM-02
+ACT-11030163;CRM-10114;;2026-11-02;call;Dogovor o porudžbini;;KAM-07
+ACT-11030164;CRM-10281;CT-50086;2026-11-02;call;Dogovor o porudžbini;;KAM-01
+ACT-11030165;CRM-10470;;2026-11-02;visit;Obilazak prodavnice;;KAM-05
+ACT-11030166;CRM-10240;CT-50805;2026-11-02;visit;Obilazak prodavnice;;KAM-03
+ACT-11030167;CRM-10537;CT-50657;2026-11-02;call;Dogovor o porudžbini;;KAM-06
+ACT-11030168;CRM-10391;;2026-11-02;call;Dogovor o porudžbini;;KAM-09
+ACT-11030169;CRM-10164;CT-50573;2026-11-02;call;Dogovor o porudžbini;;KAM-07
+ACT-11030170;CRM-10306;;2026-11-02;call;Dogovor o porudžbini;;KAM-05
+ACT-11030171;CRM-10078;;2026-11-02;call;Dogovor o porudžbini;;KAM-01
+ACT-11030172;CRM-10531;CT-50821;2026-11-02;offer;Ponuda za novogodišnji asortiman;364.013,00;KAM-07
+ACT-11030173;CRM-10449;;2026-11-02;visit;Obilazak prodavnice;;KAM-09
+ACT-11030174;CRM-10315;CT-50138;2026-11-02;offer;Ponuda za novogodišnji asortiman;51.906,00;KAM-08
+ACT-11030175;CRM-10090;CT-50243;2026-11-02;call;Dogovor o porudžbini;;KAM-08
+ACT-11030176;CRM-10136;CT-50081;2026-11-02;call;Dogovor o porudžbini;;KAM-02
+ACT-11030177;CRM-10552;CT-50487;2026-11-02;call;Dogovor o porudžbini;;KAM-03
+ACT-11030178;CRM-10443;;2026-11-02;call;Dogovor o porudžbini;;KAM-09
+ACT-11030179;CRM-10012;CT-50777;2026-11-02;call;Dogovor o porudžbini;;KAM-04
+ACT-11030180;CRM-10455;CT-50831;2026-11-02;visit;Obilazak prodavnice;;KAM-08
+ACT-11030181;CRM-10280;;2026-11-02;complaint;Reklamacija na isporuku;;KAM-05
+ACT-11030182;CRM-10505;CT-50256;2026-11-02;call;Dogovor o porudžbini;;KAM-01
+ACT-11030183;CRM-10362;CT-50827;2026-11-02;call;Dogovor o porudžbini;;KAM-09
+ACT-11030184;CRM-10021;;2026-11-02;visit;Obilazak prodavnice;;KAM-07
+ACT-11030185;CRM-10146;;2026-11-02;complaint;Reklamacija na isporuku;;KAM-03
+ACT-11030186;CRM-10295;;2026-11-02;call;Dogovor o porudžbini;;KAM-05
+ACT-11030187;CRM-10322;CT-50394;2026-11-02;complaint;Reklamacija na isporuku;;KAM-09
+ACT-11030188;CRM-10170;CT-50192;2026-11-02;complaint;Reklamacija na isporuku;;KAM-03
+ACT-11030189;CRM-10105;CT-50302;2026-11-02;offer;Ponuda za novogodišnji asortiman;87.158,00;KAM-03
+ACT-11030190;CRM-10538;;2026-11-02;visit;Obilazak prodavnice;;KAM-09
+ACT-11030191;CRM-10374;CT-50170;2026-11-02;call;Dogovor o porudžbini;;KAM-05
+ACT-11030192;CRM-10069;CT-50010;2026-11-02;complaint;Reklamacija na isporuku;;KAM-06
+ACT-11030193;CRM-10430;CT-50271;2026-11-02;visit;Obilazak prodavnice;;KAM-05
+ACT-11030194;CRM-10404;CT-50031;2026-11-02;visit;Obilazak prodavnice;;KAM-04
+ACT-11030195;CRM-10528;CT-50472;2026-11-02;call;Dogovor o porudžbini;;KAM-09
+ACT-11030196;CRM-10214;CT-50139;2026-11-02;offer;Ponuda za novogodišnji asortiman;392.629,00;KAM-01
+ACT-11030197;CRM-10252;;2026-11-02;offer;Ponuda za novogodišnji asortiman;112.696,00;KAM-05
+ACT-11030198;CRM-10510;CT-50156;2026-11-02;visit;Obilazak prodavnice;;KAM-05
+ACT-11030199;CRM-10470;;2026-11-02;call;Dogovor o porudžbini;;KAM-05
+ACT-11030200;CRM-10050;;2026-11-02;offer;Ponuda za novogodišnji asortiman;417.051,00;KAM-06
+ACT-11030201;CRM-10159;CT-50232;2026-11-02;visit;Obilazak prodavnice;;KAM-04
+ACT-11030202;CRM-10354;;2026-11-02;offer;Ponuda za novogodišnji asortiman;427.869,00;KAM-02
+ACT-11030203;CRM-10583;CT-50015;2026-11-02;visit;Obilazak prodavnice;;KAM-05
+ACT-11030204;CRM-10370;CT-50558;2026-11-02;call;Dogovor o porudžbini;;KAM-09
+ACT-11030205;CRM-10378;;2026-11-02;visit;Obilazak prodavnice;;KAM-05
+ACT-11030206;CRM-10049;CT-50771;2026-11-02;offer;Ponuda za novogodišnji asortiman;344.271,00;KAM-05
+ACT-11030207;CRM-10205;CT-50154;2026-11-02;visit;Obilazak prodavnice;;KAM-07
+ACT-11030208;CRM-10106;;2026-11-02;call;Dogovor o porudžbini;;KAM-01
+ACT-11030209;CRM-10463;CT-50037;2026-11-02;offer;Ponuda za novogodišnji asortiman;65.939,00;KAM-03
+ACT-11030210;CRM-10238;;2026-11-02;visit;Obilazak prodavnice;;KAM-09
+ACT-11030211;CRM-10016;CT-50662;2026-11-02;complaint;Reklamacija na isporuku;;KAM-05
+ACT-11030212;CRM-10557;CT-50087;2026-11-02;offer;Ponuda za novogodišnji asortiman;116.001,00;KAM-03
+ACT-11030213;CRM-10279;CT-50065;2026-11-02;call;Dogovor o porudžbini;;KAM-08
+ACT-11030214;CRM-10542;;2026-11-02;call;Dogovor o porudžbini;;KAM-08
+ACT-11030215;CRM-10449;;2026-11-02;complaint;Reklamacija na isporuku;;KAM-07
+ACT-11030216;CRM-10068;;2026-11-02;call;Dogovor o porudžbini;;KAM-07
+ACT-11030217;CRM-10242;CT-50027;2026-11-02;call;Dogovor o porudžbini;;KAM-08
+ACT-11030218;CRM-10573;CT-50150;2026-11-02;call;Dogovor o porudžbini;;KAM-02
+ACT-11030219;CRM-10192;CT-50822;2026-11-02;call;Dogovor o porudžbini;;KAM-09
+ACT-11030220;CRM-10339;CT-50645;2026-11-02;complaint;Reklamacija na isporuku;;KAM-03
+ACT-11030221;CRM-10047;CT-50077;2026-11-02;visit;Obilazak prodavnice;;KAM-03
+ACT-11030222;CRM-10181;;2026-11-02;offer;Ponuda za novogodišnji asortiman;400.878,00;KAM-02
+ACT-11030223;CRM-10572;;2026-11-02;call;Dogovor o porudžbini;;KAM-01
+ACT-11030224;CRM-10002;CT-50898;2026-11-02;offer;Ponuda za novogodišnji asortiman;202.223,00;KAM-05
+ACT-11030225;CRM-10186;CT-50607;2026-11-02;complaint;Reklamacija na isporuku;;KAM-04
+ACT-11030226;CRM-10582;CT-50879;2026-11-02;offer;Ponuda za novogodišnji asortiman;164.503,00;KAM-06
+ACT-11030227;CRM-10339;CT-50645;2026-11-02;call;Dogovor o porudžbini;;KAM-04
+ACT-11030228;CRM-10330;CT-50505;2026-11-02;offer;Ponuda za novogodišnji asortiman;51.629,00;KAM-04
+ACT-11030229;CRM-10274;CT-50524;2026-11-02;call;Dogovor o porudžbini;;KAM-02
+ACT-11030230;CRM-10385;CT-50484;2026-11-02;complaint;Reklamacija na isporuku;;KAM-09
+ACT-11030231;CRM-10029;;2026-11-02;call;Dogovor o porudžbini;;KAM-04
+ACT-11030232;CRM-10232;CT-50694;2026-11-02;call;Dogovor o porudžbini;;KAM-01
+ACT-11030233;CRM-10093;CT-50569;2026-11-02;call;Dogovor o porudžbini;;KAM-03
+ACT-11030234;CRM-10577;CT-50091;2026-11-02;visit;Obilazak prodavnice;;KAM-04
+ACT-11030235;CRM-10138;CT-50388;2026-11-02;call;Dogovor o porudžbini;;KAM-03
+ACT-11030236;CRM-10115;;2026-11-02;complaint;Reklamacija na isporuku;;KAM-04
+ACT-11030237;CRM-10266;;2026-11-02;call;Dogovor o porudžbini;;KAM-06
+ACT-11030238;CRM-10359;CT-50755;2026-11-02;complaint;Reklamacija na isporuku;;KAM-03
+ACT-11030239;CRM-10459;CT-50167;2026-11-02;call;Dogovor o porudžbini;;KAM-06
+ACT-11030240;CRM-10153;;2026-11-02;visit;Obilazak prodavnice;;KAM-02
+ACT-11030241;CRM-10423;;2026-11-02;call;Dogovor o porudžbini;;KAM-02
+ACT-11030242;CRM-10241;;2026-11-02;offer;Ponuda za novogodišnji asortiman;39.835,00;KAM-06
+ACT-11030243;CRM-10574;CT-50508;2026-11-02;call;Dogovor o porudžbini;;KAM-06

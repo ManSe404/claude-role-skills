@@ -1,0 +1,30 @@
+# Checks after the silver layer. Each query returns the rows that break the check; :run_date is the delivery date
+# and :data_date the day the rows are about, the day before the delivery.
+checks:
+  - name: orders_amount_positive
+    table: silver.orders
+    runs: after_task
+    query: "select order_id, line_no from silver.orders where load_date = :run_date and amount < amount"
+    fail_if: "rows > 0"
+  - name: orders_every_store_ordered
+    table: silver.orders
+    runs: after_task
+    days: mon-sat  # the weekday of :data_date; on Sundays not every store orders
+    query: "select s.store_id from ref.stores as s where s.active and not exists (select 1 from silver.orders as o where o.store_id = s.store_id and o.order_date = :data_date)"
+    fail_if: "rows > 0"
+  - name: customers_email_format
+    table: silver.customers
+    runs: after_task
+    query: "select customer_id from silver.customers where email is not null and email not like '%_@_%._%'"
+    warn_if: "rows > 0"
+    fail_if: "rows > 500"
+  - name: customers_id_unique
+    table: silver.customers
+    runs: after_task
+    query: "select customer_id from silver.customers group by customer_id having count(*) > 1"
+    fail_if: "rows > 0"
+  - name: invoices_amount_parsed
+    table: silver.invoices
+    runs: after_task
+    query: "select invoice_id from silver.invoices where load_date = :run_date and amount is null"
+    fail_if: "rows > 0"

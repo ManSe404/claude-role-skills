@@ -1,0 +1,6 @@
+# Deliveries, run records and samples stay on the platform host; only the code and the documents are in git.
+sources/*/20*/
+ops/*.jsonl
+ops/*.csv
+samples/
+__pycache__/

@@ -1,0 +1,13 @@
+table,layer,gb,eur_per_month
+bronze.erp_orders_history_full,bronze,812.00,32.48
+bronze.erp_orders,bronze,46.50,1.86
+silver.orders,silver,38.75,1.55
+bronze.erp_invoices,bronze,9.25,0.37
+silver.invoices,silver,7.50,0.30
+bronze.erp_payments,bronze,3.50,0.14
+silver.payments,silver,2.75,0.11
+gold.sales_daily,gold,2.25,0.09
+bronze.erp_returns,bronze,1.25,0.05
+silver.returns,silver,1.00,0.04
+silver.customers,silver,0.50,0.02
+gold.stock_levels,gold,0.25,0.01

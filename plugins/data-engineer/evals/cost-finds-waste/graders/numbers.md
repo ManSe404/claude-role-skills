@@ -1,0 +1,7 @@
+---
+type: llm
+---
+
+The platform's bill for the 31 days from 2026-10-05 to 2026-11-04 is EUR 1,326.74: compute EUR 1,289.72 and storage EUR 37.02 a month. It has four planted problems: (1) bronze.erp_orders_history_full, the largest table at 812 GB and EUR 32.48 a month, is read by nothing (0 queries, no SQL reads it); its SQL says it is a one-off copy to drop once finance signs the reconciliation off; (2) rebuild_customers reloads silver.customers in full every morning for EUR 46.14, though only 347 of the 750,333 rows it wrote over 31 runs changed (at most 17 in a run); (3) refresh_stock runs every 5 minutes (288 runs a day, 8,928 in the period, EUR 133.92) while gold.stock_levels is read 54 times in the period, at most twice a day; (4) the dev-adhoc cluster is billed 24 hours every day, 744 hours and EUR 892.80, with no job on it, EUR 230.40 of it on 8 weekend days. Decoy: build_sales_daily is the most expensive job (EUR 182.36), but gold.sales_daily is read 3,007 times by 5 consumers, 4 of them every hour; it is not waste.
+PASS if the reply names at least 3 of the 4 problems with their EUR figure (or a saving computed from it), states the total as EUR 1,326.74 or the compute as EUR 1,289.72, and does not propose cutting build_sales_daily or gold.sales_daily as waste.
+FAIL if it names fewer than 3, states another total, proposes cutting build_sales_daily as waste, or says it changed files.

@@ -1,0 +1,588 @@
+{
+  "skill": "data-quality",
+  "title": "acme-pipeline: which tables to trust",
+  "subtitle": "What the checks, the quarantine and the run records show for 5 Oct – 4 Nov 2026. The ops records end on 4 Nov; nothing after that was available.",
+  "meta": {
+    "repo": "acme-pipeline",
+    "commit": "703a806",
+    "date": "2026-11-10",
+    "period": "2026-10-05 to 2026-11-04 (31 days)"
+  },
+  "verdict": {
+    "tone": "bad",
+    "text": "Do not use `silver.orders` or `gold.sales_daily`. Every order delivery since 3 Nov has failed to load because the amounts now arrive with a decimal comma, so `sales_daily` was last built on 2 Nov 07:35. Since 28 Oct a new store id, S-031, has also been held in quarantine because `ref/stores.csv` lacks it. That is about 110 order lines a day, 12% of the order lines. Fix `orders_amount_positive` first: `amount < amount` can never fail. Then add a check on the quarantine, which would have flagged S-031 on its first day."
+  },
+  "stats": [
+    {
+      "label": "Check results",
+      "value": 330,
+      "note": "11 checks, 31 days",
+      "tone": "info"
+    },
+    {
+      "label": "Failures",
+      "value": 3,
+      "note": "2 real (sales_daily stale), 1 explained holiday",
+      "tone": "bad"
+    },
+    {
+      "label": "Tables: do not use",
+      "value": 2,
+      "note": "silver.orders, gold.sales_daily",
+      "tone": "bad"
+    },
+    {
+      "label": "Checks that prove nothing",
+      "value": 2,
+      "note": "1 cannot fail, 1 warns every day",
+      "tone": "warn"
+    },
+    {
+      "label": "Rows quarantined",
+      "value": 888,
+      "note": "665 of them S-031, since 28 Oct",
+      "tone": "warn"
+    }
+  ],
+  "sections": [
+    {
+      "id": "verdicts",
+      "title": "Verdict per table",
+      "intro": "As of the last day in the records, 4 Nov. Whether anything was fixed between 5 and 10 Nov is not in the data.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Table",
+            "Verdict",
+            "Why",
+            "Last result"
+          ],
+          "rows": [
+            [
+              "silver.orders",
+              "do not use",
+              "The loads of 3 Nov (two attempts) and 4 Nov failed on `\"18846,00\"` and `\"5388,00\"`, so order days 2 and 3 Nov are missing. S-031 has 665 lines held out since 28 Oct. Its amount check cannot fail.",
+              "load failed 4 Nov 07:41; no check result on 3 or 4 Nov"
+            ],
+            [
+              "gold.sales_daily",
+              "do not use",
+              "Not built since 2 Nov 07:35 against an 08:00 SLA. Built from `silver.orders` with an inner join on `ref.stores`, so S-031 has been missing since 28 Oct too.",
+              "sales_daily_fresh fail, 4 Nov"
+            ],
+            [
+              "silver.customers",
+              "use with care",
+              "38 malformed e-mails on 4 Nov. It has warned on 31 of 31 days with 37–41 rows and nobody acted. Three customers have no tax id (78 quarantine rows).",
+              "customers_email_format warn, 38 rows"
+            ],
+            [
+              "silver.payments",
+              "use with care",
+              "No check at all. It loaded on 31 of 31 days, but casts `amount` directly, the same code that broke `silver.orders`. The finance cash plan reads it.",
+              "loaded 4 Nov 07:49; no checks"
+            ],
+            [
+              "silver.returns",
+              "use with care",
+              "No check at all. It has the same direct `amount` cast. No reader in the query log.",
+              "loaded 4 Nov 07:48; no checks"
+            ],
+            [
+              "gold.stock_levels",
+              "safe",
+              "Both checks passed on 31 of 31 days, could fail and were tried on bad data. Freshness is only seen once a day at 23:55, though, so a daytime outage would go unseen [high]. If the ERP has stock for S-031, it is dropped by the same join on `ref.stores` [med].",
+              "both checks pass, 4 Nov"
+            ],
+            [
+              "silver.invoices",
+              "safe",
+              "Loaded on 31 of 31 days. `invoices_amount_parsed` passed on 31 of 31 days and was tried on 15 Sep on three bad formats. It only catches empty amounts.",
+              "invoices_amount_parsed pass, 4 Nov"
+            ],
+            [
+              "bronze.erp_orders",
+              "safe",
+              "Loaded every delivery, including 3 and 4 Nov (1,038 and 1,013 rows). Its not-empty and key-unique checks passed on 31 of 31 days and were both tried on 20 Jul. It is raw: the S-031 lines and the comma amounts are in it, untyped.",
+              "both checks pass, 4 Nov"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "findings",
+      "title": "Findings",
+      "blocks": [
+        {
+          "type": "findings",
+          "items": [
+            {
+              "severity": "high",
+              "title": "Order load fails on every delivery since 3 Nov; gold.sales_daily is two days stale and nobody logged it",
+              "where": "pipeline/silver/orders.sql:18; ops/runs.jsonl (3 Nov 07:40 and 09:14, 4 Nov 07:40); ops/incident-log.md:13",
+              "evidence": "Three failed attempts, each `invalid input syntax for type numeric` on a comma amount. `build_sales_daily` was skipped on 3 and 4 Nov, `sales_daily_fresh` failed on both days, and the last build was 2 Nov 07:35. The 14 Sep invoice incident had the same cause, and its open item, \"check the other ERP amount columns\", was never closed. The 3 Nov retry at 09:12 changed nothing. The incident log has no entry after 14 Sep. Finance, the BI sales board, the store ops app, the franchise portal and the regional managers' report all read `sales_daily`: 744 queries each in the period for the four hourly readers, 31 for finance.",
+              "fix": "Use `util.parse_amount(amount)` in `silver/orders.sql:18`, and the same in `silver/returns.sql:10` and `silver/payments.sql:9`. Then reload the deliveries from 3 Nov onward and rebuild `sales_daily`. Write up the incident. The pipeline-incident skill can trace it end to end."
+            },
+            {
+              "severity": "high",
+              "title": "S-031 has been held in quarantine since 28 Oct, about 12% of order lines, and no check watches the quarantine",
+              "where": "checks/quarantine.yaml:4-8; ref/stores.csv (30 stores, last changed 8 Jun); pipeline/gold/sales_daily.sql:19; checks/silver.yaml:13",
+              "evidence": "665 lines over 6 deliveries (28 Oct – 2 Nov), 103 to 123 a day, against 0 before. `silver.orders` kept writing about 900 rows a day while bronze rose to about 1,020, so this is new volume, not a re-keyed store. These lines are missing from `silver.orders` and `gold.sales_daily`. `orders_every_store_ordered` reads the same `ref.stores`, so it cannot see a store the reference lacks. Nothing alerts on the quarantine.",
+              "fix": "Confirm with operations what S-031 is, add its row to `ref/stores.csv` and reload the deliveries from 28 Oct. Add a check on `ops/quarantine.jsonl` that warns when a rule takes more than 10 rows a day and fails on a value not seen before."
+            },
+            {
+              "severity": "high",
+              "title": "orders_amount_positive cannot fail and was never tried on bad data",
+              "where": "checks/silver.yaml:7; checks/tests/cases.yaml (no case)",
+              "evidence": "`amount < amount` is never true, so the query returns 0 rows whatever the data. Its 29 passes prove nothing, and `silver.orders` has no other check on amounts.",
+              "fix": "Use the condition that was meant, `amount <= 0` (or `amount < 0` if zero-price lines are legitimate). Add a test case with one negative and one zero amount and see it fail."
+            },
+            {
+              "severity": "medium",
+              "title": "customers_email_format warns every day and can never fail",
+              "where": "checks/silver.yaml:15-20; ops/checks.jsonl (31 warn results)",
+              "evidence": "It warned on 31 of 31 days with 37–41 rows. `fail_if: rows > 500` is about 12 times the observed level, so it never fires. A daily warning nobody acts on hides the day it gets worse. `gold.sales_daily` serves `customer_email` to finance for follow-ups.",
+              "fix": "Correct the 37–41 addresses in the ERP and set `fail_if: rows > 0`. Until then, set `fail_if: rows > 45` so a rise shows."
+            },
+            {
+              "severity": "medium",
+              "title": "A failed load leaves no check result, and nothing notices the gap",
+              "where": "ops/checks.jsonl (silver.orders: 29 and 24 results); jobs/load_erp_orders.yaml:15-19",
+              "evidence": "On 3 and 4 Nov the `silver.orders` checks simply did not run. Their silence looked the same as a pass, and only the downstream `sales_daily_fresh` turned red.",
+              "fix": "Treat a scheduled check with no result for a run date as a failure, or add a freshness check on `silver.orders` itself (newest `load_date` = today)."
+            },
+            {
+              "severity": "medium",
+              "title": "stock_levels_fresh promises \"any time of the day\" but looks once at 23:55",
+              "where": "checks/gold.yaml:13-17; jobs/refresh_stock.yaml:6",
+              "evidence": "It runs on the cron `55 23 * * *`. `refresh_stock` writes only failed runs, and none were written in the period. A refresh that stopped at 10:00 and recovered by 23:55 would be seen by neither. The job's purpose is current stock for the stores, and `stock_planner` queried it 54 times.",
+              "fix": "Run the freshness check every 15 minutes in opening hours, or have `refresh_stock` write a heartbeat per run and check the largest gap."
+            },
+            {
+              "severity": "medium",
+              "title": "silver.payments and silver.returns have no checks and the same direct amount cast",
+              "where": "pipeline/silver/payments.sql:9; pipeline/silver/returns.sql:10; jobs/load_erp_finance.yaml:20-25",
+              "evidence": "Both loaded on 31 of 31 days. The day the ERP switches their export to a decimal comma they will fail like `silver.orders`, or worse, load wrongly with no check to see it. The finance cash plan reads `silver.payments`.",
+              "fix": "Switch both to `util.parse_amount`, and add an `amount is null` check and a not-empty check like the invoice ones, each with a test case."
+            },
+            {
+              "severity": "low",
+              "title": "The missing_tax_id quarantine does not seem to keep rows out of silver.customers",
+              "where": "checks/quarantine.yaml:1-2,9-13; pipeline/silver/customers.sql:4-17",
+              "evidence": "The quarantine file says flagged rows stay out of silver. `customers.sql` loads every row of `erp_replica.customers` with no quarantine filter, so the 3 customers are probably in `silver.customers` with a null `tax_id` [med]. Not one of the 3 is a store franchisee in `ref.stores`.",
+              "fix": "Decide which is meant: filter them out in `customers.sql`, or call the rule a flag rather than a quarantine. Then get the 3 tax ids from the ERP."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "checks",
+      "title": "Checks over the period",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Check",
+            "Table",
+            "Pass",
+            "Warn",
+            "Fail",
+            "Failing rows",
+            "Test case"
+          ],
+          "rows": [
+            [
+              "orders_amount_positive",
+              "silver.orders",
+              29,
+              0,
+              0,
+              "0",
+              "none: cannot fail"
+            ],
+            [
+              "orders_every_store_ordered",
+              "silver.orders",
+              23,
+              0,
+              1,
+              "0–4",
+              "20 Jul, fail"
+            ],
+            [
+              "sales_daily_fresh",
+              "gold.sales_daily",
+              29,
+              0,
+              2,
+              "n/a",
+              "20 Jul, fail"
+            ],
+            [
+              "sales_daily_key_unique",
+              "gold.sales_daily",
+              29,
+              0,
+              0,
+              "0",
+              "20 Jul, fail"
+            ],
+            [
+              "customers_email_format",
+              "silver.customers",
+              0,
+              31,
+              0,
+              "37–41",
+              "20 Jul, warn"
+            ],
+            [
+              "customers_id_unique",
+              "silver.customers",
+              31,
+              0,
+              0,
+              "0",
+              "20 Jul, fail"
+            ],
+            [
+              "invoices_amount_parsed",
+              "silver.invoices",
+              31,
+              0,
+              0,
+              "0",
+              "15 Sep, fail"
+            ],
+            [
+              "stock_levels_fresh",
+              "gold.stock_levels",
+              31,
+              0,
+              0,
+              "n/a",
+              "20 Jul, fail"
+            ],
+            [
+              "stock_levels_non_negative",
+              "gold.stock_levels",
+              31,
+              0,
+              0,
+              "0",
+              "20 Jul, fail"
+            ],
+            [
+              "erp_orders_not_empty",
+              "bronze.erp_orders",
+              31,
+              0,
+              0,
+              "0",
+              "20 Jul, fail"
+            ],
+            [
+              "erp_orders_key_unique",
+              "bronze.erp_orders",
+              31,
+              0,
+              0,
+              "0",
+              "20 Jul, fail"
+            ]
+          ]
+        },
+        {
+          "type": "text",
+          "text": "The `silver.orders` checks have fewer results because the table did not load on 3 and 4 Nov. `orders_every_store_ordered` also skips the Monday deliveries, which carry Sunday's orders, by design (`days: mon-sat`). Every check has a definition and every result has a check: none is orphaned."
+        }
+      ]
+    },
+    {
+      "id": "freshness",
+      "title": "Freshness",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Table",
+            "SLA",
+            "Last built",
+            "Days late"
+          ],
+          "rows": [
+            [
+              "gold.sales_daily",
+              "08:00 (jobs/build_sales_daily.yaml:8)",
+              "2 Nov 07:35",
+              "2 in the records (3, 4 Nov); still late on 10 Nov unless fixed [guess]"
+            ],
+            [
+              "silver.orders",
+              "none; feeds sales_daily",
+              "2 Nov 07:27",
+              "2 deliveries failed (3, 4 Nov)"
+            ],
+            [
+              "gold.stock_levels",
+              "none in the job; the check says 15 min",
+              "not recorded (failures only)",
+              "0 seen, checked once a day at 23:55"
+            ],
+            [
+              "silver.customers",
+              "none",
+              "4 Nov 04:24",
+              0
+            ],
+            [
+              "silver.invoices",
+              "none",
+              "4 Nov 07:48",
+              0
+            ],
+            [
+              "silver.payments",
+              "none",
+              "4 Nov 07:49",
+              0
+            ],
+            [
+              "silver.returns",
+              "none",
+              "4 Nov 07:48",
+              0
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "warn",
+          "text": "Even on good days the 08:00 SLA of `sales_daily` is thin. The ERP file arrived late on 23 of 32 order runs (36–67 minutes after 06:30), and the build finished as late as 07:52 (5 Oct). A file 10 minutes later than usual misses the SLA."
+        }
+      ]
+    },
+    {
+      "id": "quarantine",
+      "title": "Quarantine",
+      "intro": "Two rules: `unknown_store_id` on order lines (810 rows) and `missing_tax_id` on customers (78 rows). The order rule jumped from 3–7 rows a day to 107–129 on 28 Oct, 103–123 of them S-031. Nothing was quarantined on 3 and 4 Nov because `silver.orders` failed before that step.",
+      "blocks": [
+        {
+          "type": "chart",
+          "kind": "line",
+          "title": "unknown_store_id: rows quarantined per delivery day, by store id",
+          "unit": "rows",
+          "x_label": "Delivery date",
+          "categories": [
+            "10-05",
+            "10-06",
+            "10-07",
+            "10-08",
+            "10-09",
+            "10-10",
+            "10-11",
+            "10-12",
+            "10-13",
+            "10-14",
+            "10-15",
+            "10-16",
+            "10-17",
+            "10-18",
+            "10-19",
+            "10-20",
+            "10-21",
+            "10-22",
+            "10-23",
+            "10-24",
+            "10-25",
+            "10-26",
+            "10-27",
+            "10-28",
+            "10-29",
+            "10-30",
+            "10-31",
+            "11-01",
+            "11-02"
+          ],
+          "series": [
+            {
+              "name": "S-031",
+              "values": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                123,
+                103,
+                116,
+                108,
+                110,
+                105
+              ]
+            },
+            {
+              "name": "S-000",
+              "values": [
+                5,
+                4,
+                7,
+                3,
+                6,
+                4,
+                4,
+                4,
+                5,
+                6,
+                4,
+                7,
+                6,
+                3,
+                7,
+                7,
+                5,
+                6,
+                7,
+                7,
+                3,
+                3,
+                4,
+                6,
+                4,
+                7,
+                3,
+                4,
+                4
+              ]
+            }
+          ],
+          "caption": "S-031 is new on 28 Oct and makes up about 12% of each day's order lines since. S-000 is a steady trickle all period."
+        },
+        {
+          "type": "table",
+          "title": "What the rules hold",
+          "columns": [
+            "Rule",
+            "Value",
+            "Rows",
+            "First day",
+            "Last day",
+            "In the reference",
+            "Missing from"
+          ],
+          "rows": [
+            [
+              "unknown_store_id",
+              "S-031",
+              665,
+              "2026-10-28",
+              "2026-11-02",
+              "no (ref/stores.csv ends at S-030)",
+              "silver.orders, gold.sales_daily"
+            ],
+            [
+              "unknown_store_id",
+              "S-000",
+              145,
+              "2026-10-05",
+              "2026-11-02",
+              "no",
+              "silver.orders, gold.sales_daily"
+            ],
+            [
+              "missing_tax_id",
+              "empty tax_id (3 customers)",
+              78,
+              "2026-10-05",
+              "2026-11-04",
+              "n/a",
+              "silver.customers, per the rule [med]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fine",
+      "title": "What looked wrong but is fine",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "`orders_every_store_ordered` failed on 24 Oct with 4 rows. These are the four Szeged stores (S-027 to S-030), closed on 23 Oct for the Hungarian national holiday, as the result's note says. It passed on 25 Oct. This is the check working.",
+            "`wait_for_file` warned on 23 of 32 order runs. The ERP delivers late on working days, and since commit 3e47102 the job waits up to 180 minutes. `sales_daily` still made 08:00 on every day it was built.",
+            "`missing_tax_id` went from 2 to 3 rows a day on 20 Oct. That is one more customer, not a jump. The same 3 customers come back every day because `silver.customers` is reloaded in full. None is a store franchisee.",
+            "S-000 is not the jump: it held 3–7 rows a day for the whole period. What it is remains an open question (see below).",
+            "`refresh_stock` has no run records. This is by design (`record_runs: failures`): zero means no failed run was written."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "not-checked",
+      "title": "What this summary did not check",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "Anything after 4 Nov. The ops records end there, so whether the order load was fixed between 5 and 10 Nov is unknown. Look at the live `ops/runs.jsonl` before the meeting.",
+            "The warehouse itself. No query was run. Every count here comes from the run records, the check results and the quarantine file.",
+            "The money behind S-031's 665 lines: bronze is not in the repository. Line counts only.",
+            "Whether `util.parse_amount` reads every format correctly. `invoices_amount_parsed` only catches empty amounts, so a value parsed the wrong way would pass.",
+            "The bronze finance tables (`erp_invoices`, `erp_returns`, `erp_payments`), which have no checks.",
+            "Personal data served in gold (`customer_email` in `gold.sales_daily`, read by the franchise portal). That belongs to a data-review or data-product page.",
+            "The runbook says `load_erp_orders` runs at 05:00, but the job starts at 06:30 (docs/runbook.md:11, jobs/load_erp_orders.yaml:3)."
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "Data quality of the acme-pipeline tables, from ops/checks.jsonl, ops/quarantine.jsonl and ops/runs.jsonl for 2026-10-05 to 2026-11-04, and the definitions in checks/",
+    "data": [
+      {
+        "name": "franchisee contact e-mail",
+        "class": "personal",
+        "where": [
+          "silver.customers",
+          "gold.sales_daily"
+        ],
+        "rule": "not reviewed here"
+      }
+    ],
+    "assumptions": [
+      "The ops files are the export of 4 Nov; the state on 10 Nov may differ.",
+      "S-031 is a real new store or customer. This is inferred because silver kept its usual about 900 rows while bronze grew by about 110.",
+      "A quarantine date is the delivery date, so order days are one day earlier."
+    ],
+    "open": [
+      "What is S-031, and who adds new stores to ref/stores.csv?",
+      "What is S-000? It has been 3–7 order lines a day for the whole period.",
+      "Was the order load fixed and reloaded after 4 Nov?",
+      "Does the missing_tax_id rule really keep the 3 customers out of silver.customers?",
+      "Does erp_replica.stock hold S-031 stock that gold.stock_levels drops?"
+    ]
+  }
+}

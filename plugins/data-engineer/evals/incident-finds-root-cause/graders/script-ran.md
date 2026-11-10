@@ -1,0 +1,6 @@
+---
+type: tool_used
+tool: Bash
+input_match: "run_trace\\.py"
+min: 1
+---

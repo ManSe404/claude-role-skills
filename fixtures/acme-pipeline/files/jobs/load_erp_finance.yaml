@@ -1,0 +1,25 @@
+name: load_erp_finance
+description: Load the ERP invoices, returns and payments of the previous day into bronze and silver.
+schedule: "45 7 * * *"
+timezone: Europe/Belgrade
+cluster: etl
+steps:
+  - task: bronze.erp_invoices
+    layer: bronze
+    run: python3 -m pipeline.loaders.erp invoices
+  - task: bronze.erp_returns
+    layer: bronze
+    run: python3 -m pipeline.loaders.erp returns
+  - task: bronze.erp_payments
+    layer: bronze
+    run: python3 -m pipeline.loaders.erp payments
+  - task: silver.invoices
+    layer: silver
+    sql: pipeline/silver/invoices.sql
+    checks: checks/silver.yaml
+  - task: silver.returns
+    layer: silver
+    sql: pipeline/silver/returns.sql
+  - task: silver.payments
+    layer: silver
+    sql: pipeline/silver/payments.sql

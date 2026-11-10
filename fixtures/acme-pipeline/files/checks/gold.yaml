@@ -1,0 +1,22 @@
+# Checks of the gold layer. `runs` is after_task, or a cron for the checks the scheduler runs at fixed times.
+checks:
+  - name: sales_daily_fresh
+    table: gold.sales_daily
+    runs: "0 8 * * *"
+    freshness: built_at
+    fail_if: "not built today by 08:00"
+  - name: sales_daily_key_unique
+    table: gold.sales_daily
+    runs: after_task
+    query: "select sales_date, store_id, currency from gold.sales_daily group by sales_date, store_id, currency having count(*) > 1"
+    fail_if: "rows > 0"
+  - name: stock_levels_fresh
+    table: gold.stock_levels
+    runs: "55 23 * * *"
+    freshness: refreshed_at
+    fail_if: "older than 15 minutes at any time of the day"
+  - name: stock_levels_non_negative
+    table: gold.stock_levels
+    runs: "55 23 * * *"
+    query: "select store_id, product_id from gold.stock_levels where on_hand < 0"
+    fail_if: "rows > 0"

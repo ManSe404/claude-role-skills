@@ -1,0 +1,31 @@
+store_id,store_name,city,country,currency,customer_id,opened_on,active
+S-001,Acme Market Novi Sad Centar,Novi Sad,RS,RSD,C-20101,2018-03-01,true
+S-002,Acme Market Novi Sad Liman 1,Novi Sad,RS,RSD,C-20102,2018-05-14,true
+S-003,Acme Market Novi Sad Liman 2,Novi Sad,RS,RSD,C-20103,2019-02-04,true
+S-004,Acme Market Novi Sad Detelinara,Novi Sad,RS,RSD,C-20104,2019-06-17,true
+S-005,Acme Market Novi Sad Grbavica,Novi Sad,RS,RSD,C-20105,2019-09-02,true
+S-006,Acme Market Novi Sad Klisa,Novi Sad,RS,RSD,C-20106,2020-03-09,true
+S-007,Acme Market Petrovaradin,Novi Sad,RS,RSD,C-20107,2020-05-25,true
+S-008,Acme Market Sremska Kamenica,Novi Sad,RS,RSD,C-20108,2020-10-12,true
+S-009,Acme Market Zrenjanin,Zrenjanin,RS,RSD,C-20109,2021-02-01,true
+S-010,Acme Market Subotica,Subotica,RS,RSD,C-20110,2021-04-19,true
+S-011,Acme Market Sombor,Sombor,RS,RSD,C-20111,2021-06-07,true
+S-012,Acme Market Kikinda,Kikinda,RS,RSD,C-20112,2021-09-13,true
+S-013,Acme Market Pančevo,Pančevo,RS,RSD,C-20113,2022-01-17,true
+S-014,Acme Market Sremska Mitrovica,Sremska Mitrovica,RS,RSD,C-20114,2022-03-21,true
+S-015,Acme Market Vršac,Vršac,RS,RSD,C-20115,2022-05-30,true
+S-016,Acme Market Vrbas,Vrbas,RS,RSD,C-20116,2022-08-22,true
+S-017,Acme Market Bačka Palanka,Bačka Palanka,RS,RSD,C-20117,2022-10-03,true
+S-018,Acme Market Ruma,Ruma,RS,RSD,C-20118,2023-02-06,true
+S-019,Acme Market Inđija,Inđija,RS,RSD,C-20119,2023-04-24,true
+S-020,Acme Market Stara Pazova,Stara Pazova,RS,RSD,C-20120,2023-06-12,true
+S-021,Acme Market Bečej,Bečej,RS,RSD,C-20121,2023-09-04,true
+S-022,Acme Market Kula,Kula,RS,RSD,C-20122,2024-01-15,true
+S-023,Acme Market Temerin,Temerin,RS,RSD,C-20123,2024-03-18,true
+S-024,Acme Market Šid,Šid,RS,RSD,C-20124,2024-05-27,true
+S-025,Acme Market Senta,Senta,RS,RSD,C-20125,2024-09-09,true
+S-026,Acme Market Apatin,Apatin,RS,RSD,C-20126,2025-02-03,true
+S-027,Acme Market Szeged Belváros,Szeged,HU,EUR,C-20127,2025-04-07,true
+S-028,Acme Market Szeged Újszeged,Szeged,HU,EUR,C-20128,2025-06-02,true
+S-029,Acme Market Szeged Tarján,Szeged,HU,EUR,C-20129,2025-09-15,true
+S-030,Acme Market Szeged Kiskundorozsma,Szeged,HU,EUR,C-20130,2026-03-02,true

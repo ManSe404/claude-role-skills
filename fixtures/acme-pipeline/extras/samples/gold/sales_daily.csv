@@ -1,0 +1,905 @@
+sales_date,store_id,store_name,currency,orders,order_lines,gross_revenue,cancelled_amount,net_revenue,kg_eq,customer_id,customer_email,built_at
+2026-10-04,S-001,Acme Market Novi Sad Centar,RSD,5,14,284700.00,0.00,284700.00,553.320,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-002,Acme Market Novi Sad Liman 1,RSD,5,16,179268.00,0.00,179268.00,330.180,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-003,Acme Market Novi Sad Liman 2,RSD,6,13,222714.00,2502.00,220212.00,358.620,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-004,Acme Market Novi Sad Detelinara,RSD,5,11,193080.00,5940.00,187140.00,445.020,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-005,Acme Market Novi Sad Grbavica,RSD,4,11,230772.00,0.00,230772.00,425.580,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-006,Acme Market Novi Sad Klisa,RSD,4,11,319344.00,0.00,319344.00,527.640,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-007,Acme Market Petrovaradin,RSD,4,13,207474.00,0.00,207474.00,417.900,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-008,Acme Market Sremska Kamenica,RSD,4,12,109356.00,0.00,109356.00,184.860,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-009,Acme Market Zrenjanin,RSD,3,8,424434.00,8358.00,416076.00,453.720,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-010,Acme Market Subotica,RSD,3,8,60576.00,0.00,60576.00,119.040,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-011,Acme Market Sombor,RSD,4,9,104712.00,0.00,104712.00,152.520,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-012,Acme Market Kikinda,RSD,3,9,82944.00,1194.00,81750.00,281.400,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-013,Acme Market Pančevo,RSD,2,8,73242.00,0.00,73242.00,397.440,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-014,Acme Market Sremska Mitrovica,RSD,4,15,278250.00,0.00,278250.00,406.980,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-015,Acme Market Vršac,RSD,6,16,278868.00,7854.00,271014.00,595.740,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-016,Acme Market Vrbas,RSD,3,11,241374.00,0.00,241374.00,487.440,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-017,Acme Market Bačka Palanka,RSD,3,14,151590.00,25128.00,126462.00,417.900,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-018,Acme Market Ruma,RSD,6,16,252294.00,0.00,252294.00,485.760,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-019,Acme Market Inđija,RSD,3,9,258036.00,0.00,258036.00,346.800,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-020,Acme Market Stara Pazova,RSD,3,13,96360.00,20670.00,75690.00,297.180,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-021,Acme Market Bečej,RSD,6,12,160500.00,0.00,160500.00,309.180,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-022,Acme Market Kula,RSD,4,14,245388.00,0.00,245388.00,399.540,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-023,Acme Market Temerin,RSD,4,16,182226.00,0.00,182226.00,653.520,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-024,Acme Market Šid,RSD,5,14,195732.00,10140.00,185592.00,491.280,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-025,Acme Market Senta,RSD,4,11,194478.00,0.00,194478.00,395.700,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-026,Acme Market Apatin,RSD,4,15,299562.00,0.00,299562.00,596.820,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-027,Acme Market Szeged Belváros,EUR,3,10,693.60,0.00,693.60,341.940,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-028,Acme Market Szeged Újszeged,EUR,6,15,1336.44,102.00,1234.44,317.100,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-029,Acme Market Szeged Tarján,EUR,2,10,688.50,0.00,688.50,241.320,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-030,Acme Market Szeged Kiskundorozsma,EUR,3,8,1770.60,0.00,1770.60,230.400,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-04,S-030,Acme Market Szeged Kiskundorozsma,HUF,1,1,4200.00,0.00,4200.00,0.000,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-001,Acme Market Novi Sad Centar,RSD,9,34,566754.00,0.00,566754.00,983.580,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-002,Acme Market Novi Sad Liman 1,RSD,8,33,451374.00,16422.00,434952.00,1248.480,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-003,Acme Market Novi Sad Liman 2,RSD,7,29,407838.00,0.00,407838.00,1040.880,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-004,Acme Market Novi Sad Detelinara,RSD,7,29,373860.00,0.00,373860.00,812.820,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-005,Acme Market Novi Sad Grbavica,RSD,7,25,394968.00,0.00,394968.00,1121.100,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-006,Acme Market Novi Sad Klisa,RSD,11,30,402540.00,3402.00,399138.00,1124.160,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-007,Acme Market Petrovaradin,RSD,9,29,478296.00,115104.00,363192.00,1044.360,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-008,Acme Market Sremska Kamenica,RSD,10,26,417582.00,0.00,417582.00,831.600,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-009,Acme Market Zrenjanin,RSD,8,24,371148.00,0.00,371148.00,584.940,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-010,Acme Market Subotica,RSD,7,27,438438.00,0.00,438438.00,1146.720,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-011,Acme Market Sombor,RSD,8,31,432342.00,16770.00,415572.00,946.080,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-012,Acme Market Kikinda,RSD,11,27,437154.00,0.00,437154.00,836.160,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-013,Acme Market Pančevo,RSD,7,24,546042.00,9252.00,536790.00,857.940,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-014,Acme Market Sremska Mitrovica,RSD,7,24,267570.00,0.00,267570.00,757.020,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-015,Acme Market Vršac,RSD,7,27,672180.00,2394.00,669786.00,837.420,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-016,Acme Market Vrbas,RSD,10,33,537696.00,7140.00,530556.00,1071.780,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-017,Acme Market Bačka Palanka,RSD,10,30,513720.00,0.00,513720.00,1254.540,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-018,Acme Market Ruma,RSD,8,30,368490.00,41976.00,326514.00,905.400,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-019,Acme Market Inđija,RSD,10,28,591828.00,0.00,591828.00,1089.660,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-020,Acme Market Stara Pazova,RSD,12,35,529056.00,0.00,529056.00,1297.200,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-021,Acme Market Bečej,RSD,12,34,582870.00,3792.00,579078.00,1173.300,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-022,Acme Market Kula,RSD,9,36,425316.00,0.00,425316.00,1419.000,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-023,Acme Market Temerin,RSD,10,32,688362.00,13410.00,674952.00,927.360,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-024,Acme Market Šid,RSD,11,32,447210.00,13986.00,433224.00,1024.980,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-025,Acme Market Senta,RSD,10,31,349050.00,0.00,349050.00,990.120,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-026,Acme Market Apatin,RSD,9,32,326274.00,0.00,326274.00,825.900,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-027,Acme Market Szeged Belváros,EUR,9,33,4014.66,102.00,3912.66,1134.240,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-028,Acme Market Szeged Újszeged,EUR,6,24,3353.28,246.96,3106.32,759.900,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-028,Acme Market Szeged Újszeged,HUF,1,1,4800.00,0.00,4800.00,0.000,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-029,Acme Market Szeged Tarján,EUR,11,30,4995.60,163.80,4831.80,1126.860,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-05,S-030,Acme Market Szeged Kiskundorozsma,EUR,11,33,4566.78,0.00,4566.78,1192.920,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-001,Acme Market Novi Sad Centar,RSD,9,27,363006.00,10206.00,352800.00,925.680,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-002,Acme Market Novi Sad Liman 1,RSD,9,27,671856.00,7854.00,664002.00,1035.300,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-003,Acme Market Novi Sad Liman 2,RSD,7,31,423390.00,0.00,423390.00,1042.920,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-004,Acme Market Novi Sad Detelinara,RSD,11,36,469962.00,0.00,469962.00,1285.800,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-005,Acme Market Novi Sad Grbavica,RSD,9,32,510930.00,0.00,510930.00,1501.440,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-006,Acme Market Novi Sad Klisa,RSD,7,26,350430.00,4776.00,345654.00,975.000,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-007,Acme Market Petrovaradin,RSD,9,32,432384.00,0.00,432384.00,1286.580,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-008,Acme Market Sremska Kamenica,RSD,7,26,487506.00,35844.00,451662.00,1116.840,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-009,Acme Market Zrenjanin,RSD,10,28,346740.00,0.00,346740.00,891.480,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-010,Acme Market Subotica,RSD,9,32,441504.00,8910.00,432594.00,1201.680,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-011,Acme Market Sombor,RSD,11,36,648246.00,4806.00,643440.00,1243.980,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-012,Acme Market Kikinda,RSD,9,29,481692.00,5940.00,475752.00,947.340,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-013,Acme Market Pančevo,RSD,10,33,617496.00,13986.00,603510.00,1069.260,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-014,Acme Market Sremska Mitrovica,RSD,11,35,567906.00,0.00,567906.00,1355.040,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-015,Acme Market Vršac,RSD,8,29,424380.00,0.00,424380.00,979.560,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-016,Acme Market Vrbas,RSD,7,32,647940.00,2028.00,645912.00,1248.720,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-017,Acme Market Bačka Palanka,RSD,10,29,429960.00,8196.00,421764.00,1024.440,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-018,Acme Market Ruma,RSD,9,25,690900.00,0.00,690900.00,1078.020,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-019,Acme Market Inđija,RSD,9,30,388194.00,0.00,388194.00,892.740,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-020,Acme Market Stara Pazova,RSD,8,32,503754.00,0.00,503754.00,1054.860,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-021,Acme Market Bečej,RSD,10,35,667398.00,5970.00,661428.00,1301.940,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-022,Acme Market Kula,RSD,11,30,437022.00,0.00,437022.00,901.200,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-023,Acme Market Temerin,RSD,8,26,420978.00,1554.00,419424.00,1127.400,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-024,Acme Market Šid,RSD,9,30,426948.00,0.00,426948.00,844.380,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-025,Acme Market Senta,RSD,10,31,595308.00,5838.00,589470.00,1351.080,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-026,Acme Market Apatin,RSD,8,36,720090.00,13812.00,706278.00,1076.220,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-027,Acme Market Szeged Belváros,EUR,7,26,4290.42,920.70,3369.72,906.300,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-028,Acme Market Szeged Újszeged,EUR,7,30,5728.26,81.60,5646.66,1308.240,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-028,Acme Market Szeged Újszeged,HUF,1,1,12000.00,0.00,12000.00,0.000,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-029,Acme Market Szeged Tarján,EUR,9,34,5010.36,1114.50,3895.86,1136.700,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-030,Acme Market Szeged Kiskundorozsma,EUR,9,31,4924.44,0.00,4924.44,999.540,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-06,S-030,Acme Market Szeged Kiskundorozsma,HUF,1,1,3000.00,0.00,3000.00,0.000,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-001,Acme Market Novi Sad Centar,RSD,6,25,456024.00,0.00,456024.00,1065.780,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-002,Acme Market Novi Sad Liman 1,RSD,12,35,622230.00,0.00,622230.00,1313.460,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-003,Acme Market Novi Sad Liman 2,RSD,8,27,434142.00,0.00,434142.00,1070.100,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-004,Acme Market Novi Sad Detelinara,RSD,11,34,721338.00,13356.00,707982.00,1140.240,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-005,Acme Market Novi Sad Grbavica,RSD,9,31,398352.00,4740.00,393612.00,1318.440,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-006,Acme Market Novi Sad Klisa,RSD,8,34,493776.00,33072.00,460704.00,1177.860,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-007,Acme Market Petrovaradin,RSD,11,36,649062.00,0.00,649062.00,1298.340,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-008,Acme Market Sremska Kamenica,RSD,9,32,486084.00,0.00,486084.00,1101.240,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-009,Acme Market Zrenjanin,RSD,10,29,337740.00,3582.00,334158.00,922.080,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-010,Acme Market Subotica,RSD,10,32,619410.00,23076.00,596334.00,1272.120,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-011,Acme Market Sombor,RSD,7,25,447642.00,2268.00,445374.00,886.020,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-012,Acme Market Kikinda,RSD,9,32,494712.00,0.00,494712.00,1021.200,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-013,Acme Market Pančevo,RSD,7,28,378906.00,0.00,378906.00,645.780,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-014,Acme Market Sremska Mitrovica,RSD,12,33,538212.00,26940.00,511272.00,1078.500,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-015,Acme Market Vršac,RSD,9,24,375192.00,12366.00,362826.00,639.900,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-016,Acme Market Vrbas,RSD,8,33,613692.00,0.00,613692.00,1145.940,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-017,Acme Market Bačka Palanka,RSD,8,29,521544.00,21582.00,499962.00,973.680,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-018,Acme Market Ruma,RSD,12,28,378258.00,11424.00,366834.00,761.640,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-019,Acme Market Inđija,RSD,11,36,434784.00,29634.00,405150.00,1162.500,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-020,Acme Market Stara Pazova,RSD,8,31,471972.00,16794.00,455178.00,1164.780,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-021,Acme Market Bečej,RSD,11,34,551658.00,0.00,551658.00,1377.960,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-022,Acme Market Kula,RSD,7,26,259170.00,29286.00,229884.00,829.260,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-023,Acme Market Temerin,RSD,12,35,567084.00,15210.00,551874.00,1109.160,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-024,Acme Market Šid,RSD,10,31,455760.00,9834.00,445926.00,1062.540,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-025,Acme Market Senta,RSD,9,26,352680.00,0.00,352680.00,808.620,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-026,Acme Market Apatin,RSD,7,24,490716.00,0.00,490716.00,713.400,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-027,Acme Market Szeged Belváros,EUR,8,35,5198.40,122.40,5076.00,1551.720,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-027,Acme Market Szeged Belváros,HUF,1,1,3000.00,0.00,3000.00,0.000,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-028,Acme Market Szeged Újszeged,EUR,9,33,3620.10,56.28,3563.82,976.740,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-028,Acme Market Szeged Újszeged,HUF,1,1,4200.00,0.00,4200.00,0.000,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-029,Acme Market Szeged Tarján,EUR,11,25,1726.20,0.00,1726.20,735.420,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-029,Acme Market Szeged Tarján,HUF,1,1,6600.00,0.00,6600.00,0.000,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-030,Acme Market Szeged Kiskundorozsma,EUR,10,34,6232.38,844.14,5388.24,1262.400,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-07,S-030,Acme Market Szeged Kiskundorozsma,HUF,1,1,9000.00,0.00,9000.00,0.000,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-001,Acme Market Novi Sad Centar,RSD,8,33,642840.00,40560.00,602280.00,1188.960,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-002,Acme Market Novi Sad Liman 1,RSD,9,28,350640.00,0.00,350640.00,908.640,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-003,Acme Market Novi Sad Liman 2,RSD,9,27,395448.00,101604.00,293844.00,864.600,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-004,Acme Market Novi Sad Detelinara,RSD,11,31,667422.00,0.00,667422.00,870.480,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-005,Acme Market Novi Sad Grbavica,RSD,12,31,568530.00,5838.00,562692.00,1035.660,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-006,Acme Market Novi Sad Klisa,RSD,11,36,420102.00,63426.00,356676.00,1251.480,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-007,Acme Market Petrovaradin,RSD,10,26,462474.00,0.00,462474.00,998.400,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-008,Acme Market Sremska Kamenica,RSD,11,28,378408.00,12138.00,366270.00,957.960,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-009,Acme Market Zrenjanin,RSD,12,27,343182.00,8358.00,334824.00,890.400,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-010,Acme Market Subotica,RSD,10,36,542220.00,0.00,542220.00,1163.280,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-011,Acme Market Sombor,RSD,11,34,1010664.00,0.00,1010664.00,1521.480,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-012,Acme Market Kikinda,RSD,8,30,432288.00,0.00,432288.00,1147.680,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-013,Acme Market Pančevo,RSD,10,34,455970.00,4056.00,451914.00,1247.400,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-014,Acme Market Sremska Mitrovica,RSD,13,35,362796.00,8940.00,353856.00,1012.860,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-015,Acme Market Vršac,RSD,7,27,291252.00,5340.00,285912.00,843.840,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-016,Acme Market Vrbas,RSD,10,30,418152.00,0.00,418152.00,846.780,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-017,Acme Market Bačka Palanka,RSD,9,34,465180.00,0.00,465180.00,1324.140,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-018,Acme Market Ruma,RSD,8,31,692100.00,71310.00,620790.00,882.360,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-019,Acme Market Inđija,RSD,12,35,845088.00,0.00,845088.00,1055.340,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-020,Acme Market Stara Pazova,RSD,9,35,916602.00,0.00,916602.00,1246.440,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-021,Acme Market Bečej,RSD,11,33,475728.00,0.00,475728.00,1266.600,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-022,Acme Market Kula,RSD,8,30,669582.00,0.00,669582.00,1183.260,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-023,Acme Market Temerin,RSD,8,30,325314.00,0.00,325314.00,947.700,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-024,Acme Market Šid,RSD,6,24,470190.00,0.00,470190.00,815.220,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-025,Acme Market Senta,RSD,9,32,308016.00,6426.00,301590.00,712.860,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-026,Acme Market Apatin,RSD,7,25,326634.00,0.00,326634.00,703.860,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-027,Acme Market Szeged Belváros,EUR,8,24,3700.56,91.80,3608.76,1039.440,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-028,Acme Market Szeged Újszeged,EUR,8,26,2762.58,89.76,2672.82,663.360,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-029,Acme Market Szeged Tarján,EUR,9,29,6632.82,160.92,6471.90,1028.880,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-029,Acme Market Szeged Tarján,HUF,1,1,7200.00,0.00,7200.00,0.000,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-08,S-030,Acme Market Szeged Kiskundorozsma,EUR,9,32,4482.60,0.00,4482.60,1092.060,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-001,Acme Market Novi Sad Centar,RSD,7,25,456258.00,0.00,456258.00,905.880,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-002,Acme Market Novi Sad Liman 1,RSD,7,26,389184.00,0.00,389184.00,933.180,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-003,Acme Market Novi Sad Liman 2,RSD,8,25,592344.00,0.00,592344.00,920.520,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-004,Acme Market Novi Sad Detelinara,RSD,11,36,610290.00,34980.00,575310.00,1261.740,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-005,Acme Market Novi Sad Grbavica,RSD,11,30,630276.00,0.00,630276.00,902.160,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-006,Acme Market Novi Sad Klisa,RSD,10,25,255462.00,1962.00,253500.00,644.640,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-007,Acme Market Petrovaradin,RSD,7,25,614448.00,0.00,614448.00,779.940,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-008,Acme Market Sremska Kamenica,RSD,10,31,298308.00,10728.00,287580.00,977.340,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-009,Acme Market Zrenjanin,RSD,9,25,469806.00,9618.00,460188.00,796.020,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-010,Acme Market Subotica,RSD,10,26,399216.00,0.00,399216.00,705.540,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-011,Acme Market Sombor,RSD,11,35,462312.00,4788.00,457524.00,1270.380,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-012,Acme Market Kikinda,RSD,11,24,263052.00,0.00,263052.00,545.340,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-013,Acme Market Pančevo,RSD,7,24,460500.00,0.00,460500.00,676.800,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-014,Acme Market Sremska Mitrovica,RSD,12,29,522414.00,2844.00,519570.00,989.640,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-015,Acme Market Vršac,RSD,7,26,313230.00,12294.00,300936.00,761.520,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-016,Acme Market Vrbas,RSD,6,24,230730.00,0.00,230730.00,1043.340,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-017,Acme Market Bačka Palanka,RSD,10,28,550332.00,0.00,550332.00,964.140,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-018,Acme Market Ruma,RSD,7,26,196908.00,6324.00,190584.00,759.960,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-019,Acme Market Inđija,RSD,12,31,470538.00,4152.00,466386.00,935.460,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-020,Acme Market Stara Pazova,RSD,10,33,626118.00,79134.00,546984.00,1350.120,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-021,Acme Market Bečej,RSD,10,34,703224.00,89940.00,613284.00,1348.560,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-022,Acme Market Kula,RSD,7,24,289122.00,0.00,289122.00,853.920,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-023,Acme Market Temerin,RSD,8,30,505908.00,5214.00,500694.00,996.420,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-024,Acme Market Šid,RSD,10,35,528948.00,0.00,528948.00,1438.140,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-025,Acme Market Senta,RSD,6,25,518826.00,0.00,518826.00,895.740,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-026,Acme Market Apatin,RSD,10,34,404862.00,37728.00,367134.00,1232.280,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-027,Acme Market Szeged Belváros,EUR,10,27,4257.48,218.40,4039.08,1084.560,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-028,Acme Market Szeged Újszeged,EUR,10,31,4326.00,0.00,4326.00,908.340,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-029,Acme Market Szeged Tarján,EUR,6,24,2865.72,0.00,2865.72,870.840,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-030,Acme Market Szeged Kiskundorozsma,EUR,6,29,3556.26,0.00,3556.26,1121.460,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-09,S-030,Acme Market Szeged Kiskundorozsma,HUF,1,1,10800.00,0.00,10800.00,0.000,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-001,Acme Market Novi Sad Centar,RSD,7,26,355500.00,21528.00,333972.00,832.800,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-002,Acme Market Novi Sad Liman 1,RSD,9,31,451650.00,7884.00,443766.00,994.140,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-003,Acme Market Novi Sad Liman 2,RSD,7,25,248478.00,0.00,248478.00,849.420,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-004,Acme Market Novi Sad Detelinara,RSD,10,36,581460.00,0.00,581460.00,963.720,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-005,Acme Market Novi Sad Grbavica,RSD,8,31,500706.00,1188.00,499518.00,946.680,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-006,Acme Market Novi Sad Klisa,RSD,9,36,550416.00,9072.00,541344.00,1154.100,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-007,Acme Market Petrovaradin,RSD,10,34,559530.00,5124.00,554406.00,850.020,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-008,Acme Market Sremska Kamenica,RSD,9,33,490278.00,48630.00,441648.00,1248.480,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-009,Acme Market Zrenjanin,RSD,9,35,437064.00,0.00,437064.00,888.540,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-010,Acme Market Subotica,RSD,10,34,392646.00,20430.00,372216.00,1031.040,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-011,Acme Market Sombor,RSD,6,24,438906.00,8358.00,430548.00,894.180,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-012,Acme Market Kikinda,RSD,12,33,590898.00,65118.00,525780.00,1667.460,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-013,Acme Market Pančevo,RSD,9,30,532302.00,0.00,532302.00,1112.880,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-014,Acme Market Sremska Mitrovica,RSD,10,32,345150.00,4536.00,340614.00,725.400,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-015,Acme Market Vršac,RSD,7,30,436704.00,3570.00,433134.00,1080.780,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-016,Acme Market Vrbas,RSD,11,29,448050.00,11622.00,436428.00,1245.480,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-017,Acme Market Bačka Palanka,RSD,7,26,389298.00,10842.00,378456.00,1048.260,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-018,Acme Market Ruma,RSD,13,35,618012.00,0.00,618012.00,1582.380,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-019,Acme Market Inđija,RSD,9,24,265374.00,0.00,265374.00,567.900,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-020,Acme Market Stara Pazova,RSD,8,27,537528.00,21984.00,515544.00,1113.660,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-021,Acme Market Bečej,RSD,9,29,531042.00,0.00,531042.00,741.660,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-022,Acme Market Kula,RSD,10,34,417630.00,6282.00,411348.00,1191.300,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-023,Acme Market Temerin,RSD,12,31,552720.00,0.00,552720.00,1584.000,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-024,Acme Market Šid,RSD,11,29,427614.00,0.00,427614.00,1102.620,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-025,Acme Market Senta,RSD,15,34,554334.00,0.00,554334.00,1393.980,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-026,Acme Market Apatin,RSD,11,32,385782.00,17094.00,368688.00,1087.020,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-027,Acme Market Szeged Belváros,EUR,9,25,2579.70,0.00,2579.70,999.300,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-028,Acme Market Szeged Újszeged,EUR,8,29,3131.28,118.20,3013.08,922.740,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-029,Acme Market Szeged Tarján,EUR,7,31,5084.46,52.38,5032.08,1054.080,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-029,Acme Market Szeged Tarján,HUF,1,1,6000.00,0.00,6000.00,0.000,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-030,Acme Market Szeged Kiskundorozsma,EUR,10,30,3903.84,71.40,3832.44,974.520,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-10,S-030,Acme Market Szeged Kiskundorozsma,HUF,1,1,6000.00,0.00,6000.00,0.000,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-001,Acme Market Novi Sad Centar,RSD,3,10,158100.00,0.00,158100.00,293.520,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-002,Acme Market Novi Sad Liman 1,RSD,4,12,217590.00,26334.00,191256.00,319.620,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-003,Acme Market Novi Sad Liman 2,RSD,5,13,258654.00,0.00,258654.00,649.680,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-004,Acme Market Novi Sad Detelinara,RSD,3,13,198186.00,0.00,198186.00,382.740,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-005,Acme Market Novi Sad Grbavica,RSD,6,15,319038.00,0.00,319038.00,670.260,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-006,Acme Market Novi Sad Klisa,RSD,6,16,275766.00,0.00,275766.00,593.820,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-007,Acme Market Petrovaradin,RSD,2,11,177474.00,0.00,177474.00,208.920,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-008,Acme Market Sremska Kamenica,RSD,5,15,264900.00,0.00,264900.00,646.980,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-009,Acme Market Zrenjanin,RSD,3,10,155706.00,85284.00,70422.00,362.640,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-010,Acme Market Subotica,RSD,3,8,49008.00,0.00,49008.00,281.580,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-011,Acme Market Sombor,RSD,4,11,168516.00,15540.00,152976.00,424.740,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-012,Acme Market Kikinda,RSD,3,10,94578.00,12474.00,82104.00,333.960,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-013,Acme Market Pančevo,RSD,6,13,127644.00,0.00,127644.00,463.320,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-014,Acme Market Sremska Mitrovica,RSD,5,15,173856.00,41430.00,132426.00,468.960,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-015,Acme Market Vršac,RSD,3,15,462792.00,89940.00,372852.00,627.960,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-016,Acme Market Vrbas,RSD,4,13,256698.00,0.00,256698.00,470.340,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-017,Acme Market Bačka Palanka,RSD,3,13,219402.00,10020.00,209382.00,471.660,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-018,Acme Market Ruma,RSD,6,16,194208.00,5070.00,189138.00,364.020,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-019,Acme Market Inđija,RSD,3,12,342228.00,0.00,342228.00,438.120,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-020,Acme Market Stara Pazova,RSD,4,11,390642.00,13356.00,377286.00,444.240,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-021,Acme Market Bečej,RSD,5,16,234642.00,0.00,234642.00,494.820,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-022,Acme Market Kula,RSD,5,14,336648.00,0.00,336648.00,508.560,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-023,Acme Market Temerin,RSD,4,8,85608.00,0.00,85608.00,320.760,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-024,Acme Market Šid,RSD,2,9,109218.00,0.00,109218.00,343.440,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-025,Acme Market Senta,RSD,3,8,151152.00,0.00,151152.00,405.300,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-026,Acme Market Apatin,RSD,6,16,273690.00,2856.00,270834.00,748.200,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-027,Acme Market Szeged Belváros,EUR,2,8,1530.84,0.00,1530.84,225.900,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-028,Acme Market Szeged Újszeged,EUR,2,9,1498.44,0.00,1498.44,348.240,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-029,Acme Market Szeged Tarján,EUR,5,11,2013.90,0.00,2013.90,285.180,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-029,Acme Market Szeged Tarján,HUF,1,1,4800.00,0.00,4800.00,0.000,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-11,S-030,Acme Market Szeged Kiskundorozsma,EUR,4,14,2709.42,0.00,2709.42,780.900,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-001,Acme Market Novi Sad Centar,RSD,8,29,461946.00,0.00,461946.00,1006.680,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-002,Acme Market Novi Sad Liman 1,RSD,7,25,375462.00,0.00,375462.00,629.460,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-003,Acme Market Novi Sad Liman 2,RSD,8,32,557526.00,0.00,557526.00,1000.800,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-004,Acme Market Novi Sad Detelinara,RSD,6,24,489798.00,0.00,489798.00,783.600,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-005,Acme Market Novi Sad Grbavica,RSD,11,34,422766.00,9504.00,413262.00,1098.540,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-006,Acme Market Novi Sad Klisa,RSD,12,36,504618.00,25596.00,479022.00,1445.040,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-007,Acme Market Petrovaradin,RSD,13,28,404292.00,12432.00,391860.00,1100.760,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-008,Acme Market Sremska Kamenica,RSD,11,35,539130.00,0.00,539130.00,1000.920,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-009,Acme Market Zrenjanin,RSD,9,26,549084.00,27684.00,521400.00,952.380,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-010,Acme Market Subotica,RSD,10,35,607080.00,20148.00,586932.00,1109.040,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-011,Acme Market Sombor,RSD,9,30,394500.00,0.00,394500.00,1164.720,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-012,Acme Market Kikinda,RSD,11,31,555114.00,9216.00,545898.00,1081.140,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-013,Acme Market Pančevo,RSD,8,30,411624.00,0.00,411624.00,958.080,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-014,Acme Market Sremska Mitrovica,RSD,8,33,546594.00,0.00,546594.00,1036.500,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-015,Acme Market Vršac,RSD,9,36,306006.00,8394.00,297612.00,775.800,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-016,Acme Market Vrbas,RSD,9,30,457464.00,0.00,457464.00,1143.360,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-017,Acme Market Bačka Palanka,RSD,10,35,867156.00,64350.00,802806.00,1535.220,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-018,Acme Market Ruma,RSD,11,34,374154.00,2142.00,372012.00,948.960,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-019,Acme Market Inđija,RSD,9,34,746448.00,14676.00,731772.00,1322.640,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-020,Acme Market Stara Pazova,RSD,8,26,422088.00,19152.00,402936.00,1095.720,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-021,Acme Market Bečej,RSD,9,28,455592.00,0.00,455592.00,823.500,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-022,Acme Market Kula,RSD,9,24,273102.00,0.00,273102.00,744.480,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-023,Acme Market Temerin,RSD,11,36,605058.00,0.00,605058.00,1183.680,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-024,Acme Market Šid,RSD,11,32,585492.00,0.00,585492.00,1087.380,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-025,Acme Market Senta,RSD,6,26,449136.00,0.00,449136.00,1005.720,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-026,Acme Market Apatin,RSD,10,35,496518.00,57876.00,438642.00,1113.600,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-027,Acme Market Szeged Belváros,EUR,9,35,4969.74,0.00,4969.74,1057.440,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-028,Acme Market Szeged Újszeged,EUR,10,31,4857.12,564.48,4292.64,1208.760,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-029,Acme Market Szeged Tarján,EUR,10,36,5837.28,0.00,5837.28,1113.720,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-12,S-030,Acme Market Szeged Kiskundorozsma,EUR,9,30,3285.30,0.00,3285.30,1130.100,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-001,Acme Market Novi Sad Centar,RSD,12,34,758046.00,26982.00,731064.00,1614.120,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-002,Acme Market Novi Sad Liman 1,RSD,10,35,578262.00,0.00,578262.00,1049.400,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-003,Acme Market Novi Sad Liman 2,RSD,9,27,268170.00,17094.00,251076.00,784.320,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-004,Acme Market Novi Sad Detelinara,RSD,11,33,380622.00,28776.00,351846.00,991.560,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-005,Acme Market Novi Sad Grbavica,RSD,7,24,375066.00,0.00,375066.00,699.960,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-006,Acme Market Novi Sad Klisa,RSD,9,27,446766.00,18696.00,428070.00,879.180,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-007,Acme Market Petrovaradin,RSD,7,26,270666.00,0.00,270666.00,732.720,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-008,Acme Market Sremska Kamenica,RSD,11,34,588498.00,0.00,588498.00,871.440,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-009,Acme Market Zrenjanin,RSD,7,26,420372.00,9618.00,410754.00,908.460,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-010,Acme Market Subotica,RSD,14,36,675126.00,0.00,675126.00,1373.520,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-011,Acme Market Sombor,RSD,7,24,435846.00,0.00,435846.00,887.340,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-012,Acme Market Kikinda,RSD,8,33,636408.00,0.00,636408.00,976.080,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-013,Acme Market Pančevo,RSD,11,33,367938.00,948.00,366990.00,799.560,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-014,Acme Market Sremska Mitrovica,RSD,10,33,451080.00,0.00,451080.00,1114.680,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-015,Acme Market Vršac,RSD,9,26,570408.00,7722.00,562686.00,955.020,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-016,Acme Market Vrbas,RSD,8,28,330198.00,0.00,330198.00,1041.240,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-017,Acme Market Bačka Palanka,RSD,9,27,413880.00,0.00,413880.00,770.400,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-018,Acme Market Ruma,RSD,11,31,537696.00,6672.00,531024.00,1024.080,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-019,Acme Market Inđija,RSD,12,34,466410.00,0.00,466410.00,1159.860,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-020,Acme Market Stara Pazova,RSD,9,25,433812.00,13578.00,420234.00,930.720,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-021,Acme Market Bečej,RSD,10,28,575136.00,0.00,575136.00,1065.600,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-022,Acme Market Kula,RSD,8,27,248610.00,11340.00,237270.00,889.080,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-023,Acme Market Temerin,RSD,12,26,482826.00,0.00,482826.00,658.500,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-024,Acme Market Šid,RSD,8,24,304458.00,0.00,304458.00,735.360,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-025,Acme Market Senta,RSD,7,24,314880.00,7098.00,307782.00,468.840,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-026,Acme Market Apatin,RSD,8,30,344304.00,19236.00,325068.00,1204.560,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-027,Acme Market Szeged Belváros,EUR,7,27,5078.04,497.58,4580.46,959.280,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-028,Acme Market Szeged Újszeged,EUR,7,26,3909.00,124.44,3784.56,964.020,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-029,Acme Market Szeged Tarján,EUR,12,35,3369.96,0.00,3369.96,1221.060,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-13,S-030,Acme Market Szeged Kiskundorozsma,EUR,9,28,4371.06,0.00,4371.06,844.620,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-001,Acme Market Novi Sad Centar,RSD,12,35,530508.00,0.00,530508.00,1120.680,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-002,Acme Market Novi Sad Liman 1,RSD,13,34,466110.00,2094.00,464016.00,1320.600,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-003,Acme Market Novi Sad Liman 2,RSD,11,35,514836.00,27222.00,487614.00,1140.180,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-004,Acme Market Novi Sad Detelinara,RSD,11,32,591210.00,116922.00,474288.00,1426.140,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-005,Acme Market Novi Sad Grbavica,RSD,11,34,544290.00,21582.00,522708.00,1170.660,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-006,Acme Market Novi Sad Klisa,RSD,11,27,514272.00,8568.00,505704.00,856.620,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-007,Acme Market Petrovaradin,RSD,7,27,760800.00,0.00,760800.00,1184.880,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-008,Acme Market Sremska Kamenica,RSD,11,34,642762.00,0.00,642762.00,1099.140,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-009,Acme Market Zrenjanin,RSD,8,30,393804.00,2394.00,391410.00,966.780,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-010,Acme Market Subotica,RSD,10,35,731250.00,40974.00,690276.00,1477.080,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-011,Acme Market Sombor,RSD,12,36,619014.00,0.00,619014.00,1209.420,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-012,Acme Market Kikinda,RSD,7,24,366396.00,10710.00,355686.00,911.460,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-013,Acme Market Pančevo,RSD,7,27,466404.00,28704.00,437700.00,930.960,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-014,Acme Market Sremska Mitrovica,RSD,12,34,297030.00,0.00,297030.00,1035.180,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-015,Acme Market Vršac,RSD,8,24,324612.00,3204.00,321408.00,844.680,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-016,Acme Market Vrbas,RSD,8,32,867036.00,0.00,867036.00,1237.560,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-017,Acme Market Bačka Palanka,RSD,9,35,528282.00,0.00,528282.00,1051.680,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-018,Acme Market Ruma,RSD,6,25,384516.00,0.00,384516.00,641.040,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-019,Acme Market Inđija,RSD,7,29,440592.00,0.00,440592.00,745.500,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-020,Acme Market Stara Pazova,RSD,8,30,673086.00,0.00,673086.00,1108.500,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-021,Acme Market Bečej,RSD,9,34,440676.00,119418.00,321258.00,1148.580,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-022,Acme Market Kula,RSD,7,25,193710.00,0.00,193710.00,780.780,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-023,Acme Market Temerin,RSD,8,31,437424.00,64638.00,372786.00,1207.920,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-024,Acme Market Šid,RSD,8,33,467652.00,12144.00,455508.00,927.420,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-025,Acme Market Senta,RSD,11,36,506832.00,0.00,506832.00,1004.580,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-026,Acme Market Apatin,RSD,9,36,572400.00,25206.00,547194.00,1196.640,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-027,Acme Market Szeged Belváros,EUR,9,28,4632.36,0.00,4632.36,1068.540,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-028,Acme Market Szeged Újszeged,EUR,7,28,2833.02,55.08,2777.94,867.360,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-028,Acme Market Szeged Újszeged,HUF,1,1,6000.00,0.00,6000.00,0.000,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-029,Acme Market Szeged Tarján,EUR,7,30,2870.16,132.60,2737.56,936.300,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-030,Acme Market Szeged Kiskundorozsma,EUR,8,28,4395.66,0.00,4395.66,1176.120,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-14,S-030,Acme Market Szeged Kiskundorozsma,HUF,1,1,12000.00,12000.00,0.00,0.000,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-001,Acme Market Novi Sad Centar,RSD,10,34,543732.00,0.00,543732.00,971.340,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-002,Acme Market Novi Sad Liman 1,RSD,6,27,429600.00,11424.00,418176.00,1032.960,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-003,Acme Market Novi Sad Liman 2,RSD,8,28,456192.00,0.00,456192.00,1053.000,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-004,Acme Market Novi Sad Detelinara,RSD,10,32,355494.00,0.00,355494.00,916.200,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-005,Acme Market Novi Sad Grbavica,RSD,8,25,684600.00,0.00,684600.00,997.380,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-006,Acme Market Novi Sad Klisa,RSD,10,29,315060.00,36426.00,278634.00,891.900,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-007,Acme Market Petrovaradin,RSD,8,30,764964.00,11970.00,752994.00,1011.720,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-008,Acme Market Sremska Kamenica,RSD,8,25,642240.00,19236.00,623004.00,1301.040,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-009,Acme Market Zrenjanin,RSD,11,36,650316.00,0.00,650316.00,1096.380,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-010,Acme Market Subotica,RSD,8,24,286218.00,0.00,286218.00,1021.260,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-011,Acme Market Sombor,RSD,8,33,598116.00,22638.00,575478.00,1038.960,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-012,Acme Market Kikinda,RSD,9,25,393918.00,0.00,393918.00,940.080,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-013,Acme Market Pančevo,RSD,10,32,560226.00,0.00,560226.00,1108.800,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-014,Acme Market Sremska Mitrovica,RSD,8,30,584280.00,53742.00,530538.00,1043.160,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-015,Acme Market Vršac,RSD,10,30,717252.00,0.00,717252.00,1007.880,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-016,Acme Market Vrbas,RSD,11,30,588804.00,0.00,588804.00,983.880,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-017,Acme Market Bačka Palanka,RSD,9,31,652368.00,6408.00,645960.00,1119.900,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-018,Acme Market Ruma,RSD,11,34,722820.00,39138.00,683682.00,1209.840,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-019,Acme Market Inđija,RSD,9,35,614034.00,19104.00,594930.00,1350.540,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-020,Acme Market Stara Pazova,RSD,10,30,441684.00,0.00,441684.00,803.220,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-021,Acme Market Bečej,RSD,9,32,644646.00,0.00,644646.00,1293.720,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-022,Acme Market Kula,RSD,16,35,627048.00,0.00,627048.00,1303.320,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-023,Acme Market Temerin,RSD,10,28,399810.00,88086.00,311724.00,1002.540,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-024,Acme Market Šid,RSD,6,25,471738.00,0.00,471738.00,946.440,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-025,Acme Market Senta,RSD,6,28,573138.00,2856.00,570282.00,1119.240,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-026,Acme Market Apatin,RSD,10,32,442218.00,0.00,442218.00,1045.740,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-027,Acme Market Szeged Belváros,EUR,7,25,3433.92,0.00,3433.92,826.620,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-027,Acme Market Szeged Belváros,HUF,1,1,8400.00,0.00,8400.00,0.000,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-028,Acme Market Szeged Újszeged,EUR,9,33,3750.96,0.00,3750.96,911.820,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-028,Acme Market Szeged Újszeged,HUF,1,1,4200.00,0.00,4200.00,0.000,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-029,Acme Market Szeged Tarján,EUR,9,30,4704.24,0.00,4704.24,1038.840,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-029,Acme Market Szeged Tarján,HUF,1,1,11400.00,0.00,11400.00,0.000,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-15,S-030,Acme Market Szeged Kiskundorozsma,EUR,6,26,3910.56,146.16,3764.40,929.280,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-001,Acme Market Novi Sad Centar,RSD,7,27,425082.00,0.00,425082.00,734.760,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-002,Acme Market Novi Sad Liman 1,RSD,8,26,353322.00,0.00,353322.00,566.220,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-003,Acme Market Novi Sad Liman 2,RSD,13,34,670260.00,9810.00,660450.00,1122.420,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-004,Acme Market Novi Sad Detelinara,RSD,9,34,608598.00,17904.00,590694.00,1223.940,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-005,Acme Market Novi Sad Grbavica,RSD,14,34,386634.00,71952.00,314682.00,1435.080,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-006,Acme Market Novi Sad Klisa,RSD,10,32,309264.00,1068.00,308196.00,917.400,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-007,Acme Market Petrovaradin,RSD,10,30,371874.00,5886.00,365988.00,915.480,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-008,Acme Market Sremska Kamenica,RSD,10,30,503034.00,0.00,503034.00,991.020,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-009,Acme Market Zrenjanin,RSD,7,30,720294.00,0.00,720294.00,925.920,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-010,Acme Market Subotica,RSD,13,33,438366.00,0.00,438366.00,1212.180,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-011,Acme Market Sombor,RSD,9,28,506262.00,40428.00,465834.00,847.560,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-012,Acme Market Kikinda,RSD,10,36,610266.00,0.00,610266.00,981.780,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-013,Acme Market Pančevo,RSD,9,30,557028.00,0.00,557028.00,1054.740,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-014,Acme Market Sremska Mitrovica,RSD,9,34,632598.00,0.00,632598.00,967.020,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-015,Acme Market Vršac,RSD,9,25,460962.00,5004.00,455958.00,958.260,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-016,Acme Market Vrbas,RSD,8,30,619572.00,35976.00,583596.00,1034.700,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-017,Acme Market Bačka Palanka,RSD,6,25,435852.00,2748.00,433104.00,666.780,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-018,Acme Market Ruma,RSD,10,36,675282.00,26940.00,648342.00,1175.760,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-019,Acme Market Inđija,RSD,10,32,538260.00,13608.00,524652.00,1136.400,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-020,Acme Market Stara Pazova,RSD,10,32,384846.00,3792.00,381054.00,1373.760,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-021,Acme Market Bečej,RSD,6,25,387738.00,2844.00,384894.00,890.400,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-022,Acme Market Kula,RSD,9,31,599928.00,0.00,599928.00,1331.760,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-023,Acme Market Temerin,RSD,8,33,753768.00,28938.00,724830.00,1131.120,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-024,Acme Market Šid,RSD,8,27,366078.00,11706.00,354372.00,904.980,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-025,Acme Market Senta,RSD,11,32,448206.00,42774.00,405432.00,1015.320,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-026,Acme Market Apatin,RSD,9,36,608022.00,9612.00,598410.00,1255.800,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-027,Acme Market Szeged Belváros,EUR,9,26,5680.62,20.40,5660.22,867.240,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-028,Acme Market Szeged Újszeged,EUR,8,32,5443.56,98.40,5345.16,1194.540,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-028,Acme Market Szeged Újszeged,HUF,1,1,7200.00,0.00,7200.00,0.000,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-029,Acme Market Szeged Tarján,EUR,12,34,4605.24,96.42,4508.82,1457.820,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-16,S-030,Acme Market Szeged Kiskundorozsma,EUR,6,25,4601.94,0.00,4601.94,982.680,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-001,Acme Market Novi Sad Centar,RSD,7,27,624906.00,168414.00,456492.00,1036.320,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-002,Acme Market Novi Sad Liman 1,RSD,9,30,665928.00,32940.00,632988.00,1187.580,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-003,Acme Market Novi Sad Liman 2,RSD,9,29,359232.00,9618.00,349614.00,1030.680,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-004,Acme Market Novi Sad Detelinara,RSD,8,25,319818.00,0.00,319818.00,904.140,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-005,Acme Market Novi Sad Grbavica,RSD,10,36,640092.00,35904.00,604188.00,1310.700,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-006,Acme Market Novi Sad Klisa,RSD,7,24,537018.00,43104.00,493914.00,777.900,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-007,Acme Market Petrovaradin,RSD,7,30,530490.00,5712.00,524778.00,852.240,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-008,Acme Market Sremska Kamenica,RSD,12,30,600072.00,0.00,600072.00,876.420,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-009,Acme Market Zrenjanin,RSD,9,34,449136.00,0.00,449136.00,1286.160,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-010,Acme Market Subotica,RSD,7,26,528420.00,6870.00,521550.00,982.740,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-011,Acme Market Sombor,RSD,9,28,524982.00,12366.00,512616.00,1049.820,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-012,Acme Market Kikinda,RSD,8,33,363732.00,7164.00,356568.00,973.860,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-013,Acme Market Pančevo,RSD,13,34,613872.00,0.00,613872.00,1138.200,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-014,Acme Market Sremska Mitrovica,RSD,9,28,292392.00,0.00,292392.00,741.000,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-015,Acme Market Vršac,RSD,9,28,261528.00,0.00,261528.00,830.100,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-016,Acme Market Vrbas,RSD,10,30,395244.00,0.00,395244.00,1064.880,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-017,Acme Market Bačka Palanka,RSD,14,33,515418.00,0.00,515418.00,881.520,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-018,Acme Market Ruma,RSD,8,24,504132.00,0.00,504132.00,874.380,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-019,Acme Market Inđija,RSD,11,33,512310.00,0.00,512310.00,907.140,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-020,Acme Market Stara Pazova,RSD,7,24,207378.00,4788.00,202590.00,766.560,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-021,Acme Market Bečej,RSD,10,34,650970.00,0.00,650970.00,1359.360,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-022,Acme Market Kula,RSD,8,27,497592.00,4122.00,493470.00,1051.380,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-023,Acme Market Temerin,RSD,9,31,655632.00,7506.00,648126.00,1091.640,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-024,Acme Market Šid,RSD,9,31,478422.00,125916.00,352506.00,1443.960,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-025,Acme Market Senta,RSD,10,29,380082.00,12474.00,367608.00,942.840,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-026,Acme Market Apatin,RSD,12,32,450708.00,43902.00,406806.00,1167.720,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-027,Acme Market Szeged Belváros,EUR,8,24,4420.02,128.70,4291.32,977.160,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-027,Acme Market Szeged Belváros,HUF,1,1,10200.00,0.00,10200.00,0.000,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-028,Acme Market Szeged Újszeged,EUR,9,26,4360.68,0.00,4360.68,809.940,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-029,Acme Market Szeged Tarján,EUR,11,35,5757.78,242.10,5515.68,1010.220,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-17,S-030,Acme Market Szeged Kiskundorozsma,EUR,10,29,3480.18,0.00,3480.18,840.420,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-001,Acme Market Novi Sad Centar,RSD,4,8,234042.00,98934.00,135108.00,406.320,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-002,Acme Market Novi Sad Liman 1,RSD,3,13,359892.00,0.00,359892.00,545.100,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-003,Acme Market Novi Sad Liman 2,RSD,4,10,133944.00,0.00,133944.00,238.320,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-004,Acme Market Novi Sad Detelinara,RSD,4,12,182904.00,0.00,182904.00,413.940,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-005,Acme Market Novi Sad Grbavica,RSD,3,9,208476.00,0.00,208476.00,293.340,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-006,Acme Market Novi Sad Klisa,RSD,3,11,117078.00,0.00,117078.00,452.940,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-007,Acme Market Petrovaradin,RSD,4,13,304428.00,12402.00,292026.00,424.500,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-008,Acme Market Sremska Kamenica,RSD,6,15,329826.00,0.00,329826.00,556.800,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-009,Acme Market Zrenjanin,RSD,3,12,212964.00,0.00,212964.00,548.520,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-010,Acme Market Subotica,RSD,4,13,217680.00,0.00,217680.00,472.920,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-011,Acme Market Sombor,RSD,8,11,280302.00,15522.00,264780.00,444.420,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-012,Acme Market Kikinda,RSD,4,10,131304.00,0.00,131304.00,497.880,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-013,Acme Market Pančevo,RSD,4,14,187128.00,0.00,187128.00,594.300,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-014,Acme Market Sremska Mitrovica,RSD,4,13,87840.00,2376.00,85464.00,339.840,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-015,Acme Market Vršac,RSD,5,11,298122.00,0.00,298122.00,486.660,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-016,Acme Market Vrbas,RSD,4,12,261192.00,0.00,261192.00,408.240,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-017,Acme Market Bačka Palanka,RSD,4,16,279360.00,0.00,279360.00,463.980,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-018,Acme Market Ruma,RSD,3,13,181110.00,48090.00,133020.00,452.340,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-019,Acme Market Inđija,RSD,3,8,84156.00,0.00,84156.00,346.560,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-020,Acme Market Stara Pazova,RSD,4,16,231696.00,11826.00,219870.00,577.740,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-021,Acme Market Bečej,RSD,4,14,193362.00,0.00,193362.00,398.220,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-022,Acme Market Kula,RSD,2,8,171102.00,0.00,171102.00,250.560,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-023,Acme Market Temerin,RSD,2,8,121566.00,0.00,121566.00,270.600,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-024,Acme Market Šid,RSD,5,14,208854.00,0.00,208854.00,483.960,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-025,Acme Market Senta,RSD,5,15,350310.00,594.00,349716.00,532.020,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-026,Acme Market Apatin,RSD,4,16,283500.00,0.00,283500.00,518.400,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-027,Acme Market Szeged Belváros,EUR,4,13,1537.38,0.00,1537.38,545.160,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-028,Acme Market Szeged Újszeged,EUR,3,15,1361.28,92.82,1268.46,464.640,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-028,Acme Market Szeged Újszeged,HUF,1,1,9000.00,0.00,9000.00,0.000,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-029,Acme Market Szeged Tarján,EUR,3,8,1621.02,0.00,1621.02,403.800,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-029,Acme Market Szeged Tarján,HUF,1,1,11400.00,0.00,11400.00,0.000,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-030,Acme Market Szeged Kiskundorozsma,EUR,4,15,1690.02,79.56,1610.46,478.260,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-18,S-030,Acme Market Szeged Kiskundorozsma,HUF,1,1,9000.00,0.00,9000.00,0.000,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-001,Acme Market Novi Sad Centar,RSD,8,30,615366.00,3270.00,612096.00,1227.420,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-002,Acme Market Novi Sad Liman 1,RSD,8,24,295464.00,0.00,295464.00,749.880,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-003,Acme Market Novi Sad Liman 2,RSD,10,35,607752.00,17862.00,589890.00,1143.600,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-004,Acme Market Novi Sad Detelinara,RSD,10,32,392562.00,20916.00,371646.00,1307.220,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-005,Acme Market Novi Sad Grbavica,RSD,11,36,557850.00,0.00,557850.00,1200.660,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-006,Acme Market Novi Sad Klisa,RSD,8,27,314244.00,0.00,314244.00,949.920,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-007,Acme Market Petrovaradin,RSD,7,29,342438.00,1068.00,341370.00,1235.760,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-008,Acme Market Sremska Kamenica,RSD,9,33,736140.00,2268.00,733872.00,1200.360,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-009,Acme Market Zrenjanin,RSD,9,27,506502.00,0.00,506502.00,813.780,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-010,Acme Market Subotica,RSD,9,31,537060.00,25116.00,511944.00,773.280,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-011,Acme Market Sombor,RSD,8,30,587604.00,125916.00,461688.00,1138.500,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-012,Acme Market Kikinda,RSD,14,35,379704.00,0.00,379704.00,1295.820,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-013,Acme Market Pančevo,RSD,6,24,232872.00,12366.00,220506.00,738.600,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-014,Acme Market Sremska Mitrovica,RSD,9,25,475512.00,14742.00,460770.00,1140.060,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-015,Acme Market Vršac,RSD,13,36,617010.00,0.00,617010.00,1045.320,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-016,Acme Market Vrbas,RSD,8,30,474588.00,16890.00,457698.00,1289.160,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-017,Acme Market Bačka Palanka,RSD,11,30,416292.00,0.00,416292.00,1049.280,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-018,Acme Market Ruma,RSD,9,35,636786.00,26862.00,609924.00,1429.680,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-019,Acme Market Inđija,RSD,9,27,499608.00,0.00,499608.00,943.320,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-020,Acme Market Stara Pazova,RSD,8,29,503718.00,0.00,503718.00,890.280,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-021,Acme Market Bečej,RSD,10,35,584670.00,0.00,584670.00,936.360,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-022,Acme Market Kula,RSD,7,27,358308.00,0.00,358308.00,680.700,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-023,Acme Market Temerin,RSD,8,25,332796.00,6426.00,326370.00,893.640,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-024,Acme Market Šid,RSD,8,31,430554.00,0.00,430554.00,1025.400,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-025,Acme Market Senta,RSD,10,27,348414.00,0.00,348414.00,845.880,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-026,Acme Market Apatin,RSD,6,24,441534.00,0.00,441534.00,848.520,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-027,Acme Market Szeged Belváros,EUR,6,27,4803.96,306.00,4497.96,830.220,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-028,Acme Market Szeged Újszeged,EUR,6,29,4174.86,0.00,4174.86,725.820,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-029,Acme Market Szeged Tarján,EUR,9,35,4751.82,0.00,4751.82,1023.660,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-19,S-030,Acme Market Szeged Kiskundorozsma,EUR,10,34,2522.04,0.00,2522.04,878.820,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-001,Acme Market Novi Sad Centar,RSD,10,29,397770.00,0.00,397770.00,689.760,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-002,Acme Market Novi Sad Liman 1,RSD,11,30,336324.00,12564.00,323760.00,747.000,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-003,Acme Market Novi Sad Liman 2,RSD,5,27,293484.00,7632.00,285852.00,648.000,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-004,Acme Market Novi Sad Detelinara,RSD,8,25,358956.00,21024.00,337932.00,1055.640,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-005,Acme Market Novi Sad Grbavica,RSD,11,35,494274.00,0.00,494274.00,1090.320,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-006,Acme Market Novi Sad Klisa,RSD,9,31,383430.00,8940.00,374490.00,748.380,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-007,Acme Market Petrovaradin,RSD,7,32,668796.00,54876.00,613920.00,1133.760,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-008,Acme Market Sremska Kamenica,RSD,8,25,292110.00,8832.00,283278.00,533.460,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-009,Acme Market Zrenjanin,RSD,9,34,522180.00,8046.00,514134.00,658.860,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-010,Acme Market Subotica,RSD,9,36,667038.00,49380.00,617658.00,1285.020,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-011,Acme Market Sombor,RSD,8,31,464370.00,3792.00,460578.00,835.980,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-012,Acme Market Kikinda,RSD,7,29,316116.00,6258.00,309858.00,938.340,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-013,Acme Market Pančevo,RSD,11,32,758628.00,0.00,758628.00,1063.920,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-014,Acme Market Sremska Mitrovica,RSD,7,27,379746.00,0.00,379746.00,777.840,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-015,Acme Market Vršac,RSD,8,24,377376.00,0.00,377376.00,693.540,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-016,Acme Market Vrbas,RSD,10,29,550194.00,0.00,550194.00,1061.760,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-017,Acme Market Bačka Palanka,RSD,8,28,701016.00,26028.00,674988.00,914.640,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-018,Acme Market Ruma,RSD,6,24,351780.00,17862.00,333918.00,907.380,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-019,Acme Market Inđija,RSD,9,32,333672.00,0.00,333672.00,1065.540,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-020,Acme Market Stara Pazova,RSD,9,32,416466.00,76476.00,339990.00,1036.800,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-021,Acme Market Bečej,RSD,9,34,407832.00,0.00,407832.00,1263.180,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-022,Acme Market Kula,RSD,9,31,389268.00,0.00,389268.00,1248.480,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-023,Acme Market Temerin,RSD,7,26,544710.00,12564.00,532146.00,978.120,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-024,Acme Market Šid,RSD,8,36,741888.00,14454.00,727434.00,1575.000,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-025,Acme Market Senta,RSD,7,27,314472.00,0.00,314472.00,1094.760,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-026,Acme Market Apatin,RSD,9,28,513288.00,0.00,513288.00,1277.700,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-027,Acme Market Szeged Belváros,EUR,12,35,3829.68,189.12,3640.56,817.620,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-027,Acme Market Szeged Belváros,HUF,1,1,10200.00,0.00,10200.00,0.000,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-028,Acme Market Szeged Újszeged,EUR,12,32,4013.16,0.00,4013.16,1053.300,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-029,Acme Market Szeged Tarján,EUR,10,33,3975.42,0.00,3975.42,1235.280,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-20,S-030,Acme Market Szeged Kiskundorozsma,EUR,9,35,6823.20,143.64,6679.56,1207.020,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-001,Acme Market Novi Sad Centar,RSD,6,24,314262.00,28692.00,285570.00,663.480,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-002,Acme Market Novi Sad Liman 1,RSD,7,33,362772.00,0.00,362772.00,1475.640,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-003,Acme Market Novi Sad Liman 2,RSD,10,32,547542.00,0.00,547542.00,835.140,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-004,Acme Market Novi Sad Detelinara,RSD,11,33,452832.00,8046.00,444786.00,1009.260,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-005,Acme Market Novi Sad Grbavica,RSD,9,30,369282.00,0.00,369282.00,1080.180,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-006,Acme Market Novi Sad Klisa,RSD,10,35,457056.00,0.00,457056.00,1128.480,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-007,Acme Market Petrovaradin,RSD,7,30,410364.00,21756.00,388608.00,1118.700,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-008,Acme Market Sremska Kamenica,RSD,12,36,739974.00,0.00,739974.00,1295.400,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-009,Acme Market Zrenjanin,RSD,8,26,269424.00,0.00,269424.00,725.040,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-010,Acme Market Subotica,RSD,6,24,387912.00,0.00,387912.00,870.780,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-011,Acme Market Sombor,RSD,7,24,239412.00,8358.00,231054.00,833.520,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-012,Acme Market Kikinda,RSD,9,35,583536.00,86328.00,497208.00,1097.220,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-013,Acme Market Pančevo,RSD,13,36,598860.00,0.00,598860.00,1254.000,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-014,Acme Market Sremska Mitrovica,RSD,5,24,294144.00,0.00,294144.00,994.560,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-015,Acme Market Vršac,RSD,8,29,335874.00,0.00,335874.00,973.560,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-016,Acme Market Vrbas,RSD,9,24,442632.00,1602.00,441030.00,888.900,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-017,Acme Market Bačka Palanka,RSD,8,26,356844.00,0.00,356844.00,863.100,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-018,Acme Market Ruma,RSD,6,24,358572.00,5886.00,352686.00,766.320,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-019,Acme Market Inđija,RSD,9,27,369684.00,11340.00,358344.00,1143.600,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-020,Acme Market Stara Pazova,RSD,10,30,671646.00,0.00,671646.00,1115.160,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-021,Acme Market Bečej,RSD,11,29,364770.00,7164.00,357606.00,1081.800,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-022,Acme Market Kula,RSD,6,25,365190.00,25128.00,340062.00,771.300,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-023,Acme Market Temerin,RSD,10,30,361518.00,6282.00,355236.00,1013.460,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-024,Acme Market Šid,RSD,10,33,534000.00,0.00,534000.00,1160.040,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-025,Acme Market Senta,RSD,8,25,423462.00,0.00,423462.00,968.760,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-026,Acme Market Apatin,RSD,9,24,364914.00,33648.00,331266.00,816.420,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-027,Acme Market Szeged Belváros,EUR,8,30,3413.88,42.84,3371.04,1014.180,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-027,Acme Market Szeged Belváros,HUF,1,1,6000.00,0.00,6000.00,0.000,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-028,Acme Market Szeged Újszeged,EUR,8,30,4034.16,0.00,4034.16,1087.140,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-028,Acme Market Szeged Újszeged,HUF,1,1,9600.00,0.00,9600.00,0.000,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-029,Acme Market Szeged Tarján,EUR,13,36,4940.70,0.00,4940.70,1430.340,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-029,Acme Market Szeged Tarján,HUF,1,1,3000.00,0.00,3000.00,0.000,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-21,S-030,Acme Market Szeged Kiskundorozsma,EUR,9,32,4428.12,0.00,4428.12,730.260,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-001,Acme Market Novi Sad Centar,RSD,9,31,365004.00,14658.00,350346.00,1298.220,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-002,Acme Market Novi Sad Liman 1,RSD,13,36,897918.00,13410.00,884508.00,1188.840,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-003,Acme Market Novi Sad Liman 2,RSD,12,35,499680.00,0.00,499680.00,1012.080,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-004,Acme Market Novi Sad Detelinara,RSD,11,36,817242.00,73836.00,743406.00,1318.380,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-005,Acme Market Novi Sad Grbavica,RSD,8,28,314544.00,26634.00,287910.00,844.620,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-006,Acme Market Novi Sad Klisa,RSD,9,25,280296.00,3402.00,276894.00,790.680,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-007,Acme Market Petrovaradin,RSD,6,24,422748.00,4170.00,418578.00,839.700,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-008,Acme Market Sremska Kamenica,RSD,11,28,450594.00,0.00,450594.00,839.940,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-009,Acme Market Zrenjanin,RSD,7,26,433758.00,27864.00,405894.00,954.360,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-010,Acme Market Subotica,RSD,14,36,533754.00,7506.00,526248.00,1181.400,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-011,Acme Market Sombor,RSD,9,27,454404.00,0.00,454404.00,685.020,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-012,Acme Market Kikinda,RSD,9,28,264804.00,0.00,264804.00,1034.700,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-013,Acme Market Pančevo,RSD,6,24,305526.00,8994.00,296532.00,905.580,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-014,Acme Market Sremska Mitrovica,RSD,9,27,341826.00,0.00,341826.00,876.000,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-015,Acme Market Vršac,RSD,10,36,685392.00,4170.00,681222.00,1446.120,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-016,Acme Market Vrbas,RSD,11,34,649362.00,0.00,649362.00,1033.980,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-017,Acme Market Bačka Palanka,RSD,9,30,362328.00,0.00,362328.00,1096.260,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-018,Acme Market Ruma,RSD,9,29,440712.00,10470.00,430242.00,837.000,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-019,Acme Market Inđija,RSD,12,34,550674.00,20202.00,530472.00,1281.060,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-020,Acme Market Stara Pazova,RSD,13,32,404796.00,25128.00,379668.00,975.840,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-021,Acme Market Bečej,RSD,10,26,477744.00,0.00,477744.00,871.260,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-022,Acme Market Kula,RSD,9,26,448920.00,0.00,448920.00,688.920,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-023,Acme Market Temerin,RSD,9,31,675936.00,33504.00,642432.00,976.860,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-024,Acme Market Šid,RSD,8,36,584724.00,12474.00,572250.00,1158.180,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-025,Acme Market Senta,RSD,9,26,400782.00,0.00,400782.00,748.020,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-026,Acme Market Apatin,RSD,8,31,588102.00,0.00,588102.00,1327.560,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-027,Acme Market Szeged Belváros,EUR,9,26,3159.06,0.00,3159.06,925.620,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-027,Acme Market Szeged Belváros,HUF,1,1,6000.00,0.00,6000.00,0.000,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-028,Acme Market Szeged Újszeged,EUR,10,31,3976.14,0.00,3976.14,962.460,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-029,Acme Market Szeged Tarján,EUR,9,30,1821.42,0.00,1821.42,994.020,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-029,Acme Market Szeged Tarján,HUF,1,1,8400.00,0.00,8400.00,0.000,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-030,Acme Market Szeged Kiskundorozsma,EUR,11,36,7154.22,24.12,7130.10,1512.000,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-22,S-030,Acme Market Szeged Kiskundorozsma,HUF,1,1,8400.00,0.00,8400.00,0.000,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-001,Acme Market Novi Sad Centar,RSD,12,31,601230.00,534.00,600696.00,1204.500,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-002,Acme Market Novi Sad Liman 1,RSD,8,35,437970.00,21156.00,416814.00,1053.360,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-003,Acme Market Novi Sad Liman 2,RSD,9,30,455094.00,0.00,455094.00,989.700,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-004,Acme Market Novi Sad Detelinara,RSD,12,31,542778.00,0.00,542778.00,1217.760,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-005,Acme Market Novi Sad Grbavica,RSD,13,33,531390.00,4788.00,526602.00,1020.120,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-006,Acme Market Novi Sad Klisa,RSD,8,32,390924.00,0.00,390924.00,1140.180,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-007,Acme Market Petrovaradin,RSD,8,32,423864.00,0.00,423864.00,886.560,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-008,Acme Market Sremska Kamenica,RSD,6,29,585990.00,13140.00,572850.00,1225.200,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-009,Acme Market Zrenjanin,RSD,13,30,582420.00,1794.00,580626.00,1158.660,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-010,Acme Market Subotica,RSD,8,30,480324.00,0.00,480324.00,907.800,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-011,Acme Market Sombor,RSD,9,28,395064.00,11304.00,383760.00,987.180,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-012,Acme Market Kikinda,RSD,9,26,392958.00,0.00,392958.00,934.680,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-013,Acme Market Pančevo,RSD,9,27,387606.00,16488.00,371118.00,725.640,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-014,Acme Market Sremska Mitrovica,RSD,10,29,478698.00,4788.00,473910.00,985.740,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-015,Acme Market Vršac,RSD,7,26,307596.00,0.00,307596.00,1193.460,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-016,Acme Market Vrbas,RSD,11,27,539442.00,0.00,539442.00,1155.060,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-017,Acme Market Bačka Palanka,RSD,11,33,501408.00,9996.00,491412.00,1408.680,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-018,Acme Market Ruma,RSD,9,26,460014.00,2694.00,457320.00,693.300,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-019,Acme Market Inđija,RSD,7,29,412218.00,0.00,412218.00,836.040,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-020,Acme Market Stara Pazova,RSD,10,28,398730.00,0.00,398730.00,914.400,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-021,Acme Market Bečej,RSD,8,26,253152.00,8568.00,244584.00,932.220,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-022,Acme Market Kula,RSD,11,34,579048.00,19152.00,559896.00,1155.300,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-023,Acme Market Temerin,RSD,8,32,401076.00,8340.00,392736.00,1208.340,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-024,Acme Market Šid,RSD,8,26,392754.00,0.00,392754.00,845.220,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-025,Acme Market Senta,RSD,10,27,353052.00,1314.00,351738.00,740.700,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-23,S-026,Acme Market Apatin,RSD,9,32,658128.00,0.00,658128.00,1184.460,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-001,Acme Market Novi Sad Centar,RSD,7,28,471096.00,134910.00,336186.00,1042.440,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-002,Acme Market Novi Sad Liman 1,RSD,9,27,619602.00,7632.00,611970.00,1024.080,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-003,Acme Market Novi Sad Liman 2,RSD,8,35,471882.00,49308.00,422574.00,976.800,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-004,Acme Market Novi Sad Detelinara,RSD,9,33,513000.00,102294.00,410706.00,1207.320,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-005,Acme Market Novi Sad Grbavica,RSD,11,36,485568.00,22716.00,462852.00,1056.060,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-006,Acme Market Novi Sad Klisa,RSD,10,29,456414.00,0.00,456414.00,942.960,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-007,Acme Market Petrovaradin,RSD,10,33,490428.00,0.00,490428.00,1051.860,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-008,Acme Market Sremska Kamenica,RSD,9,31,468654.00,14658.00,453996.00,766.620,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-009,Acme Market Zrenjanin,RSD,8,25,256032.00,5496.00,250536.00,696.540,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-010,Acme Market Subotica,RSD,9,36,711600.00,12474.00,699126.00,1255.560,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-011,Acme Market Sombor,RSD,8,31,464574.00,0.00,464574.00,946.200,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-012,Acme Market Kikinda,RSD,8,33,526638.00,0.00,526638.00,1160.220,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-013,Acme Market Pančevo,RSD,11,34,605214.00,77154.00,528060.00,1327.980,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-014,Acme Market Sremska Mitrovica,RSD,10,31,570564.00,0.00,570564.00,839.400,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-015,Acme Market Vršac,RSD,6,26,380316.00,8568.00,371748.00,861.720,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-016,Acme Market Vrbas,RSD,9,25,510960.00,0.00,510960.00,855.840,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-017,Acme Market Bačka Palanka,RSD,13,33,605010.00,9282.00,595728.00,1015.440,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-018,Acme Market Ruma,RSD,10,33,542352.00,33516.00,508836.00,1056.720,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-019,Acme Market Inđija,RSD,8,29,591738.00,28776.00,562962.00,1116.900,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-020,Acme Market Stara Pazova,RSD,11,34,351558.00,0.00,351558.00,1243.080,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-021,Acme Market Bečej,RSD,10,30,464226.00,6258.00,457968.00,1364.880,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-022,Acme Market Kula,RSD,8,30,401964.00,20940.00,381024.00,1046.700,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-023,Acme Market Temerin,RSD,9,24,426192.00,0.00,426192.00,966.660,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-024,Acme Market Šid,RSD,8,26,513756.00,41340.00,472416.00,865.500,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-025,Acme Market Senta,RSD,8,26,360690.00,15264.00,345426.00,936.180,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-026,Acme Market Apatin,RSD,12,33,546330.00,0.00,546330.00,1392.060,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-027,Acme Market Szeged Belváros,EUR,11,32,4558.20,393.72,4164.48,949.680,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-027,Acme Market Szeged Belváros,HUF,1,1,7200.00,0.00,7200.00,0.000,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-028,Acme Market Szeged Újszeged,EUR,9,30,5154.42,28.56,5125.86,1210.500,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-028,Acme Market Szeged Újszeged,HUF,1,1,2400.00,0.00,2400.00,0.000,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-029,Acme Market Szeged Tarján,EUR,9,35,4551.48,0.00,4551.48,1121.760,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-029,Acme Market Szeged Tarján,HUF,1,1,6000.00,0.00,6000.00,0.000,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-030,Acme Market Szeged Kiskundorozsma,EUR,10,33,4115.16,60.96,4054.20,986.580,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-24,S-030,Acme Market Szeged Kiskundorozsma,HUF,1,1,2400.00,0.00,2400.00,0.000,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-001,Acme Market Novi Sad Centar,RSD,6,15,279636.00,0.00,279636.00,657.960,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-002,Acme Market Novi Sad Liman 1,RSD,4,15,160662.00,0.00,160662.00,435.720,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-003,Acme Market Novi Sad Liman 2,RSD,5,14,232458.00,13140.00,219318.00,489.600,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-004,Acme Market Novi Sad Detelinara,RSD,7,15,243354.00,10206.00,233148.00,447.120,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-005,Acme Market Novi Sad Grbavica,RSD,6,15,327288.00,8994.00,318294.00,409.320,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-006,Acme Market Novi Sad Klisa,RSD,4,9,230424.00,0.00,230424.00,359.880,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-007,Acme Market Petrovaradin,RSD,6,15,183924.00,0.00,183924.00,358.080,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-008,Acme Market Sremska Kamenica,RSD,5,13,347844.00,0.00,347844.00,666.960,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-009,Acme Market Zrenjanin,RSD,4,15,259710.00,10710.00,249000.00,781.740,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-010,Acme Market Subotica,RSD,5,14,233364.00,11940.00,221424.00,566.760,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-011,Acme Market Sombor,RSD,3,15,145992.00,0.00,145992.00,291.900,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-012,Acme Market Kikinda,RSD,5,14,286716.00,0.00,286716.00,457.740,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-013,Acme Market Pančevo,RSD,4,14,331992.00,0.00,331992.00,535.200,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-014,Acme Market Sremska Mitrovica,RSD,2,10,221910.00,2136.00,219774.00,280.380,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-015,Acme Market Vršac,RSD,7,14,317172.00,0.00,317172.00,499.920,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-016,Acme Market Vrbas,RSD,3,9,194298.00,0.00,194298.00,361.920,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-017,Acme Market Bačka Palanka,RSD,2,8,301314.00,0.00,301314.00,400.920,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-018,Acme Market Ruma,RSD,3,9,139674.00,10140.00,129534.00,300.600,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-019,Acme Market Inđija,RSD,3,15,298062.00,0.00,298062.00,435.240,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-020,Acme Market Stara Pazova,RSD,3,10,200850.00,0.00,200850.00,295.200,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-021,Acme Market Bečej,RSD,3,9,232326.00,0.00,232326.00,313.200,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-022,Acme Market Kula,RSD,4,11,190020.00,0.00,190020.00,587.100,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-023,Acme Market Temerin,RSD,5,11,104472.00,0.00,104472.00,324.060,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-024,Acme Market Šid,RSD,4,11,226566.00,0.00,226566.00,414.060,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-025,Acme Market Senta,RSD,4,16,326658.00,0.00,326658.00,614.700,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-026,Acme Market Apatin,RSD,2,9,107256.00,17094.00,90162.00,302.400,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-027,Acme Market Szeged Belváros,EUR,5,16,1599.00,0.00,1599.00,282.360,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-028,Acme Market Szeged Újszeged,EUR,2,9,2518.56,0.00,2518.56,410.040,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-029,Acme Market Szeged Tarján,EUR,2,10,1015.20,78.12,937.08,191.100,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-25,S-030,Acme Market Szeged Kiskundorozsma,EUR,3,12,3228.72,0.00,3228.72,407.280,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-001,Acme Market Novi Sad Centar,RSD,9,26,284436.00,0.00,284436.00,886.020,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-002,Acme Market Novi Sad Liman 1,RSD,12,35,729150.00,5364.00,723786.00,1093.980,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-003,Acme Market Novi Sad Liman 2,RSD,6,25,422622.00,1788.00,420834.00,911.580,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-004,Acme Market Novi Sad Detelinara,RSD,10,33,449796.00,0.00,449796.00,1191.480,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-005,Acme Market Novi Sad Grbavica,RSD,11,32,484884.00,9996.00,474888.00,1238.040,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-006,Acme Market Novi Sad Klisa,RSD,8,24,379140.00,0.00,379140.00,818.100,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-007,Acme Market Petrovaradin,RSD,9,28,416688.00,0.00,416688.00,1051.260,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-008,Acme Market Sremska Kamenica,RSD,9,29,317190.00,0.00,317190.00,792.900,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-009,Acme Market Zrenjanin,RSD,8,24,308376.00,0.00,308376.00,849.000,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-010,Acme Market Subotica,RSD,9,33,609264.00,42528.00,566736.00,1458.420,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-011,Acme Market Sombor,RSD,9,32,607752.00,11424.00,596328.00,1469.340,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-012,Acme Market Kikinda,RSD,8,27,449388.00,0.00,449388.00,933.900,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-013,Acme Market Pančevo,RSD,7,29,611682.00,3924.00,607758.00,1008.000,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-014,Acme Market Sremska Mitrovica,RSD,10,35,666084.00,21582.00,644502.00,1051.440,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-015,Acme Market Vršac,RSD,7,27,483090.00,0.00,483090.00,1087.860,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-016,Acme Market Vrbas,RSD,8,29,680982.00,19320.00,661662.00,1292.580,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-017,Acme Market Bačka Palanka,RSD,7,28,528072.00,19476.00,508596.00,727.800,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-018,Acme Market Ruma,RSD,10,33,563886.00,0.00,563886.00,1181.160,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-019,Acme Market Inđija,RSD,9,27,467178.00,45654.00,421524.00,1046.220,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-020,Acme Market Stara Pazova,RSD,9,34,461556.00,24918.00,436638.00,1345.800,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-021,Acme Market Bečej,RSD,11,31,333636.00,7884.00,325752.00,870.540,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-022,Acme Market Kula,RSD,10,32,693894.00,23364.00,670530.00,1264.800,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-023,Acme Market Temerin,RSD,9,34,551118.00,47988.00,503130.00,1149.660,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-024,Acme Market Šid,RSD,10,31,359718.00,0.00,359718.00,1160.760,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-025,Acme Market Senta,RSD,13,35,399990.00,1554.00,398436.00,1242.420,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-026,Acme Market Apatin,RSD,9,31,438834.00,0.00,438834.00,1265.580,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-027,Acme Market Szeged Belváros,EUR,7,25,5198.46,0.00,5198.46,1073.940,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-028,Acme Market Szeged Újszeged,EUR,11,36,6618.78,0.00,6618.78,1455.960,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-029,Acme Market Szeged Tarján,EUR,9,29,3591.18,0.00,3591.18,991.020,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-26,S-030,Acme Market Szeged Kiskundorozsma,EUR,9,33,3935.22,0.00,3935.22,1286.040,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-001,Acme Market Novi Sad Centar,RSD,8,27,436272.00,0.00,436272.00,919.740,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-002,Acme Market Novi Sad Liman 1,RSD,9,34,633510.00,0.00,633510.00,1194.240,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-003,Acme Market Novi Sad Liman 2,RSD,10,29,693054.00,0.00,693054.00,1219.620,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-004,Acme Market Novi Sad Detelinara,RSD,10,36,480732.00,0.00,480732.00,1208.760,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-005,Acme Market Novi Sad Grbavica,RSD,8,33,620820.00,0.00,620820.00,1115.520,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-006,Acme Market Novi Sad Klisa,RSD,8,29,330594.00,0.00,330594.00,955.920,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-007,Acme Market Petrovaradin,RSD,6,24,232884.00,0.00,232884.00,642.060,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-008,Acme Market Sremska Kamenica,RSD,7,27,391644.00,0.00,391644.00,875.820,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-009,Acme Market Zrenjanin,RSD,12,25,372402.00,0.00,372402.00,849.600,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-010,Acme Market Subotica,RSD,8,25,331986.00,0.00,331986.00,733.560,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-011,Acme Market Sombor,RSD,7,35,710382.00,9780.00,700602.00,1046.160,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-012,Acme Market Kikinda,RSD,6,24,401046.00,0.00,401046.00,675.120,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-013,Acme Market Pančevo,RSD,10,28,475692.00,0.00,475692.00,1156.440,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-014,Acme Market Sremska Mitrovica,RSD,11,32,440754.00,0.00,440754.00,935.940,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-015,Acme Market Vršac,RSD,8,31,439326.00,0.00,439326.00,819.600,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-016,Acme Market Vrbas,RSD,7,24,309894.00,0.00,309894.00,740.040,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-017,Acme Market Bačka Palanka,RSD,8,26,580398.00,8010.00,572388.00,754.800,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-018,Acme Market Ruma,RSD,11,35,548010.00,20610.00,527400.00,1101.480,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-019,Acme Market Inđija,RSD,9,26,603138.00,0.00,603138.00,877.800,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-020,Acme Market Stara Pazova,RSD,11,34,680616.00,9576.00,671040.00,1142.100,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-021,Acme Market Bečej,RSD,10,30,480030.00,0.00,480030.00,827.520,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-022,Acme Market Kula,RSD,11,35,595056.00,14352.00,580704.00,1472.280,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-023,Acme Market Temerin,RSD,8,26,435786.00,0.00,435786.00,778.140,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-024,Acme Market Šid,RSD,9,34,570246.00,107550.00,462696.00,1472.100,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-025,Acme Market Senta,RSD,11,34,523656.00,0.00,523656.00,963.900,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-026,Acme Market Apatin,RSD,10,33,586686.00,0.00,586686.00,974.580,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-027,Acme Market Szeged Belváros,EUR,10,34,4749.84,0.00,4749.84,962.640,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-027,Acme Market Szeged Belváros,HUF,1,1,2400.00,0.00,2400.00,0.000,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-028,Acme Market Szeged Újszeged,EUR,10,26,4509.84,280.68,4229.16,1058.460,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-029,Acme Market Szeged Tarján,EUR,8,25,3163.50,0.00,3163.50,757.320,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-030,Acme Market Szeged Kiskundorozsma,EUR,10,35,4508.46,79.56,4428.90,1053.000,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-27,S-030,Acme Market Szeged Kiskundorozsma,HUF,1,1,3000.00,0.00,3000.00,0.000,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-001,Acme Market Novi Sad Centar,RSD,7,24,296310.00,2616.00,293694.00,841.740,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-002,Acme Market Novi Sad Liman 1,RSD,8,28,308472.00,0.00,308472.00,728.820,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-003,Acme Market Novi Sad Liman 2,RSD,5,24,406254.00,0.00,406254.00,713.340,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-004,Acme Market Novi Sad Detelinara,RSD,7,29,968910.00,0.00,968910.00,1040.700,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-005,Acme Market Novi Sad Grbavica,RSD,14,35,567270.00,3108.00,564162.00,1290.240,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-006,Acme Market Novi Sad Klisa,RSD,9,32,402474.00,0.00,402474.00,884.340,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-007,Acme Market Petrovaradin,RSD,11,34,493308.00,97662.00,395646.00,872.100,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-008,Acme Market Sremska Kamenica,RSD,10,35,393792.00,0.00,393792.00,1389.960,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-009,Acme Market Zrenjanin,RSD,9,25,511968.00,0.00,511968.00,796.260,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-010,Acme Market Subotica,RSD,8,29,509832.00,0.00,509832.00,1016.820,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-011,Acme Market Sombor,RSD,9,28,466482.00,26910.00,439572.00,994.080,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-012,Acme Market Kikinda,RSD,8,24,511278.00,154398.00,356880.00,881.220,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-013,Acme Market Pančevo,RSD,6,25,407832.00,0.00,407832.00,1005.000,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-014,Acme Market Sremska Mitrovica,RSD,7,25,295428.00,534.00,294894.00,818.700,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-015,Acme Market Vršac,RSD,8,27,251616.00,2970.00,248646.00,753.120,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-016,Acme Market Vrbas,RSD,9,25,802356.00,0.00,802356.00,1031.580,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-017,Acme Market Bačka Palanka,RSD,11,35,490128.00,60714.00,429414.00,1134.300,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-018,Acme Market Ruma,RSD,8,31,476544.00,5256.00,471288.00,1106.400,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-019,Acme Market Inđija,RSD,9,25,563994.00,55524.00,508470.00,1031.040,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-020,Acme Market Stara Pazova,RSD,7,28,515832.00,0.00,515832.00,1208.100,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-021,Acme Market Bečej,RSD,10,34,544866.00,0.00,544866.00,1158.840,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-022,Acme Market Kula,RSD,10,32,475962.00,0.00,475962.00,1022.220,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-023,Acme Market Temerin,RSD,8,29,459624.00,0.00,459624.00,1004.880,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-024,Acme Market Šid,RSD,8,32,417516.00,35802.00,381714.00,1106.640,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-025,Acme Market Senta,RSD,11,34,431718.00,21552.00,410166.00,1151.940,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-026,Acme Market Apatin,RSD,12,32,540036.00,0.00,540036.00,1067.520,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-027,Acme Market Szeged Belváros,EUR,12,28,3569.52,17.88,3551.64,983.340,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-028,Acme Market Szeged Újszeged,EUR,8,27,3269.64,4.56,3265.08,1014.840,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-028,Acme Market Szeged Újszeged,HUF,1,1,3000.00,0.00,3000.00,0.000,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-029,Acme Market Szeged Tarján,EUR,10,33,3000.06,0.00,3000.06,1145.640,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-029,Acme Market Szeged Tarján,HUF,1,1,9600.00,0.00,9600.00,0.000,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-28,S-030,Acme Market Szeged Kiskundorozsma,EUR,10,34,5172.36,85.68,5086.68,1115.760,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-001,Acme Market Novi Sad Centar,RSD,12,33,454530.00,17862.00,436668.00,1180.920,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-002,Acme Market Novi Sad Liman 1,RSD,8,28,591678.00,2616.00,589062.00,849.540,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-003,Acme Market Novi Sad Liman 2,RSD,10,31,479706.00,0.00,479706.00,1028.100,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-004,Acme Market Novi Sad Detelinara,RSD,8,35,583164.00,13344.00,569820.00,991.920,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-005,Acme Market Novi Sad Grbavica,RSD,10,35,381102.00,0.00,381102.00,1141.560,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-006,Acme Market Novi Sad Klisa,RSD,9,29,559410.00,10008.00,549402.00,1173.960,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-007,Acme Market Petrovaradin,RSD,9,31,596610.00,0.00,596610.00,971.340,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-008,Acme Market Sremska Kamenica,RSD,9,30,551568.00,0.00,551568.00,984.360,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-009,Acme Market Zrenjanin,RSD,10,28,437130.00,4122.00,433008.00,751.200,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-010,Acme Market Subotica,RSD,9,29,464466.00,0.00,464466.00,909.720,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-011,Acme Market Sombor,RSD,6,26,482838.00,0.00,482838.00,870.360,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-012,Acme Market Kikinda,RSD,13,35,643812.00,0.00,643812.00,1085.820,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-013,Acme Market Pančevo,RSD,7,29,399216.00,0.00,399216.00,998.280,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-014,Acme Market Sremska Mitrovica,RSD,12,35,463584.00,27528.00,436056.00,921.780,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-015,Acme Market Vršac,RSD,8,29,410466.00,7164.00,403302.00,928.020,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-016,Acme Market Vrbas,RSD,8,28,593730.00,20610.00,573120.00,903.480,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-017,Acme Market Bačka Palanka,RSD,12,30,739626.00,0.00,739626.00,1134.120,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-018,Acme Market Ruma,RSD,5,24,336942.00,19098.00,317844.00,1131.000,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-019,Acme Market Inđija,RSD,13,36,556992.00,23310.00,533682.00,1313.520,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-020,Acme Market Stara Pazova,RSD,8,33,422406.00,7128.00,415278.00,1205.220,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-021,Acme Market Bečej,RSD,8,28,390288.00,34878.00,355410.00,806.040,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-022,Acme Market Kula,RSD,6,25,258672.00,0.00,258672.00,737.400,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-023,Acme Market Temerin,RSD,8,30,286284.00,534.00,285750.00,1101.240,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-024,Acme Market Šid,RSD,7,24,329268.00,32328.00,296940.00,594.960,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-025,Acme Market Senta,RSD,10,35,521982.00,9282.00,512700.00,916.080,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-026,Acme Market Apatin,RSD,10,30,402042.00,36456.00,365586.00,1225.800,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-027,Acme Market Szeged Belváros,EUR,8,28,3116.88,70.38,3046.50,913.800,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-028,Acme Market Szeged Újszeged,EUR,9,29,1979.64,0.00,1979.64,766.020,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-029,Acme Market Szeged Tarján,EUR,8,29,3770.52,99.96,3670.56,842.040,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-030,Acme Market Szeged Kiskundorozsma,EUR,8,28,3810.60,0.00,3810.60,816.960,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-29,S-030,Acme Market Szeged Kiskundorozsma,HUF,1,1,7200.00,0.00,7200.00,0.000,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-001,Acme Market Novi Sad Centar,RSD,12,35,454662.00,10026.00,444636.00,1272.060,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-002,Acme Market Novi Sad Liman 1,RSD,10,25,279330.00,0.00,279330.00,980.880,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-003,Acme Market Novi Sad Liman 2,RSD,9,33,725364.00,14352.00,711012.00,1344.900,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-004,Acme Market Novi Sad Detelinara,RSD,12,36,832998.00,139350.00,693648.00,1317.660,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-005,Acme Market Novi Sad Grbavica,RSD,7,28,371280.00,0.00,371280.00,999.900,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-006,Acme Market Novi Sad Klisa,RSD,12,33,619098.00,0.00,619098.00,1138.920,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-007,Acme Market Petrovaradin,RSD,6,26,564936.00,0.00,564936.00,820.560,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-008,Acme Market Sremska Kamenica,RSD,8,32,668526.00,67638.00,600888.00,1121.460,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-009,Acme Market Zrenjanin,RSD,9,34,418992.00,0.00,418992.00,1077.180,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-010,Acme Market Subotica,RSD,7,25,345834.00,0.00,345834.00,869.700,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-011,Acme Market Sombor,RSD,6,24,586104.00,0.00,586104.00,893.040,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-012,Acme Market Kikinda,RSD,9,27,483984.00,20610.00,463374.00,916.260,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-013,Acme Market Pančevo,RSD,9,34,445818.00,12564.00,433254.00,920.460,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-014,Acme Market Sremska Mitrovica,RSD,7,28,266880.00,0.00,266880.00,751.860,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-015,Acme Market Vršac,RSD,13,33,510750.00,131250.00,379500.00,1153.500,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-016,Acme Market Vrbas,RSD,9,36,430632.00,0.00,430632.00,964.560,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-017,Acme Market Bačka Palanka,RSD,7,29,481656.00,0.00,481656.00,1092.120,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-018,Acme Market Ruma,RSD,9,34,910992.00,0.00,910992.00,1161.540,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-019,Acme Market Inđija,RSD,7,25,246324.00,13986.00,232338.00,700.260,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-020,Acme Market Stara Pazova,RSD,12,35,614814.00,24048.00,590766.00,1326.840,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-021,Acme Market Bečej,RSD,8,27,522510.00,15114.00,507396.00,883.020,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-022,Acme Market Kula,RSD,11,30,404004.00,0.00,404004.00,1227.120,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-023,Acme Market Temerin,RSD,8,25,515682.00,12366.00,503316.00,972.720,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-024,Acme Market Šid,RSD,8,30,293316.00,31668.00,261648.00,819.960,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-025,Acme Market Senta,RSD,6,24,352938.00,0.00,352938.00,940.560,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-026,Acme Market Apatin,RSD,9,35,514788.00,4662.00,510126.00,1155.240,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-027,Acme Market Szeged Belváros,EUR,8,26,2906.22,0.00,2906.22,551.580,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-028,Acme Market Szeged Újszeged,EUR,10,35,5714.88,0.00,5714.88,1447.080,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-028,Acme Market Szeged Újszeged,HUF,1,1,6600.00,0.00,6600.00,0.000,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-029,Acme Market Szeged Tarján,EUR,11,36,4296.54,114.30,4182.24,1237.500,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-30,S-030,Acme Market Szeged Kiskundorozsma,EUR,7,24,2310.78,0.00,2310.78,658.800,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-001,Acme Market Novi Sad Centar,RSD,9,36,671706.00,5004.00,666702.00,1306.260,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-002,Acme Market Novi Sad Liman 1,RSD,8,25,318894.00,23940.00,294954.00,831.120,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-003,Acme Market Novi Sad Liman 2,RSD,8,26,447732.00,9174.00,438558.00,916.140,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-004,Acme Market Novi Sad Detelinara,RSD,10,30,435024.00,35910.00,399114.00,853.260,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-005,Acme Market Novi Sad Grbavica,RSD,8,25,410208.00,0.00,410208.00,850.860,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-006,Acme Market Novi Sad Klisa,RSD,11,27,300414.00,0.00,300414.00,885.780,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-007,Acme Market Petrovaradin,RSD,7,27,405132.00,0.00,405132.00,887.820,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-008,Acme Market Sremska Kamenica,RSD,9,33,511782.00,0.00,511782.00,1032.420,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-009,Acme Market Zrenjanin,RSD,10,35,420738.00,0.00,420738.00,848.760,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-010,Acme Market Subotica,RSD,8,24,462822.00,18144.00,444678.00,902.460,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-011,Acme Market Sombor,RSD,14,35,542640.00,0.00,542640.00,1366.860,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-012,Acme Market Kikinda,RSD,10,32,425316.00,0.00,425316.00,1114.680,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-013,Acme Market Pančevo,RSD,10,33,525510.00,0.00,525510.00,1319.940,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-014,Acme Market Sremska Mitrovica,RSD,8,28,385788.00,0.00,385788.00,784.620,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-015,Acme Market Vršac,RSD,9,27,238956.00,15264.00,223692.00,958.080,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-016,Acme Market Vrbas,RSD,11,29,359316.00,25020.00,334296.00,1326.420,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-017,Acme Market Bačka Palanka,RSD,9,36,577260.00,0.00,577260.00,1237.380,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-018,Acme Market Ruma,RSD,11,30,590556.00,0.00,590556.00,978.000,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-019,Acme Market Inđija,RSD,8,31,524040.00,19152.00,504888.00,1064.460,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-020,Acme Market Stara Pazova,RSD,10,36,840714.00,6282.00,834432.00,1285.860,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-021,Acme Market Bečej,RSD,7,25,537942.00,0.00,537942.00,803.100,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-022,Acme Market Kula,RSD,11,34,749922.00,39492.00,710430.00,1381.680,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-023,Acme Market Temerin,RSD,10,28,419226.00,7098.00,412128.00,1193.460,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-024,Acme Market Šid,RSD,7,28,569394.00,47718.00,521676.00,1278.240,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-025,Acme Market Senta,RSD,9,29,389196.00,3318.00,385878.00,948.360,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-026,Acme Market Apatin,RSD,9,34,779520.00,12474.00,767046.00,1054.680,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-027,Acme Market Szeged Belváros,EUR,8,26,2335.50,160.92,2174.58,714.000,C-20127,bence.szalai@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-028,Acme Market Szeged Újszeged,EUR,10,27,2317.56,514.32,1803.24,645.660,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-028,Acme Market Szeged Újszeged,HUF,1,1,3600.00,0.00,3600.00,0.000,C-20128,reka.halasz@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-029,Acme Market Szeged Tarján,EUR,10,33,2815.50,0.00,2815.50,1078.500,C-20129,adam.kerekes@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-030,Acme Market Szeged Kiskundorozsma,EUR,9,29,3617.40,366.72,3250.68,1075.620,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-10-31,S-030,Acme Market Szeged Kiskundorozsma,HUF,1,1,10200.00,0.00,10200.00,0.000,C-20130,zsofia.bodor@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-001,Acme Market Novi Sad Centar,RSD,4,15,196044.00,0.00,196044.00,654.720,C-20101,zoran.milic@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-002,Acme Market Novi Sad Liman 1,RSD,3,12,108804.00,0.00,108804.00,478.020,C-20102,vesna.kordic@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-003,Acme Market Novi Sad Liman 2,RSD,4,15,259572.00,0.00,259572.00,470.460,C-20103,dejan.stepic@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-004,Acme Market Novi Sad Detelinara,RSD,3,11,103884.00,0.00,103884.00,320.520,C-20104,snezana.bulovic@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-005,Acme Market Novi Sad Grbavica,RSD,3,10,150336.00,10494.00,139842.00,308.760,C-20105,milos.kerac@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-006,Acme Market Novi Sad Klisa,RSD,4,16,350160.00,0.00,350160.00,594.960,C-20106,jelena.vranesevic@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-007,Acme Market Petrovaradin,RSD,4,14,384582.00,0.00,384582.00,420.360,C-20107,goran.lalosevic@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-008,Acme Market Sremska Kamenica,RSD,2,10,159480.00,18396.00,141084.00,274.380,C-20108,marija.teofanov@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-009,Acme Market Zrenjanin,RSD,3,8,184584.00,0.00,184584.00,326.760,C-20109,nenad.suvakov@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-010,Acme Market Subotica,RSD,4,10,50376.00,0.00,50376.00,119.340,C-20110,ivana.dulic@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-011,Acme Market Sombor,RSD,2,8,161160.00,0.00,161160.00,374.400,C-20111,branislav.cosic@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-012,Acme Market Kikinda,RSD,6,12,269814.00,0.00,269814.00,394.740,C-20112,danijela.mrksic@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-013,Acme Market Pančevo,RSD,3,12,242802.00,0.00,242802.00,318.960,C-20113,aleksandar.vucetin@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-014,Acme Market Sremska Mitrovica,RSD,6,16,277812.00,0.00,277812.00,711.960,C-20114,tamara.brkljac@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-015,Acme Market Vršac,RSD,2,10,134274.00,0.00,134274.00,474.000,C-20115,slobodan.jovin@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-016,Acme Market Vrbas,RSD,3,8,69384.00,8568.00,60816.00,400.200,C-20116,milica.gajin@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-017,Acme Market Bačka Palanka,RSD,3,9,48252.00,0.00,48252.00,208.200,C-20117,radovan.kosovac@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-018,Acme Market Ruma,RSD,3,8,94302.00,0.00,94302.00,104.280,C-20118,ljiljana.petkov@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-019,Acme Market Inđija,RSD,4,11,131154.00,0.00,131154.00,328.920,C-20119,vladimir.ostojin@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-020,Acme Market Stara Pazova,RSD,4,9,122376.00,0.00,122376.00,201.420,C-20120,sanja.ratkov@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-021,Acme Market Bečej,RSD,3,12,116322.00,30096.00,86226.00,409.140,C-20121,predrag.zubic@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-022,Acme Market Kula,RSD,5,15,252402.00,0.00,252402.00,630.600,C-20122,gordana.mamuzic@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-023,Acme Market Temerin,RSD,3,12,224094.00,7848.00,216246.00,493.680,C-20123,djordje.pejin@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-024,Acme Market Šid,RSD,3,9,73752.00,0.00,73752.00,278.580,C-20124,natasa.bajic@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-025,Acme Market Senta,RSD,4,12,130002.00,0.00,130002.00,581.640,C-20125,istvan.varga@example.com,2026-11-02T07:35:14+01:00
+2026-11-01,S-026,Acme Market Apatin,RSD,3,8,97194.00,0.00,97194.00,307.440,C-20126,biljana.raseta@example.com,2026-11-02T07:35:14+01:00

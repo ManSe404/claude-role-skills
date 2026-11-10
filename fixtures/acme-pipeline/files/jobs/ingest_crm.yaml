@@ -1,0 +1,16 @@
+name: ingest_crm
+description: Load the CRM customers, contacts and activities of a delivery into bronze.
+schedule: "0 7 * * *"
+timezone: Europe/Belgrade
+cluster: etl
+enabled: false  # until the CRM contract is agreed; the loader refuses a source without one
+steps:
+  - task: bronze.crm_customers
+    layer: bronze
+    run: python3 -m pipeline.loaders.crm customers
+  - task: bronze.crm_contacts
+    layer: bronze
+    run: python3 -m pipeline.loaders.crm contacts
+  - task: bronze.crm_activities
+    layer: bronze
+    run: python3 -m pipeline.loaders.crm activities

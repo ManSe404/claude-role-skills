@@ -1,0 +1,13 @@
+# Rows that break a rule are flagged in bronze and written to ops/quarantine.jsonl before silver is built.
+# They stay out of silver until someone fixes the source or the reference data and reruns the day.
+rules:
+  - name: unknown_store_id
+    table: silver.orders
+    source: bronze.erp_orders
+    column: store_id
+    condition: "store_id not in (select store_id from ref.stores)"
+  - name: missing_tax_id
+    table: silver.customers
+    source: erp_replica.customers
+    column: tax_id
+    condition: "nullif(trim(tax_id), '') is null"

@@ -1,0 +1,12 @@
+# Checks after the bronze layer. Each query returns the rows that break the check; :run_date is the delivery date.
+checks:
+  - name: erp_orders_not_empty
+    table: bronze.erp_orders
+    runs: after_task
+    query: "select 1 as missing where not exists (select 1 from bronze.erp_orders where load_date = :run_date)"
+    fail_if: "rows > 0"
+  - name: erp_orders_key_unique
+    table: bronze.erp_orders
+    runs: after_task
+    query: "select order_id, line_no from bronze.erp_orders where load_date = :run_date group by order_id, line_no having count(*) > 1"
+    fail_if: "rows > 0"

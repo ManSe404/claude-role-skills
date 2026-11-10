@@ -24,6 +24,12 @@
       "version": "0.2.2"
     },
     {
+      "name": "data-engineer",
+      "source": "./plugins/data-engineer",
+      "description": "Seven skills for data engineers: source-profile, source-contract, pipeline-incident, data-quality, data-cost, data-migration and data-product.",
+      "version": "0.1.0"
+    },
+    {
       "name": "software-architect",
       "source": "./plugins/software-architect",
       "description": "Four skills for software architects: arch-style, arch-c4, arch-review and arch-evolve.",
