@@ -24,8 +24,8 @@ check that shows it is done. Roles, not names. It changes nothing; the document 
 a wiki only after the yes. The cause itself comes from `bug-hunt`; the picture during the incident from
 `incident-triage`.
 
-Input: the JSON of the incident-triage and bug-hunt pages when they exist, the logs, the repository, and
-the times the incident was detected, mitigated and resolved. Default: ask for the times the logs cannot
+Input: the JSON of the incident-triage (or pipeline-incident) and bug-hunt pages when they exist, the logs,
+the repository, and the times the incident was detected, mitigated and resolved. Default: ask for the times the logs cannot
 give; without a bug-hunt page, stop at the cause and write out the call to run it.
 
 ## Steps

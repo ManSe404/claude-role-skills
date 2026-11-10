@@ -21,7 +21,8 @@ hooks:
 The job: while it burns, the picture from the facts: when it started, what changed before it, who is
 affected and how badly, what would stop it, and what to tell people now. It changes nothing, runs nothing
 against production and posts nothing. The root cause is the next step, `bug-hunt`; the write-up after
-the fire is `postmortem`.
+the fire is `postmortem`. A failed data pipeline run (run records, checks, quarantine, a changed delivery)
+goes to `pipeline-incident` in the data-engineer pack.
 
 Input: the alert or the report in the user's words, log files or a log folder, and the repository when
 there is one; optionally a deploy record. Default: ask for the logs; without them the page says what is

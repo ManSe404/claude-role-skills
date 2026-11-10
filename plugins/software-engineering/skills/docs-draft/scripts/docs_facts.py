@@ -15,8 +15,11 @@ What comes out, read-only, standard library only, JSON on stdout:
     config       names read from the environment (os.environ, os.getenv), the fields of a Settings class, and the
                  keys of example configuration files (names only, never a value)
     target       Makefile targets, package.json scripts, CI steps that run a command
+    job          scheduled jobs: job files (jobs/*.yaml with name, schedule, steps), Airflow DAGs (dag_id, schedule,
+                 task ids), CI schedules and crontab lines, each with its schedule read as text (daily at 06:30)
   `status` is documented (a document names it), undocumented, or guessed (found by a shallow pattern)
-- `stale`: commands, flags, routes and configuration names a document uses that the code does not have
+- `stale`: commands, flags, routes, configuration names and job names a document uses that the code does not have,
+  and a time a document gives for a job that disagrees with the job's schedule
 - `counts`: exposed items by kind and status
 
 Files named .env or .env.* are never opened; an example file gives key names only. Standard library only.
@@ -54,6 +57,7 @@ DOC_DIRS = {"docs", "doc", "adr", "adrs", "wiki"}
 HEADING = re.compile(r"^(#{1,6})\s+(.*)$")
 FENCE = re.compile(r"^\s*(```|~~~)")
 INDENTED = re.compile(r"^(?: {4}|\t)(\S.*)$")
+INLINE_CODE = re.compile(r"`([^`\n]+)`")
 COMMAND_WORDS = (
     "python",
     "python3",
@@ -98,6 +102,16 @@ EXAMPLE_FILE = re.compile(
     r"(^|/)(\.env\.example|\.env\.sample|[^/]+\.example|[^/]+\.sample|example\.[^/]+)$", re.IGNORECASE
 )
 SETTINGS_CLASS = re.compile(r"(?i)settings|config")
+JOB_KEY = re.compile(r"^(name|schedule|cron|timezone|enabled|description|sla):\s*(.*)$", re.MULTILINE)
+JOB_STEP = re.compile(r"^\s*-\s*(?:task|name|id|step):\s*(\S+)", re.MULTILINE)
+DAG = re.compile(r"\bDAG\(\s*(?:dag_id\s*=\s*)?[\"']([\w.-]+)[\"']|@dag\(\s*(?:dag_id\s*=\s*)?[\"']([\w.-]+)[\"']")
+DAG_SCHEDULE = re.compile(r"\bschedule(?:_interval)?\s*=\s*([\"'][^\"']*[\"']|[\w.()=, ]+)")
+TASK_ID = re.compile(r"task_id\s*=\s*[\"']([\w.-]+)[\"']")
+CI_CRON = re.compile(r"^\s*-\s*cron:\s*[\"']?([^\"'\n]+?)[\"']?\s*$", re.MULTILINE)
+CRONTAB_LINE = re.compile(r"^\s*((?:[\d*/,-]+\s+){4}[\d*/,A-Za-z-]+)\s+(?:\S+\s+)?(.+)$", re.MULTILINE)
+JOB_IN_DOC = re.compile(r"`([a-z][a-z0-9_]{2,})`|\bJOB=([a-z][a-z0-9_]{2,})\b")
+CLOCK = re.compile(r"\b(\d{1,2}):(\d{2})\b")
+DAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
 
 
 def is_secret(name: str) -> bool:
@@ -134,18 +148,17 @@ def commands_in_doc(text: str) -> list[dict[str, Any]]:
         if FENCE.match(line):
             fenced = not fenced
             continue
-        candidate = None
+        candidates = []
         if fenced:
-            candidate = line.strip()
+            candidates = [line.strip()]
         else:
             match = INDENTED.match(line)
-            candidate = match.group(1).strip() if match else None
-        if not candidate:
-            continue
-        candidate = re.sub(r"^\$\s+", "", candidate)
-        first = candidate.split()[0] if candidate.split() else ""
-        if first in COMMAND_WORDS or re.match(r"^[A-Z_]+=\S+\s+\w", candidate):
-            found.append({"line": number, "command": candidate[:200]})
+            candidates = [match.group(1).strip()] if match else [c.strip() for c in INLINE_CODE.findall(line)]
+        for candidate in candidates:
+            candidate = re.sub(r"^\$\s+", "", candidate)
+            first = candidate.split()[0] if candidate.split() else ""
+            if first in COMMAND_WORDS or re.match(r"^[A-Z_]+=\S+\s+\w", candidate):
+                found.append({"line": number, "command": candidate[:200]})
     return found
 
 
@@ -342,6 +355,171 @@ def shallow_facts(rel: str, text: str, items: list[dict[str, Any]]) -> None:
                 "guessed": True,
             }
         )
+
+
+def cron_text(expression: str) -> tuple[str, str | None]:
+    """A cron expression as a sentence, and its HH:MM when it names one time a day."""
+    fields = expression.split()
+    if len(fields) != 5:
+        return expression, None
+    minute, hour, dom, month, dow = fields
+    if minute.startswith("*/") and hour == "*":
+        return f"every {minute[2:]} minutes", None
+    if hour.startswith("*/") and minute.isdigit():
+        return f"every {hour[2:]} hours at :{int(minute):02d}", None
+    if minute.isdigit() and hour.isdigit():
+        clock = f"{int(hour):02d}:{int(minute):02d}"
+        when = f"at {clock}"
+        if dow != "*":
+            names = []
+            for part in dow.split(","):
+                first, _, last = part.partition("-")
+                if first.isdigit() and (last.isdigit() or not last):
+                    numbers = range(int(first), int(last or first) + 1)
+                    names += [DAYS[(n - 1) % 7] for n in numbers]
+                else:
+                    names.append(part)
+            return f"{when} on {', '.join(names)}", clock
+        if dom != "*" or month != "*":
+            return f"{when} on day {dom}" + (f" of month {month}" if month != "*" else ""), clock
+        return f"daily {when}", clock
+    return expression, None
+
+
+def job_facts(repo: Path, path: Path, text: str, items: list[dict[str, Any]]) -> None:
+    rel = path.relative_to(repo).as_posix()
+    suffix = path.suffix.lower()
+    if suffix in {".yaml", ".yml"} and ".github/workflows" not in rel:
+        keys = {key: value.strip().strip("\"'") for key, value in JOB_KEY.findall(text)}
+        schedule = keys.get("schedule") or keys.get("cron")
+        if (
+            keys.get("name")
+            and (schedule or "steps:" in text)
+            and (rel.startswith("jobs/") or "/jobs/" in rel or schedule)
+        ):
+            sentence, clock = cron_text(schedule) if schedule else ("no schedule", None)
+            items.append(
+                {
+                    "kind": "job",
+                    "name": keys["name"],
+                    "where": f"{rel}:1",
+                    "detail": keys.get("description", ""),
+                    "schedule": schedule,
+                    "schedule_text": sentence + (f" ({keys['timezone']})" if keys.get("timezone") else ""),
+                    "clock": clock,
+                    "sla": keys.get("sla"),
+                    "enabled": keys.get("enabled", "true").split("#")[0].strip().lower() != "false",
+                    "steps": JOB_STEP.findall(text),
+                }
+            )
+    elif suffix == ".py" and ("DAG(" in text or "@dag(" in text):
+        for match in DAG.finditer(text):
+            name = match.group(1) or match.group(2)
+            after = text[match.end() : match.end() + 600]
+            schedule_match = DAG_SCHEDULE.search(after)
+            schedule = schedule_match.group(1).strip("\"' ") if schedule_match else None
+            sentence, clock = cron_text(schedule) if schedule else ("no schedule", None)
+            items.append(
+                {
+                    "kind": "job",
+                    "name": name,
+                    "where": f"{rel}:{text[: match.start()].count(chr(10)) + 1}",
+                    "detail": "Airflow DAG",
+                    "schedule": schedule,
+                    "schedule_text": sentence,
+                    "clock": clock,
+                    "enabled": True,
+                    "steps": TASK_ID.findall(text),
+                }
+            )
+    elif ".github/workflows" in rel and "schedule:" in text:
+        name_match = re.search(r"^name:\s*(.+)$", text, re.MULTILINE)
+        for match in CI_CRON.finditer(text):
+            sentence, clock = cron_text(match.group(1))
+            items.append(
+                {
+                    "kind": "job",
+                    "name": (name_match.group(1).strip() if name_match else path.stem),
+                    "where": f"{rel}:{text[: match.start()].count(chr(10)) + 1}",
+                    "detail": "CI schedule",
+                    "schedule": match.group(1),
+                    "schedule_text": sentence,
+                    "clock": clock,
+                    "enabled": True,
+                    "steps": [],
+                }
+            )
+    elif path.name in {"crontab", "crontab.txt"} or suffix == ".cron" or "/cron.d/" in f"/{rel}":
+        for match in CRONTAB_LINE.finditer(text):
+            if match.group(0).lstrip().startswith("#"):
+                continue
+            sentence, clock = cron_text(match.group(1))
+            items.append(
+                {
+                    "kind": "job",
+                    "name": match.group(2).strip()[:120],
+                    "where": f"{rel}:{text[: match.start()].count(chr(10)) + 1}",
+                    "detail": "crontab line",
+                    "schedule": match.group(1),
+                    "schedule_text": sentence,
+                    "clock": clock,
+                    "enabled": True,
+                    "steps": [],
+                }
+            )
+
+
+def stale_jobs(docs: list[dict[str, Any]], exposed: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """A job name a document uses that no job file has, and a time a document gives that the schedule contradicts."""
+    jobs = {i["name"]: i for i in exposed if i["kind"] == "job"}
+    if not jobs:
+        return []
+    known = {i["name"] for i in exposed} | {i["name"].split()[-1] for i in exposed if i["kind"] == "target"}
+    known |= {step for job in jobs.values() for step in job.get("steps", [])}
+    stale = []
+    for doc in docs:
+        in_jobs_table = False
+        for number, line in enumerate(doc["text"].splitlines(), start=1):
+            stripped = line.strip()
+            if stripped.startswith("|") and "|" in stripped[1:]:
+                cells = [c.strip().lower() for c in stripped.strip("|").split("|")]
+                if any(c in {"job", "jobs", "job name"} for c in cells):
+                    in_jobs_table = True
+                    continue
+            elif in_jobs_table and not stripped.startswith("|"):
+                in_jobs_table = False
+            matches = [m for m in JOB_IN_DOC.finditer(line) if line[m.end() : m.end() + 1] != "<"]
+            named = [m.group(1) or m.group(2) for m in matches]
+            for name in named:
+                if name in known:
+                    continue
+                if in_jobs_table or f"JOB={name}" in line:
+                    stale.append(
+                        {
+                            "doc": doc["path"],
+                            "line": number,
+                            "text": stripped[:160],
+                            "why": f"no job {name} in the job files",
+                        }
+                    )
+            for name in named:
+                job = jobs.get(name)
+                if not job or not job.get("clock"):
+                    continue
+                for hour, minute in CLOCK.findall(line):
+                    said = f"{int(hour):02d}:{minute}"
+                    if said != job["clock"] and said != job.get("sla"):
+                        stale.append(
+                            {
+                                "doc": doc["path"],
+                                "line": number,
+                                "text": stripped[:160],
+                                "why": (
+                                    f"job {name} runs {job['schedule_text']} by its schedule; the document says {said}"
+                                ),
+                            }
+                        )
+    return stale
 
 
 def manifest_facts(repo: Path, path: Path, items: list[dict[str, Any]]) -> None:
@@ -553,6 +731,12 @@ def facts(repo: Path, scope: Path, extra_docs: list[Path]) -> dict[str, Any]:
     items: list[dict[str, Any]] = []
     for path in files:
         rel = path.relative_to(repo).as_posix()
+        if (
+            path.suffix.lower() in {".py", ".yaml", ".yml", ".cron"}
+            or path.name.startswith("crontab")
+            or "/cron.d/" in f"/{rel}"
+        ):
+            job_facts(repo, path, read(path), items)
         if path.suffix == ".py":
             python_facts(rel, read(path), items)
             if path.name == "__main__.py":
@@ -581,7 +765,7 @@ def facts(repo: Path, scope: Path, extra_docs: list[Path]) -> dict[str, Any]:
         item["status"] = "guessed" if item.get("guessed") else ("documented" if docs_naming else "undocumented")
         item.pop("guessed", None)
         exposed.append(item)
-    stale = stale_in(docs, exposed, prog_names)
+    stale = stale_in(docs, exposed, prog_names) + stale_jobs(docs, exposed)
     counts: dict[str, Any] = {
         "exposed": dict(Counter(i["kind"] for i in exposed)),
         "status": dict(Counter(i["status"] for i in exposed)),

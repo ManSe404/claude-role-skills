@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from conftest import SKILLS, make_repo, run_json
+from conftest import ROOT, SKILLS, make_repo, run_json
 
 FACTS = SKILLS / "docs-draft" / "scripts" / "docs_facts.py"
 
@@ -118,3 +118,84 @@ def test_path_limits_the_scope_but_keeps_the_top_documents(acme: Path) -> None:
     out = run_json(FACTS, str(acme), "--path", "src")
     assert out["scope"] == "src" and [d["path"] for d in out["docs"]] == ["README.md"]
     assert {i["kind"] for i in out["exposed"]} <= {"command", "flag", "config", "route", "entry"}
+
+
+@pytest.fixture(scope="module")
+def pipeline_repo(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """The acme-pipeline fixture of the data-engineer pack, built once for this module. Tests must not change it.
+    The fixture lands with that pack; until then these tests skip instead of failing a fresh clone."""
+    import build_fixture
+
+    if not (ROOT / "fixtures" / "acme-pipeline" / "history.py").is_file():
+        pytest.skip("fixtures/acme-pipeline is not in this checkout yet")
+    target = tmp_path_factory.mktemp("fixture") / "acme-pipeline"
+    build_fixture.build("acme-pipeline", target)
+    return target
+
+
+def test_jobs_with_their_schedules_and_steps(pipeline_repo: Path) -> None:
+    out = run_json(FACTS, str(pipeline_repo))
+    jobs = {i["name"]: i for i in out["exposed"] if i["kind"] == "job"}
+    assert set(jobs) == {
+        "build_sales_daily",
+        "ingest_crm",
+        "load_erp_finance",
+        "load_erp_orders",
+        "rebuild_customers",
+        "refresh_stock",
+    }
+    orders = jobs["load_erp_orders"]
+    assert orders["schedule"] == "30 6 * * *" and orders["schedule_text"] == "daily at 06:30 (Europe/Belgrade)"
+    assert (
+        orders["steps"] == ["wait_for_file", "bronze.erp_orders", "silver.orders"] and orders["status"] == "documented"
+    )
+    assert jobs["refresh_stock"]["schedule_text"].startswith("every 5 minutes")
+    assert jobs["ingest_crm"]["enabled"] is False and jobs["ingest_crm"]["status"] == "undocumented"
+    assert jobs["build_sales_daily"]["sla"] == "08:00"
+
+
+def test_runbook_drift_on_a_data_platform(pipeline_repo: Path) -> None:
+    """The planted drifts of the fixture's runbook: a renamed job, a renamed target, a renamed setting, a cron that
+    moved. The missing contract step of the how-to needs the loader read, not a pattern. `make dq` is a real alias."""
+    out = run_json(FACTS, str(pipeline_repo))
+    whys = sorted(s["why"] for s in out["stale"])
+    assert whys == [
+        "job load_erp_orders runs daily at 06:30 (Europe/Belgrade) by its schedule; the document says 05:00",
+        "no Makefile target backfill",
+        "no job load_crm in the job files",
+        "no setting ACME_WAREHOUSE_URL in the code",
+    ]
+    assert all(s["doc"] == "docs/runbook.md" for s in out["stale"])
+    assert not [s for s in out["stale"] if "dq" in s["why"] or "08:00" in s["why"] or "ingest_" in s["why"]]
+
+
+def test_dags_ci_schedules_and_crontabs_are_jobs(tmp_path: Path) -> None:
+    repo = make_repo(
+        tmp_path / "sched",
+        {
+            "dags/sales.py": (
+                "from airflow import DAG\n\n"
+                "with DAG(dag_id='sales_daily', schedule_interval='0 6 * * 1-5') as dag:\n"
+                "    a = PythonOperator(task_id='extract')\n"
+                "    b = PythonOperator(task_id='load')\n"
+            ),
+            ".github/workflows/nightly.yml": (
+                "name: nightly\non:\n  schedule:\n    - cron: '15 2 * * *'\n"
+                "jobs:\n  x:\n    steps:\n      - run: make samples\n"
+            ),
+            "ops/crontab": "# nightly\n0 */4 * * * acme python3 -m pipeline.runner run refresh_stock\n",
+            "Makefile": "samples:\n\tpython3 -m tools.samples\n",
+            "README.md": (
+                "# p\n\n`sales_daily` runs at 06:00 on weekdays; `old_dag` is gone.\n\n"
+                "| job | when |\n|---|---|\n| `old_dag` | 05:00 |\n"
+            ),
+        },
+    )
+    out = run_json(FACTS, str(repo))
+    jobs = {i["name"]: i for i in out["exposed"] if i["kind"] == "job"}
+    assert jobs["sales_daily"]["schedule_text"] == "at 06:00 on Monday, Tuesday, Wednesday, Thursday, Friday"
+    assert jobs["sales_daily"]["steps"] == ["extract", "load"] and jobs["sales_daily"]["detail"] == "Airflow DAG"
+    assert jobs["nightly"]["schedule_text"] == "daily at 02:15" and jobs["nightly"]["detail"] == "CI schedule"
+    crontab = next(j for j in jobs.values() if j["detail"] == "crontab line")
+    assert crontab["schedule_text"] == "every 4 hours at :00"
+    assert [s["why"] for s in out["stale"]] == ["no job old_dag in the job files"]

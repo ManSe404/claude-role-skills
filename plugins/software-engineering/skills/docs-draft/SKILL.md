@@ -29,8 +29,9 @@ different sentences.
    order, and what it must leave to a person.
 2. Facts: `python3 "${CLAUDE_SKILL_DIR}/scripts/docs_facts.py" REPO [--path FOLDER] [--docs FILE ...]`, output
    to your scratchpad. It lists what the code exposes (entry points, commands and flags with their help text,
-   routes, configuration names, Makefile and CI targets), which document names each item, and what the
-   documents use that the code no longer has. A `guessed` item was found by a shallow pattern: read the code
+   routes, configuration names, Makefile and CI targets, scheduled jobs with their schedule and steps from job
+   files, DAGs, CI schedules and crontabs), which document names each item, and what the documents use that
+   the code no longer has, including a job time that disagrees with its schedule. A `guessed` item was found by a shallow pattern: read the code
    before you use it.
 3. Read the code behind every item the document will use: a command's handler, a route's function, where a
    setting is read and what its default is. A number, a default or a behaviour the code does not show is
