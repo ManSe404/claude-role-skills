@@ -9,49 +9,49 @@
       "name": "software-engineering",
       "source": "./plugins/software-engineering",
       "description": "Six skills for software engineers: codebase-map, impact, bug-hunt, test-gap, dependency-audit and code-audit.",
-      "version": "0.3.1"
+      "version": "0.3.2"
     },
     {
       "name": "ai-architect",
       "source": "./plugins/ai-architect",
       "description": "Four skills for AI solutions architects: ai-pattern, ai-stack, ai-architecture and ai-review.",
-      "version": "0.2.1"
+      "version": "0.2.2"
     },
     {
       "name": "data-architect",
       "source": "./plugins/data-architect",
       "description": "Four skills for data architects: data-platform, data-model, data-map and data-review.",
-      "version": "0.2.1"
+      "version": "0.2.2"
     },
     {
       "name": "software-architect",
       "source": "./plugins/software-architect",
       "description": "Four skills for software architects: arch-style, arch-c4, arch-review and arch-evolve.",
-      "version": "0.3.1"
+      "version": "0.3.2"
     },
     {
       "name": "cloud-architect",
       "source": "./plugins/cloud-architect",
       "description": "Three skills for cloud architects: cloud-map, cloud-design and cloud-review.",
-      "version": "0.2.2"
+      "version": "0.2.3"
     },
     {
       "name": "solutions-architect",
       "source": "./plugins/solutions-architect",
       "description": "Two skills that sit on top of the specialist packs and own the whole: solution-brief and solution-blueprint. Installing it installs the four specialist packs.",
-      "version": "0.2.1"
+      "version": "0.2.2"
     },
     {
       "name": "data-analyst",
       "source": "./plugins/data-analyst",
       "description": "Four skills for data analysts: metric-spec, number-moved, number-reconcile and report-review.",
-      "version": "0.2.1"
+      "version": "0.2.2"
     },
     {
       "name": "data-scientist",
       "source": "./plugins/data-scientist",
       "description": "Five skills for data scientists: ds-frame, ds-explore, ds-dataset, ds-evaluate and ds-experiment.",
-      "version": "0.2.1"
+      "version": "0.2.2"
     }
   ]
 }

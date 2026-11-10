@@ -226,11 +226,10 @@ tests/                              pytest for the scripts, the renderer, the fi
 
 ## The page design
 
-The pages are dark violet: a violet ground with a radial glow and a faint grid, panels with a purple edge, Bricolage Grotesque for text and JetBrains Mono for labels,
-purple for what leads to a change and orange for what it reaches. All of it lives in one place, the
-CSS in `shared/render_page.py`, so every skill's page changes with it. The fonts are under the SIL
-Open Font License ([shared/fonts/OFL.txt](shared/fonts/OFL.txt)) and include Latin Extended, so
-pages can be written in Serbian. See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+Dark, with neutral grays, one blue accent and flat panels, IBM Plex Sans for text and IBM Plex Mono for labels. In
+graphs, blue marks what leads to a change and orange what it reaches. The CSS lives in `shared/render_page.py`, so
+every skill's page changes with it. The fonts are inlined, include Latin 2 for Serbian, and are under the SIL Open
+Font License ([THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)).
 
 ## Development
 

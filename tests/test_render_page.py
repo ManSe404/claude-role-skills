@@ -130,10 +130,10 @@ def test_the_page_fetches_nothing() -> None:
 def test_the_design_is_dark_and_the_fonts_are_inlined() -> None:
     css = render.CSS
     assert css.count("{") == css.count("}")
-    assert "color-scheme:dark" in css and "--ground:#080513" in css
+    assert "color-scheme:dark" in css and "--ground:#111419" in css
     html = render.render(page())
-    assert html.count("src:url(data:font/woff2;base64,") == 4
-    assert "unicode-range:U+0100-02BA" in html  # latin-ext: č ć š ž đ
+    assert html.count("src:url(data:font/woff2;base64,") == 8
+    assert "unicode-range:U+0100-0101, U+0104-0130" in html  # Latin 2: č ć đ, and š ž further on
 
 
 @pytest.mark.parametrize("skill", ALL_SKILLS, ids=lambda p: p.name)
