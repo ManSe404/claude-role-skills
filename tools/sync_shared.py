@@ -27,8 +27,16 @@ SHARED = {
     "ai_inventory.py": {"shared/ai_inventory.py": "scripts/ai_inventory.py"},
     "data_profile.py": {"shared/data_profile.py": "scripts/data_profile.py"},
     "sql_inventory.py": {"shared/sql_inventory.py": "scripts/sql_inventory.py"},
+    "measure.py": {"shared/measure.py": "scripts/measure.py"},
+    "model_stats.py": {"shared/model_stats.py": "scripts/model_stats.py"},
     "code_graph.py": {"shared/code_graph.py": "scripts/code_graph.py"},
     "containers.py": {"shared/containers.py": "scripts/containers.py"},
+    "cloud_inventory.py": {"shared/cloud_inventory.py": "scripts/cloud_inventory.py"},
+    "cloud_prices.py": {"shared/cloud_prices.py": "scripts/cloud_prices.py"},
+    # Every skill that names references/cloud/ gets all provider files, so adding a provider needs no change here.
+    "references/cloud/": {
+        f"shared/cloud/{f.name}": f"references/cloud/{f.name}" for f in sorted((ROOT / "shared" / "cloud").iterdir())
+    },
 }
 
 

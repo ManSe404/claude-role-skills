@@ -1,0 +1,2151 @@
+{
+  "skill": "cloud-design",
+  "title": "Festival platform: Azure or AWS",
+  "subtitle": "One decision on what the Acme Tickets platform should run on, mapped to each cloud, with the monthly cost side by side.",
+  "meta": {
+    "project": "cloud-design",
+    "brief": "docs/briefs/festival-platform.md",
+    "prices": "prices/azure-retail-2026-11-10.json, prices/aws-price-list-2026-11-10.json",
+    "date": "2026-11-10"
+  },
+  "verdict": {
+    "tone": "ok",
+    "text": "Run the 6 services as serverless containers with one zone-redundant managed database and private data stores in one EU region, and put that on AWS (ECS on Fargate, RDS PostgreSQL, `eu-central-1`) at 1,998.27 USD a month, against 3,495.93 USD for the same design on Azure, at list prices from the saved tables of 2026-11-10, with ECR storage on the AWS side not priced. The binding constraint on the design is who can run it, with 6 services one too many for a managed app platform and 1 platform engineer one short of Kubernetes, and the cloud is then decided by cost and by the ECS and PostgreSQL already running in this estate."
+  },
+  "stats": [
+    {
+      "label": "Options left after the hard rules",
+      "value": "6 of 18",
+      "note": "compute 1, data 1, network 2, region 1, availability 1",
+      "tone": "info"
+    },
+    {
+      "label": "Chosen compute",
+      "value": "Serverless containers",
+      "note": "ECS on Fargate, or Container Apps",
+      "tone": "ok"
+    },
+    {
+      "label": "AWS, monthly",
+      "value": "1,998.27 USD",
+      "note": "recommended; 3,001.73 under the budget; ECR storage not priced",
+      "tone": "ok"
+    },
+    {
+      "label": "Azure, monthly",
+      "value": "3,495.93 USD",
+      "note": "1,497.66 more; 1,504.07 under the budget",
+      "tone": "info"
+    },
+    {
+      "label": "Price date",
+      "value": "2026-11-10",
+      "note": "saved tables, not refreshed online",
+      "tone": "info"
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "The Acme Tickets festival platform on Azure and AWS, from docs/briefs/festival-platform.md",
+    "regions": [
+      {
+        "name": "eu-central-1",
+        "why": "EU residency; README names it as production; the region in the saved AWS table"
+      },
+      {
+        "name": "West Europe",
+        "why": "EU residency; the region in the saved Azure table"
+      }
+    ],
+    "data": [
+      {
+        "name": "customer data, relational",
+        "class": "personal",
+        "where": [
+          "RDS PostgreSQL",
+          "Azure SQL Database"
+        ],
+        "rule": "EU only, private addresses only"
+      },
+      {
+        "name": "exported files",
+        "class": "personal [guess]",
+        "where": [
+          "S3",
+          "Blob ZRS"
+        ],
+        "rule": "EU only, private addresses only"
+      },
+      {
+        "name": "email and seat-hold messages",
+        "class": "personal [guess]",
+        "where": [
+          "SQS",
+          "Service Bus Premium"
+        ],
+        "rule": "EU only, private addresses only"
+      }
+    ],
+    "components": [
+      {
+        "id": "compute",
+        "label": "6 services",
+        "tech": "ECS on Fargate, or Azure Container Apps",
+        "kind": "service"
+      },
+      {
+        "id": "db",
+        "label": "Database",
+        "tech": "RDS PostgreSQL Multi-AZ, or Azure SQL GP zone redundant",
+        "kind": "store"
+      },
+      {
+        "id": "files",
+        "label": "Exports",
+        "tech": "S3 Standard, or Blob Hot ZRS",
+        "kind": "store"
+      },
+      {
+        "id": "queue",
+        "label": "Queue",
+        "tech": "SQS standard, or Service Bus Premium",
+        "kind": "store"
+      }
+    ],
+    "costs": [
+      {
+        "item": "AWS, total (ECR storage not priced)",
+        "monthly": 1998.27,
+        "currency": "USD",
+        "as_of": "2026-11-10",
+        "source": "AWS Price List offer files, saved table",
+        "cloud": "AWS",
+        "variant": "AWS"
+      },
+      {
+        "item": "Azure, total",
+        "monthly": 3495.93,
+        "currency": "USD",
+        "as_of": "2026-11-10",
+        "source": "Azure Retail Prices API, saved table",
+        "cloud": "Azure",
+        "variant": "Azure"
+      }
+    ],
+    "decisions": [
+      {
+        "title": "Compute",
+        "chosen": "Serverless containers",
+        "because": "6 services exceed 5 for a managed app platform; 1 platform engineer is under the 2 Kubernetes needs"
+      },
+      {
+        "title": "Data",
+        "chosen": "One managed relational database",
+        "because": "400 GB relational; 600 requests a second is under the 1,000 that calls for replicas"
+      },
+      {
+        "title": "Network",
+        "chosen": "Private endpoints for the data",
+        "because": "Meets the brief; nothing names a WAF"
+      },
+      {
+        "title": "Region",
+        "chosen": "One region",
+        "because": "A region loss is accepted"
+      },
+      {
+        "title": "Availability",
+        "chosen": "Zone redundant",
+        "because": "Must survive the loss of one zone"
+      },
+      {
+        "title": "Cloud",
+        "chosen": "AWS",
+        "because": "1,497.66 USD a month less, and the estate already runs ECS and PostgreSQL"
+      }
+    ],
+    "assumptions": [
+      "eu-central-1 from the README; West Europe from the saved Azure table",
+      "The 8 engineers are the team that runs this estate",
+      "Queues and secrets count as data stores",
+      "Azure SQL priced for Azure because the table has no PostgreSQL rows",
+      "8 vCPU database until load tested",
+      "1 web, 4 internal, 1 worker",
+      "One drop in the priced month"
+    ],
+    "open": [
+      "Which cloud does the team know?",
+      "Which database engine stays?",
+      "Is 8 vCPU enough at 600 requests a second?",
+      "Is a WAF required?",
+      "What does ECR storage cost?"
+    ]
+  },
+  "sections": [
+    {
+      "id": "brief",
+      "title": "The brief",
+      "blocks": [
+        {
+          "type": "kv",
+          "items": [
+            [
+              "Load and how it varies",
+              "About 600 requests a second for about 20 minutes during a ticket drop, steady and small the rest of the year, three festivals a year. (`festival-platform.md:3,11-12`)"
+            ],
+            [
+              "What the team can run",
+              "8 engineers in one team, 1 platform engineer. (`festival-platform.md:8`)"
+            ],
+            [
+              "Shape of the system",
+              "6 services, already container images. None needs the Kubernetes API, an operator, a node daemon or control of the operating system. (`festival-platform.md:9-10`)"
+            ],
+            [
+              "Background work",
+              "Emails and seat holds, a few seconds per message. (`festival-platform.md:13`)"
+            ],
+            [
+              "The data",
+              "About 400 GB of relational data, plus exported files. (`festival-platform.md:14`)"
+            ],
+            [
+              "What must be private",
+              "All data stores reachable only on private addresses. Only the web tier faces the internet. (`festival-platform.md:15`)"
+            ],
+            [
+              "What must survive",
+              "The loss of one availability zone. A region loss is an accepted risk. (`festival-platform.md:16`)"
+            ],
+            [
+              "Where data may live",
+              "Customer data stays in the EU. (`festival-platform.md:17`)"
+            ],
+            [
+              "The budget",
+              "At most 5,000 USD a month. (`festival-platform.md:18`)"
+            ],
+            [
+              "The clouds",
+              "Either cloud is open: compare and price both. (`festival-platform.md:4`)"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "assumptions",
+      "title": "Assumptions",
+      "intro": "The brief leaves these open and the request was to assume rather than ask. Each one sits next to the decision it drives.",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "**The team is the one that runs this estate [guess].** The brief does not say which company the 8 engineers come from. This repository shows ECS and PostgreSQL 17.6 in production (`infra/terraform/app.tf:31`, `infra/terraform/data.tf:12-13`). **Drives:** the choice of cloud, on what the team has to learn.",
+            "**Regions: `eu-central-1` and West Europe.** The README names `eu-central-1` for production. The saved Azure table prices only West Europe, a different EU location, so prices are close but not for the same place. Both have availability zones [med]. **Drives:** every price, and EU residency on both clouds.",
+            "**The database engine differs by cloud.** AWS is priced as RDS PostgreSQL, as the estate runs. The saved Azure table holds Azure SQL and no PostgreSQL Flexible Server, so Azure is priced on Azure SQL. **Drives:** the largest line on each bill, and an engine change if Azure were chosen.",
+            "**8 vCPU is a starting size on both clouds [guess].** db.m6i.2xlarge against 8 vCore Gen5. Nothing in the brief says how many queries a request makes. **Drives:** 1,238.08 USD on AWS and 1,564.54 USD on Azure, which the load test may change.",
+            "**Queues and secrets count as data stores,** because messages carry customer data [guess]. **Drives:** Service Bus Premium on Azure, and interface endpoints for SQS and Secrets Manager on AWS.",
+            "**S3 goes through an interface endpoint, not the free gateway endpoint.** The brief says private addresses, and only an interface endpoint gives S3 one [med]. **Drives:** 17.52 USD a month on AWS, which a gateway endpoint would save if a route and a bucket policy are accepted as private.",
+            "**Compute, the same on both clouds:** 6 services × 2 replicas or tasks × 0.5 vCPU and 1 GiB, all month [guess]. Azure is billed entirely at the active rate, the conservative reading. **Drives:** the compute lines.",
+            "**A drop:** one in the priced month, 40 extra replicas or tasks for one hour, 0.72 M requests, 24 load balancer capacity units for that hour [guess]. **Drives:** a few USD of compute. The drop moves the database size, not the compute bill.",
+            "**Volumes, the same on both clouds:** 10 requests a second steady, 1,500 GB out, 2 TB between compute and data, 60 GB of logs, 1 M secret calls, 500 GB of exports [guess]. On AWS, 200 GB of the 2 TB goes through endpoints, and 1,000 GB crosses a zone, the rest stays in zone. **Drives:** several small lines.",
+            "**Outbound internet is needed on AWS** for an external email provider and logs, so two NAT gateways are priced [guess]. **Drives:** the outbound path line on AWS. Azure environments reach the internet without a separate NAT line [med].",
+            "**Six services are 1 web, 4 internal and 1 worker [guess].** The brief gives only the total. **Drives:** which service is public.",
+            "**Background work is not event-driven,** because the brief says work arrives as web requests. A few seconds is taken as 0.1 minutes. **Drives:** functions out, which the container rule decides anyway.",
+            "**One network,** with no other team or system to peer with. The brief names none. **Drives:** hub and spoke out.",
+            "**The new Container Apps environment rows apply to the Consumption plan [med].** They took effect on 2026-11-01. **Drives:** 73.00 USD a month on Azure. **Registry:** Premium on Azure so that a surviving zone can still pull images [med], 50.66 USD a month."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "decision",
+      "title": "Decision",
+      "intro": "One decision for both clouds. Every option on every ladder, simplest first, and each one the rules ruled out keeps its rule.",
+      "blocks": [
+        {
+          "type": "decision",
+          "title": "Compute",
+          "factors": [
+            "Can this team run it?",
+            "What it has to learn",
+            "How it fails",
+            "Cost"
+          ],
+          "options": [
+            {
+              "label": "A managed app platform (App Service / App Runner)",
+              "status": "eliminated",
+              "why": "6 services exceed the 5 one managed app platform holds.",
+              "cells": [
+                {
+                  "rating": "pass",
+                  "text": "Nothing to patch"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Little new"
+                },
+                {
+                  "rating": "weak",
+                  "text": "App Service zone redundancy needs Premium and 2 instances [high]"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Not costed: ruled out first"
+                }
+              ],
+              "eliminated_by": "rule `too-many-services`"
+            },
+            {
+              "label": "Serverless containers (Container Apps / ECS on Fargate)",
+              "status": "chosen",
+              "why": "The lowest rung still open. The 6 images run as they are and nobody patches a node.",
+              "cells": [
+                {
+                  "rating": "pass",
+                  "text": "Nothing to patch on either cloud. One platform engineer is enough [med]"
+                },
+                {
+                  "rating": "weak",
+                  "text": "ECS is already in this repository (`infra/terraform/app.tf:31`). Container Apps would be new to that team [med]"
+                },
+                {
+                  "rating": "pass",
+                  "text": "At least 2 replicas or tasks per service across zones"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Azure 753.40, AWS 249.82 USD a month"
+                }
+              ]
+            },
+            {
+              "label": "Functions (Azure Functions / Lambda)",
+              "status": "eliminated",
+              "why": "It ships as container images and the work arrives as web requests, not short events.",
+              "cells": [
+                {
+                  "rating": "pass",
+                  "text": "Nothing to patch"
+                },
+                {
+                  "rating": "fail",
+                  "text": "A rewrite of 6 images"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Not assessed"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Not costed: ruled out first"
+                }
+              ],
+              "eliminated_by": "rules `ships-as-containers`, `not-event-driven`"
+            },
+            {
+              "label": "Kubernetes (AKS / EKS)",
+              "status": "eliminated",
+              "why": "1 platform engineer, at least 2 needed. No need for the Kubernetes API, and 6 services is under 15.",
+              "cells": [
+                {
+                  "rating": "fail",
+                  "text": "Upgrades and on-call for one person"
+                },
+                {
+                  "rating": "fail",
+                  "text": "A whole platform"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Zone spread is possible [med]"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Not costed: ruled out first"
+                }
+              ],
+              "eliminated_by": "rules `too-few-platform-engineers`, `nothing-asks-for-kubernetes`"
+            },
+            {
+              "label": "Virtual machines",
+              "status": "eliminated",
+              "why": "Nothing needs a machine of its own.",
+              "cells": [
+                {
+                  "rating": "fail",
+                  "text": "Patching and on-call"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Images, scaling, failover by hand"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Only what the team builds"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Not costed: ruled out first"
+                }
+              ],
+              "eliminated_by": "rule `no-need-for-vms`"
+            }
+          ]
+        },
+        {
+          "type": "decision",
+          "title": "Data",
+          "factors": [
+            "Can this team run it?",
+            "What it has to learn",
+            "How it fails",
+            "Cost"
+          ],
+          "options": [
+            {
+              "label": "One managed relational database (Azure SQL / RDS PostgreSQL)",
+              "status": "chosen",
+              "why": "The lowest rung still open: 400 GB is under 4,000 GB and 600 requests a second is under 1,000.",
+              "cells": [
+                {
+                  "rating": "pass",
+                  "text": "Managed, nobody patches it [med]"
+                },
+                {
+                  "rating": "weak",
+                  "text": "RDS PostgreSQL is what the estate runs (`infra/terraform/data.tf:12`). Azure SQL would be an engine change"
+                },
+                {
+                  "rating": "weak",
+                  "text": "A zone failover drops connections: every service must retry [med]"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Azure 1,674.14, AWS 1,347.68 USD a month"
+                }
+              ]
+            },
+            {
+              "label": "The same, with read replicas",
+              "status": "eliminated",
+              "why": "600 requests a second is under 1,000.",
+              "cells": [
+                {
+                  "rating": "pass",
+                  "text": "Managed"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Reads and writes split in the code"
+                },
+                {
+                  "rating": "pass",
+                  "text": "More copies"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Not costed: ruled out first"
+                }
+              ],
+              "eliminated_by": "rule `no-need-for-replicas`"
+            },
+            {
+              "label": "A managed document store (Cosmos DB / DynamoDB)",
+              "status": "eliminated",
+              "why": "The data needs transactions across rows.",
+              "cells": [
+                {
+                  "rating": "pass",
+                  "text": "Managed"
+                },
+                {
+                  "rating": "fail",
+                  "text": "A new data model for 400 GB"
+                },
+                {
+                  "rating": "fail",
+                  "text": "No transactions across rows, by the brief"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Not costed: ruled out first"
+                }
+              ],
+              "eliminated_by": "rule `needs-transactions`"
+            },
+            {
+              "label": "A database on virtual machines",
+              "status": "eliminated",
+              "why": "1 platform engineer cannot run their own database.",
+              "cells": [
+                {
+                  "rating": "fail",
+                  "text": "Patching, backups, failover"
+                },
+                {
+                  "rating": "fail",
+                  "text": "Database operations"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Only what the team builds"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Not costed: ruled out first"
+                }
+              ],
+              "eliminated_by": "rule `nobody-runs-a-database`"
+            }
+          ]
+        },
+        {
+          "type": "decision",
+          "title": "Network",
+          "factors": [
+            "Can this team run it?",
+            "What it has to learn",
+            "How it fails",
+            "Cost"
+          ],
+          "options": [
+            {
+              "label": "Public endpoints, restricted",
+              "status": "eliminated",
+              "why": "Data stores must be reachable only on private addresses.",
+              "cells": [
+                {
+                  "rating": "pass",
+                  "text": "Simplest"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Nothing new"
+                },
+                {
+                  "rating": "fail",
+                  "text": "Data on public addresses"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Not costed: ruled out first"
+                }
+              ],
+              "eliminated_by": "rule `data-must-be-private`"
+            },
+            {
+              "label": "Private endpoints for the data",
+              "status": "chosen",
+              "why": "The lowest rung open, and it meets the brief: the data is private and only the web tier faces the internet.",
+              "cells": [
+                {
+                  "rating": "pass",
+                  "text": "One network on each cloud [med]"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Private DNS on Azure. Endpoint and resource policies on AWS"
+                },
+                {
+                  "rating": "weak",
+                  "text": "On AWS, S3, SQS and Secrets Manager keep a public API name, closed by policy [med]. See Why this one"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Azure 49.20, AWS 170.68 USD a month with NAT"
+                }
+              ]
+            },
+            {
+              "label": "Everything private behind one entry",
+              "status": "viable",
+              "why": "The rules leave it open, but nothing in the brief names a WAF. It is the first add-on to weigh for a public ticket drop.",
+              "cells": [
+                {
+                  "rating": "weak",
+                  "text": "One more component with rules to tune"
+                },
+                {
+                  "rating": "weak",
+                  "text": "WAF rules"
+                },
+                {
+                  "rating": "pass",
+                  "text": "A WAF in front of the web tier"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Azure +397.85, AWS +26.20 USD a month"
+                }
+              ]
+            },
+            {
+              "label": "Hub and spoke",
+              "status": "eliminated",
+              "why": "One network is enough.",
+              "cells": [
+                {
+                  "rating": "fail",
+                  "text": "A firewall and peering to run"
+                },
+                {
+                  "rating": "fail",
+                  "text": "Routes and firewall rules"
+                },
+                {
+                  "rating": "weak",
+                  "text": "More parts"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Not costed: ruled out first"
+                }
+              ],
+              "eliminated_by": "rule `one-network`"
+            }
+          ]
+        },
+        {
+          "type": "decision",
+          "title": "Region",
+          "factors": [
+            "Can this team run it?",
+            "What it has to learn",
+            "How it fails",
+            "Cost"
+          ],
+          "options": [
+            {
+              "label": "One region (West Europe / eu-central-1)",
+              "status": "chosen",
+              "why": "The lowest rung open. Keeps the data in the EU.",
+              "cells": [
+                {
+                  "rating": "pass",
+                  "text": "One place to run"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Nothing new"
+                },
+                {
+                  "rating": "weak",
+                  "text": "A region loss means down until rebuilt: accepted by the brief"
+                },
+                {
+                  "rating": "pass",
+                  "text": "The bill as shown"
+                }
+              ]
+            },
+            {
+              "label": "Two regions, active and standby",
+              "status": "eliminated",
+              "why": "Losing a whole region is an accepted risk.",
+              "cells": [
+                {
+                  "rating": "fail",
+                  "text": "A tested failover to run"
+                },
+                {
+                  "rating": "fail",
+                  "text": "Replication and drills"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Survives a region"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Not costed: ruled out first"
+                }
+              ],
+              "eliminated_by": "rule `one-region-is-enough`"
+            }
+          ]
+        },
+        {
+          "type": "decision",
+          "title": "Availability",
+          "factors": [
+            "Can this team run it?",
+            "What it has to learn",
+            "How it fails",
+            "Cost"
+          ],
+          "options": [
+            {
+              "label": "One availability zone",
+              "status": "eliminated",
+              "why": "It must survive the loss of one availability zone.",
+              "cells": [
+                {
+                  "rating": "pass",
+                  "text": "Default"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Nothing new"
+                },
+                {
+                  "rating": "fail",
+                  "text": "A zone loss takes it down"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Not costed: ruled out first"
+                }
+              ],
+              "eliminated_by": "rule `survive-a-zone-loss`"
+            },
+            {
+              "label": "Zone redundant",
+              "status": "chosen",
+              "why": "The lowest rung open.",
+              "cells": [
+                {
+                  "rating": "pass",
+                  "text": "Managed by the services"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Container Apps zone redundancy is set at creation [high]. On AWS it is subnets, tasks and one NAT per zone [med]"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Both clouds keep serving from the surviving zones"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Azure SQL add-on 586.70. RDS Multi-AZ is included in 1,238.08"
+                }
+              ]
+            },
+            {
+              "label": "Multi-region",
+              "status": "eliminated",
+              "why": "Losing a whole region is an accepted risk.",
+              "cells": [
+                {
+                  "rating": "fail",
+                  "text": "A tested failover to run"
+                },
+                {
+                  "rating": "fail",
+                  "text": "Replication and drills"
+                },
+                {
+                  "rating": "pass",
+                  "text": "Survives a region"
+                },
+                {
+                  "rating": "weak",
+                  "text": "Not costed: ruled out first"
+                }
+              ],
+              "eliminated_by": "rule `one-region-is-enough`"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "title": "Why this one",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "**The binding constraint on the design is who can run it.** One platform engineer rules out Kubernetes, and 6 services is one more than a managed app platform holds, so that margin is thin. Serverless containers are all that is left on the compute ladder, on either cloud. The neutral design is the same on both: only the services change.\n\n**The cloud is decided by what the team has to learn and by cost.** Both clouds pass the first question: nobody patches anything on either one. AWS needs more parts to be wired by hand, an ALB, NAT per zone, endpoints and policies, where Container Apps has ingress and scale rules built in [med]. Against that, this repository already runs ECS and RDS PostgreSQL, so AWS asks for no new platform and no engine change, if the team is the one that runs this estate. Then cost: AWS is 1,497.66 USD a month less, 42.8% below Azure.\n\n**The gap does not depend on one guess.** Service Bus Premium is 677.08 USD against 2.52 USD for SQS, and Azure compute is 753.40 USD against 249.82 USD. Even with every Azure vCPU at the idle rate (saving 473.04 USD) and Service Bus Premium removed altogether (saving 677.08 USD, before the cost of Storage queues, which the saved table does not price), Azure would be 2,345.81 USD, still 347.54 USD above AWS.\n\n**Where AWS meets the privacy rule by policy.** RDS has only private addresses. S3, SQS and Secrets Manager are regional APIs with no \"public access off\" switch [med]: the interface endpoints give them private addresses, and a resource policy must deny every request that does not come through the endpoint, so the public name still answers, with a refusal [med]. Azure closes these at the network with public access off. This passes the brief, but only if those policies are written and tested: see the acceptance criteria.\n\n**On Azure the queue is the costly limit.** Service Bus Standard has no private endpoint [high], so at 10.00 USD a month it fails the brief. Storage queues on a private endpoint would pass, and the saved table has no row to price them.\n\nAll prices come from the saved tables as of 2026-11-10, at list price before tax."
+        },
+        {
+          "type": "table",
+          "title": "The thresholds the rules used",
+          "columns": [
+            "Rule threshold",
+            "Value",
+            "This brief",
+            "Result"
+          ],
+          "rows": [
+            [
+              "Most services on one managed app platform",
+              5,
+              6,
+              "Managed app platform out"
+            ],
+            [
+              "Fewest platform engineers for Kubernetes",
+              2,
+              1,
+              "Kubernetes out"
+            ],
+            [
+              "Fewest services that justify Kubernetes",
+              15,
+              6,
+              "Kubernetes out"
+            ],
+            [
+              "Longest job for functions, minutes",
+              10,
+              "0.1 (assumed)",
+              "Passes; functions out on other rules"
+            ],
+            [
+              "Requests a second that call for read replicas",
+              1000,
+              600,
+              "Replicas out"
+            ],
+            [
+              "Largest single relational database, GB",
+              4000,
+              400,
+              "One database passes"
+            ]
+          ]
+        },
+        {
+          "type": "table",
+          "title": "How much database the budget allows",
+          "columns": [
+            "Size, held all month",
+            "AWS total, USD",
+            "Under 5,000?",
+            "Azure size",
+            "Azure total, USD",
+            "Under 5,000?"
+          ],
+          "rows": [
+            [
+              "8 vCPU, db.m6i.2xlarge (on the bill)",
+              "1,998.27",
+              "yes",
+              "8 vCore (on the bill)",
+              "3,495.93",
+              "yes"
+            ],
+            [
+              "8 vCPU, db.r6i.2xlarge (more memory)",
+              "2,541.39",
+              "yes",
+              "12 vCore",
+              "4,278.22",
+              "yes"
+            ],
+            [
+              "16 vCPU, db.m6i.4xlarge",
+              "3,236.35",
+              "yes",
+              "14 vCore",
+              "4,669.35",
+              "yes"
+            ],
+            [
+              "n/a",
+              "n/a",
+              "n/a",
+              "16 vCore",
+              "5,060.49",
+              "no, 60.49 over"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "design",
+      "title": "The design",
+      "intro": "The one design, drawn once per cloud. Route tables, private DNS zones, security group details and NAT routes are left out of the drawing because they add nothing to the decision.",
+      "blocks": [
+        {
+          "type": "nested",
+          "title": "One design, one level per cloud",
+          "levels": [
+            {
+              "id": "aws",
+              "label": "AWS (recommended)",
+              "open": [
+                "aws",
+                "aws-reg",
+                "aws-vpc",
+                "aws-pub",
+                "aws-app",
+                "aws-ecs",
+                "aws-db",
+                "aws-rs"
+              ],
+              "note": "The ALB is the only public entry. RDS has no public address, and S3, SQS and Secrets Manager are reached through interface endpoints."
+            },
+            {
+              "id": "azure",
+              "label": "Azure",
+              "open": [
+                "azu",
+                "az-rg",
+                "az-vnet",
+                "az-app",
+                "az-cae",
+                "az-pes"
+              ],
+              "note": "The web tier is public on external ingress. Everything else is on private addresses or internal ingress."
+            }
+          ],
+          "boxes": [
+            {
+              "id": "aws",
+              "label": "AWS account",
+              "kind": "service",
+              "note": "Festival production, one account"
+            },
+            {
+              "id": "aws-net",
+              "label": "Internet",
+              "kind": "user",
+              "parent": "aws",
+              "note": "Ticket buyers"
+            },
+            {
+              "id": "aws-mail",
+              "label": "Email provider",
+              "kind": "system",
+              "parent": "aws",
+              "note": "Outside the cloud, assumed"
+            },
+            {
+              "id": "aws-reg",
+              "label": "eu-central-1",
+              "kind": "service",
+              "parent": "aws",
+              "note": "Frankfurt. From `README.md`, keeps data in the EU"
+            },
+            {
+              "id": "aws-vpc",
+              "label": "VPC",
+              "kind": "service",
+              "parent": "aws-reg",
+              "note": "One network, two zones"
+            },
+            {
+              "id": "aws-pub",
+              "label": "Public subnets x2",
+              "kind": "service",
+              "parent": "aws-vpc",
+              "note": "One per zone"
+            },
+            {
+              "id": "aws-alb",
+              "label": "Load balancer",
+              "kind": "guard",
+              "parent": "aws-pub",
+              "tech": "ALB, 2 zones",
+              "note": "The only public entry",
+              "details": [
+                [
+                  "Limit",
+                  "Needs subnets in at least two zones [high]"
+                ],
+                [
+                  "Before a drop",
+                  "Scale tasks and reserve load balancer capacity ahead [med]"
+                ]
+              ]
+            },
+            {
+              "id": "aws-natgw",
+              "label": "NAT gateways x2",
+              "kind": "channel",
+              "parent": "aws-pub",
+              "tech": "One per zone",
+              "note": "Outbound only: email, logs, image pulls",
+              "details": [
+                [
+                  "Why two",
+                  "A NAT gateway is zonal [med]"
+                ]
+              ]
+            },
+            {
+              "id": "aws-app",
+              "label": "Private app subnets x2",
+              "kind": "service",
+              "parent": "aws-vpc",
+              "note": "No public IPs"
+            },
+            {
+              "id": "aws-ecs",
+              "label": "ECS cluster",
+              "kind": "service",
+              "parent": "aws-app",
+              "tech": "Fargate",
+              "note": "6 services, at least 2 tasks each"
+            },
+            {
+              "id": "aws-web",
+              "label": "Web tier",
+              "kind": "service",
+              "parent": "aws-ecs",
+              "tech": "1 service, min 2 tasks",
+              "note": "Behind the ALB",
+              "details": [
+                [
+                  "Scale",
+                  "Scheduled scale-up before a drop"
+                ]
+              ]
+            },
+            {
+              "id": "aws-svc",
+              "label": "Internal services",
+              "kind": "service",
+              "parent": "aws-ecs",
+              "tech": "4 services",
+              "note": "Split assumed. Service Connect between services [med]"
+            },
+            {
+              "id": "aws-wrk",
+              "label": "Worker",
+              "kind": "service",
+              "parent": "aws-ecs",
+              "tech": "1 service, scales on queue depth",
+              "note": "Emails and seat holds"
+            },
+            {
+              "id": "aws-vpce",
+              "label": "Interface endpoints",
+              "kind": "guard",
+              "parent": "aws-app",
+              "tech": "S3, SQS, Secrets Manager",
+              "note": "Private addresses in both zones",
+              "details": [
+                [
+                  "Why",
+                  "The data stores are reached on private addresses only"
+                ],
+                [
+                  "Closing the public side",
+                  "Resource policies deny any request not from these endpoints [med]"
+                ]
+              ]
+            },
+            {
+              "id": "aws-db",
+              "label": "Private data subnets x2",
+              "kind": "service",
+              "parent": "aws-vpc",
+              "note": "No route to the internet"
+            },
+            {
+              "id": "aws-sg",
+              "label": "Database SG",
+              "kind": "guard",
+              "parent": "aws-db",
+              "note": "Admits only the app tasks"
+            },
+            {
+              "id": "aws-rds",
+              "label": "RDS PostgreSQL",
+              "kind": "store",
+              "parent": "aws-db",
+              "tech": "db.m6i.2xlarge, Multi-AZ",
+              "note": "400 GB gp3, not publicly accessible",
+              "details": [
+                [
+                  "Fails how",
+                  "Failover to the standby drops connections [med]"
+                ],
+                [
+                  "Size",
+                  "8 vCPU is a guess until the load test [guess]"
+                ]
+              ]
+            },
+            {
+              "id": "aws-rs",
+              "label": "Regional services",
+              "kind": "service",
+              "parent": "aws-reg",
+              "note": "No place in a network. Reached through the endpoints"
+            },
+            {
+              "id": "aws-s3",
+              "label": "S3 exports",
+              "kind": "store",
+              "parent": "aws-rs",
+              "tech": "S3 Standard",
+              "note": "Public access block on, bucket policy limited to the endpoint"
+            },
+            {
+              "id": "aws-sqs",
+              "label": "SQS",
+              "kind": "store",
+              "parent": "aws-rs",
+              "tech": "Standard, with dead-letter queue",
+              "note": "Queue policy limited to the endpoint"
+            },
+            {
+              "id": "aws-sm",
+              "label": "Secrets Manager",
+              "kind": "store",
+              "parent": "aws-rs",
+              "note": "Resource policy limited to the endpoint"
+            },
+            {
+              "id": "aws-ecr",
+              "label": "ECR",
+              "kind": "ops",
+              "parent": "aws-rs",
+              "note": "Images, reached through NAT. Not priced: no row in the saved table",
+              "flag": "warn"
+            },
+            {
+              "id": "aws-logs",
+              "label": "CloudWatch Logs",
+              "kind": "ops",
+              "parent": "aws-rs",
+              "note": "Logs from all 6 services"
+            },
+            {
+              "id": "azu",
+              "label": "Azure subscription",
+              "kind": "service",
+              "note": "Festival production, one subscription"
+            },
+            {
+              "id": "az-net",
+              "label": "Internet",
+              "kind": "user",
+              "parent": "azu",
+              "note": "Ticket buyers"
+            },
+            {
+              "id": "az-rg",
+              "label": "festival-prod",
+              "kind": "service",
+              "parent": "azu",
+              "note": "Resource group, West Europe (EU)"
+            },
+            {
+              "id": "az-vnet",
+              "label": "VNet",
+              "kind": "service",
+              "parent": "az-rg",
+              "note": "One network, no peering"
+            },
+            {
+              "id": "az-app",
+              "label": "App subnet /23",
+              "kind": "service",
+              "parent": "az-vnet",
+              "note": "/23 meets both Container Apps limits [high]"
+            },
+            {
+              "id": "az-cae",
+              "label": "Container Apps env",
+              "kind": "service",
+              "parent": "az-app",
+              "tech": "Consumption, zone redundant",
+              "note": "External environment, one app on external ingress",
+              "details": [
+                [
+                  "Limit",
+                  "Zone redundancy is set at creation and cannot change [high]"
+                ]
+              ]
+            },
+            {
+              "id": "az-web",
+              "label": "Web tier",
+              "kind": "service",
+              "parent": "az-cae",
+              "tech": "1 service, min 2 replicas",
+              "note": "The only external ingress"
+            },
+            {
+              "id": "az-svc",
+              "label": "Internal services",
+              "kind": "service",
+              "parent": "az-cae",
+              "tech": "4 services, internal ingress",
+              "note": "Split assumed"
+            },
+            {
+              "id": "az-wrk",
+              "label": "Worker",
+              "kind": "service",
+              "parent": "az-cae",
+              "tech": "1 service, scales on queue depth",
+              "note": "Emails and seat holds"
+            },
+            {
+              "id": "az-pes",
+              "label": "Endpoint subnet",
+              "kind": "service",
+              "parent": "az-vnet",
+              "note": "Private addresses for the data"
+            },
+            {
+              "id": "az-pe",
+              "label": "Private endpoints",
+              "kind": "guard",
+              "parent": "az-pes",
+              "tech": "4 endpoints",
+              "note": "SQL, Blob, Key Vault, Service Bus"
+            },
+            {
+              "id": "az-sql",
+              "label": "Azure SQL 8 vCore",
+              "kind": "store",
+              "parent": "az-rg",
+              "tech": "General Purpose, zone redundant",
+              "note": "400 GB, public access off",
+              "details": [
+                [
+                  "Engine",
+                  "Not PostgreSQL. The saved table holds no PostgreSQL rows"
+                ],
+                [
+                  "Size",
+                  "8 vCores is a guess until the load test [guess]"
+                ]
+              ]
+            },
+            {
+              "id": "az-blob",
+              "label": "Blob ZRS",
+              "kind": "store",
+              "parent": "az-rg",
+              "tech": "Hot ZRS",
+              "note": "Exports, public access off"
+            },
+            {
+              "id": "az-kv",
+              "label": "Key Vault",
+              "kind": "store",
+              "parent": "az-rg",
+              "tech": "Standard",
+              "note": "Secrets, public access off"
+            },
+            {
+              "id": "az-sb",
+              "label": "Service Bus Prem.",
+              "kind": "store",
+              "parent": "az-rg",
+              "tech": "Premium, 1 unit",
+              "note": "Private endpoints are Premium only [high]"
+            },
+            {
+              "id": "az-acr",
+              "label": "Container Registry",
+              "kind": "ops",
+              "parent": "az-rg",
+              "tech": "Premium",
+              "note": "Images. Holds no customer data, keeps a public endpoint with authentication"
+            },
+            {
+              "id": "az-logs",
+              "label": "Log Analytics",
+              "kind": "ops",
+              "parent": "az-rg",
+              "note": "Logs from all 6 services"
+            }
+          ],
+          "links": [
+            {
+              "from": "aws-net",
+              "to": "aws-alb",
+              "label": "HTTPS"
+            },
+            {
+              "from": "aws-alb",
+              "to": "aws-web",
+              "label": "forward"
+            },
+            {
+              "from": "aws-web",
+              "to": "aws-svc",
+              "label": "internal"
+            },
+            {
+              "from": "aws-svc",
+              "to": "aws-sg",
+              "label": "SQL"
+            },
+            {
+              "from": "aws-sg",
+              "to": "aws-rds",
+              "label": "SQL"
+            },
+            {
+              "from": "aws-svc",
+              "to": "aws-vpce",
+              "label": "private"
+            },
+            {
+              "from": "aws-wrk",
+              "to": "aws-vpce",
+              "label": "private"
+            },
+            {
+              "from": "aws-wrk",
+              "to": "aws-sg",
+              "label": "SQL"
+            },
+            {
+              "from": "aws-vpce",
+              "to": "aws-s3",
+              "label": "files"
+            },
+            {
+              "from": "aws-vpce",
+              "to": "aws-sqs",
+              "label": "queue"
+            },
+            {
+              "from": "aws-vpce",
+              "to": "aws-sm",
+              "label": "secrets"
+            },
+            {
+              "from": "aws-wrk",
+              "to": "aws-natgw",
+              "label": "email"
+            },
+            {
+              "from": "aws-natgw",
+              "to": "aws-mail",
+              "label": "HTTPS"
+            },
+            {
+              "from": "aws-ecs",
+              "to": "aws-ecr",
+              "label": "image pull"
+            },
+            {
+              "from": "aws-ecs",
+              "to": "aws-logs",
+              "label": "logs"
+            },
+            {
+              "from": "az-net",
+              "to": "az-web",
+              "label": "HTTPS"
+            },
+            {
+              "from": "az-web",
+              "to": "az-svc",
+              "label": "internal"
+            },
+            {
+              "from": "az-svc",
+              "to": "az-pe",
+              "label": "private"
+            },
+            {
+              "from": "az-wrk",
+              "to": "az-pe",
+              "label": "private"
+            },
+            {
+              "from": "az-pe",
+              "to": "az-sql",
+              "label": "SQL"
+            },
+            {
+              "from": "az-pe",
+              "to": "az-blob",
+              "label": "files"
+            },
+            {
+              "from": "az-pe",
+              "to": "az-kv",
+              "label": "secrets"
+            },
+            {
+              "from": "az-pe",
+              "to": "az-sb",
+              "label": "queue"
+            },
+            {
+              "from": "az-cae",
+              "to": "az-acr",
+              "label": "image pull"
+            },
+            {
+              "from": "az-cae",
+              "to": "az-logs",
+              "label": "logs"
+            }
+          ],
+          "flows": [
+            {
+              "id": "hold-aws",
+              "title": "Hold a seat",
+              "variants": [
+                "aws"
+              ],
+              "steps": [
+                {
+                  "from": "aws-net",
+                  "to": "aws-alb",
+                  "text": "The buyer asks for a seat over HTTPS, at the only public entry."
+                },
+                {
+                  "from": "aws-alb",
+                  "to": "aws-web",
+                  "text": "The load balancer forwards to a web task in a private subnet."
+                },
+                {
+                  "from": "aws-web",
+                  "to": "aws-svc",
+                  "text": "The web tier calls the ticket service inside the cluster."
+                },
+                {
+                  "from": "aws-svc",
+                  "to": "aws-sg",
+                  "text": "The ticket service opens a database connection, admitted by its security group."
+                },
+                {
+                  "from": "aws-sg",
+                  "to": "aws-rds",
+                  "text": "One transaction writes the hold."
+                },
+                {
+                  "from": "aws-svc",
+                  "to": "aws-vpce",
+                  "text": "A message goes to the private endpoint."
+                },
+                {
+                  "from": "aws-vpce",
+                  "to": "aws-sqs",
+                  "text": "The message waits for the email and the expiry of the hold."
+                },
+                {
+                  "from": "aws-wrk",
+                  "to": "aws-vpce",
+                  "text": "The worker takes the message over a private address."
+                }
+              ]
+            },
+            {
+              "id": "hold-az",
+              "title": "Hold a seat",
+              "variants": [
+                "azure"
+              ],
+              "steps": [
+                {
+                  "from": "az-net",
+                  "to": "az-web",
+                  "text": "The buyer asks for a seat over HTTPS, on the only external ingress."
+                },
+                {
+                  "from": "az-web",
+                  "to": "az-svc",
+                  "text": "The web tier calls the ticket service on internal ingress."
+                },
+                {
+                  "from": "az-svc",
+                  "to": "az-pe",
+                  "text": "The hold goes to the private endpoint."
+                },
+                {
+                  "from": "az-pe",
+                  "to": "az-sql",
+                  "text": "One transaction writes the hold."
+                },
+                {
+                  "from": "az-pe",
+                  "to": "az-sb",
+                  "text": "A message goes on the queue for the email and the expiry of the hold."
+                },
+                {
+                  "from": "az-wrk",
+                  "to": "az-pe",
+                  "text": "The worker takes the message over a private address."
+                }
+              ]
+            }
+          ],
+          "reach": {
+            "label": "From the internet",
+            "from": [
+              "aws-net",
+              "az-net"
+            ],
+            "stops": [
+              "aws-vpce",
+              "aws-sg",
+              "az-pe"
+            ],
+            "targets": [
+              "aws-web",
+              "aws-svc",
+              "aws-rds",
+              "aws-s3",
+              "aws-sqs",
+              "aws-sm",
+              "az-web",
+              "az-svc",
+              "az-sql",
+              "az-blob",
+              "az-kv",
+              "az-sb"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "cost",
+      "title": "Monthly cost",
+      "intro": "Every item comes from `cloud_prices.py` against the two saved tables. List prices, before tax, with no reservation or savings plan. Quantities were worked out once and used for both clouds.",
+      "blocks": [
+        {
+          "type": "table",
+          "title": "Side by side (difference is Azure minus AWS)",
+          "columns": [
+            "What",
+            "Azure service",
+            "AWS service",
+            "Azure monthly USD",
+            "AWS monthly USD",
+            "Difference USD"
+          ],
+          "rows": [
+            [
+              "Compute, steady and one drop",
+              "Container Apps, Consumption",
+              "ECS on Fargate, x86",
+              "753.40",
+              "249.82",
+              "+503.58"
+            ],
+            [
+              "Public entry",
+              "Built-in external ingress",
+              "Application Load Balancer",
+              "0.00",
+              "31.58",
+              "-31.58"
+            ],
+            [
+              "Relational database, 8 vCPU, 400 GB, zone redundant",
+              "Azure SQL General Purpose (zone redundant)",
+              "RDS PostgreSQL Multi-AZ",
+              "1,674.14",
+              "1,347.68",
+              "+326.46"
+            ],
+            [
+              "Exported files, 500 GB",
+              "Blob Hot ZRS",
+              "S3 Standard",
+              "12.00",
+              "12.25",
+              "-0.25"
+            ],
+            [
+              "Queue",
+              "Service Bus Premium",
+              "SQS standard",
+              "677.08",
+              "2.52",
+              "+674.56"
+            ],
+            [
+              "Private access to the data",
+              "4 private endpoints, Private Link data",
+              "3 interface endpoints in 2 zones, inter-zone data",
+              "49.20",
+              "64.56",
+              "-15.36"
+            ],
+            [
+              "Outbound path to the internet",
+              "Built into the environment",
+              "2 NAT gateways, public IPv4 (ALB and NAT)",
+              "0.00",
+              "106.12",
+              "-106.12"
+            ],
+            [
+              "Secrets",
+              "Key Vault",
+              "Secrets Manager",
+              "3.00",
+              "9.00",
+              "-6.00"
+            ],
+            [
+              "Logs, 60 GB",
+              "Log Analytics",
+              "CloudWatch Logs",
+              "164.45",
+              "39.74",
+              "+124.71"
+            ],
+            [
+              "Outbound data, 1,500 GB",
+              "Bandwidth",
+              "Data transfer out",
+              "112.00",
+              "135.00",
+              "-23.00"
+            ],
+            [
+              "Image registry",
+              "Container Registry Premium",
+              "ECR",
+              "50.66",
+              "not priced",
+              "n/a"
+            ],
+            [
+              "**Total**",
+              "",
+              "",
+              "**3,495.93**",
+              "**1,998.27**",
+              "**+1,497.66**"
+            ]
+          ],
+          "align": [
+            "left",
+            "left",
+            "left",
+            "right",
+            "right",
+            "right"
+          ]
+        },
+        {
+          "type": "table",
+          "title": "AWS (recommended)",
+          "columns": [
+            "Item",
+            "Service and SKU",
+            "Quantity (a month)",
+            "Unit price",
+            "Monthly USD",
+            "As of",
+            "Source"
+          ],
+          "rows": [
+            [
+              "Fargate vCPU, steady (6 services x 2 tasks x 0.5 vCPU x 730 h)",
+              "AmazonECS, Fargate-vCPU-Hours:perCPU",
+              "4,380 × hours",
+              "0.04656 USD / hours",
+              "203.93",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "Fargate memory, steady (12 tasks x 1 GB x 730 h)",
+              "AmazonECS, Fargate-GB-Hours",
+              "8,760 × hours",
+              "0.00511 USD / hours",
+              "44.76",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "Fargate vCPU, one drop (40 extra tasks x 0.5 vCPU x 1 h)",
+              "AmazonECS, Fargate-vCPU-Hours:perCPU",
+              "20 × hours",
+              "0.04656 USD / hours",
+              "0.93",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "Fargate memory, one drop (40 extra tasks x 1 GB x 1 h)",
+              "AmazonECS, Fargate-GB-Hours",
+              "40 × hours",
+              "0.00511 USD / hours",
+              "0.20",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "Application Load Balancer",
+              "AWSELB, ELB:Balancing, LoadBalancerUsage",
+              "730 × Hrs",
+              "0.027 USD / Hrs",
+              "19.71",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "ALB capacity (2 LCU x 730 h steady + 24 LCU x 1 h drop)",
+              "AWSELB, ELB:Balancing, LCUUsage",
+              "1,484 × LCU-Hrs",
+              "0.008 USD / LCU-Hrs",
+              "11.87",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "Public IPv4: 2 ALB + 2 NAT addresses (4 x 730 h)",
+              "AmazonVPC, VPCPublicIPv4Address, PublicIPv4:InUseAddress",
+              "2,920 × Hrs",
+              "0.005 USD / Hrs",
+              "14.60",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "NAT gateways, one per zone (2 x 730 h)",
+              "AmazonEC2, NGW:NatGateway, NatGateway-Hours",
+              "1,460 × Hrs",
+              "0.052 USD / Hrs",
+              "75.92",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "NAT data: logs, image pulls, email API (300 GB assumed)",
+              "AmazonEC2, NGW:NatGateway, NatGateway-Bytes",
+              "300 × GB",
+              "0.052 USD / GB",
+              "15.60",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "Interface endpoints: S3, SQS, Secrets Manager (3 x 2 zones x 730 h)",
+              "AmazonVPC, PrivateLink / VPCE:VpcEndpoint, VpcEndpoint-Hours",
+              "4,380 × Hrs",
+              "0.012 USD / Hrs",
+              "52.56",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "Interface endpoint data (200 GB of the 2 TB, assumed)",
+              "AmazonVPC, PrivateLink / VPCE:VpcEndpoint, VpcEndpoint-Bytes",
+              "200 × GB",
+              "0.01 from 0 USD / GB",
+              "2.00",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "Inter-zone data (half of 1,800 GB database traffic + 100 GB between services)",
+              "AWSDataTransfer, IntraRegion / EU (Frankfurt) / EU (Frankfurt), DataTransfer-Regional-Bytes",
+              "1,000 × GB",
+              "0.01 USD / GB",
+              "10.00",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "RDS PostgreSQL db.m6i.2xlarge Multi-AZ (8 vCPU)",
+              "AmazonRDS, db.m6i.2xlarge / PostgreSQL / Multi-AZ / No license required, Multi-AZUsage:db.m6i.2xl",
+              "730 × Hrs",
+              "1.696 USD / Hrs",
+              "1,238.08",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "RDS gp3 storage, Multi-AZ, 400 GB from the brief",
+              "AmazonRDS, General Purpose-GP3 / PostgreSQL / Multi-AZ, RDS:Multi-AZ-GP3-Storage",
+              "400 × GB-Mo",
+              "0.274 USD / GB-Mo",
+              "109.60",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "Exported files, S3 Standard, 500 GB assumed",
+              "AmazonS3, General Purpose / Standard, TimedStorage-ByteHrs",
+              "500 × GB-Mo",
+              "0.0245 from 0 USD / GB-Mo",
+              "12.25",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "SQS standard, 6.3 M requests assumed",
+              "AWSQueueService, Standard / SQS-APIRequest-Tier1, Requests-Tier1",
+              "6,300,000 × Requests",
+              "4e-07 from 0 USD / Requests",
+              "2.52",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "Secrets Manager, 10 secrets assumed",
+              "AWSSecretsManager, AWSSecretsManager-Secret, AWSSecretsManager-Secrets",
+              "10 × Secrets",
+              "0.4 USD / Secrets",
+              "4.00",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "Secrets Manager API calls, 1 M assumed",
+              "AWSSecretsManager, AWSSecretsManager-APIRequest, AWSSecretsManagerAPIRequest",
+              "1,000,000 × API Requests",
+              "5e-06 USD / API Requests",
+              "5.00",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "CloudWatch Logs ingestion, 60 GB assumed",
+              "AmazonCloudWatch, Ingested Logs, DataProcessing-Bytes",
+              "60 × GB",
+              "0.63 USD / GB",
+              "37.80",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "CloudWatch Logs storage, 60 GB kept",
+              "AmazonCloudWatch, Amazon CloudWatch Standard Storage pricing current, TimedStorage-ByteHrs",
+              "60 × GB-Mo",
+              "0.0324 USD / GB-Mo",
+              "1.94",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "Outbound data, 1,500 GB assumed",
+              "AWSDataTransfer, AWS Outbound / EU (Frankfurt) / External, DataTransfer-Out-Bytes",
+              "1,500 × GB",
+              "0.09 from 0 USD / GB",
+              "135.00",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ],
+            [
+              "ECR image storage (no row in the saved table)",
+              "Amazon ECR, no row in the saved table",
+              "20 GB assumed",
+              "not priced",
+              "not priced",
+              "n/a",
+              "not in the saved table"
+            ],
+            [
+              "**Total, AWS**",
+              "",
+              "",
+              "",
+              "**1,998.27**",
+              "2026-11-10",
+              "AWS Price List offer files, saved table"
+            ]
+          ],
+          "align": [
+            "left",
+            "left",
+            "right",
+            "right",
+            "right",
+            "left",
+            "left"
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Azure",
+          "columns": [
+            "Item",
+            "Service and SKU",
+            "Quantity (a month)",
+            "Unit price",
+            "Monthly USD",
+            "As of",
+            "Source"
+          ],
+          "rows": [
+            [
+              "Container Apps environment",
+              "Azure Container Apps, Environment, Environment Management Hour",
+              "730 × 1 Hour",
+              "0.1 USD / 1 Hour",
+              "73.00",
+              "2026-11-10",
+              "Azure Retail Prices API, saved table"
+            ],
+            [
+              "Container Apps vCPU, steady (6 services x 2 replicas x 0.5 vCPU, billed active)",
+              "Azure Container Apps, Standard, Standard vCPU Active Usage",
+              "15,768,000 × 1 Second",
+              "3.4e-05 USD / 1 Second",
+              "536.11",
+              "2026-11-10",
+              "Azure Retail Prices API, saved table"
+            ],
+            [
+              "Container Apps memory, steady (12 replicas x 1 GiB, billed active)",
+              "Azure Container Apps, Standard, Standard Memory Active Usage",
+              "31,536,000 × 1 GiB Second",
+              "4e-06 USD / 1 GiB Second",
+              "126.14",
+              "2026-11-10",
+              "Azure Retail Prices API, saved table"
+            ],
+            [
+              "Container Apps vCPU, one drop (40 extra replicas x 0.5 vCPU x 1 h)",
+              "Azure Container Apps, Standard, Standard vCPU Active Usage",
+              "72,000 × 1 Second",
+              "3.4e-05 USD / 1 Second",
+              "2.45",
+              "2026-11-10",
+              "Azure Retail Prices API, saved table"
+            ],
+            [
+              "Container Apps memory, one drop (40 extra replicas x 1 GiB x 1 h)",
+              "Azure Container Apps, Standard, Standard Memory Active Usage",
+              "144,000 × 1 GiB Second",
+              "4e-06 USD / 1 GiB Second",
+              "0.58",
+              "2026-11-10",
+              "Azure Retail Prices API, saved table"
+            ],
+            [
+              "Container Apps requests (26.28 M steady at 10 rps + 0.72 M drop)",
+              "Azure Container Apps, Standard, Standard Requests",
+              "27 × 1M",
+              "0.56 USD / 1M",
+              "15.12",
+              "2026-11-10",
+              "Azure Retail Prices API, saved table"
+            ],
+            [
+              "Azure SQL GP Gen5, 8 vCore",
+              "SQL Database, 8 vCore, vCore",
+              "730 × 1 Hour",
+              "1.33951 USD / 1 Hour",
+              "977.84",
+              "2026-11-10",
+              "Azure Retail Prices API, saved table"
+            ],
+            [
+              "Azure SQL zone-redundancy add-on, 8 vCore",
+              "SQL Database, 8 vCore Zone Redundancy, Zone Redundancy vCore",
+              "730 × 1 Hour",
+              "0.803704 USD / 1 Hour",
+              "586.70",
+              "2026-11-10",
+              "Azure Retail Prices API, saved table"
+            ],
+            [
+              "Azure SQL zone-redundant storage, 400 GB from the brief",
+              "SQL Database, General Purpose Zone Redundancy, General Purpose Zone Redundancy Data Stored",
+              "400 × 1 GB/Month",
+              "0.274 USD / 1 GB/Month",
+              "109.60",
+              "2026-11-10",
+              "Azure Retail Prices API, saved table"
+            ],
+            [
+              "Exported files, Blob Hot ZRS, 500 GB assumed",
+              "Storage, Hot ZRS, Hot ZRS Data Stored",
+              "500 × 1 GB/Month",
+              "0.024 from 0 USD / 1 GB/Month",
+              "12.00",
+              "2026-11-10",
+              "Azure Retail Prices API, saved table"
+            ],
+            [
+              "Service Bus Premium, 1 messaging unit",
+              "Service Bus, Premium, Premium Messaging Unit",
+              "730 × 1/Hour",
+              "0.9275 USD / 1/Hour",
+              "677.08",
+              "2026-11-10",
+              "Azure Retail Prices API, saved table"
+            ],
+            [
+              "Private endpoints: SQL, Blob, Key Vault, Service Bus (4 x 730 h)",
+              "Virtual Network, Standard, Standard Private Endpoint",
+              "2,920 × 1 Hour",
+              "0.01 USD / 1 Hour",
+              "29.20",
+              "2026-11-10",
+              "Azure Retail Prices API, saved table"
+            ],
+            [
+              "Private Link data in, 1 TB assumed",
+              "Virtual Network, Standard, Standard Data Processed - Ingress",
+              "1,000 × 1 GB",
+              "0.01 from 0 USD / 1 GB",
+              "10.00",
+              "2026-11-10",
+              "Azure Retail Prices API, saved table"
+            ],
+            [
+              "Private Link data out, 1 TB assumed",
+              "Virtual Network, Standard, Standard Data Processed - Egress",
+              "1,000 × 1 GB",
+              "0.01 from 0 USD / 1 GB",
+              "10.00",
+              "2026-11-10",
+              "Azure Retail Prices API, saved table"
+            ],
+            [
+              "Key Vault operations, 1 M assumed",
+              "Key Vault, Standard, Operations",
+              "100 × 10K",
+              "0.03 USD / 10K",
+              "3.00",
+              "2026-11-10",
+              "Azure Retail Prices API, saved table"
+            ],
+            [
+              "Log Analytics ingestion, 60 GB assumed",
+              "Log Analytics, Analytics Logs, Analytics Logs Data Ingestion",
+              "60 × 1 GB",
+              "0 from 0 then 2.99 from 5 USD / 1 GB",
+              "164.45",
+              "2026-11-10",
+              "Azure Retail Prices API, saved table"
+            ],
+            [
+              "Outbound data, 1,500 GB assumed",
+              "Bandwidth, Standard, Standard Data Transfer Out",
+              "1,500 × 1 GB",
+              "0 from 0 then 0.08 from 100 USD / 1 GB",
+              "112.00",
+              "2026-11-10",
+              "Azure Retail Prices API, saved table"
+            ],
+            [
+              "Container Registry Premium (30.4 days)",
+              "Container Registry, Premium, Premium Registry Unit",
+              "30.4 × 1/Day",
+              "1.6666 USD / 1/Day",
+              "50.66",
+              "2026-11-10",
+              "Azure Retail Prices API, saved table"
+            ],
+            [
+              "**Total, Azure**",
+              "",
+              "",
+              "",
+              "**3,495.93**",
+              "2026-11-10",
+              "Azure Retail Prices API, saved table"
+            ]
+          ],
+          "align": [
+            "left",
+            "left",
+            "right",
+            "right",
+            "right",
+            "left",
+            "left"
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "warn",
+          "text": "**Not priced: ECR image storage on AWS.** The saved table has no ECR row and the request was not to go online, so the AWS total leaves it out. It is billed by storage for a few images and is small [med], but the total of 1,998.27 USD is slightly understated. **The AWS free allowances are also left out:** the free tier rows are not in the data transfer row, so outbound data is priced in full. **Left out on both clouds as too small or not in the tables:** object and blob operations, DNS, certificates, KMS and backup storage beyond the free retention."
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "text": "**Costed choices that do not change the answer.** Arm images on Fargate would save 49.70 USD a month if the 6 images are built for it. Pulling images through ECR interface endpoints instead of NAT would add 35.04 USD and save 8.40 USD of data at 200 GB, so NAT stays. A dedicated Azure workload profile is not cheaper at this size [med]."
+        }
+      ]
+    },
+    {
+      "id": "change",
+      "title": "What would change it",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "**The team knows Azure and not ECS, or wants one fewer engine change:** Azure becomes worth paying for only if the 1,497.66 USD a month (17,971.92 USD a year) buys less than the cost of learning ECS. On the neutral design nothing else moves.",
+            "**PostgreSQL must stay and Azure is wanted:** price Azure Database for PostgreSQL Flexible Server, which the saved table does not hold, before deciding.",
+            "**Someone names a WAF or bot protection, likely for a public ticket drop:** the network climbs one rung. On AWS it adds 26.20 USD a month with a WAF on the ALB (5 rules assumed, managed rule groups may cost more [med]). On Azure it adds 397.85 USD for an Application Gateway.",
+            "**The load test shows the database short at 8 vCPU:** db.m6i.4xlarge on AWS at 3,236.35 USD a month still fits the budget. On Azure, 14 vCores is the most the budget allows. Sustained traffic of 1,000 requests a second or more reopens read replicas.",
+            "**The 6 services become 5 or fewer:** a managed app platform reopens. **Two or more platform engineers together with a real need for the Kubernetes API or 15 services:** Kubernetes reopens. **A region loss stops being accepted:** two regions, a tested failover and about double the bill, which goes past the budget on Azure."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "acceptance",
+      "title": "Acceptance criteria",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Criterion",
+            "Threshold",
+            "How it is measured before launch"
+          ],
+          "rows": [
+            [
+              "The drop holds",
+              "600 requests a second for 20 minutes, p95 under 500 ms [guess], errors under 0.1%, database CPU under 80% at 8 vCPU",
+              "A load test from outside the cloud against a production-sized copy, after the scheduled scale-up and with load balancer capacity reserved"
+            ],
+            [
+              "It survives a zone loss",
+              "Errors back under 1% within 5 minutes [guess], no committed hold or order lost",
+              "A zone-down drill on staging: force an RDS Multi-AZ failover and remove one zone's tasks while the load test runs"
+            ],
+            [
+              "The data is private",
+              "No connection from the internet to RDS on any port. A request to S3, SQS and Secrets Manager from outside the endpoints is refused, 3 of 3, while the same request through the endpoint succeeds",
+              "An external port probe, a signed request from outside the VPC, and a DNS lookup inside the VPC showing private addresses"
+            ],
+            [
+              "Only the web tier is public",
+              "Exactly 1 internet-facing load balancer, 0 public IPs on tasks, 1 of 6 services reachable from outside",
+              "An external scan and the deployed service settings"
+            ],
+            [
+              "It stays in the budget and the EU",
+              "Actual cost within 15% of 1,998.27 USD in a month with no drop, and under 5,000 USD in a month with one; every resource in an EU region",
+              "Cost Explorer on staging scaled to production, and a resource listing by region"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "adr",
+      "title": "ADR draft",
+      "intro": "Nygard format, for the recommended cloud. I have not written it into the repository: say the word and it goes in.",
+      "blocks": [
+        {
+          "type": "code",
+          "code": "# ADR-001: Run the festival platform on ECS Fargate in eu-central-1 with private data stores\n\nDate: 2026-11-10\nStatus: Proposed\n\n## Context\nThe next Acme Tickets platform serves three festivals a year. A ticket drop peaks at about\n600 requests a second for about 20 minutes; the rest of the year load is steady and small.\nSix services already ship as container images, run by 8 engineers, 1 of them a platform\nengineer. About 400 GB of relational data and exported files must stay in the EU and be\nreachable only on private addresses, and only the web tier may face the internet. The\nsystem must survive the loss of one availability zone; a region loss is accepted. The\nbudget is at most 5,000 USD a month. The same design is estimated at 1,998.27 USD a month\non AWS (ECR storage not priced) and 3,495.93 USD on Azure, at list prices from the saved\ntables of 2026-11-10. The estate already runs ECS and PostgreSQL.\n\n## Decision\nWe will run the six services on ECS Fargate in eu-central-1, in private subnets of two\nzones, with at least two tasks per service and one internet-facing load balancer in front\nof the web tier. We will store the data in one RDS PostgreSQL Multi-AZ instance, sized at\ndb.m6i.2xlarge until the load test confirms it, with exports in S3, messages in SQS and\nsecrets in Secrets Manager, each reached through an interface endpoint and closed by a\nresource policy. We will use a NAT gateway per zone for outbound traffic. We will not use\nKubernetes, read replicas or a second region.\n\n## Consequences\nEasier: nobody patches a node, one platform engineer can run this, and the estate's ECS\nand PostgreSQL skills carry over.\nHarder: the team writes and tests the resource policies that keep S3, SQS and Secrets\nManager private, wires scaling by hand, and must scale up before each drop.\nWe accept: a public web tier without a WAF until someone names that requirement, the loss\nof service during a region outage, and a database size that the load test may change."
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "title": "Open questions",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "Which cloud do the 8 engineers already know? This is the fact most likely to change the recommendation.",
+            "Which relational engine stays? PostgreSQL on Azure needs prices the saved table does not hold.",
+            "Is 8 vCPU enough at 600 requests a second? Only a load test can say.",
+            "Is bot protection or a WAF needed for a public ticket drop? The brief does not say.",
+            "What does ECR image storage cost? It has no row in the saved table.",
+            "Is the Azure SQL IO rate meter billed on a provisioned General Purpose database? The saved table carries it (0.238 USD per 1M) and it is not on the bill.",
+            "Which email provider sends the emails, and what does it cost? It is on neither bill.",
+            "How much backup and long-term retention does the data need? Storage beyond the free retention is on neither bill."
+          ]
+        }
+      ]
+    }
+  ]
+}

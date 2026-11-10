@@ -891,21 +891,26 @@
         "monthly": 681.01,
         "currency": "USD",
         "as_of": "2026-11-01",
-        "source": "EXAMPLE price table, not real prices"
+        "source": "EXAMPLE price table, not real prices",
+        "variant": "A, Azure",
+        "cloud": "Azure"
       },
       {
         "item": "Variant A, Azure: search, hosting, database, tracing",
         "monthly": 490.0,
         "currency": "USD",
         "as_of": "2026-11-01",
-        "source": "EXAMPLE price table, not real prices"
+        "source": "EXAMPLE price table, not real prices",
+        "variant": "A, Azure",
+        "cloud": "Azure"
       },
       {
         "item": "Variant B, open weights: total",
         "monthly": 2170.0,
         "currency": "USD",
         "as_of": "2026-11-01",
-        "source": "EXAMPLE price table, not real prices"
+        "source": "EXAMPLE price table, not real prices",
+        "variant": "B, open weights"
       }
     ],
     "decisions": [

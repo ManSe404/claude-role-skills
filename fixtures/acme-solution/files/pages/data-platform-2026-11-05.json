@@ -1,0 +1,36 @@
+{
+  "skill": "data-platform",
+  "title": "Acme Mutual claims: data platform",
+  "subtitle": "Where the claims data lives and how reporting reads it.",
+  "meta": {"project": "acme-solution", "date": "2026-11-05"},
+  "verdict": {"text": "One database for the application and a reporting lake, with scheduled SQL, in North Europe.", "tone": "ok"},
+  "sections": [
+    {
+      "id": "platform",
+      "title": "Platform",
+      "blocks": [
+        {"type": "text", "text": "Reports read from a lake loaded by scheduled SQL from the application database. Personal data stays in the EU."}
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "The data platform of the Acme Mutual claims platform",
+    "regions": [{"name": "North Europe", "why": "EU residency, close to the insurer's data"}],
+    "data": [
+      {"name": "claim documents and customer contact", "class": "personal", "where": ["Claims database", "Reporting lake"], "rule": "EU only"}
+    ],
+    "components": [
+      {"id": "claims_db", "label": "Claims database", "tech": "Azure SQL Database", "kind": "store"},
+      {"id": "lake", "label": "Reporting lake", "tech": "Azure Data Lake Storage", "kind": "store"}
+    ],
+    "costs": [
+      {"item": "Reporting lake: storage and queries", "monthly": 1180.0, "currency": "EUR", "as_of": "2026-11-02", "source": "EXAMPLE price table saved 2026-11-02, not real prices", "cloud": "Azure"}
+    ],
+    "decisions": [
+      {"title": "Platform", "chosen": "One database with scheduled SQL into a reporting lake", "because": "Monthly reports, one source of claims, no streaming need yet."}
+    ],
+    "assumptions": ["The monthly reports are the whole reporting need for now."],
+    "open": ["Does fraud reporting have to be close to real time?"]
+  }
+}

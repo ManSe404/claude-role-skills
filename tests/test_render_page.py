@@ -50,7 +50,7 @@ def test_block_errors_name_their_path() -> None:
         },
         {"type": "findings", "items": [{"severity": "high", "title": "t", "status": "declined"}]},
         {"type": "table", "columns": ["a", "b"], "rows": [["only one"]]},
-        {"type": "chart"},
+        {"type": "pie"},
     ]
     errors = render.validate(page(sections=[{"title": "S", "blocks": blocks}]))
     assert "page.sections[0].blocks[0].nodes[1].id: duplicate id 'a'" in errors
@@ -145,7 +145,7 @@ def test_each_example_page_is_valid(skill: Path, tmp_path: Path) -> None:
     assert data["skill"] == skill.name
     out = tmp_path / "page.html"
     assert render.main([str(example), "-o", str(out)]) == 0
-    assert out.stat().st_size < 400_000  # ~200 KB of it are the inlined fonts
+    assert out.stat().st_size < 500_000  # ~200 KB of it are the inlined fonts
 
 
 def test_the_script_never_turns_content_into_markup() -> None:
@@ -480,6 +480,41 @@ def test_facts_are_checked_but_not_drawn() -> None:
     assert "page.facts.open[0]: must be a string" in errors
 
 
+def test_the_fields_for_joining_pages_are_optional_and_checked() -> None:
+    joined = {
+        **FACTS,
+        "components": [{"id": "lake", "label": "Lakehouse", "region": "West Europe"}],
+        "costs": [
+            {
+                "item": "x",
+                "monthly": 1.0,
+                "currency": "EUR",
+                "as_of": "2026-11-09",
+                "source": "list",
+                "cloud": "Azure",
+                "variant": "A",
+            }
+        ],
+        "budget": {"monthly": 6000, "currency": "EUR", "source": "brief"},
+        "specialists": ["ai-pattern"],
+    }
+    assert render.validate(page(facts=joined)) == []
+    broken = {
+        **FACTS,
+        "components": [{"id": "lake", "label": "Lakehouse", "region": 1}],
+        "costs": [{"item": "x", "monthly": 1.0, "currency": "EUR", "as_of": "2026-11-09", "source": "s", "cloud": 1}],
+        "budget": {"monthly": "much", "currency": 1},
+        "specialists": [1],
+    }
+    errors = render.validate(page(facts=broken))
+    assert "page.facts.components[0].region: must be a string" in errors
+    assert "page.facts.costs[0].cloud: must be a string" in errors
+    assert "page.facts.budget.monthly: must be a number" in errors
+    assert "page.facts.budget.currency: must be a string" in errors
+    assert "page.facts.budget.source: missing" in errors
+    assert "page.facts.specialists[0]: must be a string" in errors
+
+
 def test_a_label_shared_by_links_into_one_box_is_drawn_once() -> None:
     block = {
         "type": "architecture",
@@ -641,3 +676,185 @@ def test_nested_is_escaped_deterministic_and_offline() -> None:
     assert html == render.render(json.loads(json.dumps(data)))
     assert "<img" not in html and html.count("<script") == 1
     assert set(re.findall(r'https?://[^"\s)]+', html)) <= {"http://www.w3.org/2000/svg"}
+
+
+# ---------------------------------------------------------------------------- chart
+
+BAR = {
+    "type": "chart",
+    "kind": "bar",
+    "title": "Drivers",
+    "unit": "EUR",
+    "categories": ["mix: premium", "mix: value", "volume"],
+    "series": [{"name": "Effect", "values": [-7488, -3696, 960]}],
+}
+LINE = {
+    "type": "chart",
+    "kind": "line",
+    "title": "Daily revenue",
+    "unit": "EUR",
+    "categories": ["10-25", "10-26", "10-27"],
+    "series": [{"name": "Revenue", "values": [2900, 3100, 1800]}, {"name": "Target", "values": [3000, 3000, None]}],
+}
+WATERFALL = {
+    "type": "chart",
+    "kind": "waterfall",
+    "title": "September to October",
+    "unit": "EUR",
+    "items": [
+        {"label": "September", "value": 96000, "total": True},
+        {"label": "Volume", "value": 960},
+        {"label": "Mix", "value": -11160},
+        {"label": "Rate", "value": -410},
+        {"label": "October", "value": 85390, "total": True},
+    ],
+}
+HEATMAP = {
+    "type": "chart",
+    "kind": "heatmap",
+    "title": "Cohort retention",
+    "unit": "%",
+    "rows": ["2026-08", "2026-09"],
+    "columns": ["M0", "M1", "M2"],
+    "values": [[100, 42.5, 30], [100, 38, None]],
+}
+CHARTS = [BAR, LINE, WATERFALL, HEATMAP]
+
+
+def chart_page(*blocks: dict[str, Any]) -> dict[str, Any]:
+    return page(sections=[{"title": "Charts", "blocks": list(blocks)}])
+
+
+@pytest.mark.parametrize("chart", CHARTS, ids=lambda c: c["kind"])
+def test_chart_renders_svg_with_a_title_per_mark_and_a_data_table(chart: dict[str, Any]) -> None:
+    html = render.render(chart_page(chart))
+    assert render.validate(chart_page(chart)) == []
+    assert html.count('<svg class="chart-svg"') == 1
+    assert "<title>" in html and 'class="chart-data table-wrap"' in html
+    # Every drawn mark carries its tooltip, and the data follows as a table.
+    assert html.count("<title>") >= 3
+
+
+def test_every_chart_value_is_escaped_and_nothing_is_fetched() -> None:
+    hostile = '<img src=x onerror=alert(1)> "quoted" & </text><script>alert(1)</script>'
+    charts = [
+        {
+            "type": "chart",
+            "kind": "bar",
+            "title": hostile,
+            "unit": hostile,
+            "categories": [hostile],
+            "series": [{"name": hostile, "values": [1]}],
+        },
+        {
+            "type": "chart",
+            "kind": "line",
+            "title": hostile,
+            "categories": [hostile, "b"],
+            "series": [{"name": hostile, "values": [1, 2]}, {"name": "x", "values": [2, 1]}],
+        },
+        {
+            "type": "chart",
+            "kind": "waterfall",
+            "items": [{"label": hostile, "value": 1, "total": True}, {"label": hostile, "value": 1}],
+        },
+        {
+            "type": "chart",
+            "kind": "heatmap",
+            "rows": [hostile],
+            "columns": [hostile],
+            "values": [[1]],
+        },
+    ]
+    html = render.render(chart_page(*charts))
+    assert "<img" not in html and "<script>alert" not in html
+    assert set(re.findall(r'https?://[^"\s)]+', html)) <= {"http://www.w3.org/2000/svg"}
+
+
+def test_the_same_chart_json_gives_the_same_html() -> None:
+    first = render.render(chart_page(*CHARTS))
+    second = render.render(json.loads(json.dumps(chart_page(*CHARTS))))
+    assert first == second
+
+
+def test_chart_table_lists_the_data() -> None:
+    html = render.render(chart_page(WATERFALL))
+    table = html[html.index('class="chart-data table-wrap"') :]
+    assert "96,000 EUR" in table and "\u221211,160 EUR" in table and "85,390 EUR" in table
+    heat = render.render(chart_page(HEATMAP))
+    table = heat[heat.index('class="chart-data table-wrap"') :]
+    assert "42.50%" in table and "<td" in table
+
+
+def test_bar_marks_are_thin_and_a_series_of_negatives_starts_at_the_baseline() -> None:
+    html = render.render(chart_page(BAR))
+    assert 'class="bar cs0"' in html and "Q" in re.search(r'class="bar cs0" d="([^"]+)"', html).group(1)  # type: ignore[union-attr]
+
+
+def test_line_has_a_legend_for_two_series_and_none_for_one() -> None:
+    assert '<span class="legend-item"><i class="swatch sw-cs0">' in render.render(chart_page(LINE))
+    one = {"type": "chart", "kind": "line", "categories": ["a", "b"], "series": [{"name": "A", "values": [1, 2]}]}
+    assert "legend-item" not in render.render(chart_page(one)).split("</style>", 1)[1]
+
+
+def test_line_axis_starts_at_zero_unless_told_and_then_says_so() -> None:
+    assert "axis does not start at zero" not in render.render(chart_page(LINE))
+    relaxed = {**LINE, "zero": False}
+    assert "axis does not start at zero" in render.render(chart_page(relaxed))
+
+
+def test_waterfall_totals_must_add_up() -> None:
+    wrong = {
+        "type": "chart",
+        "kind": "waterfall",
+        "items": [
+            {"label": "A", "value": 100, "total": True},
+            {"label": "x", "value": -10},
+            {"label": "B", "value": 95, "total": True},
+        ],
+    }
+    errors = render.validate(chart_page(wrong))
+    assert any("blocks[0].items[2].value" in e and "running sum" in e for e in errors)
+
+
+def test_heatmap_scale_colours_low_to_high() -> None:
+    html = render.render(chart_page(HEATMAP))
+    assert 'class="heat h0"' in html and 'class="heat h5"' in html
+    assert 'class="heat-empty"' in html  # null cell has no fill
+
+
+@pytest.mark.parametrize(
+    ("chart", "error"),
+    [
+        ({"type": "chart"}, "blocks[0].kind: must be one of"),
+        ({"type": "chart", "kind": "pie"}, "blocks[0].kind: must be one of"),
+        ({"type": "chart", "kind": "bar", "categories": ["a"], "series": []}, "blocks[0].series: from 1"),
+        (
+            {"type": "chart", "kind": "bar", "categories": ["a"], "series": [{"name": "s", "values": [1, 2]}]},
+            "blocks[0].series[0].values: must have one value per category",
+        ),
+        (
+            {"type": "chart", "kind": "bar", "categories": ["a"], "series": [{"name": "s", "values": ["x"]}]},
+            "blocks[0].series[0].values[0]: must be a number or null",
+        ),
+        (
+            {"type": "chart", "kind": "line", "categories": ["a"], "series": [{"name": "s", "values": [1]}], "zero": 1},
+            "blocks[0].zero",
+        ),
+        (
+            {"type": "chart", "kind": "waterfall", "items": [{"label": "a", "value": 1}]},
+            "blocks[0].items: at least two steps",
+        ),
+        (
+            {"type": "chart", "kind": "heatmap", "rows": ["a"], "columns": ["b", "c"], "values": [[1]]},
+            "blocks[0].values[0]: must have one value per column",
+        ),
+    ],
+)
+def test_chart_errors_name_their_path(chart: dict[str, Any], error: str) -> None:
+    assert any(error in e for e in render.validate(chart_page(chart))), render.validate(chart_page(chart))
+
+
+def test_a_page_without_a_chart_has_no_chart_markup() -> None:
+    html = render.render(page())
+    assert 'class="chart' not in html.split("</style>")[1]

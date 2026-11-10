@@ -1,0 +1,49 @@
+{
+  "skill": "cloud-design",
+  "title": "Acme Mutual claims: cloud design",
+  "subtitle": "What the platform runs on, on Azure and on AWS, and what it costs.",
+  "meta": {"project": "acme-solution", "date": "2026-11-07"},
+  "verdict": {"text": "Azure, on Kubernetes, with PostgreSQL; backups stored in the cheapest archive tier in West US 2.", "tone": "warn"},
+  "sections": [
+    {
+      "id": "design",
+      "title": "Design",
+      "blocks": [
+        {"type": "text", "text": "Two node pools on Kubernetes keep the application and the batch work apart. The database is managed PostgreSQL. Backups go to a low-cost archive tier in West US 2."}
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "The cloud design of the Acme Mutual claims platform",
+    "regions": [
+      {"name": "West Europe", "why": "EU residency, Azure"},
+      {"name": "eu-central-1", "why": "EU residency, AWS"}
+    ],
+    "data": [
+      {"name": "claim documents and customer contact", "class": "personal", "where": ["Claims database", "Backups"], "rule": "EU only, private addresses only"}
+    ],
+    "components": [
+      {"id": "hosting", "label": "Application host", "tech": "Azure Kubernetes Service", "kind": "service"},
+      {"id": "claims_db", "label": "Claims database", "tech": "Azure Database for PostgreSQL", "kind": "store"},
+      {"id": "backups", "label": "Backups", "tech": "Azure Blob Storage, archive tier", "kind": "store", "region": "West US 2"}
+    ],
+    "costs": [
+      {"item": "Azure: compute", "monthly": 3100.0, "currency": "EUR", "as_of": "2026-11-07", "source": "EXAMPLE price table saved 2026-11-07, not real prices", "cloud": "Azure"},
+      {"item": "Azure: database", "monthly": 2180.0, "currency": "EUR", "as_of": "2026-11-07", "source": "EXAMPLE price table saved 2026-11-07, not real prices", "cloud": "Azure"},
+      {"item": "Azure: network, monitoring and backups", "monthly": 900.0, "currency": "EUR", "as_of": "2026-11-07", "source": "EXAMPLE price table saved 2026-11-07, not real prices", "cloud": "Azure"},
+      {"item": "Azure, total", "monthly": 6180.0, "currency": "EUR", "as_of": "2026-11-07", "source": "EXAMPLE price table saved 2026-11-07, not real prices", "cloud": "Azure"},
+      {"item": "AWS: compute", "monthly": 2790.0, "currency": "EUR", "as_of": "2026-11-07", "source": "EXAMPLE price table saved 2026-11-07, not real prices", "cloud": "AWS"},
+      {"item": "AWS: database", "monthly": 2070.0, "currency": "EUR", "as_of": "2026-11-07", "source": "EXAMPLE price table saved 2026-11-07, not real prices", "cloud": "AWS"},
+      {"item": "AWS: network and monitoring", "monthly": 780.0, "currency": "EUR", "as_of": "2026-11-07", "source": "EXAMPLE price table saved 2026-11-07, not real prices", "cloud": "AWS"},
+      {"item": "AWS, total", "monthly": 5640.0, "currency": "EUR", "as_of": "2026-11-07", "source": "EXAMPLE price table saved 2026-11-07, not real prices", "cloud": "AWS"}
+    ],
+    "decisions": [
+      {"title": "Cloud", "chosen": "Azure", "because": "The insurer's identity and productivity tools are already there."},
+      {"title": "Hosting", "chosen": "Kubernetes with two node pools", "because": "Separates the application from batch document work."}
+    ],
+    "assumptions": ["Team of 12 engineers, with 3 on the platform.", "Backups are cheapest in West US 2."],
+    "open": ["Is the archive tier acceptable for restoring within a day?"],
+    "budget": {"monthly": 6000, "currency": "EUR", "source": "docs/briefs/claims-platform.md"}
+  }
+}

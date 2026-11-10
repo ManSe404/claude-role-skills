@@ -1,0 +1,341 @@
+{
+ "ResourceTagMappingList": [
+  {
+   "ResourceARN": "arn:aws:ec2:eu-central-1:000000000000:vpc/vpc-00000000000000002",
+   "Tags": [
+    {
+     "Key": "Name",
+     "Value": "stagefront-prod-vpc"
+    },
+    {
+     "Key": "product",
+     "Value": "tickets"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:ec2:eu-central-1:000000000000:subnet/subnet-00000000000000003",
+   "Tags": [
+    {
+     "Key": "Name",
+     "Value": "stagefront-prod-public-a"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:ec2:eu-central-1:000000000000:subnet/subnet-00000000000000004",
+   "Tags": [
+    {
+     "Key": "Name",
+     "Value": "stagefront-prod-public-b"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:ec2:eu-central-1:000000000000:subnet/subnet-00000000000000005",
+   "Tags": [
+    {
+     "Key": "Name",
+     "Value": "stagefront-prod-private-a"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:ec2:eu-central-1:000000000000:subnet/subnet-00000000000000006",
+   "Tags": [
+    {
+     "Key": "Name",
+     "Value": "stagefront-prod-private-b"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:ec2:eu-central-1:000000000000:internet-gateway/igw-00000000000000007",
+   "Tags": [
+    {
+     "Key": "Name",
+     "Value": "stagefront-prod-igw"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:ec2:eu-central-1:000000000000:natgateway/nat-00000000000000008",
+   "Tags": [
+    {
+     "Key": "Name",
+     "Value": "stagefront-prod-nat"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:ec2:eu-central-1:000000000000:elastic-ip/eipalloc-00000000000000009",
+   "Tags": [
+    {
+     "Key": "Name",
+     "Value": "stagefront-prod-nat-ip"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:ec2:eu-central-1:000000000000:route-table/rtb-00000000000000010",
+   "Tags": [
+    {
+     "Key": "Name",
+     "Value": "stagefront-prod-public"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:ec2:eu-central-1:000000000000:route-table/rtb-00000000000000011",
+   "Tags": [
+    {
+     "Key": "Name",
+     "Value": "stagefront-prod-private"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:ec2:eu-central-1:000000000000:security-group/sg-00000000000000012",
+   "Tags": [
+    {
+     "Key": "Name",
+     "Value": "stagefront-prod-alb"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:ec2:eu-central-1:000000000000:security-group/sg-00000000000000013",
+   "Tags": [
+    {
+     "Key": "Name",
+     "Value": "stagefront-prod-app"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:ec2:eu-central-1:000000000000:security-group/sg-00000000000000014",
+   "Tags": [
+    {
+     "Key": "Name",
+     "Value": "stagefront-prod-db"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:ec2:eu-central-1:000000000000:security-group/sg-00000000000000015",
+   "Tags": [
+    {
+     "Key": "Name",
+     "Value": "stagefront-admin-ssh"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:ec2:eu-central-1:000000000000:instance/i-00000000000000065",
+   "Tags": [
+    {
+     "Key": "Name",
+     "Value": "stagefront-admin-host"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:elasticloadbalancing:eu-central-1:000000000000:loadbalancer/app/stagefront-prod-web/0000000000000000",
+   "Tags": [
+    {
+     "Key": "product",
+     "Value": "tickets"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:elasticloadbalancing:eu-central-1:000000000000:targetgroup/stagefront-prod-portal/0000000000000000",
+   "Tags": [
+    {
+     "Key": "product",
+     "Value": "tickets"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:ecs:eu-central-1:000000000000:cluster/stagefront-prod-apps",
+   "Tags": [
+    {
+     "Key": "product",
+     "Value": "tickets"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:ecs:eu-central-1:000000000000:service/stagefront-prod-apps/stagefront-prod-portal",
+   "Tags": [
+    {
+     "Key": "product",
+     "Value": "tickets"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:ecs:eu-central-1:000000000000:service/stagefront-prod-apps/stagefront-prod-worker",
+   "Tags": [
+    {
+     "Key": "product",
+     "Value": "tickets"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:ecs:eu-central-1:000000000000:task-definition/stagefront-prod-portal:14",
+   "Tags": [
+    {
+     "Key": "product",
+     "Value": "tickets"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:ecs:eu-central-1:000000000000:task-definition/stagefront-prod-worker:9",
+   "Tags": [
+    {
+     "Key": "product",
+     "Value": "tickets"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:rds:eu-central-1:000000000000:db:stagefront-tickets-prod",
+   "Tags": [
+    {
+     "Key": "product",
+     "Value": "tickets"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:rds:eu-central-1:000000000000:subgrp:stagefront-prod-db",
+   "Tags": [
+    {
+     "Key": "product",
+     "Value": "tickets"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:secretsmanager:eu-central-1:000000000000:secret:stagefront/prod/db-AbCdEf",
+   "Tags": [
+    {
+     "Key": "product",
+     "Value": "tickets"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:s3:::stagefront-tickets-a1b2c3",
+   "Tags": [
+    {
+     "Key": "product",
+     "Value": "tickets"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:s3:::stagefront-reports-prod",
+   "Tags": [
+    {
+     "Key": "owner",
+     "Value": "analytics"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:sqs:eu-central-1:000000000000:stagefront-prod-orders",
+   "Tags": [
+    {
+     "Key": "product",
+     "Value": "tickets"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:sqs:eu-central-1:000000000000:stagefront-prod-orders-dlq",
+   "Tags": [
+    {
+     "Key": "product",
+     "Value": "tickets"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:sqs:eu-central-1:000000000000:stagefront-report-requests-prod",
+   "Tags": [
+    {
+     "Key": "owner",
+     "Value": "analytics"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:sqs:eu-central-1:000000000000:stagefront-report-requests-prod-dlq",
+   "Tags": [
+    {
+     "Key": "owner",
+     "Value": "analytics"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:sns:eu-central-1:000000000000:stagefront-alerts",
+   "Tags": [
+    {
+     "Key": "owner",
+     "Value": "platform"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:lambda:eu-central-1:000000000000:function:stagefront-report-builder-prod",
+   "Tags": [
+    {
+     "Key": "owner",
+     "Value": "analytics"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:logs:eu-central-1:000000000000:log-group:/ecs/stagefront-prod-portal",
+   "Tags": [
+    {
+     "Key": "product",
+     "Value": "tickets"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:logs:eu-central-1:000000000000:log-group:/ecs/stagefront-prod-worker",
+   "Tags": [
+    {
+     "Key": "product",
+     "Value": "tickets"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:cloudwatch:eu-central-1:000000000000:alarm:stagefront-db-cpu",
+   "Tags": [
+    {
+     "Key": "owner",
+     "Value": "platform"
+    }
+   ]
+  },
+  {
+   "ResourceARN": "arn:aws:elasticache:eu-central-1:000000000000:replicationgroup:stagefront-sessions-prod",
+   "Tags": [
+    {
+     "Key": "product",
+     "Value": "tickets"
+    }
+   ]
+  }
+ ]
+}

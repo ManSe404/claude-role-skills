@@ -1,0 +1,412 @@
+{
+  "skill": "ds-dataset",
+  "title": "acme-churn training data, audited",
+  "subtitle": "Can a model that predicts churned_60d be trusted on train.csv and test.csv, and what must change first?",
+  "meta": {"repo": "acme-churn", "commit": "6ae5575", "date": "2026-11-10"},
+  "verdict": {
+    "text": "**Do not trust a model built on this data as it stands.** The worst problem is `cancellation_reason`: it is written when a customer cancels, it is in the model's feature list, and on its own it separates churners almost perfectly (strength 0.97). `nps_last` and `days_since_last_login` are also not limited to what was known on the snapshot day, and 40 test rows are copies of training rows. Fix those four, add a 60-day gap before the test period, then retrain and score again.",
+    "tone": "bad"
+  },
+  "stats": [
+    {"label": "Train rows", "value": 2400, "note": "2025-07 to 2026-03"},
+    {"label": "Test rows", "value": 1000, "note": "960 after removing the copies"},
+    {"label": "Positive rate", "value": "17.1% / 16.6%", "note": "train / test"},
+    {"label": "High findings", "value": 4, "note": "of 10 findings", "tone": "bad"},
+    {"label": "Verdict", "value": "Do not trust yet", "note": "worst: cancellation_reason", "tone": "bad"}
+  ],
+  "sections": [
+    {
+      "id": "verdict",
+      "title": "Verdict",
+      "intro": "Each finding says where to change it. Assumptions are numbered A1 to A7 and listed in the last section. Counts come from the audit scripts and from one extra script run on the same files; neither prints a row.",
+      "blocks": [
+        {
+          "type": "findings",
+          "items": [
+            {
+              "severity": "high",
+              "title": "`cancellation_reason` is written after the customer has left",
+              "where": "`model/extract.py:20` and `:27`, in the feature list at `model/features.py:16`",
+              "evidence": "Strength 0.97 on train. A reason is present for 389 of 411 churners and 0 of 1,989 non-churners in train, and for 153 of 166 and 0 of 834 in test. It comes from `cancellations`, left-joined with no date limit [high]. That it is recorded at cancellation is assumption A3.",
+              "fix": "Remove it from `FEATURES` and from the SQL, then retrain. Any score from a model that used this column is inflated and should not be reused.",
+              "status": "open"
+            },
+            {
+              "severity": "high",
+              "title": "`nps_last` is not as of the snapshot",
+              "where": "`model/extract.py:19` and `:26`, in the feature list at `model/features.py:15`",
+              "evidence": "`nps_latest` is joined on the customer only, while `plans` and `activity_rollup` are joined on `as_of = snapshot_date` (`:24`, `:25`) [high]. It is the second-strongest feature: 0.78 on rows with a score, and whether a score is missing reaches 0.73 alone. A score is missing for 55.7% of churners and 10.5% of non-churners in train. The files hold no date for the score, so whether values postdate the snapshot cannot be shown [med], see A4.",
+              "fix": "Take the last response on or before `snapshot_date` from a dated response table, and drop the feature if no such table exists. Decide what a missing score means at serving.",
+              "status": "open"
+            },
+            {
+              "severity": "high",
+              "title": "`days_since_last_login` uses logins from after the snapshot",
+              "where": "`model/extract.py:18`, used at `model/features.py:17` and `:21-26`",
+              "evidence": "The subquery takes `max(login_ts)` with no upper date [high]. Train has 96 rows (4.0%) and test 40 rows (4.0%) with a last login after the snapshot, up to 20 days later, which makes the feature negative. Its strength is low (0.52), so the gain in score is probably small [med], but it breaks the README's rule and a negative value cannot occur at serving.",
+              "fix": "Add `and l.login_ts < s.snapshot_date + 1` to the subquery.",
+              "status": "open"
+            },
+            {
+              "severity": "high",
+              "title": "40 test rows are exact copies of training rows",
+              "where": "`data/test.csv`; `model/split.py:8-9` cannot produce them",
+              "evidence": "All 17 columns except `row_id` match a training row. All 40 are dated before the cut of 2026-04-01, and they are the only test rows that are. `split.py` is a clean date cut, so another step added them [med]. The split-order flag and the duplicates flag are these same 40 rows.",
+              "fix": "Find the step that built `test.csv`, because no committed code writes it. Until then, remove these 40 rows before scoring.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "544 training labels were not known when the test period began",
+              "where": "`model/split.py:3` and `:8`",
+              "evidence": "The 2026-02-01 and 2026-03-01 snapshots (254 and 290 rows) have 60-day windows ending after 2026-04-01 (A5). A model fitted at the cut could not have had those labels.",
+              "fix": "Leave a 60-day gap by training on snapshots up to 2026-01-31. That keeps 1,856 rows and 321 churners.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "`monthly_fee_eur` moved between train and test",
+              "where": "`data/train.csv` against `data/test.csv`; the source `model/extract.py:13` and `:24` is point in time",
+              "evidence": "PSI 0.44 on the files as delivered and 0.48 without the copies. The mean goes from 18.76 to 20.16 EUR (+7.5%), every one of the four plans rises by 6.3% to 7.8%, and all three test months sit above every training month. The join is as of the snapshot, so this looks like a real change in prices rather than a bug [guess]. The feature is weak (strength 0.52).",
+              "fix": "Confirm what changed around April 2026. Then train on months after the change, or express the fee relative to the plan's list price, and check the model's error by fee band.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "The extract carries three personal columns it does not need",
+              "where": "`model/extract.py:7-9`",
+              "evidence": "`full_name`, `email` and `phone` are in both files. None is in `FEATURES`, and the README says nothing here should need them. `customer_id` is already the key in both files.",
+              "fix": "Remove them from the SQL and from both files.",
+              "status": "open"
+            },
+            {
+              "severity": "medium",
+              "title": "The committed code cannot have produced these files or this model",
+              "where": "`model/features.py:21`, `model/train.py:12`, `model/extract.py:18` and `:27`",
+              "evidence": "`add_recency` is never called and `days_since_last_login` is in neither file, so `row[f]` at `train.py:12` would fail [high]. The same line passes text columns unencoded, which `HistGradientBoostingClassifier` should reject [med, not run because scikit-learn is not installed here]. The files also disagree with the SQL. An unbounded `max(login_ts)` should reach far past 20 days for the 2025 snapshots, yet no row does [med]. A customer who cancelled more than 60 days after a snapshot would be a non-churner with a reason, yet none of the 2,823 non-churner rows has one [high].",
+              "fix": "Commit the step that turns the extract into the two files, including the encoding, and rebuild them from the warehouse after the fixes above.",
+              "status": "open"
+            },
+            {
+              "severity": "low",
+              "title": "18 customers appear in a later snapshot after a churn label",
+              "where": "`model/extract.py:22`, which has no filter to active customers",
+              "evidence": "Of the 19 customers labelled churned in train who also have a later test row, 18 have that row more than 60 days after the train snapshot. They could be returning customers or customers still inside a paid term [guess], or `snapshots` could include people who have already left.",
+              "fix": "Confirm how `snapshots` is populated, and filter out customers who have already left if it includes them.",
+              "status": "open"
+            },
+            {
+              "severity": "low",
+              "title": "The label SQL does not exclude windows that have not ended",
+              "where": "`model/extract.py:21`",
+              "evidence": "A cancellation not yet recorded counts as 0 [high]. There is no sign of this in these files: the last three test months have positive rates of 18.0%, 14.7% and 17.3%, against 17.1% in train.",
+              "fix": "Keep only rows where `s.snapshot_date + 60` is on or before the extract date.",
+              "status": "open"
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "title": "What was checked",
+          "columns": ["Check", "Result", "Status"],
+          "rows": [
+            ["Rows, keys and labels", "`row_id` unique in both files; `customer_id` unique within each file; all 3,400 rows have a label", "Pass"],
+            ["Single-feature strength, 11 model features", "`cancellation_reason` 0.97; the other 10 are below 0.85", "Finding"],
+            ["Point-in-time joins in the SQL", "`plans` and `activity_rollup` are as of the snapshot; `logins`, `nps_latest` and `cancellations` are not", "Finding"],
+            ["Dates after the prediction moment", "`last_login_at` on 96 train and 40 test rows", "Finding"],
+            ["Split order", "Clean once the 40 copies are removed: train to 2026-03-01, test from 2026-04-01", "Finding"],
+            ["Label windows crossing the cut", "544 training rows", "Finding"],
+            ["Same customer on both sides", "150 customers: 40 are the copies, 110 are later snapshots", "Copies a finding, 110 cleared"],
+            ["Exact duplicates", "40 across the splits; 0 within train; 0 within test", "Finding"],
+            ["Same person under a second id", "0 test rows match a train e-mail or phone under a new `customer_id`", "Pass"],
+            ["Same feature values under any id", "0 beyond the 40 copies", "Pass"],
+            ["Class balance", "17.1% and 16.6%, not rare, no difference between splits (p = 0.71)", "Pass"],
+            ["Labels too young at the end of the data", "No drop in the last three test months", "Pass in these files"],
+            ["Missingness by class", "2 of 11 features differ; the other 9 have no missing values", "Finding"],
+            ["Drift", "`monthly_fee_eur` is a major shift; the other 10 are stable", "Finding"],
+            ["Personal columns kept out of the features", "None of the three is in `FEATURES`", "Pass"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "leakage",
+      "title": "Leakage",
+      "intro": "Strength is how well a feature alone orders the training rows by the label: 0.5 is none and 1.0 is perfect. A strong feature is a leak only if it is not known at the moment of the prediction, so each one is followed to its source below.",
+      "blocks": [
+        {
+          "type": "chart",
+          "kind": "bar",
+          "title": "Single-feature strength of the model's 11 features",
+          "x_label": "Strength on train",
+          "categories": ["cancellation_reason", "nps_last", "logins_30d", "tickets_90d", "tenure_months", "days_since_last_login", "region", "monthly_fee_eur", "discount_pct", "payment_failures_90d", "plan"],
+          "series": [{"name": "Strength", "values": [0.9732, 0.776, 0.7217, 0.6471, 0.5554, 0.5183, 0.5175, 0.5171, 0.5139, 0.5104, 0.5037]}],
+          "places": 2,
+          "caption": "Bands: 0.95 and up, treat as a leak until proven otherwise; 0.85 to 0.95, read where it comes from; below 0.85, no sign from this check. `days_since_last_login` is not in the files and was computed as in `model/features.py:25`."
+        },
+        {
+          "type": "text",
+          "text": "**`cancellation_reason`** is the clear leak: a reason exists only for customers who cancelled. **`nps_last`** does not cross the 0.85 line, but it is the next strongest feature and its join has no date, so it is a finding from the code and not from its strength.\n\nThe audit's own check saw the raw `last_login_at` at 0.50, which only says the calendar date is not predictive. The model's feature is `days_since_last_login`, measured here at 0.52 on train and 0.52 on test. It is weak, and its problem is timing, not strength."
+        },
+        {
+          "type": "table",
+          "title": "Each feature and where it comes from",
+          "columns": ["Feature", "Strength", "Source", "Known at the prediction?"],
+          "rows": [
+            ["cancellation_reason", 0.97, "`extract.py:20`, `:27`, `cancellations`, no date limit", "No, written at cancellation (A3). Finding."],
+            ["nps_last", 0.78, "`extract.py:19`, `:26`, `nps_latest`, no date limit", "Not shown (A4). Finding."],
+            ["logins_30d", 0.72, "`extract.py:14`, `:25`, `activity_rollup` as of the snapshot", "Cleared: joined as of the snapshot."],
+            ["tickets_90d", 0.65, "`extract.py:15`, `:25`, as of the snapshot", "Cleared: joined as of the snapshot."],
+            ["tenure_months", 0.56, "`extract.py:12`, `snapshots`", "Cleared: stored on the snapshot row."],
+            ["days_since_last_login", 0.52, "`extract.py:18`, `features.py:21-26`, no upper date", "No, on 136 rows. Finding."],
+            ["region", 0.52, "`extract.py:11`, `:24`, `plans` as of the snapshot", "Cleared: joined as of the snapshot."],
+            ["monthly_fee_eur", 0.52, "`extract.py:13`, `:24`, as of the snapshot", "Cleared: joined as of the snapshot."],
+            ["discount_pct", 0.51, "`extract.py:17`, `:24`, as of the snapshot", "Cleared: joined as of the snapshot."],
+            ["payment_failures_90d", 0.51, "`extract.py:16`, `:25`, as of the snapshot", "Cleared: joined as of the snapshot."],
+            ["plan", 0.5, "`extract.py:10`, `:24`, as of the snapshot", "Cleared: joined as of the snapshot."]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "text": "Clearing a feature here means its join is as of the snapshot. How `activity_rollup` computes its 30-day and 90-day windows could not be read, and a window that runs past `as_of` looks normal in the values."
+        }
+      ]
+    },
+    {
+      "id": "time",
+      "title": "Time",
+      "intro": "The prediction is made on `snapshot_date` and the label is known 60 days later, both from the README.",
+      "blocks": [
+        {
+          "type": "table",
+          "title": "Time checks",
+          "columns": ["Check", "Train", "Test as delivered", "Test without the 40 copies"],
+          "rows": [
+            ["First snapshot", "2025-07-01", "2025-07-01", "2026-04-01"],
+            ["Last snapshot", "2026-03-01", "2026-06-01", "2026-06-01"],
+            ["Rows with `last_login_at` after the snapshot", "96 (4.0%)", "40 (4.0%)", "40 (4.2%)"],
+            ["Latest login after the snapshot, days", 20, 20, 20],
+            ["Test rows dated on or before the last training day", null, 40, 0],
+            ["Train rows whose label ends after the test period begins", 544, null, null]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "warn",
+          "text": "Two different sets of 40 test rows are involved. The 40 rows with a future login are all in the April to June 2026 snapshots. The 40 exact copies are all before April 2026. No row is in both sets."
+        },
+        {
+          "type": "text",
+          "text": "`model/split.py` cuts on `snapshot_date` at 2026-04-01 (A5), so the split itself is by time and in the right order. What it lacks is a gap for the 60-day label: the February and March 2026 snapshots end up in training with outcomes that fall inside the test period."
+        }
+      ]
+    },
+    {
+      "id": "same-data",
+      "title": "The same data on both sides",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["Check", "Count", "Reading"],
+          "rows": [
+            ["Test rows whose customer is also in train", "150 (15.0%)", "The 40 copies and the 110 later snapshots below"],
+            ["Test rows that are exact copies of a train row", 40, "Finding. Every column except `row_id` is equal"],
+            ["Test rows that are a later snapshot of a train customer", "110 (11.5% of 960)", "Cleared, see below"],
+            ["Days between the train row and the later test row", "31 to 335, median 182", "All later, none on the same or an earlier date"],
+            ["Exact duplicates within train / within test", "0 / 0", "Pass"],
+            ["Test rows with a train e-mail or phone under a new `customer_id`", 0, "Pass. Counted without printing a value"],
+            ["Test rows with feature values seen in train, beyond the copies", 0, "Pass"]
+          ]
+        },
+        {
+          "type": "text",
+          "text": "**Why the 110 are cleared.** The retention brief scores all of its roughly 40,000 active subscribers every month, so a live model will meet customers it trained on, in later months (A2). A time-based split shows that case correctly, and all 110 rows are later than the customer's training row. If the model must also work for customers it has never seen, split by customer as well. After removing the copies, 850 of the 960 test rows are customers new to training, so a score on the whole test set is mostly about new customers."
+        }
+      ]
+    },
+    {
+      "id": "class-balance",
+      "title": "Class balance and missingness",
+      "blocks": [
+        {
+          "type": "table",
+          "title": "Positive rate per split",
+          "columns": ["Split", "Rows", "Churners", "Rate"],
+          "rows": [
+            ["Train", 2400, 411, "17.13%"],
+            ["Test as delivered", 1000, 166, "16.60%"],
+            ["Test without the 40 copies", 960, 160, "16.67%"]
+          ]
+        },
+        {
+          "type": "text",
+          "text": "The class is not rare, and the train and test rates do not differ by more than chance (p = 0.71). The rate matches the brief, which expects 16 to 17 in 100."
+        },
+        {
+          "type": "table",
+          "title": "Positive rate by snapshot month, without the 40 copies",
+          "columns": ["Snapshot", "Split", "Rows", "Churners", "Rate"],
+          "rows": [
+            ["2025-07-01", "Train", 253, 40, "15.8%"],
+            ["2025-08-01", "Train", 273, 55, "20.1%"],
+            ["2025-09-01", "Train", 281, 41, "14.6%"],
+            ["2025-10-01", "Train", 270, 48, "17.8%"],
+            ["2025-11-01", "Train", 253, 41, "16.2%"],
+            ["2025-12-01", "Train", 250, 44, "17.6%"],
+            ["2026-01-01", "Train", 276, 52, "18.8%"],
+            ["2026-02-01", "Train", 254, 45, "17.7%"],
+            ["2026-03-01", "Train", 290, 45, "15.5%"],
+            ["2026-04-01", "Test", 327, 59, "18.0%"],
+            ["2026-05-01", "Test", 320, 47, "14.7%"],
+            ["2026-06-01", "Test", 313, 54, "17.3%"]
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Missingness by class",
+          "columns": ["Feature", "Train: missing in churners", "Train: missing in non-churners", "Corrected p", "Test: missing in churners", "Test: missing in non-churners"],
+          "rows": [
+            ["cancellation_reason", "5.3%", "100.0%", "< 0.001", "7.8%", "100.0%"],
+            ["nps_last", "55.7%", "10.5%", "< 0.001", "54.2%", "9.5%"]
+          ]
+        },
+        {
+          "type": "text",
+          "text": "The other 9 features have no missing values. For `cancellation_reason` the pattern is the leak itself. For `nps_last`, 52% of the rows without a score churn in train against 9% of those with one. That is either a real signal or a sign of how the score gets recorded, and the files cannot say which. Decide what a missing score means at serving before training on it."
+        }
+      ]
+    },
+    {
+      "id": "drift",
+      "title": "Drift",
+      "blocks": [
+        {
+          "type": "chart",
+          "kind": "bar",
+          "title": "PSI per feature, train against the 960 test rows that are not copies",
+          "x_label": "PSI",
+          "categories": ["monthly_fee_eur", "logins_30d", "nps_last", "tenure_months", "tickets_90d", "days_since_last_login", "plan", "discount_pct", "cancellation_reason", "payment_failures_90d", "region"],
+          "series": [{"name": "PSI", "values": [0.4761, 0.0184, 0.0156, 0.0105, 0.0073, 0.0052, 0.004, 0.0035, 0.0029, 0.0022, 0.0021]}],
+          "places": 3,
+          "caption": "Bands: under 0.10 stable; 0.10 to 0.25 a moderate shift; above 0.25 a major shift. On the file as delivered, `monthly_fee_eur` is 0.44."
+        },
+        {
+          "type": "table",
+          "title": "Mean monthly fee by snapshot, in EUR, without the 40 copies",
+          "columns": ["Snapshot", "Split", "Mean fee"],
+          "rows": [
+            ["2025-07-01", "Train", 18.31],
+            ["2025-08-01", "Train", 18.81],
+            ["2025-09-01", "Train", 19.9],
+            ["2025-10-01", "Train", 18.96],
+            ["2025-11-01", "Train", 18.69],
+            ["2025-12-01", "Train", 18.86],
+            ["2026-01-01", "Train", 17.74],
+            ["2026-02-01", "Train", 18.87],
+            ["2026-03-01", "Train", 18.7],
+            ["2026-04-01", "Test", 20.14],
+            ["2026-05-01", "Test", 20.07],
+            ["2026-06-01", "Test", 20.26]
+          ]
+        },
+        {
+          "type": "text",
+          "text": "A high PSI says the feature moved, not that a model got worse. No model was scored here, so the effect on predictions is not measured. The fee on its own hardly orders churn (0.52), so the risk is probably limited [med]."
+        }
+      ]
+    },
+    {
+      "id": "personal",
+      "title": "Personal columns",
+      "intro": "Names and kinds only. No value of any row appears on this page.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["Column", "Kind"],
+          "rows": [
+            ["full_name", "person name"],
+            ["email", "e-mail"],
+            ["phone", "phone"]
+          ]
+        },
+        {
+          "type": "text",
+          "text": "All three are in both files and come from `model/extract.py:7-9`. None is a model feature, so they do not reach the model, but they should not be in a training extract at all."
+        }
+      ]
+    },
+    {
+      "id": "not-checked",
+      "title": "What was not checked",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "**The effect on a model's score.** No model was trained or scored. `data/predictions.csv` was outside this audit, and scikit-learn is not installed here.",
+            "**The warehouse.** How `snapshots`, `activity_rollup`, `plans` and `logins` are built could not be read, including whether a rollup window ends at `as_of`.",
+            "**How the rows were chosen.** The files hold 3,400 rows against roughly 40,000 subscribers a month. How they were sampled is not stated, and a selection that depends on the outcome would not show in any column.",
+            "**Features that leak only together.** The strength check looks at one feature at a time.",
+            "**Earlier treatments.** Retention offers or the renewal-nudge experiment may have changed who churned, and the files have no treatment column. The experiment brief gives August and September without a year.",
+            "**Serving.** Whether each feature exists at list time in production.",
+            "**History length.** `docs/briefs/retention-offers.md` says 18 months of labelled snapshots, and the files hold 12 monthly snapshots, 2025-07 to 2026-06.",
+            "**Legal basis.** Whether there is one for holding the personal columns in this extract."
+          ]
+        },
+        {
+          "type": "list",
+          "title": "Assumptions",
+          "items": [
+            "**A1.** `customer_id` is the entity and `row_id` the row id, from `ID_COLUMNS` at `model/features.py:3`.",
+            "**A2.** The model serves the retention-offers list, which scores every active subscriber each month, because that brief names the 11 columns in `model/features.py`. This is why the 110 later snapshots are cleared.",
+            "**A3.** `cancellation_reason` is recorded when the customer cancels, from its name, its source table and its pattern by label. No table definition was available.",
+            "**A4.** `nps_latest` holds each customer's newest response at extract time, from its name and its join with no date.",
+            "**A5.** The test period begins on 2026-04-01, the `CUT` at `model/split.py:3`.",
+            "**A6.** `train.csv` and `test.csv` are the data behind the current model. Nothing committed writes them.",
+            "**A7.** A login on the snapshot day counts as known at the prediction, because the audit compares calendar days and the README says features are as of that day."
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "training data of the acme-churn model (churned_60d, data/train.csv and data/test.csv)",
+    "data": [
+      {
+        "name": "customer identity and contact",
+        "class": "personal",
+        "where": ["data/train.csv: full_name, email, phone", "data/test.csv: full_name, email, phone", "model/extract.py:7-9"],
+        "rule": "drop before training"
+      }
+    ],
+    "decisions": [
+      {
+        "title": "Can a model built on this data be trusted as it stands",
+        "chosen": "No",
+        "because": "cancellation_reason is a post-event feature in the model, two more features are not limited to the snapshot day, and 40 test rows copy training rows"
+      }
+    ],
+    "assumptions": [
+      "customer_id is the entity and row_id the row id, from ID_COLUMNS at model/features.py:3",
+      "the model serves the retention-offers list, scoring every active subscriber each month",
+      "cancellation_reason is recorded when the customer cancels",
+      "nps_latest holds each customer's newest response at extract time",
+      "the test period begins on 2026-04-01, the CUT at model/split.py:3",
+      "train.csv and test.csv are the data behind the current model",
+      "a login on the snapshot day counts as known at the prediction"
+    ],
+    "open": [
+      "remove cancellation_reason from FEATURES and from the SQL",
+      "make nps_last as of snapshot_date, or drop it",
+      "add an upper date to the last-login subquery at model/extract.py:18",
+      "remove the 40 test rows that copy training rows and find the step that added them",
+      "leave a 60-day gap before the test period, training on snapshots up to 2026-01-31",
+      "confirm the cause of the monthly_fee_eur shift from April 2026",
+      "remove full_name, email and phone from the extract",
+      "commit the step that builds the two files, including the encoding, and rebuild them",
+      "confirm snapshots holds only active customers",
+      "exclude label windows that have not ended"
+    ]
+  }
+}

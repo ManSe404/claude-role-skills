@@ -1,0 +1,262 @@
+{
+  "provider": "azure",
+  "label": "Azure",
+  "terraform_prefixes": ["azurerm_"],
+  "terraform_helpers": ["random_", "null_", "time_", "tls_", "local_", "terraform_", "azapi_"],
+  "provider_scope": {"subscription": "subscription_id"},
+  "levels": ["subscription", "resource_group", "vnet", "subnet"],
+  "level_labels": {
+    "subscription": "Subscription",
+    "resource_group": "Resource group",
+    "vnet": "VNet",
+    "subnet": "Subnet"
+  },
+  "placement": [
+    {"level": "resource_group", "tf": ["resource_group_name"], "arm": [], "target": "Microsoft.Resources/resourceGroups"},
+    {"level": "vnet", "tf": ["virtual_network_name"], "arm": [], "target": "Microsoft.Network/virtualNetworks"},
+    {
+      "level": "subnet",
+      "tf": ["subnet_id", "virtual_network_subnet_id", "infrastructure_subnet_id", "ip_configuration.subnet_id"],
+      "arm": [
+        "properties.subnet.id",
+        "properties.virtualNetworkSubnetId",
+        "properties.vnetConfiguration.infrastructureSubnetId",
+        "properties.ipConfigurations[*].properties.subnet.id"
+      ],
+      "target": "Microsoft.Network/virtualNetworks/subnets"
+    }
+  ],
+  "not_traffic": [
+    "service_plan_id",
+    "properties.serverFarmId",
+    "log_analytics_workspace_id",
+    "workspace_id",
+    "properties.workspaceResourceId",
+    "properties.appLogsConfiguration",
+    "application_insights",
+    "target_resource_id",
+    "scope",
+    "identity_ids",
+    "dependsOn",
+    "depends_on",
+    "tags"
+  ],
+  "secret_references": ["^@Microsoft\\.KeyVault\\(", "keyvaultref:", "^secretref:"],
+  "types": {
+    "Microsoft.Resources/resourceGroups": {"category": "scope", "kind": "ops", "label": "Resource group", "tf": ["azurerm_resource_group"], "attrs": {}},
+    "Microsoft.Network/virtualNetworks": {"category": "network", "kind": "ops", "label": "VNet", "tf": ["azurerm_virtual_network"], "attrs": {
+      "address_space": {"tf": "address_space", "arm": "properties.addressSpace.addressPrefixes"}}},
+    "Microsoft.Network/virtualNetworks/subnets": {"category": "network", "kind": "ops", "label": "Subnet", "tf": ["azurerm_subnet"], "attrs": {
+      "address_prefixes": {"tf": "address_prefixes", "arm": "properties.addressPrefixes"}}},
+    "Microsoft.Network/networkSecurityGroups": {"category": "network", "kind": "guard", "label": "NSG", "tf": ["azurerm_network_security_group"], "attrs": {}},
+    "Microsoft.Network/networkSecurityGroups/securityRules": {"category": "network", "kind": "guard", "label": "NSG rule", "tf": ["azurerm_network_security_rule"], "parent": {"tf": ["network_security_group_name"]}, "attrs": {
+      "direction": {"tf": "direction", "arm": "properties.direction"},
+      "access": {"tf": "access", "arm": "properties.access"},
+      "port": {"tf": "destination_port_range", "arm": "properties.destinationPortRange"},
+      "source": {"tf": "source_address_prefix", "arm": "properties.sourceAddressPrefix"}}},
+    "Microsoft.Network/publicIPAddresses": {"category": "network", "kind": "channel", "label": "Public IP", "tf": ["azurerm_public_ip"], "attrs": {
+      "zones": {"tf": "zones", "arm": "zones"}}},
+    "Microsoft.Network/privateEndpoints": {"category": "network", "kind": "guard", "label": "Private endpoint", "tf": ["azurerm_private_endpoint"], "attrs": {}},
+    "Microsoft.Network/privateDnsZones": {"category": "network", "kind": "ops", "label": "Private DNS zone", "tf": ["azurerm_private_dns_zone"], "attrs": {}},
+    "Microsoft.Network/networkInterfaces": {"category": "network", "kind": "ops", "label": "Network interface", "tf": ["azurerm_network_interface"], "attrs": {}},
+    "Microsoft.Network/virtualNetworks/subnets/networkSecurityGroupAssociation": {"category": "network", "kind": "ops", "label": "Subnet-NSG association", "tf": ["azurerm_subnet_network_security_group_association"], "attrs": {}},
+    "Microsoft.Network/dnsZones": {"category": "network", "kind": "ops", "label": "DNS zone", "tf": ["azurerm_dns_zone"], "attrs": {}},
+    "Microsoft.Network/applicationGateways": {"category": "edge", "kind": "guard", "label": "Application Gateway", "tf": ["azurerm_application_gateway"], "attrs": {
+      "waf": {"tf": "waf_configuration.enabled", "arm": "properties.webApplicationFirewallConfiguration.enabled"},
+      "waf_policy": {"tf": "firewall_policy_id", "arm": "properties.firewallPolicy.id"}}},
+    "Microsoft.Cdn/profiles": {"category": "edge", "kind": "guard", "label": "Front Door", "tf": ["azurerm_cdn_frontdoor_profile", "azurerm_cdn_profile"], "attrs": {}},
+    "Microsoft.Network/frontDoors": {"category": "edge", "kind": "guard", "label": "Front Door (classic)", "tf": ["azurerm_frontdoor"], "attrs": {}},
+    "Microsoft.Network/loadBalancers": {"category": "edge", "kind": "service", "label": "Load balancer", "tf": ["azurerm_lb"], "attrs": {}},
+    "Microsoft.Network/azureFirewalls": {"category": "edge", "kind": "guard", "label": "Azure Firewall", "tf": ["azurerm_firewall"], "attrs": {}},
+    "Microsoft.ApiManagement/service": {"category": "edge", "kind": "service", "label": "API Management", "tf": ["azurerm_api_management"], "attrs": {
+      "public_network_access": {"tf": "public_network_access_enabled", "arm": "properties.publicNetworkAccess", "bool": true}}},
+    "Microsoft.Web/serverfarms": {"category": "compute", "kind": "service", "label": "App Service plan", "tf": ["azurerm_service_plan", "azurerm_app_service_plan"], "attrs": {
+      "sku": {"tf": "sku_name", "arm": "sku.name"},
+      "workers": {"tf": "worker_count", "arm": "sku.capacity"},
+      "zone_redundant": {"tf": "zone_balancing_enabled", "arm": "properties.zoneRedundant", "bool": true}}},
+    "Microsoft.Web/sites": {"category": "compute", "kind": "service", "label": "App Service app", "tf": ["azurerm_linux_web_app", "azurerm_windows_web_app", "azurerm_app_service", "azurerm_linux_function_app", "azurerm_windows_function_app", "azurerm_function_app"], "attrs": {
+      "public_network_access": {"tf": "public_network_access_enabled", "arm": "properties.publicNetworkAccess", "bool": true},
+      "https_only": {"tf": "https_only", "arm": "properties.httpsOnly"},
+      "min_tls": {"tf": "site_config.minimum_tls_version", "arm": "properties.siteConfig.minTlsVersion"},
+      "settings": {"tf": "app_settings", "arm": "properties.siteConfig.appSettings", "shape": "settings"},
+      "connection_strings": {"tf": "connection_string", "arm": "properties.siteConfig.connectionStrings", "shape": "settings"},
+      "identity": {"tf": "identity.type", "arm": "identity.type"},
+      "ip_restrictions": {"tf": "site_config.ip_restriction", "arm": "properties.siteConfig.ipSecurityRestrictions"},
+      "images": {"tf": "site_config.application_stack.docker_image_name", "arm": "properties.siteConfig.linuxFxVersion"}}},
+    "Microsoft.App/managedEnvironments": {"category": "compute", "kind": "service", "label": "Container Apps environment", "tf": ["azurerm_container_app_environment"], "attrs": {
+      "internal": {"tf": "internal_load_balancer_enabled", "arm": "properties.vnetConfiguration.internal", "bool": true},
+      "zone_redundant": {"tf": "zone_redundancy_enabled", "arm": "properties.zoneRedundant", "bool": true}}},
+    "Microsoft.App/containerApps": {"category": "compute", "kind": "service", "label": "Container App", "tf": ["azurerm_container_app"], "parent": {"tf": ["container_app_environment_id"], "arm": ["properties.environmentId", "properties.managedEnvironmentId"]}, "attrs": {
+      "external_ingress": {"tf": "ingress.external_enabled", "arm": "properties.configuration.ingress.external", "bool": true},
+      "images": {"tf": "template.container[*].image", "arm": "properties.template.containers[*].image"},
+      "settings": {"tf": "template.container[*].env", "arm": "properties.template.containers[*].env", "shape": "settings"},
+      "identity": {"tf": "identity.type", "arm": "identity.type"},
+      "min_replicas": {"tf": "template.min_replicas", "arm": "properties.template.scale.minReplicas"},
+      "max_replicas": {"tf": "template.max_replicas", "arm": "properties.template.scale.maxReplicas"}}},
+    "Microsoft.ContainerService/managedClusters": {"category": "compute", "kind": "service", "label": "AKS cluster", "tf": ["azurerm_kubernetes_cluster"], "attrs": {
+      "private_cluster": {"tf": "private_cluster_enabled", "arm": "properties.apiServerAccessProfile.enablePrivateCluster"},
+      "identity": {"tf": "identity.type", "arm": "identity.type"}}},
+    "Microsoft.Compute/virtualMachines": {"category": "compute", "kind": "service", "label": "Virtual machine", "tf": ["azurerm_linux_virtual_machine", "azurerm_windows_virtual_machine", "azurerm_virtual_machine"], "attrs": {
+      "size": {"tf": "size", "arm": "properties.hardwareProfile.vmSize"},
+      "zone": {"tf": "zone", "arm": "zones"},
+      "identity": {"tf": "identity.type", "arm": "identity.type"}}},
+    "Microsoft.ContainerRegistry/registries": {"category": "compute", "kind": "store", "label": "Container registry", "tf": ["azurerm_container_registry"], "attrs": {
+      "public_network_access": {"tf": "public_network_access_enabled", "arm": "properties.publicNetworkAccess", "bool": true},
+      "admin_user": {"tf": "admin_enabled", "arm": "properties.adminUserEnabled"}}},
+    "Microsoft.Sql/servers": {"category": "database", "kind": "store", "label": "SQL server", "tf": ["azurerm_mssql_server", "azurerm_sql_server"], "attrs": {
+      "public_network_access": {"tf": "public_network_access_enabled", "arm": "properties.publicNetworkAccess", "bool": true},
+      "min_tls": {"tf": "minimum_tls_version", "arm": "properties.minimalTlsVersion"},
+      "identity": {"tf": "identity.type", "arm": "identity.type"}}},
+    "Microsoft.Sql/servers/databases": {"category": "database", "kind": "store", "label": "SQL database", "tf": ["azurerm_mssql_database", "azurerm_sql_database"], "parent": {"tf": ["server_id"]}, "attrs": {
+      "sku": {"tf": "sku_name", "arm": "sku.name"},
+      "zone_redundant": {"tf": "zone_redundant", "arm": "properties.zoneRedundant", "bool": true},
+      "max_size_gb": {"tf": "max_size_gb", "arm": "properties.maxSizeBytes"}}},
+    "Microsoft.Sql/servers/firewallRules": {"category": "network", "kind": "guard", "label": "SQL firewall rule", "tf": ["azurerm_mssql_firewall_rule", "azurerm_sql_firewall_rule"], "parent": {"tf": ["server_id"]}, "attrs": {
+      "start_ip": {"tf": "start_ip_address", "arm": "properties.startIpAddress"},
+      "end_ip": {"tf": "end_ip_address", "arm": "properties.endIpAddress"}}},
+    "Microsoft.DBforPostgreSQL/flexibleServers": {"category": "database", "kind": "store", "label": "PostgreSQL server", "tf": ["azurerm_postgresql_flexible_server"], "attrs": {
+      "public_network_access": {"tf": "public_network_access_enabled", "arm": "properties.network.publicNetworkAccess", "bool": true},
+      "zone_redundant": {"tf": "high_availability.mode", "arm": "properties.highAvailability.mode"},
+      "sku": {"tf": "sku_name", "arm": "sku.name"}}},
+    "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules": {"category": "network", "kind": "guard", "label": "PostgreSQL firewall rule", "tf": ["azurerm_postgresql_flexible_server_firewall_rule"], "parent": {"tf": ["server_id"]}, "attrs": {
+      "start_ip": {"tf": "start_ip_address", "arm": "properties.startIpAddress"},
+      "end_ip": {"tf": "end_ip_address", "arm": "properties.endIpAddress"}}},
+    "Microsoft.DBforMySQL/flexibleServers": {"category": "database", "kind": "store", "label": "MySQL server", "tf": ["azurerm_mysql_flexible_server"], "attrs": {"sku": {"tf": "sku_name", "arm": "sku.name"}}},
+    "Microsoft.DocumentDB/databaseAccounts": {"category": "database", "kind": "store", "label": "Cosmos DB account", "tf": ["azurerm_cosmosdb_account"], "attrs": {
+      "public_network_access": {"tf": "public_network_access_enabled", "arm": "properties.publicNetworkAccess", "bool": true}}},
+    "Microsoft.Cache/Redis": {"category": "database", "kind": "store", "label": "Redis cache", "tf": ["azurerm_redis_cache"], "attrs": {
+      "public_network_access": {"tf": "public_network_access_enabled", "arm": "properties.publicNetworkAccess", "bool": true},
+      "min_tls": {"tf": "minimum_tls_version", "arm": "properties.minimumTlsVersion"}}},
+    "Microsoft.Storage/storageAccounts": {"category": "storage", "kind": "store", "label": "Storage account", "tf": ["azurerm_storage_account"], "attrs": {
+      "public_network_access": {"tf": "public_network_access_enabled", "arm": "properties.publicNetworkAccess", "bool": true},
+      "allow_blob_public_access": {"tf": "allow_nested_items_to_be_public", "arm": "properties.allowBlobPublicAccess", "bool": true},
+      "min_tls": {"tf": "min_tls_version", "arm": "properties.minimumTlsVersion"},
+      "network_default_action": {"tf": "network_rules.default_action", "arm": "properties.networkAcls.defaultAction"},
+      "replication": {"tf": "account_replication_type", "arm": "sku.name"}}},
+    "Microsoft.Storage/storageAccounts/blobServices": {"category": "storage", "kind": "store", "label": "Blob service", "tf": [], "attrs": {}},
+    "Microsoft.Storage/storageAccounts/blobServices/containers": {"category": "storage", "kind": "store", "label": "Blob container", "tf": ["azurerm_storage_container"], "parent": {"tf": ["storage_account_id", "storage_account_name"]}, "attrs": {
+      "public_access": {"tf": "container_access_type", "arm": "properties.publicAccess"}}},
+    "Microsoft.KeyVault/vaults": {"category": "secrets", "kind": "store", "label": "Key Vault", "tf": ["azurerm_key_vault"], "attrs": {
+      "public_network_access": {"tf": "public_network_access_enabled", "arm": "properties.publicNetworkAccess", "bool": true},
+      "network_default_action": {"tf": "network_acls.default_action", "arm": "properties.networkAcls.defaultAction"},
+      "purge_protection": {"tf": "purge_protection_enabled", "arm": "properties.enablePurgeProtection"}}},
+    "Microsoft.KeyVault/vaults/secrets": {"category": "secrets", "kind": "store", "label": "Key Vault secret", "tf": ["azurerm_key_vault_secret"], "parent": {"tf": ["key_vault_id"]}, "attrs": {}},
+    "Microsoft.ManagedIdentity/userAssignedIdentities": {"category": "identity", "kind": "ops", "label": "Managed identity", "tf": ["azurerm_user_assigned_identity"], "attrs": {}},
+    "Microsoft.Authorization/roleAssignments": {"category": "identity", "kind": "ops", "label": "Role assignment", "tf": ["azurerm_role_assignment"], "attrs": {
+      "role": {"tf": "role_definition_name", "arm": "properties.roleDefinitionId"}}},
+    "Microsoft.ServiceBus/namespaces": {"category": "messaging", "kind": "store", "label": "Service Bus namespace", "tf": ["azurerm_servicebus_namespace"], "attrs": {
+      "public_network_access": {"tf": "public_network_access_enabled", "arm": "properties.publicNetworkAccess", "bool": true},
+      "sku": {"tf": "sku", "arm": "sku.name"},
+      "local_auth": {"tf": "local_auth_enabled", "arm": "properties.disableLocalAuth", "invert": true}}},
+    "Microsoft.ServiceBus/namespaces/queues": {"category": "messaging", "kind": "store", "label": "Queue", "tf": ["azurerm_servicebus_queue"], "parent": {"tf": ["namespace_id"]}, "attrs": {}},
+    "Microsoft.ServiceBus/namespaces/topics": {"category": "messaging", "kind": "store", "label": "Topic", "tf": ["azurerm_servicebus_topic"], "parent": {"tf": ["namespace_id"]}, "attrs": {}},
+    "Microsoft.EventHub/namespaces": {"category": "messaging", "kind": "store", "label": "Event Hubs namespace", "tf": ["azurerm_eventhub_namespace"], "attrs": {}},
+    "Microsoft.EventGrid/topics": {"category": "messaging", "kind": "store", "label": "Event Grid topic", "tf": ["azurerm_eventgrid_topic"], "attrs": {}},
+    "Microsoft.OperationalInsights/workspaces": {"category": "monitoring", "kind": "ops", "label": "Log Analytics workspace", "tf": ["azurerm_log_analytics_workspace"], "attrs": {
+      "retention_days": {"tf": "retention_in_days", "arm": "properties.retentionInDays"}}},
+    "Microsoft.Insights/components": {"category": "monitoring", "kind": "ops", "label": "Application Insights", "tf": ["azurerm_application_insights"], "attrs": {}},
+    "Microsoft.Insights/diagnosticSettings": {"category": "monitoring", "kind": "ops", "label": "Diagnostic setting", "tf": ["azurerm_monitor_diagnostic_setting"], "attrs": {}},
+    "Microsoft.Insights/actionGroups": {"category": "monitoring", "kind": "ops", "label": "Action group", "tf": ["azurerm_monitor_action_group"], "attrs": {}}
+  },
+  "inline_children": {
+    "Microsoft.Network/virtualNetworks": [{"tf": "subnet", "arm": "properties.subnets", "type": "Microsoft.Network/virtualNetworks/subnets"}],
+    "Microsoft.Network/networkSecurityGroups": [{"tf": "security_rule", "arm": "properties.securityRules", "type": "Microsoft.Network/networkSecurityGroups/securityRules"}]
+  },
+  "exposure": [
+    {"types": ["Microsoft.Web/sites"], "rules": [
+      {"state": "private", "when": {"attr": "public_network_access", "is": false}, "why": "public network access is off"},
+      {"state": "private", "when": {"all": [{"referred_by": "Microsoft.Network/privateEndpoints"}, {"attr": "public_network_access", "missing": true}]}, "why": "a private endpoint closes the default public access"},
+      {"state": "restricted", "when": {"attr": "ip_restrictions", "present": true}, "why": "access restrictions are set"},
+      {"state": "public", "when": {"always": true}, "why": "an App Service app is public unless it is closed"}]},
+    {"types": ["Microsoft.App/containerApps"], "rules": [
+      {"state": "private", "when": {"parent": {"attr": "internal", "is": true}}, "why": "its environment is internal"},
+      {"state": "public", "when": {"attr": "external_ingress", "is": true}, "why": "external ingress"},
+      {"state": "private", "when": {"attr": "external_ingress", "is": false}, "why": "internal ingress only"},
+      {"state": "private", "when": {"attr": "external_ingress", "missing": true}, "why": "no ingress configured"}]},
+    {"types": ["Microsoft.Sql/servers", "Microsoft.DBforPostgreSQL/flexibleServers"], "rules": [
+      {"state": "private", "when": {"attr": "public_network_access", "is": false}, "why": "public network access is off"},
+      {"state": "public", "when": {"child": ["Microsoft.Sql/servers/firewallRules", "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules"], "where": {"all": [{"attr": "start_ip", "is": "0.0.0.0"}, {"attr": "end_ip", "is": "255.255.255.255"}]}}, "why": "a firewall rule opens every address"},
+      {"state": "restricted", "when": {"child": ["Microsoft.Sql/servers/firewallRules", "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules"]}, "why": "public endpoint with firewall rules for some addresses"},
+      {"state": "restricted", "when": {"always": true}, "why": "public endpoint, but no firewall rule opens it"}]},
+    {"types": ["Microsoft.Storage/storageAccounts"], "rules": [
+      {"state": "private", "when": {"attr": "public_network_access", "is": false}, "why": "public network access is off"},
+      {"state": "restricted", "when": {"attr": "network_default_action", "matches": "(?i)^deny$"}, "why": "network rules deny by default"},
+      {"state": "public", "anonymous": true, "when": {"any": [{"child": "Microsoft.Storage/storageAccounts/blobServices/containers", "where": {"attr": "public_access", "matches": "(?i)^(blob|container)$"}}, {"attr": "allow_blob_public_access", "is": true}]}, "why": "anonymous blob access"},
+      {"state": "public", "when": {"always": true}, "why": "storage is public unless network rules close it"}]},
+    {"types": ["Microsoft.KeyVault/vaults"], "rules": [
+      {"state": "private", "when": {"attr": "public_network_access", "is": false}, "why": "public network access is off"},
+      {"state": "restricted", "when": {"attr": "network_default_action", "matches": "(?i)^deny$"}, "why": "network rules deny by default"},
+      {"state": "public", "when": {"always": true}, "why": "a Key Vault is public unless its network rules close it"}]},
+    {"types": ["Microsoft.ServiceBus/namespaces", "Microsoft.EventHub/namespaces", "Microsoft.DocumentDB/databaseAccounts", "Microsoft.Cache/Redis", "Microsoft.ContainerRegistry/registries", "Microsoft.ApiManagement/service"], "rules": [
+      {"state": "private", "when": {"attr": "public_network_access", "is": false}, "why": "public network access is off"},
+      {"state": "public", "when": {"always": true}, "why": "public endpoint; authentication still applies"}]},
+    {"types": ["Microsoft.Network/publicIPAddresses"], "rules": [
+      {"state": "public", "when": {"always": true}, "why": "it is a public address"}]},
+    {"types": ["Microsoft.ContainerService/managedClusters"], "rules": [
+      {"state": "private", "when": {"attr": "private_cluster", "is": true}, "why": "private cluster"},
+      {"state": "public", "when": {"always": true}, "why": "the API server is public unless the cluster is private"}]}
+  ],
+  "boundaries": [
+    {"types": ["Microsoft.Network/azureFirewalls"], "when": {"always": true}, "why": "a firewall inspects and filters what passes"},
+    {"types": ["Microsoft.Network/applicationGateways"], "when": {"attr": "waf", "is": true}, "why": "the gateway has a WAF"},
+    {"types": ["Microsoft.Network/applicationGateways"], "when": {"attr": "waf_policy", "present": true}, "why": "the gateway has a WAF policy"},
+    {"types": ["Microsoft.Network/privateEndpoints"], "when": {"always": true}, "why": "a private endpoint is only reachable inside the network"}
+  ],
+  "export": {
+    "not_listed": [
+      "Microsoft.Resources/resourceGroups",
+      "Microsoft.Network/virtualNetworks/subnets",
+      "Microsoft.Network/networkSecurityGroups/securityRules",
+      "Microsoft.Sql/servers/firewallRules",
+      "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules",
+      "Microsoft.Storage/storageAccounts/blobServices",
+      "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "Microsoft.KeyVault/vaults/secrets",
+      "Microsoft.ServiceBus/namespaces/queues",
+      "Microsoft.ServiceBus/namespaces/topics",
+      "Microsoft.Authorization/roleAssignments",
+      "Microsoft.Insights/diagnosticSettings",
+      "Microsoft.Network/networkInterfaces",
+      "Microsoft.Network/virtualNetworks/subnets/networkSecurityGroupAssociation"
+    ],
+    "ignore": [
+      {"type": "Microsoft.Sql/servers/databases", "name": "/master$", "why": "every SQL server has a master database"},
+      {"type": "Microsoft.AlertsManagement/smartDetectorAlertRules", "why": "created automatically with Application Insights"},
+      {"type": "Microsoft.Insights/actionGroups", "name": "^Application Insights Smart Detection$", "why": "created automatically with Application Insights"},
+      {"type": "Microsoft.Network/networkWatchers", "why": "created automatically in every region with a network"},
+      {"type": "Microsoft.Network/networkInterfaces", "name": "\\.nic\\.", "why": "created automatically by a private endpoint"}
+    ]
+  },
+  "checks": [
+    {"id": "database-open-to-internet", "family": "exposure", "pillar": "Security", "types": ["Microsoft.Sql/servers", "Microsoft.DBforPostgreSQL/flexibleServers"], "when": {"child": ["Microsoft.Sql/servers/firewallRules", "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules"], "where": {"all": [{"attr": "start_ip", "is": "0.0.0.0"}, {"attr": "end_ip", "is": "255.255.255.255"}]}}, "what": "A firewall rule opens this database server to every address."},
+    {"id": "public-network-default-on", "family": "exposure", "pillar": "Security", "types": ["Microsoft.KeyVault/vaults", "Microsoft.Cache/Redis", "Microsoft.DocumentDB/databaseAccounts"], "when": {"attr": "public_network_access", "missing": true}, "what": "Public network access is left at its default, which is on."},
+    {"id": "storage-public-blobs", "family": "exposure", "pillar": "Security", "types": ["Microsoft.Storage/storageAccounts"], "when": {"any": [{"attr": "allow_blob_public_access", "is": true}, {"child": "Microsoft.Storage/storageAccounts/blobServices/containers", "where": {"attr": "public_access", "matches": "(?i)^(blob|container)$"}}]}, "what": "Blobs in this storage account can be read without any sign-in."},
+    {"id": "nsg-open-from-anywhere", "family": "network", "pillar": "Security", "types": ["Microsoft.Network/networkSecurityGroups/securityRules"], "when": {"all": [{"attr": "direction", "matches": "(?i)^inbound$"}, {"attr": "access", "matches": "(?i)^allow$"}, {"attr": "source", "in": ["*", "Internet", "0.0.0.0/0", "any", "Any", "internet"]}]}, "what": "An inbound rule allows traffic from any address."},
+    {"id": "secret-in-settings", "family": "secrets", "pillar": "Security", "types": ["Microsoft.Web/sites", "Microsoft.App/containerApps"], "when": {"secret_in": "settings"}, "what": "A value that looks like a secret sits in plain app settings instead of a Key Vault reference."},
+    {"id": "secret-in-connection-strings", "family": "secrets", "pillar": "Security", "types": ["Microsoft.Web/sites"], "when": {"secret_in": "connection_strings"}, "what": "A connection string holds a value that looks like a secret."},
+    {"id": "no-managed-identity", "family": "identity", "pillar": "Security", "types": ["Microsoft.Web/sites", "Microsoft.App/containerApps", "Microsoft.Compute/virtualMachines"], "when": {"attr": "identity", "missing": true}, "what": "No managed identity: credentials must live somewhere else."},
+    {"id": "no-diagnostics", "family": "monitoring", "pillar": "Operational Excellence", "types": ["Microsoft.Sql/servers", "Microsoft.Sql/servers/databases", "Microsoft.Web/sites", "Microsoft.KeyVault/vaults", "Microsoft.ServiceBus/namespaces", "Microsoft.ApiManagement/service", "Microsoft.Network/applicationGateways"], "when": {"not": {"referred_by": "Microsoft.Insights/diagnosticSettings"}}, "what": "No diagnostic setting sends this resource's logs anywhere."},
+    {"id": "single-zone-database", "family": "resilience", "pillar": "Reliability", "types": ["Microsoft.Sql/servers/databases"], "when": {"any": [{"attr": "zone_redundant", "is": false}, {"attr": "zone_redundant", "missing": true}]}, "what": "This database runs in one availability zone."},
+    {"id": "single-zone-plan", "family": "resilience", "pillar": "Reliability", "types": ["Microsoft.Web/serverfarms"], "when": {"any": [{"attr": "zone_redundant", "is": false}, {"attr": "zone_redundant", "missing": true}]}, "what": "This App Service plan runs in one availability zone."},
+    {"id": "single-zone-environment", "family": "resilience", "pillar": "Reliability", "types": ["Microsoft.App/managedEnvironments"], "when": {"any": [{"attr": "zone_redundant", "is": false}, {"attr": "zone_redundant", "missing": true}]}, "what": "This Container Apps environment runs in one availability zone."},
+    {"id": "single-instance", "family": "resilience", "pillar": "Reliability", "types": ["Microsoft.Web/serverfarms"], "when": {"attr": "workers", "is": 1}, "what": "One worker: a restart is an outage."},
+    {"id": "storage-not-zone-redundant", "family": "resilience", "pillar": "Reliability", "types": ["Microsoft.Storage/storageAccounts"], "when": {"attr": "replication", "matches": "(?i)LRS$"}, "what": "Locally redundant storage keeps three copies in one data centre."},
+    {"id": "unpinned-image", "family": "supply-chain", "pillar": "Operational Excellence", "types": ["Microsoft.App/containerApps", "Microsoft.Web/sites"], "when": {"attr": "images", "matches": "(:latest$|^[^:|]+$)"}, "what": "The image tag is not pinned, so a restart can deploy different code."},
+    {"id": "tls-below-1-2", "family": "encryption", "pillar": "Security", "types": ["Microsoft.Sql/servers", "Microsoft.Storage/storageAccounts", "Microsoft.Web/sites", "Microsoft.Cache/Redis"], "when": {"attr": "min_tls", "matches": "^(TLS1_0|TLS1_1|1\\.0|1\\.1)$"}, "what": "The minimum TLS version is below 1.2."},
+    {"id": "https-not-enforced", "family": "encryption", "pillar": "Security", "types": ["Microsoft.Web/sites"], "when": {"attr": "https_only", "is": false}, "what": "Plain HTTP is allowed."},
+    {"id": "key-vault-no-purge-protection", "family": "resilience", "pillar": "Reliability", "types": ["Microsoft.KeyVault/vaults"], "when": {"any": [{"attr": "purge_protection", "is": false}, {"attr": "purge_protection", "missing": true}]}, "what": "A deleted vault or secret can be purged for good."},
+    {"id": "registry-admin-user", "family": "identity", "pillar": "Security", "types": ["Microsoft.ContainerRegistry/registries"], "when": {"attr": "admin_user", "is": true}, "what": "The registry's admin user is on: a shared password instead of an identity."},
+    {"id": "log-retention-short", "family": "monitoring", "pillar": "Operational Excellence", "types": ["Microsoft.OperationalInsights/workspaces"], "when": {"attr": "retention_days", "below": 30}, "what": "Logs are kept for less than 30 days."}
+  ],
+  "prices": {
+    "api": "odata",
+    "url": "https://prices.azure.com/api/retail/prices",
+    "source": "Azure Retail Prices API, https://prices.azure.com/api/retail/prices",
+    "currency_param": "currencyCode",
+    "filter_fields": {"service": "serviceName", "region": "armRegionName", "sku": "skuName", "product": "productName", "meter": "meterName"},
+    "fixed_filters": ["priceType eq 'Consumption'"],
+    "items_key": "Items",
+    "next_key": "NextPageLink",
+    "row": {"service": "serviceName", "product": "productName", "sku": "skuName", "meter": "meterName", "region": "armRegionName", "unit": "unitOfMeasure", "unit_price": "retailPrice", "tier_min": "tierMinimumUnits", "currency": "currencyCode", "effective_from": "effectiveStartDate"}
+  }
+}

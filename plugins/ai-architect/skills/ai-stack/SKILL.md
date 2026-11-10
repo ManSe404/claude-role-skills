@@ -38,7 +38,7 @@ in the pages folder of this project, if there is one.
 8. Lock-in: per layer, what is provider-specific and what moving would cost.
 9. Before the offer: quotas for the peak, the model and version in the required region, data
    processing terms, private networking, the date of every price and rate.
-10. Write the page JSON, with `facts`, render it, and say where to open it.
+10. Write the page JSON, with `facts` (each cost with its `cloud` and `variant`), render it, and say where to open it.
 
 ## Output
 

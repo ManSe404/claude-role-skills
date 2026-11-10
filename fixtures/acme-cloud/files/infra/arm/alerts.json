@@ -1,0 +1,28 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environment": {
+      "type": "string",
+      "defaultValue": "prod"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Insights/actionGroups",
+      "apiVersion": "2023-01-01",
+      "name": "[concat('ag-acme-tickets-', parameters('environment'))]",
+      "location": "Global",
+      "properties": {
+        "groupShortName": "acmetickets",
+        "enabled": true,
+        "emailReceivers": [
+          {
+            "name": "platform",
+            "emailAddress": "platform@example.com"
+          }
+        ]
+      }
+    }
+  ]
+}

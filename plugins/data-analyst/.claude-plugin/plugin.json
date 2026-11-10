@@ -1,0 +1,10 @@
+{
+  "name": "data-analyst",
+  "description": "Four skills for data analysts: metric-spec, number-moved, number-reconcile and report-review. They write the one definition of a metric, explain why a number changed in effects that add up exactly, account for the whole gap between two numbers, and check a report's counting before it goes out. Each counts with its own scripts and ends in one self-contained web page.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Stefan Seman"
+  },
+  "license": "MIT",
+  "keywords": ["data-analysis", "metrics", "revenue", "reconciliation", "mix-and-rate", "report-review", "skills"]
+}

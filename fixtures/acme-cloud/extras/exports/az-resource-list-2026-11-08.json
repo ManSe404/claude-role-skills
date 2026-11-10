@@ -1,0 +1,295 @@
+[
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-network/providers/Microsoft.Network/virtualNetworks/vnet-acme-tickets-prod",
+    "name": "vnet-acme-tickets-prod",
+    "type": "Microsoft.Network/virtualNetworks",
+    "resourceGroup": "rg-acme-tickets-prod-network",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-network/providers/Microsoft.Network/networkSecurityGroups/nsg-acme-tickets-prod-jobs",
+    "name": "nsg-acme-tickets-prod-jobs",
+    "type": "Microsoft.Network/networkSecurityGroups",
+    "resourceGroup": "rg-acme-tickets-prod-network",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-network/providers/Microsoft.Network/privateEndpoints/pe-acme-tickets-prod-vault",
+    "name": "pe-acme-tickets-prod-vault",
+    "type": "Microsoft.Network/privateEndpoints",
+    "resourceGroup": "rg-acme-tickets-prod-network",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-network/providers/Microsoft.Network/privateEndpoints/pe-acme-tickets-prod-tickets",
+    "name": "pe-acme-tickets-prod-tickets",
+    "type": "Microsoft.Network/privateEndpoints",
+    "resourceGroup": "rg-acme-tickets-prod-network",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-network/providers/Microsoft.Network/networkInterfaces/pe-acme-tickets-prod-vault.nic.00000000-0000-0000-0000-000000000000",
+    "name": "pe-acme-tickets-prod-vault.nic.00000000-0000-0000-0000-000000000000",
+    "type": "Microsoft.Network/networkInterfaces",
+    "resourceGroup": "rg-acme-tickets-prod-network",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-network/providers/Microsoft.Network/networkInterfaces/pe-acme-tickets-prod-tickets.nic.00000000-0000-0000-0000-000000000000",
+    "name": "pe-acme-tickets-prod-tickets.nic.00000000-0000-0000-0000-000000000000",
+    "type": "Microsoft.Network/networkInterfaces",
+    "resourceGroup": "rg-acme-tickets-prod-network",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-app/providers/Microsoft.Web/serverFarms/plan-acme-tickets-prod",
+    "name": "plan-acme-tickets-prod",
+    "type": "Microsoft.Web/serverFarms",
+    "resourceGroup": "rg-acme-tickets-prod-app",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    },
+    "sku": {
+      "name": "P1v3",
+      "tier": "PremiumV3",
+      "capacity": 1
+    },
+    "kind": "linux"
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-app/providers/Microsoft.Web/sites/app-acme-tickets-prod-portal",
+    "name": "app-acme-tickets-prod-portal",
+    "type": "Microsoft.Web/sites",
+    "resourceGroup": "rg-acme-tickets-prod-app",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    },
+    "kind": "app,linux"
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-app/providers/Microsoft.App/managedEnvironments/cae-acme-tickets-prod",
+    "name": "cae-acme-tickets-prod",
+    "type": "Microsoft.App/managedEnvironments",
+    "resourceGroup": "rg-acme-tickets-prod-app",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-app/providers/Microsoft.App/containerApps/ca-acme-tickets-prod-worker",
+    "name": "ca-acme-tickets-prod-worker",
+    "type": "Microsoft.App/containerApps",
+    "resourceGroup": "rg-acme-tickets-prod-app",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-app/providers/Microsoft.ServiceBus/namespaces/sb-acme-tickets-prod",
+    "name": "sb-acme-tickets-prod",
+    "type": "Microsoft.ServiceBus/namespaces",
+    "resourceGroup": "rg-acme-tickets-prod-app",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    },
+    "sku": {
+      "name": "Standard",
+      "tier": "Standard"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-app/providers/Microsoft.OperationalInsights/workspaces/log-acme-tickets-prod",
+    "name": "log-acme-tickets-prod",
+    "type": "Microsoft.OperationalInsights/workspaces",
+    "resourceGroup": "rg-acme-tickets-prod-app",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-app/providers/Microsoft.Insights/components/appi-acme-tickets-prod-portal",
+    "name": "appi-acme-tickets-prod-portal",
+    "type": "Microsoft.Insights/components",
+    "resourceGroup": "rg-acme-tickets-prod-app",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    },
+    "kind": "web"
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-app/providers/Microsoft.AlertsManagement/smartDetectorAlertRules/Failure Anomalies - appi-acme-tickets-prod-portal",
+    "name": "Failure Anomalies - appi-acme-tickets-prod-portal",
+    "type": "Microsoft.AlertsManagement/smartDetectorAlertRules",
+    "resourceGroup": "rg-acme-tickets-prod-app",
+    "location": "global",
+    "tags": {
+      "product": "tickets"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-app/providers/Microsoft.Insights/actionGroups/Application Insights Smart Detection",
+    "name": "Application Insights Smart Detection",
+    "type": "Microsoft.Insights/actionGroups",
+    "resourceGroup": "rg-acme-tickets-prod-app",
+    "location": "global",
+    "tags": {
+      "product": "tickets"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-app/providers/Microsoft.Insights/actionGroups/ag-acme-tickets-prod",
+    "name": "ag-acme-tickets-prod",
+    "type": "Microsoft.Insights/actionGroups",
+    "resourceGroup": "rg-acme-tickets-prod-app",
+    "location": "global",
+    "tags": {
+      "product": "tickets"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-data/providers/Microsoft.Sql/servers/sql-acme-tickets-prod",
+    "name": "sql-acme-tickets-prod",
+    "type": "Microsoft.Sql/servers",
+    "resourceGroup": "rg-acme-tickets-prod-data",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-data/providers/Microsoft.Sql/servers/databases/sql-acme-tickets-prod/db-tickets",
+    "name": "sql-acme-tickets-prod/db-tickets",
+    "type": "Microsoft.Sql/servers/databases",
+    "resourceGroup": "rg-acme-tickets-prod-data",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    },
+    "sku": {
+      "name": "GP_Gen5_2",
+      "tier": "GeneralPurpose"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-data/providers/Microsoft.Sql/servers/databases/sql-acme-tickets-prod/master",
+    "name": "sql-acme-tickets-prod/master",
+    "type": "Microsoft.Sql/servers/databases",
+    "resourceGroup": "rg-acme-tickets-prod-data",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    },
+    "sku": {
+      "name": "System",
+      "tier": "System"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-data/providers/Microsoft.Storage/storageAccounts/stacmeticketsqx7k2p",
+    "name": "stacmeticketsqx7k2p",
+    "type": "Microsoft.Storage/storageAccounts",
+    "resourceGroup": "rg-acme-tickets-prod-data",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    },
+    "sku": {
+      "name": "Standard_ZRS"
+    },
+    "kind": "StorageV2"
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-data/providers/Microsoft.KeyVault/vaults/kv-acme-tickets-prod",
+    "name": "kv-acme-tickets-prod",
+    "type": "Microsoft.KeyVault/vaults",
+    "resourceGroup": "rg-acme-tickets-prod-data",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-tickets-prod-data/providers/Microsoft.Cache/Redis/redis-acme-sessions-prod",
+    "name": "redis-acme-sessions-prod",
+    "type": "Microsoft.Cache/Redis",
+    "resourceGroup": "rg-acme-tickets-prod-data",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    },
+    "sku": {
+      "name": "Standard",
+      "family": "C",
+      "capacity": 1
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-reports-prod/providers/Microsoft.Storage/storageAccounts/stacmereportsprod",
+    "name": "stacmereportsprod",
+    "type": "Microsoft.Storage/storageAccounts",
+    "resourceGroup": "rg-acme-reports-prod",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    },
+    "sku": {
+      "name": "Standard_LRS"
+    },
+    "kind": "StorageV2"
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-reports-prod/providers/Microsoft.App/managedEnvironments/cae-acme-reports-prod",
+    "name": "cae-acme-reports-prod",
+    "type": "Microsoft.App/managedEnvironments",
+    "resourceGroup": "rg-acme-reports-prod",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-reports-prod/providers/Microsoft.App/containerApps/ca-acme-reports-prod",
+    "name": "ca-acme-reports-prod",
+    "type": "Microsoft.App/containerApps",
+    "resourceGroup": "rg-acme-reports-prod",
+    "location": "westeurope",
+    "tags": {
+      "product": "tickets"
+    }
+  },
+  {
+    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-acme-shared-dns/providers/Microsoft.Network/dnszones/tickets.example.com",
+    "name": "tickets.example.com",
+    "type": "Microsoft.Network/dnszones",
+    "resourceGroup": "rg-acme-shared-dns",
+    "location": "global",
+    "tags": {
+      "product": "tickets"
+    }
+  }
+]

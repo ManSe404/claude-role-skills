@@ -1,0 +1,14 @@
+version: 2
+
+models:
+  - name: mart_net_revenue
+    description: Net revenue per month, used by finance for the monthly close.
+    meta:
+      owner: finance-reporting@example.com
+    columns:
+      - name: revenue_month
+        tests:
+          - unique
+          - not_null
+      - name: net_revenue
+        description: Sum of net_amount of completed orders placed in the month.

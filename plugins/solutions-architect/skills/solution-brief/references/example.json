@@ -1,0 +1,326 @@
+{
+ "skill": "solution-brief",
+ "title": "Claims platform for Acme Mutual: who runs, in what order",
+ "subtitle": "One framing of the brief, the specialists it needs, and the shared facts each must start from.",
+ "meta": {
+  "repo": "acme-solution",
+  "commit": "f66f96d",
+  "date": "2026-11-10",
+  "brief": "docs/briefs/claims-platform.md"
+ },
+ "verdict": {
+  "text": "All five specialists run, because the brief asks for an assistant that reads documents, monthly reporting with seven-year records and a custom web application, and fixes no stack or hosting. `ai-pattern` goes first and `cloud-design` last, and all five start from one EU-only rule for personal data and one EUR 6,000 monthly budget.",
+  "tone": "info"
+ },
+ "stats": [
+  {
+   "label": "Specialists needed",
+   "value": 5,
+   "tone": "info"
+  },
+  {
+   "label": "Specialists not needed",
+   "value": 0
+  },
+  {
+   "label": "Budget",
+   "value": "EUR 6,000 / month",
+   "note": "all running cost, brief line 23"
+  },
+  {
+   "label": "Regions",
+   "value": "EU",
+   "note": "personal data; hosting country unknown"
+  }
+ ],
+ "sections": [
+  {
+   "id": "brief",
+   "title": "The brief",
+   "intro": "Line numbers refer to `docs/briefs/claims-platform.md`. Figures marked as derived are arithmetic on the brief.",
+   "blocks": [
+    {
+     "type": "kv",
+     "items": [
+      [
+       "Client",
+       "Acme Mutual, a home insurer in Slovenia and Austria (line 3). [high]"
+      ],
+      [
+       "Today",
+       "About 120 claims handlers settle 30,000 claims a year from shared mailboxes and spreadsheets, and every claim letter is read by hand (lines 3-4). [high]"
+      ],
+      [
+       "Goal 1: one application",
+       "Handlers work in one web application and see a claim, its documents and its history (line 9). [high]"
+      ],
+      [
+       "Goal 2: assistant",
+       "It reads letters, photos of damage and invoices and drafts a summary and a proposed settlement; a handler reviews every draft before anything goes to a customer (lines 10-11). [high]"
+      ],
+      [
+       "Goal 3: reporting",
+       "Management gets monthly reporting over all claims: paid amounts, time to settle, fraud cases (line 12). [high]"
+      ],
+      [
+       "Users",
+       "120 claims handlers, 15 managers, about 30,000 policyholders a year who upload documents (lines 16-17). [high]"
+      ],
+      [
+       "Volume",
+       "30,000 claims a year (line 4), which is 2,500 a month on average (derived). [high]"
+      ],
+      [
+       "Budget",
+       "EUR 6,000 a month in total for the running cost, everything included (line 23). [high]"
+      ],
+      [
+       "Regions and data",
+       "Personal data (claim documents, customer contacts, health details after an injury) must stay in the EU (lines 21-22). The hosting country is not stated. [high]"
+      ],
+      [
+       "Records",
+       "Every AI draft and the handler's decision on it are kept for seven years for the auditors (line 26). [high]"
+      ],
+      [
+       "Team",
+       "5 engineers, no platform team and none planned (line 24). [high]"
+      ],
+      [
+       "Sign-in",
+       "Handlers use the insurer's existing single sign-on (line 25). [high]"
+      ],
+      [
+       "Deadline",
+       "Live before 1 April 2027 (line 27), about 20 weeks from this page's date (derived). [high]"
+      ],
+      [
+       "Unknown in the brief",
+       "Fraud reporting freshness and which country goes live first (lines 31-32). More under Unknown. [high]"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "not-negotiable",
+   "title": "Not negotiable",
+   "blocks": [
+    {
+     "type": "list",
+     "title": "Called not negotiable in the brief",
+     "items": [
+      "Personal data (claim documents, customer contacts, health details after an injury) stays in the EU (lines 21-22). [high]"
+     ]
+    },
+    {
+     "type": "list",
+     "title": "Stated as firm, but not called not negotiable",
+     "items": [
+      "A handler reviews every AI draft before anything goes to a customer (line 11). [high]",
+      "Every AI draft and the handler's decision are kept for seven years (line 26). [high]",
+      "EUR 6,000 a month in total, everything included (line 23). [high]",
+      "5 engineers and no platform team (line 24). [high]",
+      "Handlers use the existing single sign-on (line 25). [high]",
+      "Live before 1 April 2027 (line 27). [high]"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "who-runs",
+   "title": "Who runs, in order",
+   "intro": "All five are needed, so there is no Not needed section. The order follows the routing rule: each page feeds the ones after it.",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Order",
+      "Skill",
+      "Why",
+      "What it needs before"
+     ],
+     "rows": [
+      [
+       1,
+       "`ai-architect:ai-pattern`",
+       "The assistant must read letters, photos of damage and invoices and draft a summary and a proposed settlement (lines 10-11), so the AI part needs a shape before anything else. [high]",
+       "Nothing. It goes first."
+      ],
+      [
+       2,
+       "`data-architect:data-platform`",
+       "Management wants monthly reporting over all claims (line 12), drafts and decisions stay for seven years (line 26), and the brief leaves the freshness of fraud reporting open (line 31). How much platform that takes is this specialist's question. [high]",
+       "The `ai-pattern` page: what the assistant reads and what must be kept from it."
+      ],
+      [
+       3,
+       "`software-architect:arch-style`",
+       "Custom software is built with several business areas for 5 engineers and no platform team: the handler application (line 9), policyholder uploads (line 17), the assistant and the reporting (lines 10-12). [high]",
+       "The `ai-pattern` and `data-platform` pages: what the software must host and feed."
+      ],
+      [
+       4,
+       "`ai-architect:ai-stack`",
+       "An AI part will be built and the brief fixes no model, tooling or hosting for it, while personal data must stay in the EU (lines 21-22) and its cost falls inside the EUR 6,000 (line 23). [high]",
+       "The `ai-pattern` page. Regions and data rules come from the shared facts, so it may start before `data-platform` and `arch-style` finish."
+      ],
+      [
+       5,
+       "`cloud-architect:cloud-design`",
+       "The brief names no cloud or hosting, personal data must stay in the EU, and someone must show that the total holds inside EUR 6,000 a month (lines 21-23). [high]",
+       "All four earlier pages: it hosts and costs what they decide."
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "shared-facts",
+   "title": "Shared facts",
+   "intro": "Every call uses this wording, so `solution-blueprint` can join the results.",
+   "blocks": [
+    {
+     "type": "callout",
+     "tone": "warn",
+     "text": "No questions were put to Acme, on the requester's instruction. Every item starting with Assumption is not in the brief, and the document-size figures are a placeholder guess."
+    },
+    {
+     "type": "list",
+     "title": "Stated in the brief",
+     "items": [
+      "Personal data (claim documents, customer contacts, health details after an injury) must stay in the EU; this is not negotiable. (lines 21-22) [high]",
+      "Budget: EUR 6,000 a month in total for the running cost, everything included, as one budget for all parts together. (line 23) [high]",
+      "Team: 5 engineers, no platform team and none planned. (line 24) [high]",
+      "Deadline: live before 1 April 2027. (line 27) [high]",
+      "Volumes: 30,000 claims a year, 120 claims handlers, 15 managers, about 30,000 policyholders a year uploading documents. (lines 3-4, 16-17) [high]",
+      "Every AI draft and the handler's decision on it must be kept for seven years for the auditors. (line 26) [high]",
+      "A handler reviews every AI draft before anything goes to a customer. (line 11) [high]",
+      "Handlers sign in with the insurer's existing single sign-on. (line 25) [high]",
+      "Management gets monthly reporting over all claims: paid amounts, time to settle, fraud cases. (line 12) [high]",
+      "Acme Mutual works in Slovenia and Austria; the brief does not say which EU country or cloud region hosts the platform. (line 3) [high]"
+     ]
+    },
+    {
+     "type": "list",
+     "title": "Assumptions, each with what it drives",
+     "items": [
+      "Assumption: staying in the EU covers storage and processing, including AI model calls, backups, logs, traces and the seven-year archive of drafts and decisions. [med] **Drives:** `ai-pattern`, `data-platform`, `arch-style`, `ai-stack`, `cloud-design`.",
+      "Assumption: the EUR 6,000 covers hosting, data, AI model calls, monitoring and licences, and does not cover the salaries of the 5 engineers. [med] **Drives:** `ai-pattern`, `data-platform`, `arch-style`, `ai-stack`, `cloud-design`.",
+      "Assumption: the 1 April 2027 deadline covers all three parts (handler application, assistant, monthly reporting) in both countries, and the design must not depend on which country goes live first. [med] **Drives:** `ai-pattern`, `data-platform`, `arch-style`, `ai-stack`, `cloud-design`.",
+      "Assumption: fraud reporting is monthly like the rest of the reporting, the assistant does not detect fraud, and handlers mark fraud cases. [med] **Drives:** `ai-pattern`, `data-platform`, `arch-style`, `cloud-design`.",
+      "Assumption for sizing only: 5 documents per claim at 2 MB on average, so 150,000 documents and 300 GB a year. [guess] **Drives:** `ai-pattern`, `data-platform`, `ai-stack`, `cloud-design`.",
+      "Assumption: claim documents are in Slovene and German. [med] **Drives:** `ai-pattern`, `ai-stack`.",
+      "Assumption: the single sign-on is the only integration in the first release, paid amounts are recorded in the platform, and only claims opened after go-live are in scope, with no migration from mailboxes or spreadsheets. [med] **Drives:** `data-platform`, `arch-style`, `cloud-design`.",
+      "Assumption: managers also use the single sign-on; policyholders do not, and they upload documents over the public internet. [med] **Drives:** `ai-pattern`, `arch-style`, `cloud-design`."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "next-calls",
+   "title": "Next calls",
+   "intro": "Run these in order from the folder that holds `acme-solution`. Nothing has been run. Each specialist's page lands in the pages folder, and the newest one is what the next call reads.",
+   "blocks": [
+    {
+     "type": "code",
+     "code": "/ai-architect:ai-pattern ./acme-solution/docs/briefs/claims-platform.md Read first: no earlier page. Use these shared facts exactly as written: Personal data (claim documents, customer contacts, health details after an injury) must stay in the EU; this is not negotiable. Budget: EUR 6,000 a month in total for the running cost, everything included, as one budget for all parts together. Team: 5 engineers, no platform team and none planned. Deadline: live before 1 April 2027. Volumes: 30,000 claims a year, 120 claims handlers, 15 managers, about 30,000 policyholders a year uploading documents. Every AI draft and the handler's decision on it must be kept for seven years for the auditors. A handler reviews every AI draft before anything goes to a customer. Assumption: staying in the EU covers storage and processing, including AI model calls, backups, logs, traces and the seven-year archive of drafts and decisions. Assumption: the EUR 6,000 covers hosting, data, AI model calls, monitoring and licences, and does not cover the salaries of the 5 engineers. Assumption: the 1 April 2027 deadline covers all three parts (handler application, assistant, monthly reporting) in both countries, and the design must not depend on which country goes live first. Assumption: fraud reporting is monthly like the rest of the reporting, the assistant does not detect fraud, and handlers mark fraud cases. Assumption for sizing only: 5 documents per claim at 2 MB on average, so 150,000 documents and 300 GB a year. Assumption: claim documents are in Slovene and German. Assumption: managers also use the single sign-on; policyholders do not, and they upload documents over the public internet.\n\n/data-architect:data-platform ./acme-solution/docs/briefs/claims-platform.md Read first: the newest ai-pattern page of acme-solution. Use these shared facts exactly as written: Personal data (claim documents, customer contacts, health details after an injury) must stay in the EU; this is not negotiable. Budget: EUR 6,000 a month in total for the running cost, everything included, as one budget for all parts together. Team: 5 engineers, no platform team and none planned. Deadline: live before 1 April 2027. Volumes: 30,000 claims a year, 120 claims handlers, 15 managers, about 30,000 policyholders a year uploading documents. Every AI draft and the handler's decision on it must be kept for seven years for the auditors. Management gets monthly reporting over all claims: paid amounts, time to settle, fraud cases. Acme Mutual works in Slovenia and Austria; the brief does not say which EU country or cloud region hosts the platform. Assumption: staying in the EU covers storage and processing, including AI model calls, backups, logs, traces and the seven-year archive of drafts and decisions. Assumption: the EUR 6,000 covers hosting, data, AI model calls, monitoring and licences, and does not cover the salaries of the 5 engineers. Assumption: the 1 April 2027 deadline covers all three parts (handler application, assistant, monthly reporting) in both countries, and the design must not depend on which country goes live first. Assumption: fraud reporting is monthly like the rest of the reporting, the assistant does not detect fraud, and handlers mark fraud cases. Assumption for sizing only: 5 documents per claim at 2 MB on average, so 150,000 documents and 300 GB a year. Assumption: the single sign-on is the only integration in the first release, paid amounts are recorded in the platform, and only claims opened after go-live are in scope, with no migration from mailboxes or spreadsheets.\n\n/software-architect:arch-style ./acme-solution/docs/briefs/claims-platform.md Read first: the newest ai-pattern and data-platform pages of acme-solution. Use these shared facts exactly as written: Personal data (claim documents, customer contacts, health details after an injury) must stay in the EU; this is not negotiable. Budget: EUR 6,000 a month in total for the running cost, everything included, as one budget for all parts together. Team: 5 engineers, no platform team and none planned. Deadline: live before 1 April 2027. Volumes: 30,000 claims a year, 120 claims handlers, 15 managers, about 30,000 policyholders a year uploading documents. Every AI draft and the handler's decision on it must be kept for seven years for the auditors. A handler reviews every AI draft before anything goes to a customer. Handlers sign in with the insurer's existing single sign-on. Management gets monthly reporting over all claims: paid amounts, time to settle, fraud cases. Assumption: staying in the EU covers storage and processing, including AI model calls, backups, logs, traces and the seven-year archive of drafts and decisions. Assumption: the EUR 6,000 covers hosting, data, AI model calls, monitoring and licences, and does not cover the salaries of the 5 engineers. Assumption: the 1 April 2027 deadline covers all three parts (handler application, assistant, monthly reporting) in both countries, and the design must not depend on which country goes live first. Assumption: fraud reporting is monthly like the rest of the reporting, the assistant does not detect fraud, and handlers mark fraud cases. Assumption: the single sign-on is the only integration in the first release, paid amounts are recorded in the platform, and only claims opened after go-live are in scope, with no migration from mailboxes or spreadsheets. Assumption: managers also use the single sign-on; policyholders do not, and they upload documents over the public internet.\n\n/ai-architect:ai-stack ./acme-solution/docs/briefs/claims-platform.md Read first: the newest ai-pattern page of acme-solution. Use these shared facts exactly as written: Personal data (claim documents, customer contacts, health details after an injury) must stay in the EU; this is not negotiable. Budget: EUR 6,000 a month in total for the running cost, everything included, as one budget for all parts together. Team: 5 engineers, no platform team and none planned. Deadline: live before 1 April 2027. Volumes: 30,000 claims a year, 120 claims handlers, 15 managers, about 30,000 policyholders a year uploading documents. Every AI draft and the handler's decision on it must be kept for seven years for the auditors. A handler reviews every AI draft before anything goes to a customer. Acme Mutual works in Slovenia and Austria; the brief does not say which EU country or cloud region hosts the platform. Assumption: staying in the EU covers storage and processing, including AI model calls, backups, logs, traces and the seven-year archive of drafts and decisions. Assumption: the EUR 6,000 covers hosting, data, AI model calls, monitoring and licences, and does not cover the salaries of the 5 engineers. Assumption: the 1 April 2027 deadline covers all three parts (handler application, assistant, monthly reporting) in both countries, and the design must not depend on which country goes live first. Assumption for sizing only: 5 documents per claim at 2 MB on average, so 150,000 documents and 300 GB a year. Assumption: claim documents are in Slovene and German.\n\n/cloud-architect:cloud-design ./acme-solution/docs/briefs/claims-platform.md Read first: the newest ai-pattern, data-platform, arch-style and ai-stack pages of acme-solution. Use these shared facts exactly as written: Personal data (claim documents, customer contacts, health details after an injury) must stay in the EU; this is not negotiable. Budget: EUR 6,000 a month in total for the running cost, everything included, as one budget for all parts together. Team: 5 engineers, no platform team and none planned. Deadline: live before 1 April 2027. Volumes: 30,000 claims a year, 120 claims handlers, 15 managers, about 30,000 policyholders a year uploading documents. Every AI draft and the handler's decision on it must be kept for seven years for the auditors. Handlers sign in with the insurer's existing single sign-on. Management gets monthly reporting over all claims: paid amounts, time to settle, fraud cases. Acme Mutual works in Slovenia and Austria; the brief does not say which EU country or cloud region hosts the platform. Assumption: staying in the EU covers storage and processing, including AI model calls, backups, logs, traces and the seven-year archive of drafts and decisions. Assumption: the EUR 6,000 covers hosting, data, AI model calls, monitoring and licences, and does not cover the salaries of the 5 engineers. Assumption: the 1 April 2027 deadline covers all three parts (handler application, assistant, monthly reporting) in both countries, and the design must not depend on which country goes live first. Assumption: fraud reporting is monthly like the rest of the reporting, the assistant does not detect fraud, and handlers mark fraud cases. Assumption for sizing only: 5 documents per claim at 2 MB on average, so 150,000 documents and 300 GB a year. Assumption: the single sign-on is the only integration in the first release, paid amounts are recorded in the platform, and only claims opened after go-live are in scope, with no migration from mailboxes or spreadsheets. Assumption: managers also use the single sign-on; policyholders do not, and they upload documents over the public internet."
+    }
+   ]
+  },
+  {
+   "id": "unknown",
+   "title": "Unknown",
+   "intro": "What the brief leaves open and who can answer it. The brief names no contacts, so the roles are suggestions.",
+   "blocks": [
+    {
+     "type": "list",
+     "items": [
+      "Whether fraud reporting has to be close to real time or once a month is enough (line 31). **Who:** Acme's claims management. **For now:** Assumed monthly.",
+      "Which of the two countries goes live first (line 32). **Who:** Acme's project sponsor. **For now:** The design must work for either.",
+      "Whether 1 April 2027 covers both countries and all three parts. **Who:** Acme's project sponsor. **For now:** Assumed yes.",
+      "What \"everything included\" covers, and whether salaries are in it. **Who:** Acme's finance lead. **For now:** Assumed salaries are out.",
+      "Whether the EU rule covers model calls, backups, logs and traces, and whether support access from outside the EU is allowed. **Who:** Acme's data protection officer. **For now:** Assumed it covers the first four; support access is not assumed.",
+      "Which EU country or cloud region hosts the platform, and whether either national market restricts it. **Who:** Acme's data protection officer. **For now:** Not assumed.",
+      "Which legal or regulatory rules apply beyond the EU rule, in particular to health details and to AI use in claims. The brief names none. **Who:** Acme's data protection officer and compliance lead. **For now:** Not assumed, and no specialist should add one as a fact.",
+      "How long the claim documents themselves are kept, when the seven years start, and how that fits deletion requests. The brief sets seven years only for AI drafts and decisions. **Who:** Acme's data protection officer and auditors. **For now:** Not assumed.",
+      "How many documents a claim has, their sizes and their languages. **Who:** Acme's claims operations lead. **For now:** Assumed 5 documents at 2 MB in Slovene and German; replace this guess with a real count.",
+      "Which other systems exist (policy, payments, finance), where paid amounts come from, and whether old claims move over. **Who:** Acme's claims operations lead and IT. **For now:** Assumed no integrations beyond sign-on, amounts recorded in the platform, no migration.",
+      "How policyholders upload and prove who they are, and whether the shared mailboxes stay open as a way in. **Who:** Acme's claims operations lead. **For now:** Assumed upload over the public internet; identification is not assumed.",
+      "Which single sign-on product and protocol the insurer uses, and whether Acme already has a hosting contract or preference. **Who:** Acme's IT lead. **For now:** Not assumed.",
+      "Availability, recovery and peak-load targets. **Who:** Acme's IT lead and claims management. **For now:** Not assumed; `cloud-design` states what it used."
+     ]
+    }
+   ]
+  }
+ ],
+ "facts": {
+  "version": 1,
+  "scope": "the claims platform of Acme Mutual",
+  "regions": [
+   {
+    "name": "EU",
+    "why": "personal data must stay in the EU; the brief calls this not negotiable"
+   }
+  ],
+  "data": [
+   {
+    "name": "claim documents",
+    "class": "personal",
+    "rule": "EU only"
+   },
+   {
+    "name": "customer contacts",
+    "class": "personal",
+    "rule": "EU only"
+   },
+   {
+    "name": "health details after an injury",
+    "class": "personal",
+    "rule": "EU only"
+   },
+   {
+    "name": "AI drafts and handler decisions",
+    "class": "audit record",
+    "rule": "kept seven years for the auditors; EU only by assumption"
+   }
+  ],
+  "budget": {
+   "monthly": 6000,
+   "currency": "EUR",
+   "source": "docs/briefs/claims-platform.md"
+  },
+  "specialists": [
+   "ai-pattern",
+   "data-platform",
+   "arch-style",
+   "ai-stack",
+   "cloud-design"
+  ],
+  "assumptions": [
+   "Assumption: staying in the EU covers storage and processing, including AI model calls, backups, logs, traces and the seven-year archive of drafts and decisions.",
+   "Assumption: the EUR 6,000 covers hosting, data, AI model calls, monitoring and licences, and does not cover the salaries of the 5 engineers.",
+   "Assumption: the 1 April 2027 deadline covers all three parts (handler application, assistant, monthly reporting) in both countries, and the design must not depend on which country goes live first.",
+   "Assumption: fraud reporting is monthly like the rest of the reporting, the assistant does not detect fraud, and handlers mark fraud cases.",
+   "Assumption for sizing only: 5 documents per claim at 2 MB on average, so 150,000 documents and 300 GB a year.",
+   "Assumption: claim documents are in Slovene and German.",
+   "Assumption: the single sign-on is the only integration in the first release, paid amounts are recorded in the platform, and only claims opened after go-live are in scope, with no migration from mailboxes or spreadsheets.",
+   "Assumption: managers also use the single sign-on; policyholders do not, and they upload documents over the public internet."
+  ],
+  "open": [
+   "Whether fraud reporting has to be close to real time or once a month is enough (line 31).",
+   "Which of the two countries goes live first (line 32).",
+   "Whether 1 April 2027 covers both countries and all three parts.",
+   "What \"everything included\" covers, and whether salaries are in it.",
+   "Whether the EU rule covers model calls, backups, logs and traces, and whether support access from outside the EU is allowed.",
+   "Which EU country or cloud region hosts the platform, and whether either national market restricts it.",
+   "Which legal or regulatory rules apply beyond the EU rule, in particular to health details and to AI use in claims. The brief names none.",
+   "How long the claim documents themselves are kept, when the seven years start, and how that fits deletion requests. The brief sets seven years only for AI drafts and decisions.",
+   "How many documents a claim has, their sizes and their languages.",
+   "Which other systems exist (policy, payments, finance), where paid amounts come from, and whether old claims move over.",
+   "How policyholders upload and prove who they are, and whether the shared mailboxes stay open as a way in.",
+   "Which single sign-on product and protocol the insurer uses, and whether Acme already has a hosting contract or preference.",
+   "Availability, recovery and peak-load targets."
+  ]
+ }
+}

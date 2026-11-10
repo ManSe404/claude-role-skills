@@ -1,0 +1,1252 @@
+{
+ "skill": "cloud-review",
+ "title": "acme-cloud, reviewed for the festival platform",
+ "subtitle": "The repository at a509e4e and the Azure export of 2026-11-08, judged against the festival platform brief. Nothing was changed and no cloud command was run.",
+ "meta": {
+  "repo": "acme-cloud",
+  "commit": "a509e4e",
+  "date": "2026-11-10",
+  "export": "az-resource-list-2026-11-08.json"
+ },
+ "verdict": {
+  "text": "No: this estate should not carry the festival platform, because its ticket database is open to every internet address and losing one zone would stop the portal, the database and the worker together. It most needs the database closed behind a working private path, then zone redundancy for the portal, database, worker, queue and session cache.",
+  "tone": "bad"
+ },
+ "stats": [
+  {
+   "label": "High",
+   "value": 9,
+   "note": "3 exposure or secrets, 6 zone or private path",
+   "tone": "bad"
+  },
+  {
+   "label": "Medium",
+   "value": 8,
+   "tone": "warn"
+  },
+  {
+   "label": "Low",
+   "value": 2,
+   "tone": "info"
+  },
+  {
+   "label": "Hits confirmed",
+   "value": "14 of 14",
+   "note": "read all 14; 8 more findings came from reading",
+   "tone": "info"
+  },
+  {
+   "label": "Pillars affected",
+   "value": "4 of 5",
+   "note": "cost not examined",
+   "tone": "warn"
+  },
+  {
+   "label": "Public resources",
+   "value": 5,
+   "note": "in code; the hand-made Redis cannot be judged from the export",
+   "tone": "bad"
+  }
+ ],
+ "sections": [
+  {
+   "id": "findings",
+   "title": "Findings",
+   "intro": "Each finding starts with its Well-Architected pillar. The 14 script hits became 11 findings (F1, F2, F3, F5, F6, F7, F10, F14, F16, F18, F19). F4, F8, F9, F11, F12, F13, F15 and F17 came from reading the code, the export and the brief. A tag marks how sure each claim is: `[high]` was read directly, `[med]` is likely or could not be rechecked, `[guess]` is unchecked.",
+   "blocks": [
+    {
+     "type": "findings",
+     "items": [
+      {
+       "severity": "high",
+       "title": "F1 · The ticket database is open to every internet address",
+       "where": "infra/terraform/data.tf:21",
+       "status": "open",
+       "evidence": "**Security.** Firewall rule `allow-all-temporary` runs from `0.0.0.0` to `255.255.255.255` (data.tf:24-25). Commit 9aac734 added it on 2026-07-14 \"for the load test\", 119 days ago, and it is still in code [high]. The server signs in with a SQL password (data.tf:6-7), has no Entra-only setting, and public access is left at its default of on. There is no SQL private endpoint in the code or in the export, and no SQL audit log, so nobody could tell who connected [high]. The export does not list firewall rules, so the live rule is inferred from the code [med]. It also breaks brief line 14.",
+       "fix": "Add a private endpoint for the SQL server and its private DNS zone (see F4), then delete the rule and set `public_network_access_enabled = false`. Rotate the SQL admin password, because it has been reachable from the internet.\n\n**Safe when:** the private path works first. Nothing else in the code lets the portal reach this server, so deleting the rule first may cut the portal off [med]. Check from the portal that the server name resolves to a `10.20.4.x` address, then remove the rule outside a sale."
+      },
+      {
+       "severity": "high",
+       "title": "F2 · Partner report files can be read without signing in",
+       "where": "infra/bicep/modules/reports.bicep:13, :28",
+       "status": "open",
+       "evidence": "**Security.** `allowBlobPublicAccess: true` on the account and `publicAccess: 'Blob'` on the `exports` container, which the file calls report exports for partners (line 1) [high]. Anyone holding a blob's URL can read it with no sign-in, although the container cannot be listed. The account has no network rules and no diagnostic setting, so reads leave no record [high]. The export confirms the account exists but not this setting. Whether the files hold customer data was not checked.",
+       "fix": "Set `publicAccess: 'None'` and `allowBlobPublicAccess: false`. Serve partners through the reports API (it already has a managed identity) or through short-lived user-delegation links.\n\n**Safe when:** someone has looked in the container and knows how partners fetch files, because existing links stop working at once. If the files hold customer data, close it now and accept the break."
+      },
+      {
+       "severity": "high",
+       "title": "F3 · The SMTP password sits in plain app settings",
+       "where": "infra/terraform/app.tf:34",
+       "status": "open",
+       "evidence": "**Security.** The setting `SMTP_PASSWORD` holds a literal value, in the repository since commit d089a26 on 2026-06-02, 161 days ago [high]. It breaks the team's own rule at README line 17, and it is also in plain text in every Terraform state copy. The value is not shown here. It reads like a placeholder, but this review cannot tell whether it is live, so treat it as real: mail sent with it would look like Acme Tickets writing to its own customers during a sale.",
+       "fix": "Rotate the password at the mail provider, store the new one in `kv-acme-tickets-prod`, and use a Key Vault reference. Rotating is the real fix, since the old value stays in git history.\n\n**Safe when:** F10 and F4 are done, because the portal needs an identity and a working path to the private vault. The portal may also need to route vault lookups through the VNet [med]. Changing a setting restarts the app, so do it outside a sale."
+      },
+      {
+       "severity": "high",
+       "title": "F4 · The private endpoints have no DNS, so the private paths do not resolve",
+       "where": "infra/terraform/data.tf:64, :78",
+       "status": "open",
+       "evidence": "**Security.** Neither endpoint has a `private_dns_zone_group`, the code has no `azurerm_private_dns_zone`, and the export lists 0 private DNS zones [high]. Key Vault and ticket storage both have public access off (data.tf:35, :60). As written, the portal resolves their public addresses and is refused [med]. The script counts these as private, which is true of the setting but not of a working path. A zone in another subscription would change this, but main.tf:1 says there is only one subscription.",
+       "fix": "Create `privatelink.vaultcore.azure.net` and `privatelink.blob.core.windows.net`, link them to the VNet, and add a zone group to each endpoint. Do the same for SQL in F1.\n\n**Safe when:** tested from the portal: each name resolves to a `10.20.4.x` address. The change only adds name records inside the VNet."
+      },
+      {
+       "severity": "high",
+       "title": "F5 · The ticket database runs in one zone",
+       "where": "infra/terraform/data.tf:17",
+       "status": "open",
+       "evidence": "**Reliability.** `zone_redundant = false` on `db-tickets`, General Purpose `GP_Gen5_2` in both code and export [high]. Brief line 15 requires surviving the loss of one zone, which is what makes this high. If that zone goes, the database is unavailable until the zone returns, and every purchase stops [med]. The export does not show zones, so the setting comes from the code.",
+       "fix": "Set `zone_redundant = true`; General Purpose supports it [high].\n\n**Safe when:** done outside a sale, since the change can drop connections briefly [med], and someone has confirmed the portal retries a dropped connection, which this repository cannot show. Prove it afterwards with a forced failover."
+      },
+      {
+       "severity": "high",
+       "title": "F6 · The portal is one worker in one zone",
+       "where": "infra/terraform/app.tf:7, :8",
+       "status": "open",
+       "evidence": "**Reliability.** `worker_count = 1` and `zone_balancing_enabled = false`; the export confirms `P1v3`, capacity 1 [high]. Brief line 15 makes the zone part high. One worker also means any platform restart is an outage, with no zone loss needed.",
+       "fix": "Set `zone_balancing_enabled = true` and `worker_count = 3`, so losing a zone still leaves two. P1v3 qualifies, and the minimum is 2 [high].\n\n**Safe when:** you know whether this plan can change in place, which could not be rechecked here [med]. If not, build a new plan beside it and move `www` over; the CNAME has a 300-second TTL (main.tf:36)."
+      },
+      {
+       "severity": "high",
+       "title": "F7 · The worker's environment cannot survive a zone and cannot be changed to",
+       "where": "infra/terraform/app.tf:40; infra/terraform/modules/worker/main.tf:43",
+       "status": "open",
+       "evidence": "**Reliability.** The environment does not set `zone_redundancy_enabled`, so it is off, and the worker has `min_replicas = 1` [high]. Zone redundancy is set when an environment is created and cannot be changed later [high]. Seat holds and ticket emails both depend on this worker (messaging.tf:12).",
+       "fix": "Build a new zone-redundant environment in a new /23, for which `10.20.6.0/23` is free, and move the worker with `min_replicas` of at least 2.\n\n**Safe when:** the new one is running before the old one goes. The worker has no ingress and reads from queues, so messages wait in Service Bus during the move."
+      },
+      {
+       "severity": "high",
+       "title": "F8 · The queue tier cannot be private, and is not zone redundant",
+       "where": "infra/terraform/messaging.tf:5",
+       "status": "open",
+       "evidence": "**Reliability, also Security.** The namespace is `Standard` in code and export, holding `ticket-emails` and `seat-holds` (line 12) [high]. The script has no check for this. Private endpoints are Premium only [high], so brief line 14 cannot be met on Standard, assuming a queue counts as a data store. Zone redundancy is a Premium feature too [med, could not be rechecked]. Seat holds in flight would be unavailable if the zone goes [med].",
+       "fix": "Move to a Premium namespace with a private endpoint and a private DNS zone. Keep `local_auth_enabled = false`. The fix is the same whichever way the unchecked zone fact falls.\n\n**Safe when:** the queues are drained first and the namespace name is updated where it is used (app.tf:32, :58). Do not move it near a sale."
+      },
+      {
+       "severity": "high",
+       "title": "F9 · A session cache exists that nothing in the code knows about",
+       "where": "export: redis-acme-sessions-prod (rg-acme-tickets-prod-data)",
+       "status": "open",
+       "evidence": "**Security, also Reliability.** The export shows Redis, `Standard` C1, which appears nowhere in the code, against README line 18 [high]. The export's only two private endpoints are for the vault and ticket storage, so anything using this cache must use its public endpoint, which fails brief line 14 [high]. Whether a firewall narrows it cannot be seen. Standard is not zone redundant [med, could not be rechecked], which would fail brief line 15. Its use for portal sessions is inferred from its name [guess].",
+       "fix": "Find out who uses it, import it into Terraform, add a private endpoint, and choose a zone-redundant tier. Check Microsoft's retirement dates for Azure Cache for Redis before picking one [guess].\n\n**Safe when:** the import shows an empty plan before anything else changes. Moving the cache logs users out, so do it outside a sale."
+      },
+      {
+       "severity": "medium",
+       "title": "F10 · The identities and permissions in the code do not add up",
+       "where": "infra/terraform/app.tf:12; infra/terraform/modules/worker/main.tf:38",
+       "status": "open",
+       "evidence": "**Security.** The portal has no `identity` block, and the repository has no `azurerm_role_assignment` at all [high]. Service Bus has local auth off (messaging.tf:7) and the vault uses RBAC (data.tf:59), so as written the portal cannot sign in to either and the worker has no right to read its queues [med]. The portal is given only the SQL host name (app.tf:30), with no credential anywhere in this repository. The export has no identity field, so hand-made fixes cannot be seen. Medium because it blocks the fixes above but exposes nothing itself.",
+       "fix": "Add a system-assigned identity to the portal and role assignments for both apps: Service Bus sender and receiver, Key Vault Secrets User, Storage Blob Data Contributor. Use an Entra sign-in for SQL.\n\n**Safe when:** the role assignments are in place before any password is removed. The change only adds rights."
+      },
+      {
+       "severity": "medium",
+       "title": "F11 · Both container apps pull from a registry nobody can see",
+       "where": "infra/terraform/variables.tf:31; infra/bicep/modules/reports.bicep:58",
+       "status": "open",
+       "evidence": "**Operational Excellence.** Both apps use `acrticketsprod.azurecr.io`, but the registry is not in the code or the export, and neither app has a `registry` block to say how it signs in [high]. A replica replacing one in a lost zone must pull an image from something whose tier, zones and access are unknown.",
+       "fix": "Find it, bring it into code, grant `AcrPull` to each app's identity, and add a `registry` block.\n\n**Safe when:** a new revision starts and pulls successfully before old credentials are removed."
+      },
+      {
+       "severity": "medium",
+       "title": "F12 · The database is too small for the brief and nothing scales for the peak",
+       "where": "infra/terraform/data.tf:15, :16; infra/terraform/app.tf:7; infra/terraform/modules/worker/main.tf:42",
+       "status": "open",
+       "evidence": "**Performance Efficiency.** `max_size_gb = 100` against 400 GB in brief line 13, on 2 vCores [high]. The portal has one worker and no autoscale, with 0 autoscale settings in the code and the export, against 600 requests a second at peak in brief line 10 [high]. The worker has no scale rule, so it probably stays at one replica [med, could not be rechecked]. Medium because nothing is at risk until the platform is loaded on it, and the size is a setting.",
+       "fix": "Raise the size above 400 GB, size vCores from a load test, add autoscale to the plan, and add a queue-length scale rule to the worker.\n\n**Safe when:** a load test at 600 requests a second passes before the first drop. The repository holds no result from the July load test."
+      },
+      {
+       "severity": "medium",
+       "title": "F13 · The backup storage account in the code does not exist",
+       "where": "infra/terraform/data.tf:40",
+       "status": "open",
+       "evidence": "**Reliability.** `stacmebackupsprod` is in the code since the first commit but not in the export, and nothing in the code writes to it [high]. Its public access is off and it has no private endpoint, so nothing could reach it anyway. SQL's automatic backups still apply [med], so this is not a total absence of backups. Medium because someone may be counting on a copy that is not there.",
+       "fix": "Decide what it is for. Either remove the block or deploy it with a private endpoint and a job that writes to it.\n\n**Safe when:** a `terraform plan` has been read first, because it will show whether the state still believes the account exists."
+      },
+      {
+       "severity": "medium",
+       "title": "F14 · Nobody is alerted, and the database logs nothing",
+       "where": "infra/arm/alerts.json:11; infra/terraform/data.tf:1, :12",
+       "status": "open",
+       "evidence": "**Operational Excellence.** The action group `ag-acme-tickets-prod` exists, but the code has no alert rule and the export lists 0 metric alerts and 0 query alerts [high]. Only the automatic Failure Anomalies rule exists. The SQL server and database have no diagnostic setting (two script hits), and only the portal, vault and Service Bus do (monitoring.tf) [high]. A zone loss during a sale would page nobody.",
+       "fix": "Add SQL auditing and diagnostics to the workspace, and alerts for portal failures, database health, and queue depth, all sent to the action group.\n\n**Safe when:** one alert has been fired on purpose and someone received it. The change only adds; its cost is log ingestion."
+      },
+      {
+       "severity": "medium",
+       "title": "F15 · Terraform state lives on laptops",
+       "where": "infra/terraform/versions.tf:1",
+       "status": "open",
+       "evidence": "**Operational Excellence.** There is no `backend` block, and README line 4 says the estate is run by hand from laptops [high]. State then holds the SQL password and the SMTP value in plain text on each laptop, and two people can apply at once with no lock. variables.tf:24 says the SQL password is set from a pipeline, but the repository has none [high].",
+       "fix": "Move state to an Azure storage backend with restricted access and locking, then apply from a pipeline.\n\n**Safe when:** one person migrates with `terraform init -migrate-state` while everyone else stops applying. Until then, only one person applies at a time."
+      },
+      {
+       "severity": "medium",
+       "title": "F16 · The reports part would not survive a zone either",
+       "where": "infra/bicep/modules/reports.bicep:9, :36, :72",
+       "status": "open",
+       "evidence": "**Reliability.** Storage is `Standard_LRS` (export agrees), the environment has `zoneRedundant: false` and no custom VNet, and the API has one minimum replica [high]. Judged against the brief, not a rule of thumb: nothing on the sale path calls reports, so losing them does not stop a ticket drop. Brief line 13 does list exported files, so this would rise to high if those files live here [med].",
+       "fix": "Convert storage to ZRS. Build a new zone-redundant environment on a custom VNet, since this setting cannot be changed later [high], with at least 2 replicas.\n\n**Safe when:** the analytics team owns the change and F2 is already closed."
+      },
+      {
+       "severity": "medium",
+       "title": "F17 · The reports API is a second thing facing the internet",
+       "where": "infra/bicep/modules/reports.bicep:50",
+       "status": "open",
+       "evidence": "**Security.** `external: true`, with no IP restrictions and no authentication configuration in the template [high]. Brief line 14 allows only the web tier to face the internet. The application may check credentials itself; that code is not in this repository. Medium because the sign-in may exist in the app.",
+       "fix": "Make ingress internal behind the web tier or a gateway, or restrict it to partner addresses, and add platform authentication if the app has none.\n\n**Safe when:** partner callers are known. Do it together with F2, since partners may move to this API."
+      },
+      {
+       "severity": "low",
+       "title": "F18 · An SSH rule allows any address, but nothing listens",
+       "where": "infra/terraform/network.tf:55",
+       "status": "open",
+       "evidence": "**Security.** `allow-ssh-admin` allows port 22 from `*` on `snet-jobs` [high]. Low because the subnet holds only an internal Container Apps environment (app.tf:45-46), and the export lists 0 public IPs and 0 virtual machines [high]. It opens nothing today.",
+       "fix": "Delete the rule.\n\n**Safe when:** always; nothing here uses it. It is worth removing only so that nothing placed in the subnet later inherits it."
+      },
+      {
+       "severity": "low",
+       "title": "F19 · The reports API image is not pinned",
+       "where": "infra/bicep/modules/reports.bicep:58",
+       "status": "open",
+       "evidence": "**Operational Excellence.** The image is `reports-api:latest`, and no pipeline pins it elsewhere [high]. Low because reports are not on the sale path and the worker is pinned to `1.8.2` (app.tf:57).",
+       "fix": "Pin a version or digest.\n\n**Safe when:** the version currently running is identified first, so the pin does not change what is deployed."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "where",
+   "title": "Where they sit",
+   "intro": "Click a box for its finding. The flow at the Everything level walks one purchase while a zone is down. Diagnostic settings and the subnet-NSG association are left out; the NSG applies to `snet-jobs`.",
+   "blocks": [
+    {
+     "type": "nested",
+     "title": "Acme Tickets production estate",
+     "levels": [
+      {
+       "id": "subscription",
+       "label": "Subscription",
+       "open": [
+        "sub"
+       ],
+       "note": "The resource groups, and what reaches them from outside."
+      },
+      {
+       "id": "groups",
+       "label": "Resource groups",
+       "open": [
+        "sub",
+        "rg_app",
+        "rg_data",
+        "rg_network",
+        "rg_reports",
+        "rg_dns"
+       ]
+      },
+      {
+       "id": "network",
+       "label": "Network",
+       "open": [
+        "sub",
+        "rg_app",
+        "rg_data",
+        "rg_network",
+        "rg_reports",
+        "rg_dns",
+        "vnet",
+        "snet_app",
+        "snet_jobs",
+        "snet_data"
+       ]
+      },
+      {
+       "id": "all",
+       "label": "Everything",
+       "open": [
+        "sub",
+        "rg_app",
+        "rg_data",
+        "rg_network",
+        "rg_reports",
+        "rg_dns",
+        "vnet",
+        "snet_app",
+        "snet_jobs",
+        "snet_data",
+        "sql",
+        "sb",
+        "cae_jobs",
+        "cae_reports",
+        "st_reports",
+        "nsg"
+       ]
+      }
+     ],
+     "boxes": [
+      {
+       "id": "internet",
+       "label": "Internet",
+       "kind": "user",
+       "note": "Buyers, partners and anyone else."
+      },
+      {
+       "id": "registry",
+       "label": "acrticketsprod",
+       "kind": "system",
+       "note": "Named in code, absent from code and export.",
+       "flag": "warn",
+       "details": [
+        [
+         "Finding",
+         "F11: a registry nobody can see"
+        ],
+        [
+         "Where",
+         "variables.tf:31, reports.bicep:58"
+        ]
+       ]
+      },
+      {
+       "id": "sub",
+       "label": "Production subscription",
+       "kind": "ops",
+       "note": "The one subscription (main.tf:1), all in westeurope."
+      },
+      {
+       "id": "rg_app",
+       "label": "rg-…-prod-app",
+       "parent": "sub",
+       "kind": "ops"
+      },
+      {
+       "id": "rg_data",
+       "label": "rg-…-prod-data",
+       "parent": "sub",
+       "kind": "ops"
+      },
+      {
+       "id": "rg_network",
+       "label": "rg-…-prod-network",
+       "parent": "sub",
+       "kind": "ops"
+      },
+      {
+       "id": "rg_reports",
+       "label": "rg-acme-reports",
+       "parent": "sub",
+       "kind": "ops",
+       "note": "Owned by the analytics team, deployed with Bicep."
+      },
+      {
+       "id": "rg_dns",
+       "label": "rg-acme-shared-dns",
+       "parent": "sub",
+       "kind": "ops"
+      },
+      {
+       "id": "plan",
+       "label": "App Service plan",
+       "parent": "rg_app",
+       "kind": "service",
+       "tech": "P1v3 × 1",
+       "flag": "bad",
+       "details": [
+        [
+         "Finding",
+         "F6: one worker, one zone"
+        ],
+        [
+         "Finding",
+         "F12: no autoscale"
+        ],
+        [
+         "Where",
+         "app.tf:7, :8"
+        ]
+       ]
+      },
+      {
+       "id": "sb",
+       "label": "Service Bus",
+       "parent": "rg_app",
+       "kind": "store",
+       "tech": "Standard",
+       "flag": "bad",
+       "details": [
+        [
+         "Finding",
+         "F8: cannot be private, not zone redundant"
+        ],
+        [
+         "Where",
+         "messaging.tf:5"
+        ]
+       ]
+      },
+      {
+       "id": "q_emails",
+       "label": "ticket-emails",
+       "parent": "sb",
+       "kind": "store"
+      },
+      {
+       "id": "q_holds",
+       "label": "seat-holds",
+       "parent": "sb",
+       "kind": "store"
+      },
+      {
+       "id": "logs",
+       "label": "Log Analytics",
+       "parent": "rg_app",
+       "kind": "ops",
+       "note": "30 days."
+      },
+      {
+       "id": "appi",
+       "label": "App Insights",
+       "parent": "rg_app",
+       "kind": "ops"
+      },
+      {
+       "id": "ag",
+       "label": "Action group",
+       "parent": "rg_app",
+       "kind": "ops",
+       "flag": "warn",
+       "details": [
+        [
+         "Finding",
+         "F14: no alert rule uses it"
+        ],
+        [
+         "Where",
+         "alerts.json:11"
+        ]
+       ]
+      },
+      {
+       "id": "vnet",
+       "label": "VNet 10.20.0.0/16",
+       "parent": "rg_network",
+       "kind": "ops"
+      },
+      {
+       "id": "snet_app",
+       "label": "snet-app",
+       "parent": "vnet",
+       "kind": "ops",
+       "note": "10.20.1.0/24"
+      },
+      {
+       "id": "snet_jobs",
+       "label": "snet-jobs",
+       "parent": "vnet",
+       "kind": "ops",
+       "note": "10.20.2.0/23"
+      },
+      {
+       "id": "snet_data",
+       "label": "snet-data",
+       "parent": "vnet",
+       "kind": "ops",
+       "note": "10.20.4.0/24"
+      },
+      {
+       "id": "portal",
+       "label": "Portal",
+       "parent": "snet_app",
+       "kind": "service",
+       "tech": ".NET 8, App Service",
+       "flag": "bad",
+       "details": [
+        [
+         "Finding",
+         "F3: SMTP password in plain settings"
+        ],
+        [
+         "Finding",
+         "F10: no identity"
+        ],
+        [
+         "Group",
+         "rg-…-prod-app"
+        ],
+        [
+         "Where",
+         "app.tf:12, :34"
+        ]
+       ]
+      },
+      {
+       "id": "cae_jobs",
+       "label": "Worker environment",
+       "parent": "snet_jobs",
+       "kind": "service",
+       "tech": "Container Apps, internal",
+       "flag": "bad",
+       "details": [
+        [
+         "Finding",
+         "F7: not zone redundant, set at creation"
+        ],
+        [
+         "Group",
+         "rg-…-prod-app"
+        ],
+        [
+         "Where",
+         "app.tf:40"
+        ]
+       ]
+      },
+      {
+       "id": "worker",
+       "label": "Worker",
+       "parent": "cae_jobs",
+       "kind": "service",
+       "tech": "tickets-worker:1.8.2",
+       "flag": "bad",
+       "details": [
+        [
+         "Finding",
+         "F7: one minimum replica"
+        ],
+        [
+         "Finding",
+         "F10: no role on its queues"
+        ],
+        [
+         "Finding",
+         "F12: no scale rule"
+        ],
+        [
+         "Where",
+         "modules/worker/main.tf:43"
+        ]
+       ]
+      },
+      {
+       "id": "pe_vault",
+       "label": "Endpoint: vault",
+       "parent": "snet_data",
+       "kind": "guard",
+       "flag": "bad",
+       "details": [
+        [
+         "Finding",
+         "F4: no private DNS"
+        ],
+        [
+         "Group",
+         "rg-…-prod-network"
+        ],
+        [
+         "Where",
+         "data.tf:64"
+        ]
+       ]
+      },
+      {
+       "id": "pe_tickets",
+       "label": "Endpoint: tickets",
+       "parent": "snet_data",
+       "kind": "guard",
+       "flag": "bad",
+       "details": [
+        [
+         "Finding",
+         "F4: no private DNS"
+        ],
+        [
+         "Group",
+         "rg-…-prod-network"
+        ],
+        [
+         "Where",
+         "data.tf:78"
+        ]
+       ]
+      },
+      {
+       "id": "nsg",
+       "label": "NSG for snet-jobs",
+       "parent": "rg_network",
+       "kind": "guard"
+      },
+      {
+       "id": "ssh_rule",
+       "label": "allow-ssh-admin",
+       "parent": "nsg",
+       "kind": "guard",
+       "flag": "warn",
+       "details": [
+        [
+         "Finding",
+         "F18: any address, but nothing listens"
+        ],
+        [
+         "Where",
+         "network.tf:55"
+        ]
+       ]
+      },
+      {
+       "id": "sql",
+       "label": "SQL server",
+       "parent": "rg_data",
+       "kind": "store",
+       "flag": "bad",
+       "details": [
+        [
+         "Finding",
+         "F1: open to every address, no private path"
+        ],
+        [
+         "Finding",
+         "F14: no diagnostics"
+        ],
+        [
+         "Where",
+         "data.tf:1"
+        ]
+       ]
+      },
+      {
+       "id": "db",
+       "label": "db-tickets",
+       "parent": "sql",
+       "kind": "store",
+       "tech": "GP_Gen5_2, 100 GB",
+       "flag": "bad",
+       "details": [
+        [
+         "Finding",
+         "F5: one zone"
+        ],
+        [
+         "Finding",
+         "F12: 100 GB against 400 GB"
+        ],
+        [
+         "Where",
+         "data.tf:16, :17"
+        ]
+       ]
+      },
+      {
+       "id": "fw_rule",
+       "label": "allow-all-temporary",
+       "parent": "sql",
+       "kind": "guard",
+       "flag": "bad",
+       "details": [
+        [
+         "Finding",
+         "F1: 0.0.0.0 to 255.255.255.255"
+        ],
+        [
+         "Where",
+         "data.tf:21"
+        ]
+       ]
+      },
+      {
+       "id": "st_tickets",
+       "label": "Ticket storage",
+       "parent": "rg_data",
+       "kind": "store",
+       "tech": "ZRS, public off",
+       "note": "Sound as configured; only the DNS in F4 is missing."
+      },
+      {
+       "id": "st_backups",
+       "label": "stacmebackupsprod",
+       "parent": "rg_data",
+       "kind": "store",
+       "note": "In code only, not deployed.",
+       "flag": "warn",
+       "details": [
+        [
+         "Finding",
+         "F13: does not exist in the export"
+        ],
+        [
+         "Where",
+         "data.tf:40"
+        ]
+       ]
+      },
+      {
+       "id": "kv",
+       "label": "Key Vault",
+       "parent": "rg_data",
+       "kind": "store",
+       "note": "Private, RBAC, purge protection."
+      },
+      {
+       "id": "redis",
+       "label": "Redis sessions",
+       "parent": "rg_data",
+       "kind": "store",
+       "tech": "Standard C1",
+       "note": "In the export only.",
+       "flag": "bad",
+       "details": [
+        [
+         "Finding",
+         "F9: not in code, no private endpoint"
+        ],
+        [
+         "Where",
+         "export row"
+        ]
+       ]
+      },
+      {
+       "id": "st_reports",
+       "label": "stacmereportsprod",
+       "parent": "rg_reports",
+       "kind": "store",
+       "tech": "LRS",
+       "flag": "bad",
+       "details": [
+        [
+         "Finding",
+         "F2: anonymous read"
+        ],
+        [
+         "Finding",
+         "F16: locally redundant"
+        ],
+        [
+         "Where",
+         "reports.bicep:9, :13"
+        ]
+       ]
+      },
+      {
+       "id": "exports",
+       "label": "exports container",
+       "parent": "st_reports",
+       "kind": "store",
+       "flag": "bad",
+       "details": [
+        [
+         "Finding",
+         "F2: public access Blob"
+        ],
+        [
+         "Where",
+         "reports.bicep:28"
+        ]
+       ]
+      },
+      {
+       "id": "cae_reports",
+       "label": "Reports environment",
+       "parent": "rg_reports",
+       "kind": "service",
+       "flag": "warn",
+       "details": [
+        [
+         "Finding",
+         "F16: not zone redundant"
+        ],
+        [
+         "Where",
+         "reports.bicep:36"
+        ]
+       ]
+      },
+      {
+       "id": "reports_api",
+       "label": "Reports API",
+       "parent": "cae_reports",
+       "kind": "service",
+       "tech": "reports-api:latest",
+       "flag": "warn",
+       "details": [
+        [
+         "Finding",
+         "F17: external ingress"
+        ],
+        [
+         "Finding",
+         "F19: image not pinned"
+        ],
+        [
+         "Where",
+         "reports.bicep:50, :58"
+        ]
+       ]
+      },
+      {
+       "id": "dns",
+       "label": "tickets.example.com",
+       "parent": "rg_dns",
+       "kind": "ops",
+       "note": "www is a CNAME to the portal."
+      }
+     ],
+     "links": [
+      {
+       "from": "internet",
+       "to": "portal",
+       "label": "HTTPS"
+      },
+      {
+       "from": "internet",
+       "to": "db",
+       "label": "1433, any IP",
+       "flag": "bad"
+      },
+      {
+       "from": "internet",
+       "to": "exports",
+       "label": "no sign-in",
+       "flag": "bad"
+      },
+      {
+       "from": "internet",
+       "to": "reports_api",
+       "label": "external",
+       "flag": "warn"
+      },
+      {
+       "from": "internet",
+       "to": "sb",
+       "label": "public",
+       "flag": "warn"
+      },
+      {
+       "from": "dns",
+       "to": "portal",
+       "label": "CNAME"
+      },
+      {
+       "from": "plan",
+       "to": "portal",
+       "label": "hosts"
+      },
+      {
+       "from": "portal",
+       "to": "db",
+       "label": "no private path",
+       "flag": "bad"
+      },
+      {
+       "from": "portal",
+       "to": "pe_vault",
+       "label": "no DNS",
+       "flag": "bad"
+      },
+      {
+       "from": "portal",
+       "to": "pe_tickets",
+       "label": "no DNS",
+       "flag": "bad"
+      },
+      {
+       "from": "pe_vault",
+       "to": "kv",
+       "label": "private"
+      },
+      {
+       "from": "pe_tickets",
+       "to": "st_tickets",
+       "label": "private"
+      },
+      {
+       "from": "portal",
+       "to": "sb",
+       "label": "no identity",
+       "flag": "warn"
+      },
+      {
+       "from": "portal",
+       "to": "redis",
+       "label": "assumed",
+       "flag": "warn"
+      },
+      {
+       "from": "worker",
+       "to": "sb",
+       "label": "no role",
+       "flag": "warn"
+      },
+      {
+       "from": "worker",
+       "to": "registry",
+       "label": "image pull",
+       "flag": "warn"
+      },
+      {
+       "from": "reports_api",
+       "to": "registry",
+       "label": "image pull",
+       "flag": "warn"
+      },
+      {
+       "from": "reports_api",
+       "to": "exports",
+       "label": "reads"
+      }
+     ],
+     "flows": [
+      {
+       "id": "zone-lost",
+       "title": "One zone is lost during a ticket drop",
+       "variants": [
+        "all"
+       ],
+       "steps": [
+        {
+         "from": "internet",
+         "to": "portal",
+         "text": "A buyer's request arrives. If the lost zone held the only worker, it stops here, with no second worker to take it (F6)."
+        },
+        {
+         "from": "portal",
+         "to": "db",
+         "text": "If the portal survived, the database may not have: it has no copy in another zone (F5)."
+        },
+        {
+         "from": "portal",
+         "to": "redis",
+         "text": "The session cache, assumed from its name, is outside the code and not zone redundant (F9)."
+        },
+        {
+         "from": "portal",
+         "to": "sb",
+         "text": "The seat hold goes on a Standard queue, with no zone redundancy (F8)."
+        },
+        {
+         "from": "worker",
+         "to": "sb",
+         "text": "One worker replica in an environment that cannot move zones reads the queue, and no alert tells anyone (F7, F14)."
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "pillars",
+   "title": "By pillar",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Pillar",
+      "Findings",
+      "Highest severity",
+      "Fix first"
+     ],
+     "rows": [
+      [
+       "Security",
+       8,
+       "High",
+       "F1, once F4 gives it a private path"
+      ],
+      [
+       "Reliability",
+       6,
+       "High",
+       "F5, the simplest of the zone fixes"
+      ],
+      [
+       "Operational Excellence",
+       4,
+       "Medium",
+       "F14, so a failure pages someone"
+      ],
+      [
+       "Performance Efficiency",
+       1,
+       "Medium",
+       "F12, starting with the database size"
+      ],
+      [
+       "Cost Optimization",
+       0,
+       "None found",
+       "Not examined; see what this review did not cover"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "drift",
+   "title": "Code and deployment",
+   "intro": "The export has 26 rows: 19 match the code, 5 are created automatically by Azure, 1 is a likely match and 1 is in the export only. One resource is in the code only.",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Item",
+      "In code",
+      "In the export",
+      "What it means"
+     ],
+     "rows": [
+      [
+       "`redis-acme-sessions-prod`",
+       "Absent",
+       "Standard C1, rg-…-prod-data",
+       "Made by hand, against README line 18: F9"
+      ],
+      [
+       "`stacmebackupsprod`",
+       "data.tf:40, GRS",
+       "Absent",
+       "Never deployed, or removed by hand: F13"
+      ],
+      [
+       "Ticket storage",
+       "`stacmetickets` plus a random suffix",
+       "`stacmeticketsqx7k2p`, Standard_ZRS",
+       "The same account [high]: same prefix, six-character suffix, group and redundancy"
+      ],
+      [
+       "SKUs where both show one",
+       "P1v3 × 1, GP_Gen5_2, Service Bus Standard, reports LRS",
+       "The same",
+       "No drift in size"
+      ],
+      [
+       "Private DNS zones",
+       "None",
+       "None",
+       "Agreement, and the problem: F4"
+      ],
+      [
+       "`acrticketsprod` registry",
+       "Named, not declared",
+       "Absent",
+       "May be elsewhere: F11"
+      ],
+      [
+       "Tag `owner`",
+       "On all Terraform resources (locals.tf:6)",
+       "On no row",
+       "Removed, or trimmed from the export [med]; low"
+      ],
+      [
+       "Tags on reports resources",
+       "None in reports.bicep",
+       "`product: tickets`",
+       "Added outside the template, or a policy [med]; low"
+      ],
+      [
+       "Firewall rules, subnets, NSG rules, queues, role assignments, diagnostics, zones, identities",
+       "Present or absent as described above",
+       "Not in this kind of export",
+       "Not compared: 18 code resources"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "order",
+   "title": "Order of the fixes",
+   "blocks": [
+    {
+     "type": "list",
+     "ordered": true,
+     "items": [
+      "**Today: F4, then F1.** Build the private DNS and the SQL private endpoint, then remove the open firewall rule. In that order, because the rule may be the portal's only way in.",
+      "**Today: F2.** Look in the `exports` container and close anonymous access.",
+      "**F10, then F3.** Give the portal an identity and roles, rotate the SMTP password, and move it to Key Vault.",
+      "**F9 and F8.** Bring Redis into code behind a private endpoint, and move Service Bus to Premium with one. Each also settles the zone question for that tier.",
+      "**F17.** Narrow the reports API, together with what F2 changes for partners.",
+      "**F5 and the database size in F12.** Zone-redundant SQL is the simplest zone fix.",
+      "**F6 and the autoscale in F12.** Three workers across zones.",
+      "**F7, then F16.** Rebuild the worker environment, then the reports environment and storage.",
+      "**Test it.** Force a database failover and take out a zone's worth of replicas before the first drop. Until this passes, the brief's requirement has not been met.",
+      "**F14, F15 and F11.** Alerts and SQL auditing, remote state with a pipeline, and the registry. Until F15 is done, only one person applies at a time.",
+      "**F13, F18 and F19.** Decide on the backup account, delete the SSH rule, pin the image."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leave",
+   "title": "What to leave alone",
+   "blocks": [
+    {
+     "type": "list",
+     "items": [
+      "**The portal being public.** Brief line 14 wants the web tier on the internet, and it has HTTPS only and TLS 1.2 (app.tf:17, :21).",
+      "**Ticket storage.** ZRS, public access off, a private endpoint. Add only the DNS from F4.",
+      "**Key Vault.** Private, RBAC and purge protection are right as they are.",
+      "**One region.** Brief line 15 accepts losing a region, so do not add a second one. Every regional resource is in `westeurope`, which meets the EU rule at brief line 16.",
+      "**Service Bus local auth off** (messaging.tf:7). Keep it through the move to Premium.",
+      "**The worker's pinned image** (app.tf:57) and **the sensitive SQL password variable** (variables.tf:23-27).",
+      "**The `allow-https-from-lb` rule** (network.tf:43). It is limited to the Azure load balancer.",
+      "**Log retention of 30 days** (monitoring.tf:6). Enough for operations; raise it only if an audit requirement appears.",
+      "**No NSG on `snet-app` or `snet-data`.** One is an integration subnet and the other holds only private endpoints, so an NSG adds little until network policies are turned on [med]."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "gaps",
+   "title": "What this review did not cover",
+   "blocks": [
+    {
+     "type": "list",
+     "title": "Not checked",
+     "items": [
+      "**Live configuration.** The export gives only type, name, SKU, location and tags, so live firewall rules, zones, identities and network settings are inferred from the code.",
+      "**Microsoft's documentation.** No documentation was looked up in this run. Limits come from the skill's Azure notes, checked 2026-11-10. Service Bus and Redis zone support by tier, Redis retirement dates, changing an App Service plan in place, and how a worker with no scale rule behaves are marked `[med]` or `[guess]`. Check them before relying on them.",
+      "**Application code.** How the portal and API actually sign in, and whether the API checks credentials.",
+      "**The contents of the `exports` container.**",
+      "**Costs.** The fixes were not priced against the 5,000 USD budget in brief line 17, and `prices/` was not used. Service Bus Premium and the extra capacity add cost. The cost pillar was not examined.",
+      "**Load.** Nothing was load tested, and 600 requests a second is untested on this estate.",
+      "**State and variable files.** None were opened, and none are in the repository.",
+      "**The `www` certificate binding.** The CNAME is in code (main.tf:32), but no hostname binding is, and the export would not show one.",
+      "**The box office brief.** It describes a different system and was not used.",
+      "**Secrets in git history beyond today's files.** Every commit only adds lines, so the history holds nothing that today's files do not."
+     ]
+    },
+    {
+     "type": "list",
+     "title": "Assumptions",
+     "items": [
+      "The brief's requirements apply to the Terraform estate (portal, worker, database, queues, storage), which is what the platform would run on.",
+      "Reports are not on the sale path, so their zone gaps are medium. They would be high if the brief's exported files live there.",
+      "Service Bus and Redis count as data stores under brief line 14.",
+      "The SQL firewall rule is live, because the code was applied and the export cannot show otherwise.",
+      "The export is complete for the only subscription (main.tf:1).",
+      "The SMTP password is live. Redis serves portal sessions, going by its name."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "open",
+   "title": "Open questions",
+   "blocks": [
+    {
+     "type": "list",
+     "items": [
+      "What is in the `exports` container, and how do partners fetch it?",
+      "Is the July load test finished, and did anything else start depending on the open firewall rule?",
+      "How does the portal sign in to SQL and Service Bus today, given what the code shows?",
+      "Who created the Redis cache, and what uses it?",
+      "Was the backup account meant to exist, and what should write to it?",
+      "Where is `acrticketsprod`, and who can push to it?",
+      "Do the brief's exported files live in `stacmereportsprod`?",
+      "Does a ticket drop need a WAF or bot protection in front of the portal? The brief does not say, and none exists."
+     ]
+    }
+   ]
+  }
+ ],
+ "facts": {
+  "version": 1,
+  "scope": "The Acme Tickets production estate on Azure, reviewed for the festival platform.",
+  "regions": [
+   {
+    "name": "westeurope",
+    "why": "README rule; customer data stays in the EU"
+   }
+  ],
+  "data": [
+   {
+    "name": "ticket and customer records",
+    "class": "personal",
+    "where": [
+     "db-tickets"
+    ],
+    "rule": "EU only"
+   },
+   {
+    "name": "report exports for partners",
+    "class": "unknown",
+    "where": [
+     "stacmereportsprod/exports"
+    ],
+    "rule": "brief: private addresses only"
+   }
+  ],
+  "components": [
+   {
+    "id": "portal",
+    "label": "Portal",
+    "tech": "App Service P1v3, 1 worker, one zone",
+    "kind": "service"
+   },
+   {
+    "id": "worker",
+    "label": "Worker",
+    "tech": "Container Apps, 1 minimum replica, one zone",
+    "kind": "service"
+   },
+   {
+    "id": "db",
+    "label": "db-tickets",
+    "tech": "Azure SQL GP_Gen5_2, 100 GB, one zone",
+    "kind": "store"
+   },
+   {
+    "id": "sb",
+    "label": "Service Bus",
+    "tech": "Standard",
+    "kind": "store"
+   },
+   {
+    "id": "redis",
+    "label": "Redis sessions",
+    "tech": "Standard C1, not in code",
+    "kind": "store"
+   },
+   {
+    "id": "st_tickets",
+    "label": "Ticket storage",
+    "tech": "Storage ZRS, private",
+    "kind": "store"
+   },
+   {
+    "id": "kv",
+    "label": "Key Vault",
+    "tech": "Standard, private",
+    "kind": "store"
+   },
+   {
+    "id": "st_reports",
+    "label": "Reports storage",
+    "tech": "Storage LRS, anonymous blobs",
+    "kind": "store"
+   },
+   {
+    "id": "reports_api",
+    "label": "Reports API",
+    "tech": "Container Apps, external",
+    "kind": "service"
+   }
+  ],
+  "assumptions": [
+   "The brief's requirements apply to the Terraform estate.",
+   "Reports are not on the sale path.",
+   "Service Bus and Redis count as data stores under the brief.",
+   "The SQL firewall rule is live.",
+   "The export is complete for the only subscription.",
+   "The SMTP password is live; Redis serves portal sessions."
+  ],
+  "open": [
+   "Contents of the exports container and how partners fetch it.",
+   "Whether anything depends on the open SQL firewall rule.",
+   "How the portal signs in to SQL and Service Bus.",
+   "Who created Redis and what uses it.",
+   "Purpose of the backup account.",
+   "Where the container registry is.",
+   "Whether the brief's exported files live in the reports storage.",
+   "Whether a ticket drop needs a WAF or bot protection."
+  ]
+ }
+}

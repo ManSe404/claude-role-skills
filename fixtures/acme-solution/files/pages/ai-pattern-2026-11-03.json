@@ -1,0 +1,25 @@
+{
+  "skill": "ai-pattern",
+  "title": "Acme Mutual claims assistant: pattern",
+  "subtitle": "What the AI part of the claims platform should be.",
+  "meta": {"project": "acme-solution", "date": "2026-11-03"},
+  "verdict": {"text": "Retrieval over the claim documents and a drafted summary, with a handler reviewing every draft.", "tone": "ok"},
+  "sections": [
+    {
+      "id": "decision",
+      "title": "Decision",
+      "blocks": [
+        {"type": "text", "text": "A workflow retrieves the claim's documents and the policy wording, and drafts a summary and a proposed settlement. A handler reviews every draft. An agent that acts on its own is ruled out: a wrong settlement promise cannot go out unread."}
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "The AI part of the Acme Mutual claims platform",
+    "decisions": [
+      {"title": "AI pattern", "chosen": "Retrieval and a drafted summary, handler reviews every draft", "because": "30,000 claims a year are too many to read by hand, and a wrong settlement must not reach a customer unread."}
+    ],
+    "assumptions": ["Each claim brings about 6 documents.", "A handler reviews every draft before it reaches a customer."],
+    "open": ["Can Acme Mutual export 500 past claims with their outcomes for evaluation?"]
+  }
+}

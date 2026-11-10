@@ -3,7 +3,7 @@
 Claude Code skills by role. Each skill does one job that keeps coming back, counts with its own
 scripts instead of estimating, and ends in one self-contained web page you can read and share.
 
-Four packs so far: software engineers, AI solutions architects, data architects and software architects. The plan for
+Eight packs so far: software engineers, AI solutions architects, data architects, software architects, cloud architects, solutions architects, who join the specialists' work, data analysts and data scientists. The plan for
 the next ones is in [docs/plans/architect-packs.md](docs/plans/architect-packs.md).
 
 ## Software engineering
@@ -37,6 +37,32 @@ the next ones is in [docs/plans/architect-packs.md](docs/plans/architect-packs.m
 Prices are not part of this pack: it sizes a platform in GB and rows, and `cloud-architect` will
 summarise the prices for each cloud.
 
+## Data analyst
+
+| Skill | Use it when | It writes |
+|---|---|---|
+| [metric-spec](plugins/data-analyst/skills/metric-spec/SKILL.md) | two teams or reports show different numbers for what should be one metric | where it is defined today, how far those definitions differ on sample data, step by step, and one definition: grain, filters, formula, window, currency, owner, what it leaves out |
+| [number-moved](plugins/data-analyst/skills/number-moved/SKILL.md) | a reported number changed between two periods and someone asks why | checks that the data did not fake the change, then volume, mix and rate effects that add up exactly, ranked, with what is left unexplained and what the data cannot show |
+| [number-reconcile](plugins/data-analyst/skills/number-reconcile/SKILL.md) | two numbers that should agree do not | the whole gap accounted for row by row (only in one, filters, duplicates, time zones, timing, rounding), adding up exactly, or the exact amount left unexplained |
+| [report-review](plugins/data-analyst/skills/report-review/SKILL.md) | before a report with its SQL or notebook goes out | the counting checked against its data: double counting, wrong denominators, dropped rows, partial periods, averages of averages, small samples, a Simpson's reversal, misleading charts, each with file:line and the corrected number |
+
+These skills do the repeated jobs that need the counting done by a script and a page someone can trust; general
+questions, exploring a table and dashboards are left to the Anthropic `data` plugin. Sums are exact and read-only: a
+personal value never reaches the output.
+
+## Data scientist
+
+| Skill | Use it when | It writes |
+|---|---|---|
+| [ds-frame](plugins/data-scientist/skills/ds-frame/SKILL.md) | someone asks for a predictive model, before anything is trained | the decision it changes, the exact target, whether a label comes in time and what each error costs; a ladder from a lookup rule to deep learning with options ruled out against the brief, the baseline that must be beaten and acceptance criteria |
+| [ds-dataset](plugins/data-scientist/skills/ds-dataset/SKILL.md) | before trusting a predictive model built on a training set | target leakage, timestamps from the future, the same entity on both sides of a split, duplicates across splits, class balance, missingness that differs by class, drift (PSI), personal columns, each with what to change |
+| [ds-evaluate](plugins/data-scientist/skills/ds-evaluate/SKILL.md) | comparing trained models from a file of predictions | ROC-AUC, PR-AUC, log loss, Brier, MAE, RMSE, bias with seeded bootstrap intervals, a paired comparison against the baseline that calls noise noise, a calibration table, a threshold from the cost of each error and the worst slices |
+| [ds-experiment](plugins/data-scientist/skills/ds-experiment/SKILL.md) | an A/B test must be sized, or has finished | sample size and minimum detectable effect, or a read-out: sample ratio mismatch first, intervals, correction for several metrics, guardrails with margins, a warning about peeking and a call of ship, do not ship or inconclusive |
+
+The statistics are implemented in the standard library and checked in the tests against values known independently.
+LLM evaluation is not part of this pack; `ds-frame` sends an LLM problem to `ai-pattern`, and the general statistics
+of the Anthropic `data` plugin stay where they are.
+
 ## Software architect
 
 | Skill | Use it when | It writes |
@@ -45,6 +71,25 @@ summarise the prices for each cloud.
 | [arch-c4](plugins/software-architect/skills/arch-c4/SKILL.md) | a system must be drawn and explained | context, containers and components as boxes inside boxes, with zoom between levels and requests traced hop by hop |
 | [arch-review](plugins/software-architect/skills/arch-review/SKILL.md) | before a major change, or when a system has become hard to change | cycles, layer breaks, hidden coupling, hot spots, shared tables and synchronous loops, measured, with file:line findings and what to fix first |
 | [arch-evolve](plugins/software-architect/skills/arch-evolve/SKILL.md) | a system must move to a new structure | steps that each leave the system working, with how each is verified and undone, and where to stop |
+
+## Cloud architect
+
+| Skill | Use it when | It writes |
+|---|---|---|
+| [cloud-map](plugins/cloud-architect/skills/cloud-map/SKILL.md) | you inherit cloud infrastructure or must explain it, from code with no login or a saved export | the estate as boxes inside boxes, request flows, what the internet can reach and what stops it, what is in code but not deployed and deployed but not in code |
+| [cloud-design](plugins/cloud-architect/skills/cloud-design/SKILL.md) | a brief arrives, before a platform is picked | compute, data, network, region and availability, decided by elimination; up to two variants or two clouds costed from the provider's price list, each price with its date and source; an ADR draft |
+| [cloud-review](plugins/cloud-architect/skills/cloud-review/SKILL.md) | before a release, an audit or a take-over of infrastructure | problems tied to file:line or a resource, checked against the provider's Well-Architected pillars, marked on the drawing, with what to fix first |
+
+One brief compared across clouds with real prices, drawn and reviewed the same way, from code in a repository with no cloud login. Azure and AWS are here; a provider is one pair of files, so Google Cloud can follow later. These skills do not deploy and do not write production infrastructure code. They read Terraform, Bicep, ARM and CloudFormation (JSON and YAML), make no cloud call of their own apart from the public price lists, which are opt-in with a timeout, and never bundle a vendor's icons: boxes carry their kind in text.
+
+## Solutions architect
+
+| Skill | Use it when | It writes |
+|---|---|---|
+| [solution-brief](plugins/solutions-architect/skills/solution-brief/SKILL.md) | a client brief arrives that may cross several areas, before any specialist runs | the brief framed once, which specialists are needed and in which order, why any is not needed, the exact calls to run next with the shared facts each must use |
+| [solution-blueprint](plugins/solutions-architect/skills/solution-blueprint/SKILL.md) | the specialist pages exist and must become one solution | the whole solution drawn as one picture, one list of decisions with where each came from, one cost summary per cloud or variant, every conflict between the pages with the side recommended, what nobody covered, what to do first |
+
+Without this pack, specialist pages contradict each other unnoticed: a model in one region and the data in another, each page with its own cost total and nothing adding them up. Joining the pages and naming the conflicts is all it does: it never redoes a specialist's work and never recomputes a specialist's number. `join_facts.py` lists where the pages disagree, as places to read, and Claude reads them and recommends a side. Costs are grouped per currency and never added across currencies. Installing the pack installs the four specialist packs, because they come from the same marketplace.
 
 The architecture page is the one to try first: click a component, press Play on a flow, switch
 between the routed workflow and agentic RAG, turn on the trust view.
@@ -66,8 +111,14 @@ As a plugin, inside Claude Code:
 /plugin install software-engineering@claude-role-skills
 /plugin install ai-architect@claude-role-skills
 /plugin install data-architect@claude-role-skills
+/plugin install data-analyst@claude-role-skills
+/plugin install data-scientist@claude-role-skills
 /plugin install software-architect@claude-role-skills
+/plugin install cloud-architect@claude-role-skills
+/plugin install solutions-architect@claude-role-skills
 ```
+
+`solutions-architect` also installs `ai-architect`, `data-architect`, `software-architect` and `cloud-architect`, so on its own it brings the four specialists. It only loads with them present: with `--plugin-dir` you must pass all five folders, or Claude Code reports the dependency as unsatisfied and drops the pack.
 
 Then `/software-engineering:codebase-map`, `/software-engineering:impact order_total`,
 `/ai-architect:ai-pattern brief.md`, and so on.
@@ -79,7 +130,7 @@ Or copy the skills into one project:
 git clone https://github.com/ManSe404/claude-role-skills
 cd claude-role-skills
 mkdir -p /path/to/your-project/.claude/skills
-cp -r plugins/software-engineering/skills/* plugins/ai-architect/skills/* plugins/data-architect/skills/* plugins/software-architect/skills/* /path/to/your-project/.claude/skills/
+cp -r plugins/software-engineering/skills/* plugins/ai-architect/skills/* plugins/data-architect/skills/* plugins/software-architect/skills/* plugins/cloud-architect/skills/* plugins/solutions-architect/skills/* plugins/data-analyst/skills/* plugins/data-scientist/skills/* /path/to/your-project/.claude/skills/
 ```
 
 The pages go outside your repository, to `$CLAUDE_PAGES_DIR/<repo>/`, or `~/claude-pages/<repo>/`
@@ -116,7 +167,8 @@ things are different:
   AI support prototype with two client briefs, a corpus in English and Serbian (Latin and
   Cyrillic, with PDFs and a duplicate) and eight planted design flaws. `fixtures/acme-data` is a
   made-up data platform with two briefs, sample data and eight planted problems, and
-  `fixtures/acme-logistics` a made-up .NET, TypeScript and Python system with eight structural ones. The scripts are tested
+  `fixtures/acme-logistics` a made-up .NET, TypeScript and Python system with eight structural ones,
+  and `fixtures/acme-cloud` a made-up Azure estate in Terraform and Bicep with eight planted problems and drift, and `fixtures/acme-cloud-aws` a made-up AWS estate in Terraform and CloudFormation with the same, `fixtures/acme-solution` a client brief with the specialist pages written about it and ten planted conflicts between them, and `fixtures/acme-sales` a made-up sales analytics project with planted metric problems, a late day and two systems that disagree. The scripts are tested
   against them, the example pages come from running the skills on them, and each pack's `evals/`
   checks the skills' behaviour.
 
@@ -125,7 +177,11 @@ things are different:
 plugins/software-engineering/       a pack: plugin.json, skills/, evals/
 plugins/ai-architect/               a pack: plugin.json, skills/, evals/
 plugins/data-architect/             a pack: plugin.json, skills/, evals/
+plugins/data-analyst/               a pack: plugin.json, skills/, evals/
+plugins/data-scientist/             a pack: plugin.json, skills/, evals/
 plugins/software-architect/         a pack: plugin.json, skills/, evals/
+plugins/cloud-architect/            a pack: plugin.json, skills/, evals/
+plugins/solutions-architect/        a pack: plugin.json, skills/, evals/, on top of the four above
 shared/                             render_page.py, page-format.md, fonts and the shared scripts, copied into the skills
 tools/sync_shared.py                writes those copies, or checks them with --check
 fixtures/                           the acme-* fixtures and their builder
@@ -154,7 +210,11 @@ claude plugin validate .
 claude plugin eval plugins/software-engineering --scaffold --allow-tools Bash Write --runs 1
 claude plugin eval plugins/ai-architect --scaffold --allow-tools Bash Write --runs 1
 claude plugin eval plugins/data-architect --scaffold --allow-tools Bash Write --runs 1
+claude plugin eval plugins/data-analyst --scaffold --allow-tools Bash Write --runs 1
+claude plugin eval plugins/data-scientist --scaffold --allow-tools Bash Write --runs 1
 claude plugin eval plugins/software-architect --scaffold --allow-tools Bash Write --runs 1
+claude plugin eval plugins/cloud-architect --scaffold --allow-tools Bash Write --runs 1
+claude plugin eval plugins/solutions-architect --scaffold --allow-tools Bash Write --runs 1
 ```
 
 The evals start real Claude sessions and cost money; `--max-cost-usd` caps a run.
@@ -163,4 +223,5 @@ The evals start real Claude sessions and cost money; `--max-cost-usd` caps a run
 
 MIT, see [LICENSE](LICENSE). The page design follows Data With Baraa's skills (MIT) and the fonts
 are under the SIL Open Font License, see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Everything
-in the fixture and the example pages is fictional.
+in the fixtures and the example pages is fictional, except the public Azure and AWS list prices saved in
+`fixtures/acme-cloud` and `fixtures/acme-cloud-aws`.

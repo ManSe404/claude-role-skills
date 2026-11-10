@@ -1,0 +1,448 @@
+{
+  "provider": "aws",
+  "label": "AWS",
+  "terraform_prefixes": ["aws_"],
+  "terraform_helpers": ["random_", "null_", "time_", "tls_", "local_", "terraform_", "aws_caller_identity", "aws_region", "aws_partition", "aws_availability_zones", "aws_ami", "aws_cloudformation_stack", "aws_cloudformation_export", "aws_default_tags", "aws_iam_openid_connect_provider"],
+  "provider_scope": {"account": "allowed_account_ids", "region": "region"},
+  "location_level": "region",
+  "levels": ["account", "region", "vpc", "subnet"],
+  "level_labels": {
+    "account": "Account",
+    "region": "Region",
+    "vpc": "VPC",
+    "subnet": "Subnet"
+  },
+  "template": {
+    "format": "cloudformation",
+    "version_key": "AWSTemplateFormatVersion",
+    "type_pattern": "^AWS::[A-Za-z0-9]+::",
+    "text_pattern": "[\"']?Type[\"']?\\s*:\\s*[\"']?AWS::[A-Za-z0-9]+::",
+    "nested_stack_types": ["AWS::CloudFormation::Stack"]
+  },
+  "name_tag": {"tf": "tags", "cfn": "Properties.Tags", "key": "Name"},
+  "placement": [
+    {"level": "vpc", "tf": ["vpc_id"], "cfn": ["Properties.VpcId"], "target": "AWS::EC2::VPC"},
+    {
+      "level": "subnet",
+      "tf": ["subnet_id", "subnet_ids", "subnets", "subnet_mapping.subnet_id", "network_configuration.subnets", "vpc_config.subnet_ids", "db_subnet_group_name", "vpc_zone_identifier"],
+      "cfn": ["Properties.SubnetId", "Properties.SubnetIds", "Properties.Subnets", "Properties.NetworkConfiguration.AwsvpcConfiguration.Subnets", "Properties.VpcConfig.SubnetIds", "Properties.DBSubnetGroupName", "Properties.VPCZoneIdentifier"],
+      "target": "AWS::EC2::Subnet"
+    }
+  ],
+  "not_traffic": [
+    "execution_role_arn",
+    "task_role_arn",
+    "role",
+    "kms_key_id",
+    "kms_master_key_id",
+    "log_group_name",
+    "cluster",
+    "tags",
+    "depends_on",
+    "Properties.ExecutionRoleArn",
+    "Properties.TaskRoleArn",
+    "Properties.Role",
+    "Properties.KmsKeyId",
+    "Properties.LogGroupName",
+    "Properties.Cluster",
+    "Properties.Tags",
+    "DependsOn"
+  ],
+  "traffic_reversed": [
+    "load_balancer_arn",
+    "load_balancer.target_group_arn",
+    "Properties.LoadBalancerArn",
+    "Properties.LoadBalancers.TargetGroupArn"
+  ],
+  "secret_references": ["^\\{\\{resolve:(secretsmanager|ssm-secure):", "^arn:aws:secretsmanager:", "^arn:aws:ssm:"],
+  "types": {
+    "AWS::EC2::VPC": {"category": "network", "kind": "ops", "label": "VPC", "tf": ["aws_vpc", "aws_default_vpc"], "attrs": {
+      "cidr": {"tf": "cidr_block", "cfn": "Properties.CidrBlock"}}},
+    "AWS::EC2::Subnet": {"category": "network", "kind": "ops", "label": "Subnet", "tf": ["aws_subnet"], "attrs": {
+      "cidr": {"tf": "cidr_block", "cfn": "Properties.CidrBlock"},
+      "zone": {"tf": "availability_zone", "cfn": "Properties.AvailabilityZone"},
+      "public_ip_on_launch": {"tf": "map_public_ip_on_launch", "cfn": "Properties.MapPublicIpOnLaunch"}}},
+    "AWS::EC2::InternetGateway": {"category": "network", "kind": "channel", "label": "Internet gateway", "tf": ["aws_internet_gateway"], "attrs": {}},
+    "AWS::EC2::VPCGatewayAttachment": {"category": "network", "kind": "ops", "label": "Gateway attachment", "tf": [], "attrs": {}},
+    "AWS::EC2::NatGateway": {"category": "network", "kind": "channel", "label": "NAT gateway", "tf": ["aws_nat_gateway"], "attrs": {}},
+    "AWS::EC2::EIP": {"category": "network", "kind": "channel", "label": "Elastic IP", "tf": ["aws_eip"], "attrs": {}},
+    "AWS::EC2::RouteTable": {"category": "network", "kind": "ops", "label": "Route table", "tf": ["aws_route_table"], "attrs": {}},
+    "AWS::EC2::Route": {"category": "network", "kind": "ops", "label": "Route", "tf": ["aws_route"], "attrs": {}},
+    "AWS::EC2::SubnetRouteTableAssociation": {"category": "network", "kind": "ops", "label": "Route table association", "tf": ["aws_route_table_association"], "attrs": {}},
+    "AWS::EC2::SecurityGroup": {"category": "network", "kind": "guard", "label": "Security group", "name": {"tf": "name", "cfn": "Properties.GroupName"}, "tf": ["aws_security_group"], "attrs": {}},
+    "AWS::EC2::SecurityGroupIngress": {"category": "network", "kind": "guard", "label": "Security group ingress rule", "tf": ["aws_security_group_rule", "aws_vpc_security_group_ingress_rule"], "parent": {"tf": ["security_group_id"], "cfn": ["Properties.GroupId"]}, "attrs": {
+      "rule_type": {"tf": "type"},
+      "source": {"tf": ["cidr_blocks", "cidr_ipv4"], "cfn": "Properties.CidrIp"},
+      "source_v6": {"tf": ["ipv6_cidr_blocks", "cidr_ipv6"], "cfn": "Properties.CidrIpv6"},
+      "port": {"tf": "from_port", "cfn": "Properties.FromPort"},
+      "protocol": {"tf": ["protocol", "ip_protocol"], "cfn": "Properties.IpProtocol"}}},
+    "AWS::EC2::SecurityGroupEgress": {"category": "network", "kind": "guard", "label": "Security group egress rule", "tf": ["aws_vpc_security_group_egress_rule"], "parent": {"tf": ["security_group_id"], "cfn": ["Properties.GroupId"]}, "attrs": {}},
+    "AWS::EC2::VPCEndpoint": {"category": "network", "kind": "guard", "label": "VPC endpoint", "tf": ["aws_vpc_endpoint"], "attrs": {
+      "service": {"tf": "service_name", "cfn": "Properties.ServiceName"},
+      "endpoint_type": {"tf": "vpc_endpoint_type", "cfn": "Properties.VpcEndpointType"}}},
+    "AWS::EC2::FlowLog": {"category": "monitoring", "kind": "ops", "label": "VPC flow log", "tf": ["aws_flow_log"], "attrs": {}},
+    "AWS::EC2::NetworkAcl": {"category": "network", "kind": "guard", "label": "Network ACL", "tf": ["aws_network_acl"], "attrs": {}},
+    "AWS::Route53::HostedZone": {"category": "network", "kind": "ops", "label": "Hosted zone", "name": {"tf": "name", "cfn": "Properties.Name"}, "tf": ["aws_route53_zone"], "attrs": {}},
+    "AWS::Route53::RecordSet": {"category": "network", "kind": "ops", "label": "DNS record", "name": {"tf": "name", "cfn": "Properties.Name"}, "tf": ["aws_route53_record"], "attrs": {}},
+    "AWS::ElasticLoadBalancingV2::LoadBalancer": {"category": "edge", "kind": "guard", "label": "Load balancer", "name": {"tf": "name", "cfn": "Properties.Name"}, "tf": ["aws_lb", "aws_alb"], "attrs": {
+      "internal": {"tf": "internal", "bool": true},
+      "scheme": {"cfn": "Properties.Scheme"},
+      "type": {"tf": "load_balancer_type", "cfn": "Properties.Type"},
+      "access_logs": {"tf": "access_logs.enabled", "bool": true},
+      "attributes": {"cfn": "Properties.LoadBalancerAttributes"},
+      "drop_invalid_headers": {"tf": "drop_invalid_header_fields", "bool": true}}},
+    "AWS::ElasticLoadBalancingV2::Listener": {"category": "edge", "kind": "guard", "label": "Listener", "tf": ["aws_lb_listener", "aws_alb_listener"], "attrs": {
+      "port": {"tf": "port", "cfn": "Properties.Port"},
+      "protocol": {"tf": "protocol", "cfn": "Properties.Protocol"},
+      "ssl_policy": {"tf": "ssl_policy", "cfn": "Properties.SslPolicy"}}},
+    "AWS::ElasticLoadBalancingV2::TargetGroup": {"category": "edge", "kind": "service", "label": "Target group", "name": {"tf": "name", "cfn": "Properties.Name"}, "tf": ["aws_lb_target_group", "aws_alb_target_group"], "attrs": {
+      "port": {"tf": "port", "cfn": "Properties.Port"},
+      "protocol": {"tf": "protocol", "cfn": "Properties.Protocol"}}},
+    "AWS::ElasticLoadBalancing::LoadBalancer": {"category": "edge", "kind": "guard", "label": "Classic load balancer", "name": {"tf": "name", "cfn": "Properties.LoadBalancerName"}, "tf": ["aws_elb"], "attrs": {
+      "internal": {"tf": "internal", "bool": true},
+      "scheme": {"cfn": "Properties.Scheme"}}},
+    "AWS::CloudFront::Distribution": {"category": "edge", "kind": "guard", "label": "CloudFront distribution", "tf": ["aws_cloudfront_distribution"], "attrs": {
+      "web_acl": {"tf": "web_acl_id", "cfn": "Properties.DistributionConfig.WebACLId"}}},
+    "AWS::WAFv2::WebACL": {"category": "edge", "kind": "guard", "label": "WAF web ACL", "name": {"tf": "name", "cfn": "Properties.Name"}, "tf": ["aws_wafv2_web_acl"], "attrs": {}},
+    "AWS::WAFv2::WebACLAssociation": {"category": "edge", "kind": "guard", "label": "WAF association", "tf": ["aws_wafv2_web_acl_association"], "attrs": {}},
+    "AWS::NetworkFirewall::Firewall": {"category": "edge", "kind": "guard", "label": "Network Firewall", "name": {"tf": "name", "cfn": "Properties.FirewallName"}, "tf": ["aws_networkfirewall_firewall"], "attrs": {}},
+    "AWS::ApiGateway::RestApi": {"category": "edge", "kind": "service", "label": "REST API", "name": {"tf": "name", "cfn": "Properties.Name"}, "tf": ["aws_api_gateway_rest_api"], "attrs": {
+      "endpoint_types": {"tf": "endpoint_configuration.types", "cfn": "Properties.EndpointConfiguration.Types"}}},
+    "AWS::ApiGatewayV2::Api": {"category": "edge", "kind": "service", "label": "HTTP API", "name": {"tf": "name", "cfn": "Properties.Name"}, "tf": ["aws_apigatewayv2_api"], "attrs": {}},
+    "AWS::ECS::Cluster": {"category": "compute", "kind": "service", "label": "ECS cluster", "name": {"tf": "name", "cfn": "Properties.ClusterName"}, "tf": ["aws_ecs_cluster"], "attrs": {
+      "container_insights": {"tf": "setting.value", "cfn": "Properties.ClusterSettings[*].Value"}}},
+    "AWS::ECS::Service": {"category": "compute", "kind": "service", "label": "ECS service", "name": {"tf": "name", "cfn": "Properties.ServiceName"}, "tf": ["aws_ecs_service"], "parent": {"tf": ["cluster"], "cfn": ["Properties.Cluster"]}, "attrs": {
+      "desired_count": {"tf": "desired_count", "cfn": "Properties.DesiredCount"},
+      "launch_type": {"tf": "launch_type", "cfn": "Properties.LaunchType"},
+      "assign_public_ip": {"tf": "network_configuration.assign_public_ip", "cfn": "Properties.NetworkConfiguration.AwsvpcConfiguration.AssignPublicIp", "bool": true}}},
+    "AWS::ECS::TaskDefinition": {"category": "compute", "kind": "service", "label": "ECS task definition", "name": {"tf": "family", "cfn": "Properties.Family"}, "tf": ["aws_ecs_task_definition"], "attrs": {
+      "images": {"tf": "container_definitions[*].image", "cfn": "Properties.ContainerDefinitions[*].Image"},
+      "settings": {"tf": "container_definitions[*].environment", "cfn": "Properties.ContainerDefinitions[*].Environment", "shape": "settings"},
+      "logs": {"tf": "container_definitions[*].logConfiguration", "cfn": "Properties.ContainerDefinitions[*].LogConfiguration"},
+      "cpu": {"tf": "cpu", "cfn": "Properties.Cpu"},
+      "memory": {"tf": "memory", "cfn": "Properties.Memory"},
+      "architecture": {"tf": "runtime_platform.cpu_architecture", "cfn": "Properties.RuntimePlatform.CpuArchitecture"}}},
+    "AWS::ECR::Repository": {"category": "compute", "kind": "store", "label": "ECR repository", "name": {"tf": "name", "cfn": "Properties.RepositoryName"}, "tf": ["aws_ecr_repository"], "attrs": {
+      "tag_mutability": {"tf": "image_tag_mutability", "cfn": "Properties.ImageTagMutability"},
+      "lifecycle": {"cfn": "Properties.LifecyclePolicy"}}},
+    "AWS::ECR::LifecyclePolicy": {"category": "compute", "kind": "ops", "label": "ECR lifecycle policy", "tf": ["aws_ecr_lifecycle_policy"], "parent": {"tf": ["repository"]}, "attrs": {}},
+    "AWS::ApplicationAutoScaling::ScalableTarget": {"category": "compute", "kind": "ops", "label": "Autoscaling target", "tf": ["aws_appautoscaling_target"], "attrs": {
+      "min": {"tf": "min_capacity", "cfn": "Properties.MinCapacity"},
+      "max": {"tf": "max_capacity", "cfn": "Properties.MaxCapacity"}}},
+    "AWS::Lambda::Function": {"category": "compute", "kind": "service", "label": "Lambda function", "name": {"tf": "function_name", "cfn": "Properties.FunctionName"}, "tf": ["aws_lambda_function"], "attrs": {
+      "settings": {"tf": "environment.variables", "cfn": "Properties.Environment.Variables", "shape": "settings"},
+      "images": {"tf": "image_uri", "cfn": "Properties.Code.ImageUri"},
+      "runtime": {"tf": "runtime", "cfn": "Properties.Runtime"},
+      "architecture": {"tf": "architectures", "cfn": "Properties.Architectures"}}},
+    "AWS::Lambda::Url": {"category": "edge", "kind": "service", "label": "Lambda function URL", "tf": ["aws_lambda_function_url"], "attrs": {
+      "auth": {"tf": "authorization_type", "cfn": "Properties.AuthType"}}},
+    "AWS::EC2::Instance": {"category": "compute", "kind": "service", "label": "EC2 instance", "tf": ["aws_instance"], "attrs": {
+      "size": {"tf": "instance_type", "cfn": "Properties.InstanceType"},
+      "public_ip": {"tf": "associate_public_ip_address", "cfn": "Properties.NetworkInterfaces[*].AssociatePublicIpAddress"},
+      "imds_v2": {"tf": "metadata_options.http_tokens", "cfn": "Properties.MetadataOptions.HttpTokens"}}},
+    "AWS::AutoScaling::AutoScalingGroup": {"category": "compute", "kind": "service", "label": "Auto Scaling group", "name": {"tf": "name", "cfn": "Properties.AutoScalingGroupName"}, "tf": ["aws_autoscaling_group"], "attrs": {
+      "min": {"tf": "min_size", "cfn": "Properties.MinSize"},
+      "max": {"tf": "max_size", "cfn": "Properties.MaxSize"}}},
+    "AWS::EC2::LaunchTemplate": {"category": "compute", "kind": "ops", "label": "Launch template", "name": {"tf": "name", "cfn": "Properties.LaunchTemplateName"}, "tf": ["aws_launch_template"], "attrs": {}},
+    "AWS::ElasticBeanstalk::Environment": {"category": "compute", "kind": "service", "label": "Beanstalk environment", "name": {"tf": "name", "cfn": "Properties.EnvironmentName"}, "tf": ["aws_elastic_beanstalk_environment"], "attrs": {}},
+    "AWS::AppRunner::Service": {"category": "compute", "kind": "service", "label": "App Runner service", "name": {"tf": "service_name", "cfn": "Properties.ServiceName"}, "tf": ["aws_apprunner_service"], "attrs": {}},
+    "AWS::EKS::Cluster": {"category": "compute", "kind": "service", "label": "EKS cluster", "name": {"tf": "name", "cfn": "Properties.Name"}, "tf": ["aws_eks_cluster"], "attrs": {
+      "endpoint_public": {"tf": "vpc_config.endpoint_public_access", "cfn": "Properties.ResourcesVpcConfig.EndpointPublicAccess"}}},
+    "AWS::RDS::DBInstance": {"category": "database", "kind": "store", "label": "RDS instance", "name": {"tf": "identifier", "cfn": "Properties.DBInstanceIdentifier"}, "tf": ["aws_db_instance"], "attrs": {
+      "engine": {"tf": "engine", "cfn": "Properties.Engine"},
+      "size": {"tf": "instance_class", "cfn": "Properties.DBInstanceClass"},
+      "storage_gb": {"tf": "allocated_storage", "cfn": "Properties.AllocatedStorage"},
+      "storage_type": {"tf": "storage_type", "cfn": "Properties.StorageType"},
+      "publicly_accessible": {"tf": "publicly_accessible", "cfn": "Properties.PubliclyAccessible"},
+      "multi_az": {"tf": "multi_az", "cfn": "Properties.MultiAZ"},
+      "storage_encrypted": {"tf": "storage_encrypted", "cfn": "Properties.StorageEncrypted"},
+      "backup_days": {"tf": "backup_retention_period", "cfn": "Properties.BackupRetentionPeriod"},
+      "deletion_protection": {"tf": "deletion_protection", "cfn": "Properties.DeletionProtection"},
+      "log_exports": {"tf": "enabled_cloudwatch_logs_exports", "cfn": "Properties.EnableCloudwatchLogsExports"},
+      "master_password": {"tf": "password", "cfn": "Properties.MasterUserPassword"}}},
+    "AWS::RDS::DBCluster": {"category": "database", "kind": "store", "label": "RDS cluster", "name": {"tf": "cluster_identifier", "cfn": "Properties.DBClusterIdentifier"}, "tf": ["aws_rds_cluster"], "attrs": {
+      "engine": {"tf": "engine", "cfn": "Properties.Engine"},
+      "storage_encrypted": {"tf": "storage_encrypted", "cfn": "Properties.StorageEncrypted"},
+      "backup_days": {"tf": "backup_retention_period", "cfn": "Properties.BackupRetentionPeriod"},
+      "deletion_protection": {"tf": "deletion_protection", "cfn": "Properties.DeletionProtection"},
+      "log_exports": {"tf": "enabled_cloudwatch_logs_exports", "cfn": "Properties.EnableCloudwatchLogsExports"},
+      "master_password": {"tf": "master_password", "cfn": "Properties.MasterUserPassword"}}},
+    "AWS::RDS::DBSubnetGroup": {"category": "database", "kind": "ops", "label": "DB subnet group", "name": {"tf": "name", "cfn": "Properties.DBSubnetGroupName"}, "tf": ["aws_db_subnet_group"], "attrs": {}},
+    "AWS::RDS::DBParameterGroup": {"category": "database", "kind": "ops", "label": "DB parameter group", "name": {"tf": "name", "cfn": "Properties.DBParameterGroupName"}, "tf": ["aws_db_parameter_group"], "attrs": {}},
+    "AWS::DynamoDB::Table": {"category": "database", "kind": "store", "label": "DynamoDB table", "name": {"tf": "name", "cfn": "Properties.TableName"}, "tf": ["aws_dynamodb_table"], "attrs": {
+      "point_in_time": {"tf": "point_in_time_recovery.enabled", "cfn": "Properties.PointInTimeRecoverySpecification.PointInTimeRecoveryEnabled"}}},
+    "AWS::ElastiCache::ReplicationGroup": {"category": "database", "kind": "store", "label": "ElastiCache replication group", "name": {"tf": "replication_group_id", "cfn": "Properties.ReplicationGroupId"}, "tf": ["aws_elasticache_replication_group"], "attrs": {}},
+    "AWS::ElastiCache::CacheCluster": {"category": "database", "kind": "store", "label": "ElastiCache cluster", "name": {"tf": "cluster_id", "cfn": "Properties.ClusterName"}, "tf": ["aws_elasticache_cluster"], "attrs": {}},
+    "AWS::OpenSearchService::Domain": {"category": "database", "kind": "store", "label": "OpenSearch domain", "name": {"tf": "domain_name", "cfn": "Properties.DomainName"}, "tf": ["aws_opensearch_domain"], "attrs": {
+      "vpc_options": {"tf": "vpc_options.subnet_ids", "cfn": "Properties.VPCOptions.SubnetIds"}}},
+    "AWS::S3::Bucket": {"category": "storage", "kind": "store", "label": "S3 bucket", "name": {"tf": "bucket", "cfn": "Properties.BucketName"}, "tf": ["aws_s3_bucket"], "attrs": {
+      "acl": {"tf": "acl", "cfn": "Properties.AccessControl"},
+      "block_public_acls": {"cfn": "Properties.PublicAccessBlockConfiguration.BlockPublicAcls"},
+      "block_public_policy": {"cfn": "Properties.PublicAccessBlockConfiguration.BlockPublicPolicy"},
+      "ignore_public_acls": {"cfn": "Properties.PublicAccessBlockConfiguration.IgnorePublicAcls"},
+      "restrict_public_buckets": {"cfn": "Properties.PublicAccessBlockConfiguration.RestrictPublicBuckets"},
+      "versioning": {"cfn": "Properties.VersioningConfiguration.Status"},
+      "logging": {"cfn": "Properties.LoggingConfiguration"},
+      "lifecycle": {"cfn": "Properties.LifecycleConfiguration"}}},
+    "AWS::S3::BucketPolicy": {"category": "storage", "kind": "guard", "label": "Bucket policy", "tf": ["aws_s3_bucket_policy"], "parent": {"tf": ["bucket"], "cfn": ["Properties.Bucket"]}, "attrs": {
+      "statements": {"tf": "policy.Statement[*]", "cfn": "Properties.PolicyDocument.Statement[*]", "text_json": "policy"}}},
+    "AWS::S3::BucketPublicAccessBlock": {"category": "storage", "kind": "guard", "label": "Public access block", "tf": ["aws_s3_bucket_public_access_block"], "parent": {"tf": ["bucket"]}, "attrs": {
+      "block_public_acls": {"tf": "block_public_acls"},
+      "block_public_policy": {"tf": "block_public_policy"},
+      "ignore_public_acls": {"tf": "ignore_public_acls"},
+      "restrict_public_buckets": {"tf": "restrict_public_buckets"}}},
+    "AWS::S3::BucketVersioning": {"category": "storage", "kind": "ops", "label": "Bucket versioning", "tf": ["aws_s3_bucket_versioning"], "parent": {"tf": ["bucket"]}, "attrs": {
+      "status": {"tf": "versioning_configuration.status"}}},
+    "AWS::S3::BucketEncryption": {"category": "storage", "kind": "ops", "label": "Bucket encryption", "tf": ["aws_s3_bucket_server_side_encryption_configuration"], "parent": {"tf": ["bucket"]}, "attrs": {}},
+    "AWS::S3::BucketLifecycle": {"category": "storage", "kind": "ops", "label": "Bucket lifecycle", "tf": ["aws_s3_bucket_lifecycle_configuration"], "parent": {"tf": ["bucket"]}, "attrs": {}},
+    "AWS::S3::BucketLogging": {"category": "storage", "kind": "ops", "label": "Bucket logging", "tf": ["aws_s3_bucket_logging"], "parent": {"tf": ["bucket"]}, "attrs": {}},
+    "AWS::S3::BucketAcl": {"category": "storage", "kind": "guard", "label": "Bucket ACL", "tf": ["aws_s3_bucket_acl"], "parent": {"tf": ["bucket"]}, "attrs": {
+      "acl": {"tf": "acl"}}},
+    "AWS::EFS::FileSystem": {"category": "storage", "kind": "store", "label": "EFS file system", "tf": ["aws_efs_file_system"], "attrs": {
+      "encrypted": {"tf": "encrypted", "cfn": "Properties.Encrypted"}}},
+    "AWS::SecretsManager::Secret": {"category": "secrets", "kind": "store", "label": "Secrets Manager secret", "name": {"tf": "name", "cfn": "Properties.Name"}, "tf": ["aws_secretsmanager_secret"], "attrs": {
+      "secret_string": {"cfn": "Properties.SecretString"}}},
+    "AWS::SecretsManager::SecretVersion": {"category": "secrets", "kind": "store", "label": "Secret version", "tf": ["aws_secretsmanager_secret_version"], "parent": {"tf": ["secret_id"]}, "attrs": {
+      "secret_string": {"tf": "secret_string"}}},
+    "AWS::SecretsManager::RotationSchedule": {"category": "secrets", "kind": "ops", "label": "Secret rotation", "tf": ["aws_secretsmanager_secret_rotation"], "parent": {"tf": ["secret_id"], "cfn": ["Properties.SecretId"]}, "attrs": {}},
+    "AWS::SSM::Parameter": {"category": "secrets", "kind": "store", "label": "SSM parameter", "name": {"tf": "name", "cfn": "Properties.Name"}, "tf": ["aws_ssm_parameter"], "attrs": {
+      "kind": {"tf": "type", "cfn": "Properties.Type"}}},
+    "AWS::KMS::Key": {"category": "secrets", "kind": "store", "label": "KMS key", "tf": ["aws_kms_key"], "attrs": {
+      "rotation": {"tf": "enable_key_rotation", "cfn": "Properties.EnableKeyRotation"}}},
+    "AWS::KMS::Alias": {"category": "secrets", "kind": "ops", "label": "KMS alias", "name": {"tf": "name", "cfn": "Properties.AliasName"}, "tf": ["aws_kms_alias"], "attrs": {}},
+    "AWS::CertificateManager::Certificate": {"category": "secrets", "kind": "ops", "label": "ACM certificate", "name": {"tf": "domain_name", "cfn": "Properties.DomainName"}, "tf": ["aws_acm_certificate"], "attrs": {}},
+    "AWS::IAM::Role": {"category": "identity", "kind": "ops", "label": "IAM role", "name": {"tf": "name", "cfn": "Properties.RoleName"}, "tf": ["aws_iam_role"], "attrs": {
+      "statements": {"tf": "inline_policy.policy.Statement[*]", "cfn": "Properties.Policies[*].PolicyDocument.Statement[*]"},
+      "managed_policies": {"tf": "managed_policy_arns", "cfn": "Properties.ManagedPolicyArns"}}},
+    "AWS::IAM::Policy": {"category": "identity", "kind": "ops", "label": "IAM inline policy", "name": {"tf": "name", "cfn": "Properties.PolicyName"}, "tf": ["aws_iam_role_policy", "aws_iam_user_policy"], "attrs": {
+      "statements": {"tf": "policy.Statement[*]", "cfn": "Properties.PolicyDocument.Statement[*]", "text_json": "policy"}}},
+    "AWS::IAM::ManagedPolicy": {"category": "identity", "kind": "ops", "label": "IAM managed policy", "name": {"tf": "name", "cfn": "Properties.ManagedPolicyName"}, "tf": ["aws_iam_policy"], "attrs": {
+      "statements": {"tf": "policy.Statement[*]", "cfn": "Properties.PolicyDocument.Statement[*]", "text_json": "policy"}}},
+    "AWS::IAM::PolicyDocument": {"category": "identity", "kind": "ops", "label": "IAM policy document", "tf": ["aws_iam_policy_document"], "attrs": {
+      "statements": {"tf": "statement"}}},
+    "AWS::IAM::RolePolicyAttachment": {"category": "identity", "kind": "ops", "label": "Policy attachment", "tf": ["aws_iam_role_policy_attachment", "aws_iam_user_policy_attachment"], "attrs": {
+      "policy_arn": {"tf": "policy_arn"}}},
+    "AWS::IAM::User": {"category": "identity", "kind": "ops", "label": "IAM user", "name": {"tf": "name", "cfn": "Properties.UserName"}, "tf": ["aws_iam_user"], "attrs": {}},
+    "AWS::IAM::AccessKey": {"category": "identity", "kind": "ops", "label": "IAM access key", "tf": ["aws_iam_access_key"], "attrs": {}},
+    "AWS::IAM::InstanceProfile": {"category": "identity", "kind": "ops", "label": "Instance profile", "name": {"tf": "name", "cfn": "Properties.InstanceProfileName"}, "tf": ["aws_iam_instance_profile"], "attrs": {}},
+    "AWS::SQS::Queue": {"category": "messaging", "kind": "store", "label": "SQS queue", "name": {"tf": "name", "cfn": "Properties.QueueName"}, "tf": ["aws_sqs_queue"], "attrs": {
+      "dead_letter": {"tf": "redrive_policy", "cfn": "Properties.RedrivePolicy"}}},
+    "AWS::SQS::QueuePolicy": {"category": "messaging", "kind": "guard", "label": "Queue policy", "tf": ["aws_sqs_queue_policy"], "attrs": {
+      "statements": {"tf": "policy.Statement[*]", "cfn": "Properties.PolicyDocument.Statement[*]", "text_json": "policy"}}},
+    "AWS::SNS::Topic": {"category": "messaging", "kind": "store", "label": "SNS topic", "name": {"tf": "name", "cfn": "Properties.TopicName"}, "tf": ["aws_sns_topic"], "attrs": {}},
+    "AWS::SNS::Subscription": {"category": "messaging", "kind": "ops", "label": "SNS subscription", "tf": ["aws_sns_topic_subscription"], "attrs": {}},
+    "AWS::Events::Rule": {"category": "messaging", "kind": "ops", "label": "EventBridge rule", "name": {"tf": "name", "cfn": "Properties.Name"}, "tf": ["aws_cloudwatch_event_rule"], "attrs": {}},
+    "AWS::Logs::LogGroup": {"category": "monitoring", "kind": "ops", "label": "Log group", "name": {"tf": "name", "cfn": "Properties.LogGroupName"}, "tf": ["aws_cloudwatch_log_group"], "attrs": {
+      "retention_days": {"tf": "retention_in_days", "cfn": "Properties.RetentionInDays"}}},
+    "AWS::CloudWatch::Alarm": {"category": "monitoring", "kind": "ops", "label": "CloudWatch alarm", "name": {"tf": "alarm_name", "cfn": "Properties.AlarmName"}, "tf": ["aws_cloudwatch_metric_alarm"], "attrs": {}},
+    "AWS::CloudTrail::Trail": {"category": "monitoring", "kind": "ops", "label": "CloudTrail trail", "name": {"tf": "name", "cfn": "Properties.TrailName"}, "tf": ["aws_cloudtrail"], "attrs": {
+      "multi_region": {"tf": "is_multi_region_trail", "cfn": "Properties.IsMultiRegionTrail"}}},
+    "AWS::CloudFormation::Stack": {"category": "scope", "kind": "ops", "label": "Nested stack", "tf": ["aws_cloudformation_stack_set"], "attrs": {
+      "template_url": {"cfn": "Properties.TemplateURL"}}}
+  },
+  "inline_children": {
+    "AWS::EC2::SecurityGroup": [{"tf": "ingress", "cfn": "Properties.SecurityGroupIngress", "wrap": "Properties", "type": "AWS::EC2::SecurityGroupIngress"}]
+  },
+  "exposure": [
+    {"types": ["AWS::ElasticLoadBalancingV2::LoadBalancer", "AWS::ElasticLoadBalancing::LoadBalancer"], "rules": [
+      {"state": "private", "when": {"attr": "internal", "is": true}, "why": "an internal load balancer"},
+      {"state": "private", "when": {"attr": "scheme", "matches": "(?i)^internal$"}, "why": "an internal load balancer"},
+      {"state": "public", "when": {"always": true}, "why": "an internet-facing load balancer"}]},
+    {"types": ["AWS::RDS::DBInstance"], "rules": [
+      {"state": "private", "when": {"attr": "publicly_accessible", "is": false}, "why": "not publicly accessible"},
+      {"state": "private", "when": {"all": [{"format": "terraform"}, {"attr": "publicly_accessible", "missing": true}]}, "why": "left to the Terraform default, which is not publicly accessible"},
+      {"state": "private", "when": {"all": [{"attr": "publicly_accessible", "missing": true}, {"refers": "AWS::RDS::DBSubnetGroup"}]}, "why": "left to the default, which is private for a subnet group other than `default`"},
+      {"state": "public", "when": {"all": [{"any": [{"attr": "publicly_accessible", "is": true}, {"attr": "publicly_accessible", "missing": true}]}, {"refers": "AWS::EC2::SecurityGroup", "where": {"child": "AWS::EC2::SecurityGroupIngress", "where": {"any": [{"attr": "source", "matches": "^0\\.0\\.0\\.0/0$"}, {"attr": "source_v6", "matches": "^::/0$"}]}}}]}, "why": "publicly accessible, and a security group opens it to every address"},
+      {"state": "restricted", "when": {"any": [{"attr": "publicly_accessible", "is": true}, {"attr": "publicly_accessible", "missing": true}]}, "why": "a public address, limited by its security groups"}]},
+    {"types": ["AWS::S3::Bucket"], "rules": [
+      {"state": "private", "when": {"any": [
+        {"all": [{"attr": "block_public_acls", "is": true}, {"attr": "block_public_policy", "is": true}, {"attr": "ignore_public_acls", "is": true}, {"attr": "restrict_public_buckets", "is": true}]},
+        {"child": "AWS::S3::BucketPublicAccessBlock", "where": {"all": [{"attr": "block_public_acls", "is": true}, {"attr": "block_public_policy", "is": true}, {"attr": "ignore_public_acls", "is": true}, {"attr": "restrict_public_buckets", "is": true}]}}]}, "why": "all four public access block settings are on"},
+      {"state": "public", "anonymous": true, "when": {"child": "AWS::S3::BucketPolicy", "where": {"item_in": "statements", "where": [{"field": ["Effect", "effect"], "not": "Deny"}, {"field": ["Principal", "principals"], "matches": "^\\*$"}, {"field": ["Condition", "condition"], "missing": true}]}}, "why": "a bucket policy lets anyone read it without signing in"},
+      {"state": "public", "anonymous": true, "when": {"any": [{"attr": "acl", "matches": "(?i)^public"}, {"child": "AWS::S3::BucketAcl", "where": {"attr": "acl", "matches": "(?i)^public"}}]}, "why": "a public ACL"},
+      {"state": "restricted", "when": {"always": true}, "why": "no public access block in the code: only the account's defaults keep it closed, and nothing here does"}]},
+    {"types": ["AWS::ECS::Service"], "rules": [
+      {"state": "private", "passes_through": true, "when": {"attr": "assign_public_ip", "is": false}, "why": "no public IP on its tasks"},
+      {"state": "private", "passes_through": true, "when": {"attr": "assign_public_ip", "missing": true}, "why": "no public IP on its tasks"},
+      {"state": "public", "when": {"all": [{"attr": "assign_public_ip", "is": true}, {"refers": "AWS::EC2::SecurityGroup", "where": {"child": "AWS::EC2::SecurityGroupIngress", "where": {"any": [{"attr": "source", "matches": "^0\\.0\\.0\\.0/0$"}, {"attr": "source_v6", "matches": "^::/0$"}]}}}]}, "why": "public IPs on its tasks, and a security group opens them to every address"},
+      {"state": "restricted", "when": {"attr": "assign_public_ip", "is": true}, "why": "public IPs on its tasks, limited by its security groups"}]},
+    {"types": ["AWS::EC2::Instance"], "rules": [
+      {"state": "public", "when": {"all": [{"attr": "public_ip", "is": true}, {"refers": "AWS::EC2::SecurityGroup", "where": {"child": "AWS::EC2::SecurityGroupIngress", "where": {"any": [{"attr": "source", "matches": "^0\\.0\\.0\\.0/0$"}, {"attr": "source_v6", "matches": "^::/0$"}]}}}]}, "why": "a public IP, and a security group opens it to every address"},
+      {"state": "restricted", "when": {"attr": "public_ip", "is": true}, "why": "a public IP, limited by its security groups"},
+      {"state": "private", "passes_through": true, "when": {"always": true}, "why": "no public IP is asked for; its subnet's auto-assign setting is the rest of the answer"}]},
+    {"types": ["AWS::ApiGatewayV2::Api"], "rules": [
+      {"state": "public", "when": {"always": true}, "why": "an HTTP API has a public endpoint; authorizers still apply"}]},
+    {"types": ["AWS::ApiGateway::RestApi"], "rules": [
+      {"state": "private", "when": {"attr": "endpoint_types", "matches": "^PRIVATE$"}, "why": "a private REST API"},
+      {"state": "public", "when": {"always": true}, "why": "a REST API has a public endpoint unless it is private; authorizers still apply"}]},
+    {"types": ["AWS::Lambda::Url"], "rules": [
+      {"state": "public", "anonymous": true, "when": {"attr": "auth", "matches": "(?i)^none$"}, "why": "a function URL with no authorization"},
+      {"state": "restricted", "when": {"always": true}, "why": "a function URL that needs a signed request"}]},
+    {"types": ["AWS::CloudFront::Distribution"], "rules": [
+      {"state": "public", "when": {"always": true}, "why": "a CDN distribution faces the internet"}]},
+    {"types": ["AWS::EC2::EIP"], "rules": [
+      {"state": "public", "when": {"always": true}, "why": "it is a public address"}]},
+    {"types": ["AWS::EKS::Cluster"], "rules": [
+      {"state": "private", "when": {"attr": "endpoint_public", "is": false}, "why": "the API server is private"},
+      {"state": "public", "when": {"always": true}, "why": "the API server is public unless it is turned off"}]},
+    {"types": ["AWS::OpenSearchService::Domain"], "rules": [
+      {"state": "private", "when": {"attr": "vpc_options", "present": true}, "why": "the domain sits in a VPC"},
+      {"state": "public", "when": {"always": true}, "why": "a domain outside a VPC has a public endpoint; its access policy decides who gets in"}]},
+    {"types": ["AWS::SQS::Queue", "AWS::SNS::Topic", "AWS::SecretsManager::Secret", "AWS::KMS::Key", "AWS::ECR::Repository", "AWS::DynamoDB::Table"], "rules": [
+      {"state": "restricted", "when": {"always": true}, "why": "a regional API with no address in a network: every call needs a signed request"}]}
+  ],
+  "boundaries": [
+    {"types": ["AWS::NetworkFirewall::Firewall"], "when": {"always": true}, "why": "a firewall inspects and filters what passes"},
+    {"types": ["AWS::ElasticLoadBalancingV2::LoadBalancer"], "when": {"referred_by": "AWS::WAFv2::WebACLAssociation"}, "why": "the load balancer has a WAF"},
+    {"types": ["AWS::CloudFront::Distribution"], "when": {"attr": "web_acl", "present": true}, "why": "the distribution has a WAF"},
+    {"types": ["AWS::EC2::VPCEndpoint"], "when": {"always": true}, "why": "a VPC endpoint is only reachable inside the network"}
+  ],
+  "export": {
+    "list_keys": ["ResourceTagMappingList", "resourceIdentifiers", "Results"],
+    "row_shapes": [
+      {"requires": "ResourceARN", "id": "ResourceARN", "id_pattern": "^arn:[^:]*:(?P<service>[^:]*):(?P<region>[^:]*):(?P<account>[^:]*):(?P<resource>.+)$", "tags": "Tags", "scope": {"account": "account", "region": "region"}, "location": "region"},
+      {"requires": "resourceType", "id": "resourceId", "type": "resourceType", "name": ["resourceName", "resourceId"], "location": "awsRegion", "scope": {"account": "accountId", "region": "awsRegion"}}
+    ],
+    "id_types": [
+      {"service": "ec2", "resource": "^vpc/(?P<name>.+)$", "type": "AWS::EC2::VPC", "name_tag": "Name"},
+      {"service": "ec2", "resource": "^subnet/(?P<name>.+)$", "type": "AWS::EC2::Subnet", "name_tag": "Name"},
+      {"service": "ec2", "resource": "^internet-gateway/(?P<name>.+)$", "type": "AWS::EC2::InternetGateway", "name_tag": "Name"},
+      {"service": "ec2", "resource": "^natgateway/(?P<name>.+)$", "type": "AWS::EC2::NatGateway", "name_tag": "Name"},
+      {"service": "ec2", "resource": "^elastic-ip/(?P<name>.+)$", "type": "AWS::EC2::EIP", "name_tag": "Name"},
+      {"service": "ec2", "resource": "^route-table/(?P<name>.+)$", "type": "AWS::EC2::RouteTable", "name_tag": "Name"},
+      {"service": "ec2", "resource": "^security-group/(?P<name>.+)$", "type": "AWS::EC2::SecurityGroup", "name_tag": "Name"},
+      {"service": "ec2", "resource": "^instance/(?P<name>.+)$", "type": "AWS::EC2::Instance", "name_tag": "Name"},
+      {"service": "ec2", "resource": "^vpc-endpoint/(?P<name>.+)$", "type": "AWS::EC2::VPCEndpoint", "name_tag": "Name"},
+      {"service": "elasticloadbalancing", "resource": "^loadbalancer/(?:app|net|gwy)/(?P<name>[^/]+)/", "type": "AWS::ElasticLoadBalancingV2::LoadBalancer"},
+      {"service": "elasticloadbalancing", "resource": "^targetgroup/(?P<name>[^/]+)/", "type": "AWS::ElasticLoadBalancingV2::TargetGroup"},
+      {"service": "elasticloadbalancing", "resource": "^listener/(?P<name>.+)$", "type": "AWS::ElasticLoadBalancingV2::Listener"},
+      {"service": "ecs", "resource": "^cluster/(?P<name>.+)$", "type": "AWS::ECS::Cluster"},
+      {"service": "ecs", "resource": "^service/[^/]+/(?P<name>.+)$", "type": "AWS::ECS::Service"},
+      {"service": "ecs", "resource": "^task-definition/(?P<name>[^:]+)", "type": "AWS::ECS::TaskDefinition"},
+      {"service": "ecr", "resource": "^repository/(?P<name>.+)$", "type": "AWS::ECR::Repository"},
+      {"service": "lambda", "resource": "^function:(?P<name>[^:]+)", "type": "AWS::Lambda::Function"},
+      {"service": "rds", "resource": "^db:(?P<name>.+)$", "type": "AWS::RDS::DBInstance"},
+      {"service": "rds", "resource": "^cluster:(?P<name>.+)$", "type": "AWS::RDS::DBCluster"},
+      {"service": "rds", "resource": "^subgrp:(?P<name>.+)$", "type": "AWS::RDS::DBSubnetGroup"},
+      {"service": "dynamodb", "resource": "^table/(?P<name>.+)$", "type": "AWS::DynamoDB::Table"},
+      {"service": "elasticache", "resource": "^replicationgroup:(?P<name>.+)$", "type": "AWS::ElastiCache::ReplicationGroup"},
+      {"service": "elasticache", "resource": "^cluster:(?P<name>.+)$", "type": "AWS::ElastiCache::CacheCluster"},
+      {"service": "s3", "resource": "^(?P<name>[^/]+)$", "type": "AWS::S3::Bucket"},
+      {"service": "secretsmanager", "resource": "^secret:(?P<name>.+)-[A-Za-z0-9]{6}$", "type": "AWS::SecretsManager::Secret"},
+      {"service": "sqs", "resource": "^(?P<name>[^:]+)$", "type": "AWS::SQS::Queue"},
+      {"service": "sns", "resource": "^(?P<name>[^:]+)$", "type": "AWS::SNS::Topic"},
+      {"service": "logs", "resource": "^log-group:(?P<name>[^:]+)", "type": "AWS::Logs::LogGroup"},
+      {"service": "cloudwatch", "resource": "^alarm:(?P<name>.+)$", "type": "AWS::CloudWatch::Alarm"},
+      {"service": "wafv2", "resource": "^regional/webacl/(?P<name>[^/]+)/", "type": "AWS::WAFv2::WebACL"}
+    ],
+    "not_listed": [
+      "AWS::EC2::VPCGatewayAttachment",
+      "AWS::EC2::Route",
+      "AWS::EC2::SubnetRouteTableAssociation",
+      "AWS::EC2::SecurityGroupIngress",
+      "AWS::EC2::SecurityGroupEgress",
+      "AWS::EC2::FlowLog",
+      "AWS::Route53::RecordSet",
+      "AWS::ElasticLoadBalancingV2::Listener",
+      "AWS::WAFv2::WebACLAssociation",
+      "AWS::ECR::LifecyclePolicy",
+      "AWS::ApplicationAutoScaling::ScalableTarget",
+      "AWS::Lambda::Url",
+      "AWS::RDS::DBParameterGroup",
+      "AWS::S3::BucketPolicy",
+      "AWS::S3::BucketPublicAccessBlock",
+      "AWS::S3::BucketVersioning",
+      "AWS::S3::BucketEncryption",
+      "AWS::S3::BucketLifecycle",
+      "AWS::S3::BucketLogging",
+      "AWS::S3::BucketAcl",
+      "AWS::SecretsManager::SecretVersion",
+      "AWS::SecretsManager::RotationSchedule",
+      "AWS::KMS::Alias",
+      "AWS::IAM::Role",
+      "AWS::IAM::Policy",
+      "AWS::IAM::ManagedPolicy",
+      "AWS::IAM::PolicyDocument",
+      "AWS::IAM::RolePolicyAttachment",
+      "AWS::IAM::User",
+      "AWS::IAM::AccessKey",
+      "AWS::IAM::InstanceProfile",
+      "AWS::SQS::QueuePolicy",
+      "AWS::SNS::Subscription",
+      "AWS::CloudFormation::Stack"
+    ],
+    "ignore": [
+      {"type": "AWS::ElasticLoadBalancingV2::Listener", "why": "a listener has no name of its own to compare"}
+    ]
+  },
+  "checks": [
+    {"id": "database-publicly-accessible", "family": "exposure", "pillar": "Security", "types": ["AWS::RDS::DBInstance"], "when": {"attr": "publicly_accessible", "is": true}, "what": "This database has a public address."},
+    {"id": "s3-no-public-access-block", "family": "exposure", "pillar": "Security", "types": ["AWS::S3::Bucket"], "when": {"not": {"any": [
+      {"all": [{"attr": "block_public_acls", "is": true}, {"attr": "block_public_policy", "is": true}, {"attr": "ignore_public_acls", "is": true}, {"attr": "restrict_public_buckets", "is": true}]},
+      {"child": "AWS::S3::BucketPublicAccessBlock", "where": {"all": [{"attr": "block_public_acls", "is": true}, {"attr": "block_public_policy", "is": true}, {"attr": "ignore_public_acls", "is": true}, {"attr": "restrict_public_buckets", "is": true}]}}]}}, "what": "The code sets no public access block for this bucket, or turns part of it off."},
+    {"id": "s3-public-policy", "family": "exposure", "pillar": "Security", "types": ["AWS::S3::BucketPolicy"], "when": {"item_in": "statements", "where": [{"field": ["Effect", "effect"], "not": "Deny"}, {"field": ["Principal", "principals"], "matches": "^\\*$"}, {"field": ["Condition", "condition"], "missing": true}]}, "what": "A bucket policy allows anyone, with no condition."},
+    {"id": "s3-public-acl", "family": "exposure", "pillar": "Security", "types": ["AWS::S3::Bucket", "AWS::S3::BucketAcl"], "when": {"attr": "acl", "matches": "(?i)^public"}, "what": "A public ACL on a bucket."},
+    {"id": "load-balancer-no-waf", "family": "exposure", "pillar": "Security", "types": ["AWS::ElasticLoadBalancingV2::LoadBalancer"], "when": {"all": [{"not": {"attr": "internal", "is": true}}, {"not": {"attr": "scheme", "matches": "(?i)^internal$"}}, {"not": {"referred_by": "AWS::WAFv2::WebACLAssociation"}}]}, "what": "An internet-facing load balancer with no WAF in the code."},
+    {"id": "public-ip-on-compute", "family": "exposure", "pillar": "Security", "types": ["AWS::EC2::Instance", "AWS::ECS::Service"], "when": {"any": [{"attr": "public_ip", "is": true}, {"attr": "assign_public_ip", "is": true}]}, "what": "Compute with a public IP address."},
+    {"id": "function-url-no-auth", "family": "exposure", "pillar": "Security", "types": ["AWS::Lambda::Url"], "when": {"attr": "auth", "matches": "(?i)^none$"}, "what": "A function URL anyone can call without signing in."},
+    {"id": "sg-open-from-anywhere", "family": "network", "pillar": "Security", "types": ["AWS::EC2::SecurityGroupIngress"], "when": {"all": [{"any": [{"attr": "rule_type", "missing": true}, {"attr": "rule_type", "is": "ingress"}]}, {"not": {"attr": "port", "in": [80, 443]}}, {"any": [{"attr": "source", "matches": "^0\\.0\\.0\\.0/0$"}, {"attr": "source_v6", "matches": "^::/0$"}]}]}, "what": "An inbound rule allows any address on a port other than 80 or 443."},
+    {"id": "secret-in-settings", "family": "secrets", "pillar": "Security", "types": ["AWS::ECS::TaskDefinition", "AWS::Lambda::Function"], "when": {"secret_in": "settings"}, "what": "A value that looks like a secret sits in plain environment variables instead of a secret reference."},
+    {"id": "password-in-code", "family": "secrets", "pillar": "Security", "types": ["AWS::RDS::DBInstance", "AWS::RDS::DBCluster"], "when": {"attr": "master_password", "matches": "^<hidden"}, "what": "A database password is written in the code."},
+    {"id": "secret-value-in-code", "family": "secrets", "pillar": "Security", "types": ["AWS::SecretsManager::Secret", "AWS::SecretsManager::SecretVersion"], "when": {"attr": "secret_string", "matches": "^<hidden"}, "what": "A secret's value is written in the code."},
+    {"id": "no-secret-rotation", "family": "secrets", "pillar": "Security", "types": ["AWS::SecretsManager::Secret"], "when": {"not": {"child": "AWS::SecretsManager::RotationSchedule"}}, "what": "Nothing in the code rotates this secret."},
+    {"id": "iam-action-star", "family": "identity", "pillar": "Security", "types": ["AWS::IAM::Policy", "AWS::IAM::ManagedPolicy", "AWS::IAM::Role"], "when": {"any": [{"item_in": "statements", "where": [{"field": ["Effect", "effect"], "not": "Deny"}, {"field": ["Action", "actions"], "matches": "^\\*$"}]}, {"refers": "AWS::IAM::PolicyDocument", "where": {"item_in": "statements", "where": [{"field": ["Effect", "effect"], "not": "Deny"}, {"field": ["Action", "actions"], "matches": "^\\*$"}]}}]}, "what": "A policy allows every action."},
+    {"id": "iam-admin-attached", "family": "identity", "pillar": "Security", "types": ["AWS::IAM::RolePolicyAttachment", "AWS::IAM::Role"], "when": {"any": [{"attr": "policy_arn", "matches": "AdministratorAccess"}, {"attr": "managed_policies", "matches": "AdministratorAccess"}]}, "what": "AdministratorAccess is attached."},
+    {"id": "iam-user-access-key", "family": "identity", "pillar": "Security", "types": ["AWS::IAM::AccessKey"], "when": {"always": true}, "what": "A long-lived access key for an IAM user: a role avoids it."},
+    {"id": "no-load-balancer-logs", "family": "monitoring", "pillar": "Operational Excellence", "types": ["AWS::ElasticLoadBalancingV2::LoadBalancer"], "when": {"not": {"any": [{"attr": "access_logs", "is": true}, {"item_in": "attributes", "where": [{"field": "Key", "is": "access_logs.s3.enabled"}, {"field": "Value", "in": ["true", true]}]}]}}, "what": "Access logs are off: the load balancer keeps no record of the requests it served."},
+    {"id": "no-vpc-flow-logs", "family": "monitoring", "pillar": "Operational Excellence", "types": ["AWS::EC2::VPC"], "when": {"not": {"referred_by": "AWS::EC2::FlowLog"}}, "what": "No flow log records this VPC's traffic."},
+    {"id": "no-database-logs", "family": "monitoring", "pillar": "Operational Excellence", "types": ["AWS::RDS::DBInstance", "AWS::RDS::DBCluster"], "when": {"attr": "log_exports", "missing": true}, "what": "No database logs are sent to CloudWatch."},
+    {"id": "no-container-logs", "family": "monitoring", "pillar": "Operational Excellence", "types": ["AWS::ECS::TaskDefinition"], "when": {"attr": "logs", "missing": true}, "what": "A container has no log configuration."},
+    {"id": "log-retention-short", "family": "monitoring", "pillar": "Operational Excellence", "types": ["AWS::Logs::LogGroup"], "when": {"attr": "retention_days", "below": 30}, "what": "Logs are kept for less than 30 days."},
+    {"id": "database-single-az", "family": "resilience", "pillar": "Reliability", "types": ["AWS::RDS::DBInstance"], "when": {"any": [{"attr": "multi_az", "is": false}, {"attr": "multi_az", "missing": true}]}, "what": "This database runs in one availability zone."},
+    {"id": "database-no-backups", "family": "resilience", "pillar": "Reliability", "types": ["AWS::RDS::DBInstance", "AWS::RDS::DBCluster"], "when": {"attr": "backup_days", "below": 1}, "what": "Automatic backups are off."},
+    {"id": "no-deletion-protection", "family": "resilience", "pillar": "Reliability", "types": ["AWS::RDS::DBInstance", "AWS::RDS::DBCluster"], "when": {"any": [{"attr": "deletion_protection", "is": false}, {"attr": "deletion_protection", "missing": true}]}, "what": "This database can be deleted by one call."},
+    {"id": "single-task-service", "family": "resilience", "pillar": "Reliability", "types": ["AWS::ECS::Service"], "when": {"attr": "desired_count", "is": 1}, "what": "One task: a restart is an outage."},
+    {"id": "bucket-no-versioning", "family": "resilience", "pillar": "Reliability", "types": ["AWS::S3::Bucket"], "when": {"not": {"any": [{"attr": "versioning", "matches": "(?i)^enabled$"}, {"child": "AWS::S3::BucketVersioning", "where": {"attr": "status", "matches": "(?i)^enabled$"}}]}}, "what": "An overwritten or deleted object cannot be recovered."},
+    {"id": "queue-no-dead-letter", "family": "resilience", "pillar": "Reliability", "types": ["AWS::SQS::Queue"], "when": {"all": [{"attr": "dead_letter", "missing": true}, {"not": {"referred_by": "AWS::SQS::Queue"}}]}, "what": "A message that keeps failing has nowhere to go."},
+    {"id": "unpinned-image", "family": "supply-chain", "pillar": "Operational Excellence", "types": ["AWS::ECS::TaskDefinition", "AWS::Lambda::Function"], "when": {"attr": "images", "matches": "(:latest$|^[^:|]+$)"}, "what": "The image tag is not pinned, so a restart can deploy different code."},
+    {"id": "image-tags-mutable", "family": "supply-chain", "pillar": "Operational Excellence", "types": ["AWS::ECR::Repository"], "when": {"any": [{"attr": "tag_mutability", "missing": true}, {"attr": "tag_mutability", "matches": "(?i)^mutable$"}]}, "what": "A tag in this repository can be moved to a different image."},
+    {"id": "database-not-encrypted", "family": "encryption", "pillar": "Security", "types": ["AWS::RDS::DBInstance", "AWS::RDS::DBCluster"], "when": {"any": [{"attr": "storage_encrypted", "is": false}, {"attr": "storage_encrypted", "missing": true}]}, "what": "The database's storage is not encrypted."},
+    {"id": "listener-plain-http", "family": "encryption", "pillar": "Security", "types": ["AWS::ElasticLoadBalancingV2::Listener"], "when": {"attr": "protocol", "matches": "(?i)^http$"}, "what": "A listener takes plain HTTP."},
+    {"id": "listener-old-tls", "family": "encryption", "pillar": "Security", "types": ["AWS::ElasticLoadBalancingV2::Listener"], "when": {"attr": "ssl_policy", "matches": "TLS-1-[01]-|2016-08"}, "what": "The listener's TLS policy allows TLS below 1.2."},
+    {"id": "old-instance-generation", "family": "efficiency", "pillar": "Performance Efficiency", "types": ["AWS::RDS::DBInstance", "AWS::EC2::Instance"], "when": {"attr": "size", "matches": "^(db\\.)?(t2|m3|m4|r3|r4|c3|c4)\\."}, "what": "A previous-generation instance family."},
+    {"id": "no-autoscaling-on-service", "family": "efficiency", "pillar": "Performance Efficiency", "types": ["AWS::ECS::Service"], "when": {"not": {"referred_by": "AWS::ApplicationAutoScaling::ScalableTarget"}}, "what": "This service has a fixed number of tasks: nothing in the code scales it."},
+    {"id": "log-group-no-retention", "family": "cost", "pillar": "Cost Optimization", "types": ["AWS::Logs::LogGroup"], "when": {"attr": "retention_days", "missing": true}, "what": "Logs are kept forever and paid for forever."},
+    {"id": "repository-no-lifecycle", "family": "cost", "pillar": "Cost Optimization", "types": ["AWS::ECR::Repository"], "when": {"not": {"any": [{"attr": "lifecycle", "present": true}, {"child": "AWS::ECR::LifecyclePolicy"}]}}, "what": "Old images pile up with nothing to expire them."},
+    {"id": "bucket-no-lifecycle", "family": "efficiency", "pillar": "Sustainability", "types": ["AWS::S3::Bucket"], "when": {"not": {"any": [{"attr": "lifecycle", "present": true}, {"child": "AWS::S3::BucketLifecycle"}]}}, "what": "Nothing expires or tiers this bucket's objects, so what is stored only grows."},
+    {"id": "compute-not-on-arm", "family": "efficiency", "pillar": "Sustainability", "types": ["AWS::ECS::TaskDefinition", "AWS::Lambda::Function"], "when": {"not": {"attr": "architecture", "matches": "(?i)arm64"}}, "what": "Runs on x86: Arm does the same work with less energy where the workload allows it."}
+  ],
+  "prices": {
+    "api": "bulk_file",
+    "file_url": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/{service}/current/{region}/index.json",
+    "index_url": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json",
+    "source": "AWS Price List offer files, https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/",
+    "products_key": "products",
+    "terms_key": "terms",
+    "term_kind": "OnDemand",
+    "product_field": "productFamily",
+    "meter_attr": "usagetype",
+    "meter_strip": "^[A-Z]{3}\\d-",
+    "sku_default": ["instanceType", "storageClass", "volumeType", "group"],
+    "sku_attrs": {
+      "AmazonEC2": ["instanceType", "operatingSystem", "tenancy", "preInstalledSw", "capacitystatus", "group"],
+      "AmazonRDS": ["instanceType", "volumeType", "databaseEngine", "databaseEdition", "deploymentOption", "licenseModel", "group"],
+      "AmazonECS": ["cpuArchitecture", "operatingSystem", "group"],
+      "AWSQueueService": ["queueType", "group"],
+      "AmazonS3": ["storageClass", "volumeType", "group", "groupDescription", "feeDescription"],
+      "AWSELB": ["group"],
+      "AWSLambda": ["group"],
+      "AmazonVPC": ["endpointType", "group"],
+      "AmazonCloudWatch": ["group"],
+      "AWSDataTransfer": ["transferType", "fromLocation", "toLocation"],
+      "AWSSecretsManager": ["group"],
+      "awskms": ["group"],
+      "AmazonApiGateway": ["group"],
+      "awswaf": ["group"]
+    }
+  }
+}

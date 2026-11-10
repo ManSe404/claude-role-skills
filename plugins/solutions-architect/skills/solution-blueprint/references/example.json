@@ -1,0 +1,1008 @@
+{
+ "skill": "solution-blueprint",
+ "title": "Acme Mutual claims platform: solution blueprint",
+ "subtitle": "Five specialist pages joined into one solution: where they contradict each other and what to do first.",
+ "meta": {
+  "project": "acme-solution",
+  "date": "2026-11-10",
+  "brief": "docs/briefs/claims-platform.md"
+ },
+ "verdict": {
+  "tone": "bad",
+  "text": "The pages cannot be built together as they stand: personal data would leave the EU for East US and West US 2, which the brief rules out, and cloud-design's Kubernetes assumes a team of 12 the brief does not have. Azure in euros is EUR 7,360 against a budget of EUR 6,000 before the USD 2,030 of AI cost is counted, so ai-stack and cloud-design must be redone first."
+ },
+ "stats": [
+  {
+   "label": "Pages joined",
+   "value": 5,
+   "tone": "info"
+  },
+  {
+   "label": "Conflicts real",
+   "value": 10,
+   "note": "6 high, 3 medium, 1 low",
+   "tone": "bad"
+  },
+  {
+   "label": "Conflicts not real",
+   "value": 2,
+   "note": "parts of two listed entries",
+   "tone": "info"
+  },
+  {
+   "label": "Currencies",
+   "value": 2,
+   "note": "EUR and USD, never added",
+   "tone": "warn"
+  }
+ ],
+ "sections": [
+  {
+   "id": "joined",
+   "title": "What was joined",
+   "blocks": [
+    {
+     "type": "table",
+     "title": "Pages read",
+     "columns": [
+      "Page",
+      "Skill",
+      "Date",
+      "Has facts"
+     ],
+     "rows": [
+      [
+       "ai-pattern-2026-11-03.json",
+       "ai-pattern",
+       "2026-11-03",
+       "yes"
+      ],
+      [
+       "ai-stack-2026-11-04.json",
+       "ai-stack",
+       "2026-11-04",
+       "yes"
+      ],
+      [
+       "arch-style-2026-11-05.json",
+       "arch-style",
+       "2026-11-05",
+       "yes"
+      ],
+      [
+       "cloud-design-2026-11-07.json",
+       "cloud-design",
+       "2026-11-07",
+       "yes"
+      ],
+      [
+       "data-platform-2026-11-05.json",
+       "data-platform",
+       "2026-11-05",
+       "yes"
+      ]
+     ]
+    },
+    {
+     "type": "kv",
+     "title": "What is missing",
+     "items": [
+      [
+       "Missing skills",
+       "None. There is no `solution-brief` page, so this is checked against the script's default five deciding skills."
+      ],
+      [
+       "Pages without facts",
+       "None"
+      ],
+      [
+       "Superseded pages",
+       "None"
+      ],
+      [
+       "Invalid pages",
+       "None"
+      ],
+      [
+       "Regions not placed",
+       "None"
+      ]
+     ]
+    },
+    {
+     "type": "list",
+     "title": "Assumed for this page",
+     "items": [
+      "All five pages describe one deployment of one platform: each page's `scope` names the Acme Mutual claims platform.",
+      "Where a page and the client brief differ (team, budget, the EU rule), the brief wins.",
+      "These five specialists are the full set: no `solution-brief` page says who had to run, so the script expected its default deciding skills.",
+      "The budget's \"everything included\" covers the model calls and the reporting lake as well as hosting.",
+      "The vector index carries personal data: ai-pattern retrieves over the claim documents, although ai-stack's data fact names only the model endpoint.",
+      "The Application host and the Claims database are drawn in West Europe, the region cloud-design names for Azure, the cloud it chose. Neither has a region of its own.",
+      "arch-style names no region, so the Claims application and the Document worker are drawn inside the Application host.",
+      "Prices are taken as the pages state them. Every source is labelled an EXAMPLE price table, not real prices, and none was checked."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "solution",
+   "title": "The whole solution",
+   "intro": "Boxes are the regions the pages name, with the components inside them, as the pages stand today. A red mark means a real conflict: click the box for which page and why. A link labelled `assumed` is inferred and no page states it. `eu-central-1` is not drawn because it is only cloud-design's AWS alternative.",
+   "blocks": [
+    {
+     "type": "nested",
+     "title": "Claims platform as the pages describe it",
+     "boxes": [
+      {
+       "id": "west_europe",
+       "label": "West Europe",
+       "flag": "bad",
+       "note": "cloud-design's region for Azure",
+       "details": [
+        [
+         "Page",
+         "cloud-design"
+        ],
+        [
+         "Conflict",
+         "data-platform puts the platform in North Europe. Both meet the EU rule, but it is one deployment."
+        ]
+       ],
+       "kind": "ops"
+      },
+      {
+       "id": "north_europe",
+       "label": "North Europe",
+       "flag": "bad",
+       "note": "data-platform's region",
+       "details": [
+        [
+         "Page",
+         "data-platform"
+        ],
+        [
+         "Conflict",
+         "cloud-design puts the platform in West Europe. Recommended: one region."
+        ]
+       ],
+       "kind": "ops"
+      },
+      {
+       "id": "east_us",
+       "label": "East US",
+       "flag": "bad",
+       "note": "ai-stack's region",
+       "details": [
+        [
+         "Page",
+         "ai-stack"
+        ],
+        [
+         "Conflict",
+         "Carries claim text, and the brief says personal data stays in the EU."
+        ]
+       ],
+       "kind": "ops"
+      },
+      {
+       "id": "west_us_2",
+       "label": "West US 2",
+       "flag": "bad",
+       "note": "cloud-design, backups only",
+       "details": [
+        [
+         "Page",
+         "cloud-design"
+        ],
+        [
+         "Conflict",
+         "Holds claim documents and customer contact, which the same page says are EU only."
+        ]
+       ],
+       "kind": "ops"
+      },
+      {
+       "id": "hosting",
+       "label": "Application host",
+       "parent": "west_europe",
+       "kind": "service",
+       "tech": "Azure Kubernetes Service",
+       "flag": "bad",
+       "details": [
+        [
+         "Page",
+         "cloud-design: Kubernetes with two node pools"
+        ],
+        [
+         "Conflict",
+         "arch-style decides one container on the app platform, because there is no platform team. Recommended: arch-style."
+        ],
+        [
+         "Placed here",
+         "Assumed: West Europe is cloud-design's region for Azure."
+        ]
+       ]
+      },
+      {
+       "id": "app",
+       "label": "Claims application",
+       "parent": "hosting",
+       "kind": "service",
+       "tech": ".NET 8",
+       "details": [
+        [
+         "Page",
+         "arch-style"
+        ],
+        [
+         "Placed here",
+         "Assumed: arch-style names no region."
+        ]
+       ]
+      },
+      {
+       "id": "worker",
+       "label": "Document worker",
+       "parent": "hosting",
+       "kind": "service",
+       "tech": ".NET 8",
+       "flag": "warn",
+       "details": [
+        [
+         "Page",
+         "arch-style"
+        ],
+        [
+         "Open",
+         "One container or a second one: the page says both."
+        ],
+        [
+         "Assumed links",
+         "Its calls to the claims database, the vector index and the model are assumed. ai-pattern names a workflow, and no page says which component runs it."
+        ]
+       ]
+      },
+      {
+       "id": "claims_db",
+       "label": "Claims database",
+       "parent": "west_europe",
+       "kind": "store",
+       "tech": "PostgreSQL or Azure SQL",
+       "flag": "bad",
+       "details": [
+        [
+         "Pages",
+         "ai-stack: PostgreSQL. cloud-design: Azure Database for PostgreSQL. data-platform: Azure SQL Database."
+        ],
+        [
+         "Conflict",
+         "The engine differs, and cloud-design and data-platform name different EU regions. Recommended: Azure Database for PostgreSQL, in one region."
+        ],
+        [
+         "Assumed link",
+         "The read from the Document worker is assumed."
+        ]
+       ]
+      },
+      {
+       "id": "lake",
+       "label": "Reporting lake",
+       "parent": "north_europe",
+       "kind": "store",
+       "tech": "Azure Data Lake Storage",
+       "flag": "bad",
+       "details": [
+        [
+         "Page",
+         "data-platform"
+        ],
+        [
+         "Conflict",
+         "In North Europe while cloud-design's Azure region is West Europe. Recommended: one region."
+        ]
+       ]
+      },
+      {
+       "id": "llm",
+       "label": "Model endpoint",
+       "parent": "east_us",
+       "kind": "model",
+       "tech": "Azure OpenAI",
+       "flag": "bad",
+       "details": [
+        [
+         "Page",
+         "ai-stack"
+        ],
+        [
+         "Conflict",
+         "ai-stack marks the claim text sent here as personal and places it in East US. Recommended: an EU region, changing the model if needed."
+        ],
+        [
+         "Assumed link",
+         "The call from the Document worker is assumed."
+        ]
+       ]
+      },
+      {
+       "id": "search",
+       "label": "Vector index",
+       "parent": "east_us",
+       "kind": "retrieval",
+       "tech": "Azure AI Search",
+       "flag": "bad",
+       "details": [
+        [
+         "Page",
+         "ai-stack"
+        ],
+        [
+         "Conflict",
+         "In East US, and ai-pattern retrieves over the claim documents. Recommended: an EU region."
+        ],
+        [
+         "Assumed link",
+         "The call from the Document worker is assumed."
+        ]
+       ]
+      },
+      {
+       "id": "backups",
+       "label": "Backups",
+       "parent": "west_us_2",
+       "kind": "store",
+       "tech": "Azure Blob Storage, archive tier",
+       "flag": "bad",
+       "details": [
+        [
+         "Page",
+         "cloud-design"
+        ],
+        [
+         "Conflict",
+         "The same page says backups hold personal data that is EU only. Recommended: an EU region."
+        ]
+       ]
+      }
+     ],
+     "links": [
+      {
+       "from": "app",
+       "to": "claims_db",
+       "label": "app data"
+      },
+      {
+       "from": "claims_db",
+       "to": "lake",
+       "label": "scheduled SQL",
+       "flag": "warn"
+      },
+      {
+       "from": "claims_db",
+       "to": "backups",
+       "label": "backups",
+       "flag": "bad"
+      },
+      {
+       "from": "worker",
+       "to": "claims_db",
+       "label": "assumed"
+      },
+      {
+       "from": "worker",
+       "to": "search",
+       "label": "assumed",
+       "flag": "bad"
+      },
+      {
+       "from": "worker",
+       "to": "llm",
+       "label": "assumed",
+       "flag": "bad"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "decisions",
+   "title": "Decisions",
+   "intro": "As the specialists wrote them. The two Hosting rows contradict each other and Model hosting breaks the EU rule, see Conflicts. No page records the database engine as a decision.",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Decision",
+      "Chosen",
+      "Page"
+     ],
+     "rows": [
+      [
+       "AI pattern",
+       "Retrieval and a drafted summary, handler reviews every draft",
+       "ai-pattern-2026-11-03.json"
+      ],
+      [
+       "Model hosting",
+       "Azure OpenAI in East US",
+       "ai-stack-2026-11-04.json"
+      ],
+      [
+       "System shape",
+       "Modular monolith",
+       "arch-style-2026-11-05.json"
+      ],
+      [
+       "Hosting",
+       "One container on the app platform",
+       "arch-style-2026-11-05.json"
+      ],
+      [
+       "Cloud",
+       "Azure",
+       "cloud-design-2026-11-07.json"
+      ],
+      [
+       "Hosting",
+       "Kubernetes with two node pools",
+       "cloud-design-2026-11-07.json"
+      ],
+      [
+       "Platform",
+       "One database with scheduled SQL into a reporting lake",
+       "data-platform-2026-11-05.json"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cost",
+   "title": "Cost",
+   "blocks": [
+    {
+     "type": "callout",
+     "tone": "warn",
+     "text": "Every price on every page is labelled an EXAMPLE price table, not real prices. They are copied as the pages state them and none was checked. Nothing is added across currencies or converted."
+    },
+    {
+     "type": "table",
+     "title": "Monthly, per cloud and currency",
+     "columns": [
+      "Cloud",
+      "Currency",
+      "Total",
+      "Built from",
+      "Priced as of",
+      "Source",
+      "Leaves out"
+     ],
+     "align": [
+      "left",
+      "left",
+      "right",
+      "left",
+      "left",
+      "left",
+      "left"
+     ],
+     "rows": [
+      [
+       "Azure",
+       "EUR",
+       "7,360",
+       "cloud-design-2026-11-07.json: 6,180 (stated on the page: Azure, total); data-platform-2026-11-05.json: 1,180 (sum of its lines)",
+       "2026-11-02 to 2026-11-07",
+       "EXAMPLE price table saved 2026-11-02, not real prices; EXAMPLE price table saved 2026-11-07, not real prices",
+       "Model calls, embeddings and the search index (in the USD row, not added). No line for the seven-year record, the upload route or single sign-on, which no page prices."
+      ],
+      [
+       "Azure",
+       "USD",
+       "2,030",
+       "ai-stack-2026-11-04.json: 2,030 (sum of its lines)",
+       "2026-03-02",
+       "EXAMPLE price table saved 2026-03-02, not real prices",
+       "Everything in the EUR row. Not compared with EUR 6,000. Priced for East US, and 253 days old."
+      ],
+      [
+       "AWS",
+       "EUR",
+       "5,640",
+       "cloud-design-2026-11-07.json: 5,640 (stated on the page: AWS, total)",
+       "2026-11-07",
+       "EXAMPLE price table saved 2026-11-07, not real prices",
+       "The alternative cloud-design rejected, so never added to Azure. No AWS price for the reporting lake or the AI stack. Its network line does not name backups, while Azure's does, so the two totals may not be like for like."
+      ]
+     ]
+    },
+    {
+     "type": "text",
+     "text": "The budget in the brief is EUR 6,000 a month, everything included. The Azure EUR row adds two pages, and they did not price the same thing: cloud-design's lines are compute, database, and network, monitoring and backups, and data-platform's line is the reporting lake, which cloud-design does not have [high]."
+    },
+    {
+     "type": "table",
+     "title": "The lines behind each row",
+     "columns": [
+      "Cloud",
+      "Item",
+      "Monthly",
+      "Currency",
+      "As of",
+      "Page"
+     ],
+     "align": [
+      "left",
+      "left",
+      "right",
+      "left",
+      "left",
+      "left"
+     ],
+     "rows": [
+      [
+       "Azure",
+       "Azure: compute",
+       "3,100",
+       "EUR",
+       "2026-11-07",
+       "cloud-design-2026-11-07.json"
+      ],
+      [
+       "Azure",
+       "Azure: database",
+       "2,180",
+       "EUR",
+       "2026-11-07",
+       "cloud-design-2026-11-07.json"
+      ],
+      [
+       "Azure",
+       "Azure: network, monitoring and backups",
+       "900",
+       "EUR",
+       "2026-11-07",
+       "cloud-design-2026-11-07.json"
+      ],
+      [
+       "Azure",
+       "Azure, total",
+       "6,180",
+       "EUR",
+       "2026-11-07",
+       "cloud-design-2026-11-07.json"
+      ],
+      [
+       "Azure",
+       "Reporting lake: storage and queries",
+       "1,180",
+       "EUR",
+       "2026-11-02",
+       "data-platform-2026-11-05.json"
+      ],
+      [
+       "Azure",
+       "Model calls for drafting and routing",
+       "1,420",
+       "USD",
+       "2026-03-02",
+       "ai-stack-2026-11-04.json"
+      ],
+      [
+       "Azure",
+       "Embeddings and the search index",
+       "610",
+       "USD",
+       "2026-03-02",
+       "ai-stack-2026-11-04.json"
+      ],
+      [
+       "AWS",
+       "AWS: compute",
+       "2,790",
+       "EUR",
+       "2026-11-07",
+       "cloud-design-2026-11-07.json"
+      ],
+      [
+       "AWS",
+       "AWS: database",
+       "2,070",
+       "EUR",
+       "2026-11-07",
+       "cloud-design-2026-11-07.json"
+      ],
+      [
+       "AWS",
+       "AWS: network and monitoring",
+       "780",
+       "EUR",
+       "2026-11-07",
+       "cloud-design-2026-11-07.json"
+      ],
+      [
+       "AWS",
+       "AWS, total",
+       "5,640",
+       "EUR",
+       "2026-11-07",
+       "cloud-design-2026-11-07.json"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "conflicts",
+   "title": "Conflicts",
+   "intro": "All ten entries the script listed were read against the full pages and the brief. Each fix is a recommendation, and a person decides.",
+   "blocks": [
+    {
+     "type": "findings",
+     "items": [
+      {
+       "severity": "high",
+       "status": "open",
+       "title": "Model and vector index sit in East US, against the EU-only rule",
+       "where": "ai-stack-2026-11-04.json; cloud-design-2026-11-07.json; data-platform-2026-11-05.json; the brief",
+       "evidence": "ai-stack places the model endpoint and the vector index in East US, \"the only region with the chosen model at launch\", marks \"claim text sent to the model\" as personal and leaves its rule \"not decided here\". cloud-design and data-platform state \"EU only\" for claim documents and customer contact. The brief says personal data must stay in the EU and calls it not negotiable.",
+       "fix": "Recommended: the EU rule. ai-stack must drop East US and put the model and the index in an EU region. If the chosen model has none before go-live, the model changes, not the rule. No page says which models run in an EU region, so that stays an open question."
+      },
+      {
+       "severity": "high",
+       "status": "open",
+       "title": "Backups in West US 2 break cloud-design's own EU rule",
+       "where": "cloud-design-2026-11-07.json; data-platform-2026-11-05.json; the brief",
+       "evidence": "cloud-design puts Backups in West US 2 because \"Backups are cheapest in West US 2\", and the same page lists Backups as holding claim documents and customer contact under \"EU only, private addresses only\". data-platform and the brief also say EU only.",
+       "fix": "Recommended: the EU rule. cloud-design must move backups to an EU region and re-price its EUR 900 network, monitoring and backups line. Saving on archive storage cannot outweigh a rule the brief calls not negotiable."
+      },
+      {
+       "severity": "high",
+       "status": "open",
+       "title": "Hosting: one container on the app platform, or Kubernetes with two node pools",
+       "where": "arch-style-2026-11-05.json; cloud-design-2026-11-07.json; the brief",
+       "evidence": "arch-style chooses \"One container on the app platform\" because of \"No platform team to run a cluster.\" cloud-design chooses \"Kubernetes with two node pools\" because it \"Separates the application from batch document work.\" Both decide where the same application runs.",
+       "fix": "Recommended: arch-style. The brief says 5 engineers, no platform team and none planned, and it means fewer moving parts. cloud-design must replace Kubernetes with the app platform and re-price its EUR 3,100 compute line. Its aim of keeping batch work apart still stands, so arch-style must say how the Document worker runs (see Open questions)."
+      },
+      {
+       "severity": "high",
+       "status": "open",
+       "title": "Team size: 5 engineers or 12",
+       "where": "ai-stack-2026-11-04.json; arch-style-2026-11-05.json; cloud-design-2026-11-07.json; the brief",
+       "evidence": "ai-stack: \"Team of 5 engineers.\" arch-style: \"Team of 5 engineers and no platform team.\" cloud-design: \"Team of 12 engineers, with 3 on the platform.\" The brief: \"Team: 5 engineers. There is no platform team and none is planned.\"",
+       "fix": "Recommended: 5, from the brief. cloud-design must replace its assumption and revisit what rests on it, Kubernetes first."
+      },
+      {
+       "severity": "high",
+       "status": "open",
+       "title": "Claims database: PostgreSQL or Azure SQL Database",
+       "where": "ai-stack-2026-11-04.json; cloud-design-2026-11-07.json; data-platform-2026-11-05.json",
+       "evidence": "The same component, `claims_db`, is PostgreSQL on ai-stack, Azure Database for PostgreSQL on cloud-design and Azure SQL Database on data-platform. No page gives a reason for its engine.",
+       "fix": "Recommended: Azure Database for PostgreSQL. Two of the three pages name PostgreSQL and it is the only option priced (EUR 2,180 on cloud-design). data-platform must change `claims_db` and confirm its scheduled SQL runs on PostgreSQL. If data-platform has a reason for Azure SQL that is not on the page, it should say so before this is settled."
+      },
+      {
+       "severity": "high",
+       "status": "open",
+       "title": "Azure in euros is EUR 7,360 against a budget of EUR 6,000",
+       "where": "cloud-design-2026-11-07.json; data-platform-2026-11-05.json; the brief",
+       "evidence": "The Azure EUR group is cloud-design's EUR 6,180 (stated on the page) plus data-platform's EUR 1,180 (sum of its lines), over by EUR 1,360. The lines are not alternatives and were not priced twice: the lake is neither a component nor a line on cloud-design [high]. cloud-design's total alone is above the budget. The USD 2,030 of AI cost is outside this group, so the real position is worse by an amount that cannot be stated here.",
+       "fix": "Recommended: hold the brief's \"everything included\" limit and re-price after the hosting change, EU backups and an EU model. No page prices the app platform, so no saving can be stated yet. If it is still over, only the client can raise the budget or cut scope (see Open questions)."
+      },
+      {
+       "severity": "medium",
+       "status": "open",
+       "title": "Azure region: West Europe or North Europe",
+       "where": "cloud-design-2026-11-07.json; data-platform-2026-11-05.json",
+       "evidence": "cloud-design names West Europe (\"EU residency, Azure\"). data-platform names North Europe (\"EU residency, close to the insurer's data\"). Both describe the same claims database, and both meet the EU rule.",
+       "fix": "Recommended, weakly: one Azure EU region for everything, with West Europe as the working choice [med]. Moving the one lake line means less re-pricing than moving compute, database and network, and no page or brief says where \"the insurer's data\" is. If ai-stack finds the model in only one EU region, use that region instead. Whichever of cloud-design or data-platform differs must change."
+      },
+      {
+       "severity": "medium",
+       "status": "open",
+       "title": "ai-stack's prices are 253 days old",
+       "where": "ai-stack-2026-11-04.json",
+       "evidence": "USD 1,420 for model calls and USD 610 for embeddings and the search index are dated 2026-03-02, past the 90-day threshold. They are in the total the brief's budget depends on, and they are for East US.",
+       "fix": "Recommended: use neither number for a decision. ai-stack must re-price from a current price list, for the EU region it moves to."
+      },
+      {
+       "severity": "medium",
+       "status": "open",
+       "title": "USD 2,030 of AI cost was not compared with the budget",
+       "where": "ai-stack-2026-11-04.json; cloud-design-2026-11-07.json",
+       "evidence": "The budget is EUR 6,000 and the Azure USD group is USD 2,030. It was not compared, because a currency is never converted here, so the budget check is incomplete.",
+       "fix": "Recommended: ai-stack states its re-priced cost in EUR from a EUR price list, so the check can be finished."
+      },
+      {
+       "severity": "low",
+       "status": "open",
+       "title": "Totals are in two currencies",
+       "where": "ai-stack-2026-11-04.json; cloud-design-2026-11-07.json; data-platform-2026-11-05.json",
+       "evidence": "cloud-design and data-platform are in EUR, ai-stack in USD. Each is reported apart below and nothing is added across them.",
+       "fix": "Recommended: the same re-pricing as above puts the whole solution in EUR, the budget's currency."
+      },
+      {
+       "severity": "info",
+       "status": "declined",
+       "title": "eu-central-1 against the other regions",
+       "where": "cloud-design-2026-11-07.json, from the `regions_disagree` entry",
+       "reason": "Not real. cloud-design lists eu-central-1 only as the AWS alternative to West Europe. The page compares two clouds and decides Azure, and nothing is placed there."
+      },
+      {
+       "severity": "info",
+       "status": "declined",
+       "title": "PostgreSQL against Azure Database for PostgreSQL",
+       "where": "ai-stack-2026-11-04.json; cloud-design-2026-11-07.json, from the `component_technology` entry",
+       "reason": "Not real. They are the same engine at different levels of detail. Only data-platform's Azure SQL Database differs, and that is the finding above."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "not-covered",
+   "title": "Not covered",
+   "intro": "What the brief asks for and no page covers.",
+   "blocks": [
+    {
+     "type": "list",
+     "items": [
+      "**Seven-year record.** Every AI draft and the handler's decision on it must be kept for seven years for the auditors. No page has a component, a data fact or a cost for it.",
+      "**Single sign-on for handlers.** The brief requires the insurer's existing single sign-on. No page designs it, and cloud-design mentions identity only as its reason for choosing Azure.",
+      "**Policyholder uploads.** About 30,000 policyholders a year upload documents. No page has an upload route, and cloud-design's \"private addresses only\" does not say how they would reach it.",
+      "**Photos of damage and invoices.** The assistant must read them. ai-pattern says \"documents\" and ai-stack chose its model for long claim letters. No page says how photos and invoices are read or what that costs.",
+      "**Health details after an injury.** The brief names them as personal data. No page lists them in its data facts, so no page says where they live.",
+      "**Go-live before 1 April 2027.** No page has a plan or says the date can be met, and ai-stack's open question depends on it."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "open",
+   "title": "Open questions",
+   "blocks": [
+    {
+     "type": "list",
+     "title": "From the pages (the brief also leaves the first country and the fraud timing open)",
+     "items": [
+      "Can Acme Mutual export 500 past claims with their outcomes for evaluation? (ai-pattern)",
+      "Will the chosen model reach an EU region before go-live? (ai-stack)",
+      "Which country goes live first? (arch-style)",
+      "Is the archive tier acceptable for restoring within a day? (cloud-design)",
+      "Does fraud reporting have to be close to real time? (data-platform)"
+     ]
+    },
+    {
+     "type": "list",
+     "title": "Raised by joining them",
+     "items": [
+      "Which exact model did ai-stack choose? The page says only `Azure OpenAI`, so nobody can check whether it runs in an EU region. (ai-stack)",
+      "If the chosen model has no EU region before 1 April 2027, is a different model acceptable on quality? The EU rule itself is not negotiable. (client, ai-stack)",
+      "Is the Document worker part of arch-style's one container, or a second container on the same app platform? The page says \"one deployable\" and also lists the worker as its own service. (arch-style)",
+      "If the re-priced total is still over EUR 6,000, does the client raise the budget or cut scope? (client)",
+      "Does cloud-design's \"private addresses only\" also apply to the reporting lake, the model endpoint and the vector index? data-platform's rule for the same data says only \"EU only\". (cloud-design, data-platform)",
+      "Is the insurer's identity really on Azure? cloud-design chose Azure for that reason and the brief does not say it. (client)",
+      "Where is \"the insurer's data\" that data-platform's North Europe is close to? Neither the brief nor any page says. (data-platform)",
+      "Is 6 documents per claim right? Two pages assume it and the brief does not say it. (client)",
+      "Are letters and photos really kept in the claims database? Two pages' data facts say so, and no page names or prices a separate file store. (cloud-design, data-platform)",
+      "Do open claims in the shared mailboxes and spreadsheets move to the platform at go-live? The brief does not say. (client)",
+      "[guess] Claim letters will be in Slovene and German. Should the re-chosen model be tested in both? (client, ai-stack)"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "first",
+   "title": "What to do first",
+   "blocks": [
+    {
+     "type": "list",
+     "ordered": true,
+     "items": [
+      "Re-run ai-stack with EU only as a hard constraint: name the model, find it and the vector index in an EU region, and re-price in EUR from a current price list. This clears East US, the stale prices and both currency entries, and it feeds the region choice.",
+      "Re-run cloud-design with the brief's team of 5 and no platform team: the app platform instead of Kubernetes, backups in an EU region, every line re-priced. This clears hosting, backups and the team number.",
+      "Agree one Azure EU region using what step 1 found, and change cloud-design or data-platform to match.",
+      "Change `claims_db` on data-platform to Azure Database for PostgreSQL, or have data-platform state why Azure SQL is needed.",
+      "Have arch-style say how the Document worker runs, so cloud-design's reason for separating batch work has an answer.",
+      "Give each item under Not covered an owner, the seven-year record and the upload route first because they add cost.",
+      "Put the client's questions to Acme Mutual: fraud timing, first country, restoring from archive within a day, the 500 past claims.",
+      "Run this join again on the new pages and compare everything with EUR 6,000 in one currency. If it is still over, the budget or the scope goes to the client."
+     ]
+    }
+   ]
+  }
+ ],
+ "facts": {
+  "version": 1,
+  "scope": "The whole Acme Mutual claims platform, joined from five specialist pages",
+  "regions": [
+   {
+    "name": "East US",
+    "why": "the only region with the chosen model at launch"
+   },
+   {
+    "name": "West Europe",
+    "why": "EU residency, Azure"
+   },
+   {
+    "name": "eu-central-1",
+    "why": "EU residency, AWS"
+   },
+   {
+    "name": "North Europe",
+    "why": "EU residency, close to the insurer's data"
+   },
+   {
+    "name": "West US 2",
+    "why": "backups only, named on a component by cloud-design"
+   }
+  ],
+  "data": [
+   {
+    "name": "claim text sent to the model",
+    "class": "personal",
+    "where": [
+     "Model endpoint"
+    ],
+    "rule": "not decided here"
+   },
+   {
+    "name": "claim documents and customer contact",
+    "class": "personal",
+    "where": [
+     "Claims database",
+     "Backups"
+    ],
+    "rule": "EU only, private addresses only"
+   },
+   {
+    "name": "claim documents and customer contact",
+    "class": "personal",
+    "where": [
+     "Claims database",
+     "Reporting lake"
+    ],
+    "rule": "EU only"
+   }
+  ],
+  "components": [
+   {
+    "id": "llm",
+    "label": "Model endpoint",
+    "tech": "Azure OpenAI",
+    "kind": "model",
+    "region": "East US"
+   },
+   {
+    "id": "search",
+    "label": "Vector index",
+    "tech": "Azure AI Search",
+    "kind": "retrieval",
+    "region": "East US"
+   },
+   {
+    "id": "claims_db",
+    "label": "Claims database",
+    "tech": "not decided: Azure Database for PostgreSQL or Azure SQL Database",
+    "kind": "store"
+   },
+   {
+    "id": "app",
+    "label": "Claims application",
+    "tech": ".NET 8",
+    "kind": "service"
+   },
+   {
+    "id": "worker",
+    "label": "Document worker",
+    "tech": ".NET 8",
+    "kind": "service"
+   },
+   {
+    "id": "hosting",
+    "label": "Application host",
+    "tech": "not decided: Azure Kubernetes Service or the app platform",
+    "kind": "service"
+   },
+   {
+    "id": "backups",
+    "label": "Backups",
+    "tech": "Azure Blob Storage, archive tier",
+    "kind": "store",
+    "region": "West US 2"
+   },
+   {
+    "id": "lake",
+    "label": "Reporting lake",
+    "tech": "Azure Data Lake Storage",
+    "kind": "store"
+   }
+  ],
+  "costs": [
+   {
+    "item": "Azure EUR group, total",
+    "monthly": 7360.0,
+    "currency": "EUR",
+    "as_of": "2026-11-02",
+    "source": "EXAMPLE price table saved 2026-11-02, not real prices; EXAMPLE price table saved 2026-11-07, not real prices",
+    "cloud": "Azure"
+   },
+   {
+    "item": "Azure USD group, total",
+    "monthly": 2030.0,
+    "currency": "USD",
+    "as_of": "2026-03-02",
+    "source": "EXAMPLE price table saved 2026-03-02, not real prices",
+    "cloud": "Azure"
+   },
+   {
+    "item": "AWS EUR group, total",
+    "monthly": 5640.0,
+    "currency": "EUR",
+    "as_of": "2026-11-07",
+    "source": "EXAMPLE price table saved 2026-11-07, not real prices",
+    "cloud": "AWS"
+   }
+  ],
+  "decisions": [
+   {
+    "title": "Model and index region",
+    "chosen": "Recommended, not decided: an EU region",
+    "because": "The brief's EU rule is not negotiable."
+   },
+   {
+    "title": "Backups region",
+    "chosen": "Recommended, not decided: an EU region",
+    "because": "cloud-design's own data rule and the brief."
+   },
+   {
+    "title": "Hosting",
+    "chosen": "Recommended, not decided: the app platform",
+    "because": "5 engineers and no platform team, from the brief."
+   },
+   {
+    "title": "Claims database",
+    "chosen": "Recommended, not decided: Azure Database for PostgreSQL",
+    "because": "Two of three pages name it and it is the only one priced."
+   },
+   {
+    "title": "Azure region",
+    "chosen": "Recommended, not decided: one EU region, West Europe as the working choice",
+    "because": "Less re-pricing, unless the model exists in only one EU region."
+   }
+  ],
+  "assumptions": [
+   "All five pages describe one deployment of one platform: each page's `scope` names the Acme Mutual claims platform.",
+   "Where a page and the client brief differ (team, budget, the EU rule), the brief wins.",
+   "These five specialists are the full set: no `solution-brief` page says who had to run, so the script expected its default deciding skills.",
+   "The budget's \"everything included\" covers the model calls and the reporting lake as well as hosting.",
+   "The vector index carries personal data: ai-pattern retrieves over the claim documents, although ai-stack's data fact names only the model endpoint.",
+   "The Application host and the Claims database are drawn in West Europe, the region cloud-design names for Azure, the cloud it chose. Neither has a region of its own.",
+   "arch-style names no region, so the Claims application and the Document worker are drawn inside the Application host.",
+   "Prices are taken as the pages state them. Every source is labelled an EXAMPLE price table, not real prices, and none was checked."
+  ],
+  "open": [
+   "Can Acme Mutual export 500 past claims with their outcomes for evaluation? (ai-pattern)",
+   "Will the chosen model reach an EU region before go-live? (ai-stack)",
+   "Which country goes live first? (arch-style)",
+   "Is the archive tier acceptable for restoring within a day? (cloud-design)",
+   "Does fraud reporting have to be close to real time? (data-platform)",
+   "Which exact model did ai-stack choose? The page says only `Azure OpenAI`, so nobody can check whether it runs in an EU region. (ai-stack)",
+   "If the chosen model has no EU region before 1 April 2027, is a different model acceptable on quality? The EU rule itself is not negotiable. (client, ai-stack)",
+   "Is the Document worker part of arch-style's one container, or a second container on the same app platform? The page says \"one deployable\" and also lists the worker as its own service. (arch-style)",
+   "If the re-priced total is still over EUR 6,000, does the client raise the budget or cut scope? (client)",
+   "Does cloud-design's \"private addresses only\" also apply to the reporting lake, the model endpoint and the vector index? data-platform's rule for the same data says only \"EU only\". (cloud-design, data-platform)",
+   "Is the insurer's identity really on Azure? cloud-design chose Azure for that reason and the brief does not say it. (client)",
+   "Where is \"the insurer's data\" that data-platform's North Europe is close to? Neither the brief nor any page says. (data-platform)",
+   "Is 6 documents per claim right? Two pages assume it and the brief does not say it. (client)",
+   "Are letters and photos really kept in the claims database? Two pages' data facts say so, and no page names or prices a separate file store. (cloud-design, data-platform)",
+   "Do open claims in the shared mailboxes and spreadsheets move to the platform at go-live? The brief does not say. (client)",
+   "[guess] Claim letters will be in Slovene and German. Should the re-chosen model be tested in both? (client, ai-stack)"
+  ],
+  "budget": {
+   "monthly": 6000,
+   "currency": "EUR",
+   "source": "docs/briefs/claims-platform.md"
+  }
+ }
+}

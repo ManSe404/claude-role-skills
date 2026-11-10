@@ -1,0 +1,30 @@
+{
+  "skill": "arch-style",
+  "title": "Acme Mutual claims: system shape",
+  "subtitle": "What shape the claims application should have.",
+  "meta": {"project": "acme-solution", "date": "2026-11-05"},
+  "verdict": {"text": "A modular monolith on one app platform: one team, no platform engineers.", "tone": "ok"},
+  "sections": [
+    {
+      "id": "decision",
+      "title": "Decision",
+      "blocks": [
+        {"type": "text", "text": "One deployable with modules for claims, documents and reporting. 5 engineers and no platform team rule out running several services."}
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "The shape of the Acme Mutual claims application",
+    "components": [
+      {"id": "app", "label": "Claims application", "tech": ".NET 8", "kind": "service"},
+      {"id": "worker", "label": "Document worker", "tech": ".NET 8", "kind": "service"}
+    ],
+    "decisions": [
+      {"title": "System shape", "chosen": "Modular monolith", "because": "One team of 5, no platform engineers."},
+      {"title": "Hosting", "chosen": "One container on the app platform", "because": "No platform team to run a cluster."}
+    ],
+    "assumptions": ["Team of 5 engineers and no platform team."],
+    "open": ["Which country goes live first?"]
+  }
+}

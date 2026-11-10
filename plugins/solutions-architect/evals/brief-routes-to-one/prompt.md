@@ -1,0 +1,1 @@
+Another request came in: ./acme-solution/docs/briefs/room-booking.md. Work out which specialists we need for it and in what order, and write the calls to run next. Don't ask me questions, assume where you must and say so. Put any page you make under ./pages, and give me the plan in your reply.

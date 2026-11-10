@@ -1,0 +1,259 @@
+{
+  "skill": "ds-frame",
+  "title": "Who gets a retention offer, framed",
+  "subtitle": "What the churn prediction is for, which rung of the ladder it needs, and what it has to beat.",
+  "meta": {"repo": "acme-churn", "commit": "6ae5575", "date": "2026-11-10", "brief": "docs/briefs/retention-offers.md"},
+  "verdict": {
+    "text": "Build a logistic regression on the 8 signals known at the snapshot, and ship it only if it beats the rule `logins_30d ≤ 6` by 0.125 EUR a case on later months. The 11 columns in `model/features.py` cannot be used as listed: two use information from after the snapshot, and a third has no date to prove otherwise.",
+    "tone": "warn"
+  },
+  "stats": [
+    {"label": "Rung chosen", "value": "Logistic model", "note": "the lowest open rung is a simple score; labels are the reason to climb one", "tone": "info"},
+    {"label": "Base rate", "value": "16.97%", "note": "577 churners in 3,400 labelled rows", "tone": "info"},
+    {"label": "Break-even probability", "value": "21.7%", "note": "25 / (25 + 90); 27.8% if the credit also counts on churners", "tone": "info"},
+    {"label": "Ceiling per year", "value": "7.33M EUR", "note": "what a perfect model could save at the brief's costs; an upper bound, see assumptions", "tone": "info"}
+  ],
+  "sections": [
+    {
+      "id": "frame",
+      "title": "The frame",
+      "blocks": [
+        {
+          "type": "kv",
+          "items": [
+            ["Decision", "Who goes on the monthly retention list and gets a 25 EUR credit. Source: brief, lines 3 and 5."],
+            ["Target", "`churned_60d`: 1 if an active subscriber cancels within 60 days of `snapshot_date`, for each subscriber at each monthly snapshot. Source: brief, line 7; `README.md:10`; `model/extract.py:21`."],
+            ["Moment", "The monthly snapshot date, for all of about 40,000 active subscribers. Only what is known that day may be used. Source: brief, lines 5 and 6; `README.md:14`."],
+            ["Label", "Exists in history: 3,400 labelled rows, 577 churners, measured. Known 60 days after the prediction; the team accepts up to 90. Source: brief, lines 7, 8, 18 and 19."],
+            ["Costs", "An offer to someone who would have stayed: 25 EUR. A churner without an offer: 90 EUR, which is the 300 EUR margin times the 30 percent the offer saves. Running a model: 60,000 EUR a year. Source: brief, lines 10 to 12 and 22."],
+            ["The team's bar", "At least 1 in 3 churners found (recall ≥ 33.3%), and at most 6 in 10 offers wasted (precision ≥ 40%). Source: brief, lines 15 and 16."]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ladder",
+      "title": "The ladder",
+      "intro": "Options from the simplest up. The hard rules come from `frame_rules.py`; an eliminated option keeps the rule that removed it.",
+      "blocks": [
+        {
+          "type": "callout",
+          "tone": "bad",
+          "text": "**As listed, every rung is eliminated.** With the 11 columns of `model/features.py` the rule `signals-not-known` fires, because three inputs are not known at the snapshot. The frame below uses the other 8 columns, so that fact becomes true. `model/train.py` fits on the full list, so `gbt_v7` and the scores in `predictions.csv` are not evidence for any rung, and they were not used here."
+        },
+        {
+          "type": "table",
+          "title": "The three columns left out",
+          "columns": ["Column", "Problem", "Evidence"],
+          "rows": [
+            ["`cancellation_reason`", "It exists only after a cancellation, and the join has no date limit (`model/extract.py:27`). [high]", "Filled on 542 rows, all 542 of them churners: 93.9% of the 577 churners."],
+            ["`days_since_last_login`", "It is built from the latest login ever, with no limit at the snapshot (`model/extract.py:18`, `model/features.py:23`). [high]", "136 rows have a last login after their snapshot date."],
+            ["`nps_last`", "It joins `nps_latest` with no as-of date (`model/extract.py:26`). [med]", "Cannot be checked: the column carries no date. Left out until it is joined as of the snapshot."]
+          ]
+        },
+        {
+          "type": "decision",
+          "title": "From the simplest up",
+          "factors": ["The bar on later months", "Labels and signals", "Serving", "Yearly cost"],
+          "options": [
+            {
+              "label": "A lookup or a business rule",
+              "status": "eliminated",
+              "eliminated_by": "rule-misses-bar",
+              "why": "Measured on later months, the team's `logins_30d ≤ 4` finds 21.9% of churners against a bar of 33.3%. Of 75 one- and two-condition rules on logins, tickets and payment failures, only `logins_30d ≤ 6` passed on the training snapshots, and on later months it reached 39.9% precision against a floor of 40%. That is one offer short, so read it with the first assumption below.",
+              "cells": [
+                {"rating": "fail", "text": "≤ 4: 46.1% precision, 21.9% recall. ≤ 6: 39.9% and 35.6%"},
+                {"rating": "pass", "text": "No labels needed"},
+                {"rating": "pass", "text": "One filter in the warehouse"},
+                {"rating": "pass", "text": "Almost nothing [med]"}
+              ]
+            },
+            {
+              "label": "A simple score: a few weighted signals",
+              "status": "viable",
+              "why": "Open, but this rung is for missing labels or a score people must follow by hand. The brief has labels and says nobody outside the team needs to recompute a score (line 20).",
+              "cells": [
+                {"rating": "weak", "text": "Not measured"},
+                {"rating": "weak", "text": "Would ignore 577 labelled churners"},
+                {"rating": "pass", "text": "A formula in SQL"},
+                {"rating": "pass", "text": "Low [med]"}
+              ]
+            },
+            {
+              "label": "A linear or logistic model",
+              "status": "chosen",
+              "why": "One rung above the lowest open option, for a reason from the brief: labels exist (line 18), so the weights can be learned rather than set by hand, and a Python job can call a model at list time (lines 19 and 20). It also gives a score, which the brief needs to spend the budget on those most likely to leave (line 3).",
+              "cells": [
+                {"rating": "weak", "text": "Not measured yet: the criteria below decide"},
+                {"rating": "pass", "text": "577 churners on 8 signals: 72 a signal; 52 a signal on the 417 churners before the cut"},
+                {"rating": "pass", "text": "Python job at list time, or a formula"},
+                {"rating": "weak", "text": "60,000 EUR by the brief's estimate"}
+              ]
+            },
+            {
+              "label": "Gradient-boosted trees",
+              "status": "viable",
+              "why": "Open by the rule, with 577 churners against a floor of 500. The brief names no reason to climb, and training only before the cut leaves 417 churners. This is the rung `model/train.py` builds today.",
+              "cells": [
+                {"rating": "weak", "text": "Not measured without the leaks"},
+                {"rating": "weak", "text": "417 churners before the cut, under the floor of 500"},
+                {"rating": "pass", "text": "Python job at list time"},
+                {"rating": "weak", "text": "At least the same 60,000 EUR [guess]"}
+              ]
+            },
+            {
+              "label": "Deep learning",
+              "status": "eliminated",
+              "eliminated_by": "tabular-input",
+              "why": "On fields in rows, trees match or beat deep networks for less.",
+              "cells": [
+                {"rating": "fail", "text": "Not tried"},
+                {"rating": "fail", "text": "Fields in rows, not images or signals"},
+                {"rating": "weak", "text": "Python job at list time"},
+                {"rating": "fail", "text": "The most to run [med]"}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cost",
+      "title": "What it would cost",
+      "intro": "Cost per case at the brief's 25 and 90 EUR, over all 3,400 labelled rows. Below the break-even probability of 21.7%, an offer loses money.",
+      "blocks": [
+        {
+          "type": "chart",
+          "kind": "bar",
+          "title": "Cost per case by policy",
+          "unit": "EUR",
+          "x_label": "Policy",
+          "categories": ["Act on everyone", "Act on nobody", "Rule: logins_30d ≤ 4", "Rule: logins_30d ≤ 6"],
+          "series": [{"name": "Cost per case", "values": [20.76, 15.27, 13.26, 12.05]}],
+          "places": 2,
+          "caption": "Acting on nobody is the cheaper trivial policy. The ceiling is 480,000 decisions times 15.27 EUR, or 7.33M EUR a year; the model's 60,000 EUR is 0.125 EUR a case."
+        }
+      ]
+    },
+    {
+      "id": "baseline",
+      "title": "The baseline",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "**Beat the rule `logins_30d ≤ 6`, at 11.90 EUR a case on later months.** The trivial baseline is the base rate of 16.97% as a score and acting on nobody at 15.27 EUR a case; the rule is stronger, so it is the one to beat. The model must reach **11.77 EUR a case or less**, since 60,000 EUR a year over 480,000 decisions is 0.125 EUR a case to earn back. A model that does not beat it is not shipped.\n\nLater months means snapshots from 2026-04-01 on, the cut in `model/split.py`: 960 rows and 160 churners in `test.csv`."
+        },
+        {
+          "type": "table",
+          "title": "Measured policies",
+          "columns": ["Policy", "Precision, all rows", "Recall, all rows", "EUR a case, all 3,400 rows", "Precision, later months", "Recall, later months", "EUR a case, later 960 rows"],
+          "rows": [
+            ["Act on nobody", null, "0%", 15.27, null, "0%", 15.00],
+            ["Act on everyone", "17.0%", "100%", 20.76, "16.7%", "100%", 20.83],
+            ["Team's rule, `logins_30d ≤ 4`", "42.4%", "21.1%", 13.26, "46.1%", "21.9%", 12.79],
+            ["`logins_30d ≤ 6`", "40.1%", "36.0%", 12.05, "39.9%", "35.6%", 11.90]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "warn",
+          "text": "The `≤ 6` rule is on the bar, not clearly above or below it. On later months it made 57 correct offers out of 143; one more would have cleared 40%. A 95% interval on 143 offers is about ±8 points. [med]"
+        }
+      ]
+    },
+    {
+      "id": "acceptance",
+      "title": "Acceptance criteria",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["Criterion", "Threshold", "Measured how"],
+          "rows": [
+            ["Data audit passes first", "No column from after the snapshot; 0 customers on both sides of the split (now 150); 0 test rows before the cut (now 40)", "`ds-dataset` on the rebuilt train and test files"],
+            ["The team's bar at the chosen list cut", "Recall ≥ 33.3% and precision ≥ 40%, from the brief", "Trained before 2026-04-01, measured on later snapshots only"],
+            ["Cost per case against the rule", "≤ 11.77 EUR: the rule's 11.90 minus 0.125", "Same later months, at 25 and 90 EUR"],
+            ["Calibration", "Mean predicted within 2 points of observed churn; each decile within 5 points [guess]", "Reliability by decile on later months"],
+            ["Worst slice", "No `plan` or `region` below 25% recall or 30% precision [guess]", "Per slice on later months, at the list cut"]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "change",
+      "title": "What would change the answer",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "The team reads \"no more than 6 in 10 wasted\" as approximate, or `logins_30d ≤ 6` clears 40% on a fresh later period: **a business rule**, no model and no 60,000 EUR a year.",
+            "The logistic model misses the bar, or does not beat the rule by 0.125 EUR a case on later months: **a business rule**, `logins_30d ≤ 6`.",
+            "The logistic model falls short, a later-months test shows interactions matter, and there are at least 500 churners before the cut (now 417): **gradient-boosted trees**.",
+            "Someone outside the team must recompute a score, or the list job cannot call a model: **a logistic model kept as a formula**, and trees are out.",
+            "The offer's effect differs by subscriber, so 30 percent is not flat: **still a logistic model, but the target becomes who can be saved**, which needs a randomised hold-back first (`ds-experiment`)."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "assumptions",
+      "title": "Assumptions and open facts",
+      "blocks": [
+        {
+          "type": "table",
+          "title": "Assumptions, each next to what it drives",
+          "columns": ["Assumption", "Drives", "If it is wrong"],
+          "rows": [
+            ["The bar is a hard floor, measured on later months. [guess]", "`rule_meets_bar` is false, which removes the rule rung", "`logins_30d ≤ 6` is enough and no model is needed"],
+            ["The model uses only the 8 columns known at the snapshot, and `nps_last` stays out until it is joined as of the snapshot. [med]", "`signals_known_at_decision` is true, `candidate_features` is 8", "With the columns as listed, every rung is eliminated"],
+            ["The list is a yes or no at a cut, not a fixed number of offers. [med]", "`task` is classification and the cost comparison", "If the budget fixes the size, rank by score and check the bar at that size"],
+            ["The 90 EUR stands as stated, so the credit paid to a churner is not charged. [guess]", "Break-even 21.7%, ceiling 7.33M EUR", "Net of the credit it is 65 EUR: break-even 27.8%, ceiling 5.29M EUR. The rung holds, since the 40% floor is above both"],
+            ["The 480,000 monthly decisions are independent. [guess]", "The ceiling", "A 60-day window overlaps the next snapshot, so a cancellation can count twice. Halved and net of the credit it is still about 2.6M EUR, over 40 times the model's cost"],
+            ["The 30 percent save rate is the same for everyone on the list. [guess]", "The 90 EUR and the target itself", "See the last item under what would change the answer"],
+            ["Earlier offers did not change the history. [guess]", "`churned_60d` as a clean label", "If people on the team's trial list got credits, their churn is understated"],
+            ["The 3,400 rows represent the whole base of subscribers. [guess]", "The base rate and every cost per case", "The extract is under 1% of a year's decisions and how it was sampled is not stated"]
+          ]
+        },
+        {
+          "type": "list",
+          "title": "Open facts",
+          "items": [
+            "The retention budget is not stated. `logins_30d ≤ 6` would mean about 6,100 offers and 153,000 EUR in credits a month, at 15.3% of 40,000 subscribers. [med]",
+            "The brief says 18 months of labelled snapshots; the extract has 12, from 2025-07-01 to 2026-06-01.",
+            "`test.csv` is not a clean holdout: 40 of its rows fall before the cut in `model/split.py`, and 150 of its customers are also in `train.csv`.",
+            "It is not stated whether a subscriber can get the credit in consecutive months."
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "who gets a 25 EUR retention credit each month at Acme Stream",
+    "data": [
+      {"name": "customer contact", "class": "personal", "where": ["data/train.csv", "data/test.csv", "data/predictions.csv", "data/experiment_broken.csv", "data/experiment_clean.csv"], "rule": "not a model input; counts only in this frame"}
+    ],
+    "costs": [
+      {"item": "building, serving, monitoring and retraining a model", "monthly": 5000.0, "currency": "EUR", "as_of": "2026-11-10", "source": "brief: 60,000 EUR a year in staff time"}
+    ],
+    "decisions": [
+      {"title": "Rung", "chosen": "logistic model on 8 signals known at the snapshot", "because": "labels exist and a Python job can call a model; the simple rules do not clear the bar on later months"},
+      {"title": "Baseline", "chosen": "rule logins_30d <= 6 at 11.90 EUR a case on later months", "because": "strongest measured simple policy; the model must reach 11.77 EUR a case or less"}
+    ],
+    "assumptions": [
+      "The bar is a hard floor, measured on later months.",
+      "The model uses only the 8 columns known at the snapshot; nps_last stays out until joined as of the snapshot.",
+      "The list is a yes or no at a cut, not a fixed number of offers.",
+      "The 90 EUR stands as stated, so the credit paid to a churner is not charged.",
+      "The 480,000 monthly decisions are independent.",
+      "The 30 percent save rate is the same for everyone on the list.",
+      "Earlier offers did not change the history.",
+      "The 3,400 rows represent the whole base of subscribers."
+    ],
+    "open": [
+      "The retention budget is not stated.",
+      "The brief says 18 months of labelled snapshots; the extract has 12.",
+      "test.csv has 40 rows before the cut, and 150 of its customers are also in train.csv.",
+      "It is not stated whether a subscriber can get the credit in consecutive months."
+    ]
+  }
+}

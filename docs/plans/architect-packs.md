@@ -16,9 +16,9 @@ what should it be, what is there now, what does it look like, what is wrong with
 | done | `ai-architect` | ai-pattern, ai-stack, ai-architecture, ai-review | committed as 5569e48 |
 | 1 | `data-architect` | data-platform, data-model, data-map, data-review | built; `model` block, `reach` view, `facts`, SQL and dbt reader |
 | 2 | `software-architect` | arch-style, arch-c4, arch-review, arch-evolve | built; nested boxes, coupling from code and git |
-| 3a | `cloud-architect`, Azure | cloud-map, cloud-design, cloud-review | Terraform and Bicep reader, Azure prices |
-| 3b | `cloud-architect`, AWS | the same three | CloudFormation reader, AWS prices |
-| 4 | `solutions-architect` | solution-brief, solution-blueprint | joins the pages, finds conflicts, installs the others |
+| 3a | `cloud-architect`, Azure | cloud-map, cloud-design, cloud-review | built, see [cloud-architect.md](cloud-architect.md); Terraform, Bicep and ARM reader, Azure prices |
+| 3b | `cloud-architect`, AWS | the same three | built; CloudFormation reader, AWS offer files as prices, one design compared across both clouds |
+| 4 | `solutions-architect` | solution-brief, solution-blueprint | built, see [solutions-architect.md](solutions-architect.md); joins the pages, finds conflicts, installs the others (dependency install tested 2026-11-10) |
 | later | data analyst, data scientist, `ai-engineering` | to be planned | |
 
 `software-engineering` stays as it is: it is the daily work on code, not architecture.

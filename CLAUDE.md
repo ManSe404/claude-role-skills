@@ -1,15 +1,19 @@
 # claude-role-skills
 
 Claude Code skills by role, one marketplace with one plugin per role: `software-engineering`,
-`ai-architect`, `data-architect` and `software-architect` so far. `docs/plans/` holds the plans.
+`ai-architect`, `data-architect`, `software-architect`, `cloud-architect`, `solutions-architect` (on top of the
+four specialist packs), `data-analyst` and `data-scientist` so far. `docs/plans/` holds the plans.
 
 ## Layout
 
 - `plugins/<role>/skills/<skill>/` holds `SKILL.md`, `scripts/` and `references/`. A skill must
   work on its own, because an installed plugin has nothing outside its own folder.
 - `shared/` is the single source of `render_page.py`, `page-format.md`, `fonts/`,
-  `ai_inventory.py`, `data_profile.py`, `sql_inventory.py`, `code_graph.py` and `containers.py`. Edit them there, then run `python3 tools/sync_shared.py`; a skill gets a copy
-  when its SKILL.md names the file. Never edit the copies under a skill.
+  `ai_inventory.py`, `data_profile.py`, `sql_inventory.py`, `measure.py`, `model_stats.py`, `code_graph.py`, `containers.py`,
+  `cloud_inventory.py` and `cloud_prices.py`, and of `shared/cloud/`, one file per cloud provider. Edit them
+  there, then run `python3 tools/sync_shared.py`; a skill gets a copy when its SKILL.md names the file.
+  Never edit the copies under a skill. A cloud provider is `shared/cloud/<provider>.md` and `.json`:
+  nothing provider-specific goes in a SKILL.md or in the core of a script.
 - The page design is dark only, after Data With Baraa's skills; it lives in the CSS of
   `render_page.py`. Check a change by rendering an `example.json` and looking at it.
 - `fixtures/<name>/` is a made-up project: `files/` (state after the last commit, `.fixture`

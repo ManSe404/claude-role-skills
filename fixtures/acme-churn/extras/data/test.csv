@@ -1,0 +1,1001 @@
+row_id,customer_id,snapshot_date,plan,region,tenure_months,monthly_fee_eur,logins_30d,tickets_90d,payment_failures_90d,discount_pct,last_login_at,nps_last,cancellation_reason,full_name,email,phone,churned_60d
+E000001,C02400,2026-05-01,basic,east,52,9.45,12,6,0,5,2026-04-25T18:00:00,7,,Sava Grabić,sava.grabic.2400@example.com,+381-11-555-3400,0
+E000002,C02401,2026-06-01,plus,west,26,19.73,17,0,0,20,2026-05-30T14:00:00,5,,Sava Hrastić,sava.hrastic.2401@example.com,+381-11-555-3401,0
+E000003,C02402,2026-06-01,basic,south,8,10.27,16,0,0,0,2026-05-14T14:00:00,8,,Sava Dubović,sava.dubovic.2402@example.com,+381-11-555-3402,0
+E000004,C02403,2026-06-01,pro,east,41,43.70,16,0,0,5,2026-05-14T19:00:00,6,,Petar Topolić,petar.topolic.2403@example.com,+381-11-555-3403,0
+E000005,C02404,2026-04-01,plus,north,50,22.38,18,1,0,20,2026-03-23T14:00:00,5,,Sava Grabić,sava.grabic.2404@example.com,+381-11-555-3404,0
+E000006,C02405,2026-05-01,plus,north,24,19.22,9,1,0,15,2026-04-18T10:00:00,9,,Marija Borović,marija.borovic.2405@example.com,+381-11-555-3405,0
+E000007,C02406,2026-04-01,plus,west,26,19.46,2,0,0,0,2026-03-23T17:00:00,7,,Sava Grabić,sava.grabic.2406@example.com,+381-11-555-3406,0
+E000008,C02407,2026-06-01,basic,south,23,9.90,16,3,0,10,2026-05-13T10:00:00,7,,Ivana Lipić,ivana.lipic.2407@example.com,+381-11-555-3407,0
+E000009,C02408,2026-06-01,basic,north,3,10.58,16,0,0,15,2026-05-22T12:00:00,7,,Ana Cerović,ana.cerovic.2408@example.com,+381-11-555-3408,0
+E000010,C02409,2026-05-01,plus,west,29,19.60,3,7,0,15,2026-04-27T15:00:00,3,,Vera Dubović,vera.dubovic.2409@example.com,+381-11-555-3409,1
+E000011,C02410,2026-05-01,basic,south,8,9.62,14,0,0,15,2026-04-30T08:00:00,7,,Jasna Grabić,jasna.grabic.2410@example.com,+381-11-555-3410,0
+E000012,C02411,2026-05-01,plus,west,5,21.70,14,0,0,0,2026-04-18T14:00:00,6,,Goran Hrastić,goran.hrastic.2411@example.com,+381-11-555-3411,0
+E000013,C02412,2026-05-01,basic,east,19,10.00,10,0,0,15,2026-04-18T07:00:00,9,,Petar Javorac,petar.javorac.2412@example.com,+381-11-555-3412,0
+E000014,C02413,2026-06-01,basic,east,42,8.59,7,2,0,5,2026-05-15T07:00:00,6,,Bojan Lipić,bojan.lipic.2413@example.com,+381-11-555-3413,0
+E000015,C02414,2026-05-01,basic,south,41,9.56,18,1,0,15,2026-04-28T06:00:00,9,,Goran Dubović,goran.dubovic.2414@example.com,+381-11-555-3414,0
+E000016,C02415,2026-04-01,plus,west,41,20.39,12,0,0,10,2026-03-26T18:00:00,4,,Ana Grabić,ana.grabic.2415@example.com,+381-11-555-3415,0
+E000017,C02416,2026-05-01,basic,west,27,10.56,13,2,0,10,2026-04-25T17:00:00,5,,Marija Lipić,marija.lipic.2416@example.com,+381-11-555-3416,0
+E000018,C02417,2026-04-01,basic,east,46,10.21,0,4,0,5,2026-03-18T10:00:00,,not using it,Lazar Vrbić,lazar.vrbic.2417@example.com,+381-11-555-3417,1
+E000019,C02418,2026-04-01,basic,south,27,10.63,8,2,0,15,2026-03-13T18:00:00,,,Danica Kestenić,danica.kestenic.2418@example.com,+381-11-555-3418,0
+E000020,C02419,2026-04-01,basic,south,39,10.04,8,0,0,0,2026-03-29T15:00:00,7,,Goran Dubović,goran.dubovic.2419@example.com,+381-11-555-3419,0
+E000021,C02420,2026-06-01,basic,west,40,9.35,10,2,0,10,2026-05-28T06:00:00,10,,Danica Hrastić,danica.hrastic.2420@example.com,+381-11-555-3420,0
+E000022,C02421,2026-06-01,basic,north,48,10.69,14,1,0,5,2026-05-29T16:00:00,4,,Lazar Borović,lazar.borovic.2421@example.com,+381-11-555-3421,0
+E000023,C02422,2026-05-01,plus,south,50,22.03,11,4,0,10,2026-04-13T11:00:00,,too expensive,Nada Cerović,nada.cerovic.2422@example.com,+381-11-555-3422,1
+E000024,C02423,2026-04-01,plus,west,12,18.34,9,3,0,10,2026-03-25T10:00:00,8,,Danica Vrbić,danica.vrbic.2423@example.com,+381-11-555-3423,0
+E000025,C02424,2026-04-01,basic,north,53,9.93,11,2,0,0,2026-03-29T19:00:00,9,,Ivana Cerović,ivana.cerovic.2424@example.com,+381-11-555-3424,0
+E000026,C02425,2026-04-01,legacy,south,22,16.21,3,1,0,15,2026-03-30T08:00:00,6,,Marija Borović,marija.borovic.2425@example.com,+381-11-555-3425,0
+E000027,C02426,2026-06-01,plus,east,27,19.82,1,1,0,0,2026-05-22T14:00:00,,not using it,Danica Borović,danica.borovic.2426@example.com,+381-11-555-3426,1
+E000028,C02427,2026-04-01,basic,east,18,9.16,17,0,0,20,2026-03-24T09:00:00,7,,Goran Vrbić,goran.vrbic.2427@example.com,+381-11-555-3427,0
+E000029,C02428,2026-04-01,plus,south,35,19.47,15,0,0,10,2026-03-27T07:00:00,4,,Goran Lipić,goran.lipic.2428@example.com,+381-11-555-3428,0
+E000030,C02429,2026-04-01,basic,south,50,8.68,13,1,0,20,2026-03-31T07:00:00,,,Nada Javorac,nada.javorac.2429@example.com,+381-11-555-3429,0
+E000031,C02430,2026-04-01,plus,east,6,22.10,3,1,0,5,2026-03-29T18:00:00,6,,Goran Javorac,goran.javorac.2430@example.com,+381-11-555-3430,1
+E000032,C02431,2026-05-01,pro,south,37,39.08,8,1,0,0,2026-04-09T07:00:00,7,,Sava Vrbić,sava.vrbic.2431@example.com,+381-11-555-3431,0
+E000033,C02432,2026-06-01,plus,north,40,21.36,6,0,0,0,2026-05-19T06:00:00,5,,Petar Borović,petar.borovic.2432@example.com,+381-11-555-3432,0
+E000034,C02433,2026-06-01,plus,north,5,20.76,9,0,0,10,2026-05-13T09:00:00,4,other,Goran Dubović,goran.dubovic.2433@example.com,+381-11-555-3433,1
+E000035,C02434,2026-06-01,plus,north,5,21.11,12,0,1,20,2026-05-10T09:00:00,7,,Bojan Vrbić,bojan.vrbic.2434@example.com,+381-11-555-3434,0
+E000036,C02435,2026-05-01,basic,south,25,9.52,15,2,1,0,2026-04-28T19:00:00,6,,Marija Javorac,marija.javorac.2435@example.com,+381-11-555-3435,0
+E000037,C02436,2026-04-01,legacy,north,33,15.18,17,0,0,0,2026-03-12T07:00:00,7,,Goran Borović,goran.borovic.2436@example.com,+381-11-555-3436,0
+E000038,C02437,2026-06-01,legacy,south,46,16.28,13,0,0,0,2026-05-25T12:00:00,6,,Lazar Topolić,lazar.topolic.2437@example.com,+381-11-555-3437,0
+E000039,C02438,2026-04-01,basic,north,28,9.68,21,0,0,0,2026-03-16T19:00:00,6,,Sava Cerović,sava.cerovic.2438@example.com,+381-11-555-3438,0
+E000040,C02439,2026-05-01,plus,north,57,19.81,19,0,0,15,2026-04-16T09:00:00,10,,Ana Javorac,ana.javorac.2439@example.com,+381-11-555-3439,0
+E000041,C02440,2026-06-01,basic,west,32,9.07,8,3,0,5,2026-06-02T09:00:00,7,,Danica Hrastić,danica.hrastic.2440@example.com,+381-11-555-3440,0
+E000042,C02441,2026-05-01,basic,south,39,8.96,10,3,0,5,2026-04-14T19:00:00,6,,Marija Topolić,marija.topolic.2441@example.com,+381-11-555-3441,0
+E000043,C02442,2026-06-01,plus,north,55,18.88,15,1,0,0,2026-05-16T19:00:00,7,,Ana Hrastić,ana.hrastic.2442@example.com,+381-11-555-3442,0
+E000044,C02443,2026-05-01,plus,east,40,22.08,15,2,1,15,2026-04-21T12:00:00,3,,Ivana Dubović,ivana.dubovic.2443@example.com,+381-11-555-3443,0
+E000045,C02444,2026-04-01,basic,south,34,8.91,15,0,0,10,2026-03-28T11:00:00,,missing a feature,Jasna Topolić,jasna.topolic.2444@example.com,+381-11-555-3444,1
+E000046,C02445,2026-06-01,basic,north,59,9.20,17,0,0,0,2026-05-15T18:00:00,7,,Ana Lipić,ana.lipic.2445@example.com,+381-11-555-3445,0
+E000047,C02446,2026-05-01,plus,south,39,21.29,6,2,0,0,2026-04-24T07:00:00,7,,Marija Lipić,marija.lipic.2446@example.com,+381-11-555-3446,0
+E000048,C02447,2026-05-01,basic,west,50,9.86,1,2,1,5,2026-04-19T12:00:00,4,too expensive,Jasna Grabić,jasna.grabic.2447@example.com,+381-11-555-3447,1
+E000049,C02448,2026-04-01,basic,east,10,10.46,6,0,0,20,2026-03-12T11:00:00,9,,Marija Hrastić,marija.hrastic.2448@example.com,+381-11-555-3448,0
+E000050,C02449,2026-05-01,legacy,west,29,15.65,22,0,0,20,2026-04-18T15:00:00,8,,Goran Grabić,goran.grabic.2449@example.com,+381-11-555-3449,0
+E000051,C02450,2026-05-01,basic,west,46,9.12,17,1,0,5,2026-04-11T15:00:00,6,,Lazar Dubović,lazar.dubovic.2450@example.com,+381-11-555-3450,0
+E000052,C02451,2026-06-01,plus,east,49,22.32,14,0,0,0,2026-05-18T19:00:00,7,,Jasna Hrastić,jasna.hrastic.2451@example.com,+381-11-555-3451,0
+E000053,C02452,2026-05-01,basic,west,2,10.47,13,1,0,0,2026-04-19T07:00:00,7,,Vera Kestenić,vera.kestenic.2452@example.com,+381-11-555-3452,0
+E000054,C02453,2026-06-01,pro,east,52,38.72,10,0,0,0,2026-05-23T15:00:00,7,,Marija Borović,marija.borovic.2453@example.com,+381-11-555-3453,0
+E000055,C02454,2026-04-01,plus,west,2,21.30,16,2,0,5,2026-03-10T09:00:00,5,,Lazar Javorac,lazar.javorac.2454@example.com,+381-11-555-3454,0
+E000056,C02455,2026-06-01,legacy,west,60,16.44,15,2,0,5,2026-05-29T12:00:00,3,,Goran Topolić,goran.topolic.2455@example.com,+381-11-555-3455,0
+E000057,C02456,2026-06-01,plus,south,34,20.64,24,0,0,5,2026-05-24T07:00:00,9,,Petar Cerović,petar.cerovic.2456@example.com,+381-11-555-3456,0
+E000058,C02457,2026-06-01,basic,north,18,8.39,7,0,0,0,2026-05-27T19:00:00,4,,Marija Hrastić,marija.hrastic.2457@example.com,+381-11-555-3457,0
+E000059,C02458,2026-04-01,pro,west,14,42.67,19,1,0,0,2026-03-12T07:00:00,,other,Jasna Vrbić,jasna.vrbic.2458@example.com,+381-11-555-3458,1
+E000060,C02459,2026-06-01,basic,south,47,9.33,4,6,0,0,2026-05-24T16:00:00,5,other,Vera Dubović,vera.dubovic.2459@example.com,+381-11-555-3459,1
+E000061,C02460,2026-04-01,basic,east,27,9.98,12,1,0,15,2026-03-13T10:00:00,7,,Bojan Grabić,bojan.grabic.2460@example.com,+381-11-555-3460,0
+E000062,C02461,2026-04-01,legacy,west,32,15.23,8,1,0,20,2026-03-29T07:00:00,,,Bojan Javorac,bojan.javorac.2461@example.com,+381-11-555-3461,0
+E000063,C02462,2026-04-01,basic,east,3,9.61,18,3,1,0,2026-03-21T19:00:00,6,,Ana Vrbić,ana.vrbic.2462@example.com,+381-11-555-3462,0
+E000064,C02463,2026-05-01,basic,west,10,8.94,11,3,0,5,2026-05-14T09:00:00,,too expensive,Sava Javorac,sava.javorac.2463@example.com,+381-11-555-3463,1
+E000065,C02464,2026-06-01,pro,west,16,45.95,13,2,0,20,2026-05-21T13:00:00,5,,Danica Hrastić,danica.hrastic.2464@example.com,+381-11-555-3464,0
+E000066,C02465,2026-05-01,basic,east,19,9.92,23,0,1,5,2026-04-20T13:00:00,6,,Nada Grabić,nada.grabic.2465@example.com,+381-11-555-3465,0
+E000067,C02466,2026-06-01,plus,north,48,22.83,13,1,0,5,2026-05-17T08:00:00,9,,Danica Grabić,danica.grabic.2466@example.com,+381-11-555-3466,0
+E000068,C02467,2026-05-01,basic,west,32,10.10,22,0,0,20,2026-04-29T19:00:00,7,,Ana Hrastić,ana.hrastic.2467@example.com,+381-11-555-3467,0
+E000069,C02468,2026-06-01,basic,west,44,9.60,18,0,0,5,2026-05-16T15:00:00,7,,Nada Kestenić,nada.kestenic.2468@example.com,+381-11-555-3468,0
+E000070,C02469,2026-06-01,plus,east,59,20.81,14,0,0,0,2026-06-05T09:00:00,5,,Ivana Borović,ivana.borovic.2469@example.com,+381-11-555-3469,0
+E000071,C02470,2026-05-01,pro,west,51,39.67,8,0,0,0,2026-04-19T06:00:00,8,,Petar Borović,petar.borovic.2470@example.com,+381-11-555-3470,0
+E000072,C02471,2026-06-01,pro,south,25,45.31,5,2,0,10,2026-05-11T14:00:00,6,,Ivana Topolić,ivana.topolic.2471@example.com,+381-11-555-3471,0
+E000073,C02472,2026-05-01,plus,east,49,19.64,16,0,0,20,2026-04-15T18:00:00,8,,Marija Cerović,marija.cerovic.2472@example.com,+381-11-555-3472,0
+E000074,C02473,2026-05-01,pro,west,60,38.82,19,0,0,5,2026-04-10T16:00:00,6,,Goran Grabić,goran.grabic.2473@example.com,+381-11-555-3473,0
+E000075,C02474,2026-06-01,basic,north,31,10.56,7,2,2,5,2026-06-15T09:00:00,,other,Goran Dubović,goran.dubovic.2474@example.com,+381-11-555-3474,1
+E000076,C02475,2026-04-01,plus,east,57,18.83,3,3,0,0,2026-03-13T14:00:00,8,,Ivana Topolić,ivana.topolic.2475@example.com,+381-11-555-3475,0
+E000077,C02476,2026-05-01,basic,east,56,9.69,15,1,0,5,2026-04-25T07:00:00,7,,Ana Dubović,ana.dubovic.2476@example.com,+381-11-555-3476,0
+E000078,C02477,2026-04-01,legacy,west,10,16.09,11,1,0,15,2026-03-14T08:00:00,10,,Jasna Topolić,jasna.topolic.2477@example.com,+381-11-555-3477,0
+E000079,C02478,2026-04-01,pro,west,55,39.29,15,1,0,5,2026-03-27T10:00:00,7,,Petar Grabić,petar.grabic.2478@example.com,+381-11-555-3478,0
+E000080,C02479,2026-05-01,pro,west,52,42.41,3,2,0,10,2026-04-22T08:00:00,8,,Marija Kestenić,marija.kestenic.2479@example.com,+381-11-555-3479,0
+E000081,C02480,2026-04-01,plus,west,20,21.29,14,2,0,5,2026-03-31T09:00:00,6,,Nada Cerović,nada.cerovic.2480@example.com,+381-11-555-3480,0
+E000082,C02481,2026-04-01,legacy,south,33,15.45,8,2,0,10,2026-03-30T08:00:00,7,,Vera Lipić,vera.lipic.2481@example.com,+381-11-555-3481,0
+E000083,C02482,2026-06-01,plus,west,28,22.86,5,2,0,10,2026-05-18T17:00:00,9,,Bojan Borović,bojan.borovic.2482@example.com,+381-11-555-3482,0
+E000084,C02483,2026-06-01,pro,east,58,42.86,11,2,0,0,2026-05-14T07:00:00,,,Bojan Javorac,bojan.javorac.2483@example.com,+381-11-555-3483,0
+E000085,C02484,2026-06-01,basic,east,60,8.84,8,1,0,5,2026-05-18T07:00:00,,,Bojan Topolić,bojan.topolic.2484@example.com,+381-11-555-3484,0
+E000086,C02485,2026-06-01,plus,north,45,20.72,9,1,1,20,2026-05-17T12:00:00,,,Danica Dubović,danica.dubovic.2485@example.com,+381-11-555-3485,0
+E000087,C02486,2026-05-01,basic,south,18,10.06,6,3,1,20,2026-04-14T09:00:00,3,switched provider,Danica Lipić,danica.lipic.2486@example.com,+381-11-555-3486,1
+E000088,C02487,2026-05-01,plus,north,39,21.59,15,2,2,5,2026-04-16T15:00:00,4,,Marija Grabić,marija.grabic.2487@example.com,+381-11-555-3487,0
+E000089,C02488,2026-04-01,pro,south,12,40.65,9,2,1,20,2026-03-24T08:00:00,,not using it,Jasna Hrastić,jasna.hrastic.2488@example.com,+381-11-555-3488,1
+E000090,C02489,2026-04-01,basic,north,31,8.99,20,0,0,20,2026-04-12T09:00:00,7,,Nada Topolić,nada.topolic.2489@example.com,+381-11-555-3489,0
+E000091,C02490,2026-05-01,plus,east,8,22.48,3,1,0,15,2026-04-15T09:00:00,4,,Danica Dubović,danica.dubovic.2490@example.com,+381-11-555-3490,0
+E000092,C02491,2026-05-01,plus,west,51,19.12,12,0,0,5,2026-04-09T14:00:00,9,,Ivana Hrastić,ivana.hrastic.2491@example.com,+381-11-555-3491,0
+E000093,C02492,2026-04-01,basic,west,35,9.98,19,0,0,15,2026-03-22T06:00:00,4,,Bojan Kestenić,bojan.kestenic.2492@example.com,+381-11-555-3492,0
+E000094,C02493,2026-05-01,basic,north,58,8.28,6,1,2,0,2026-04-28T12:00:00,4,,Nada Dubović,nada.dubovic.2493@example.com,+381-11-555-3493,0
+E000095,C02494,2026-06-01,pro,west,5,41.75,8,0,0,10,2026-05-15T06:00:00,3,,Danica Kestenić,danica.kestenic.2494@example.com,+381-11-555-3494,0
+E000096,C02495,2026-04-01,plus,west,15,18.68,7,1,0,15,2026-03-30T07:00:00,8,,Vera Javorac,vera.javorac.2495@example.com,+381-11-555-3495,0
+E000097,C02496,2026-05-01,plus,west,21,19.77,8,3,0,10,2026-04-30T14:00:00,9,,Lazar Cerović,lazar.cerovic.2496@example.com,+381-11-555-3496,0
+E000098,C02497,2026-06-01,basic,south,15,9.62,12,0,0,10,2026-05-21T07:00:00,5,,Marija Hrastić,marija.hrastic.2497@example.com,+381-11-555-3497,0
+E000099,C02498,2026-04-01,plus,north,39,20.79,5,1,1,10,2026-03-31T09:00:00,4,missing a feature,Jasna Kestenić,jasna.kestenic.2498@example.com,+381-11-555-3498,1
+E000100,C02499,2026-06-01,pro,west,23,42.65,18,4,0,15,2026-06-06T09:00:00,8,,Ana Borović,ana.borovic.2499@example.com,+381-11-555-3499,0
+E000101,C02500,2026-05-01,basic,north,51,10.06,6,1,0,0,2026-04-14T06:00:00,2,missing a feature,Goran Topolić,goran.topolic.2500@example.com,+381-11-555-3500,1
+E000102,C02501,2026-04-01,plus,south,40,20.45,9,2,0,20,2026-03-14T17:00:00,2,not using it,Nada Borović,nada.borovic.2501@example.com,+381-11-555-3501,1
+E000103,C02502,2026-05-01,plus,west,55,20.20,11,0,0,15,2026-04-14T15:00:00,8,,Ivana Lipić,ivana.lipic.2502@example.com,+381-11-555-3502,0
+E000104,C02503,2026-05-01,basic,south,38,9.08,12,1,0,20,2026-04-23T14:00:00,6,,Goran Dubović,goran.dubovic.2503@example.com,+381-11-555-3503,0
+E000105,C02504,2026-05-01,plus,east,33,20.72,15,3,0,15,2026-04-09T18:00:00,5,other,Ivana Cerović,ivana.cerovic.2504@example.com,+381-11-555-3504,1
+E000106,C02505,2026-05-01,basic,west,32,9.70,13,1,0,0,2026-04-19T14:00:00,2,,Lazar Javorac,lazar.javorac.2505@example.com,+381-11-555-3505,0
+E000107,C02506,2026-05-01,legacy,west,53,15.41,10,1,0,0,2026-04-24T14:00:00,,,Marija Topolić,marija.topolic.2506@example.com,+381-11-555-3506,0
+E000108,C02507,2026-06-01,plus,west,29,19.89,20,0,1,10,2026-05-25T17:00:00,7,,Danica Dubović,danica.dubovic.2507@example.com,+381-11-555-3507,0
+E000109,C02508,2026-05-01,legacy,south,25,15.00,6,2,0,20,2026-04-19T16:00:00,3,,Vera Cerović,vera.cerovic.2508@example.com,+381-11-555-3508,0
+E000110,C02509,2026-06-01,pro,east,27,45.45,19,0,0,20,2026-05-14T12:00:00,8,,Goran Grabić,goran.grabic.2509@example.com,+381-11-555-3509,0
+E000111,C02510,2026-05-01,plus,east,23,22.00,12,1,1,0,2026-04-13T11:00:00,,switched provider,Bojan Hrastić,bojan.hrastic.2510@example.com,+381-11-555-3510,1
+E000112,C02511,2026-04-01,legacy,south,23,14.67,9,0,0,5,2026-03-20T10:00:00,9,switched provider,Ivana Hrastić,ivana.hrastic.2511@example.com,+381-11-555-3511,1
+E000113,C02512,2026-05-01,plus,east,21,20.67,13,2,0,20,2026-04-12T13:00:00,7,,Bojan Lipić,bojan.lipic.2512@example.com,+381-11-555-3512,0
+E000114,C02513,2026-04-01,legacy,north,23,14.73,15,1,0,10,2026-03-17T17:00:00,2,missing a feature,Sava Hrastić,sava.hrastic.2513@example.com,+381-11-555-3513,1
+E000115,C02514,2026-06-01,plus,north,31,21.55,13,1,1,10,2026-05-25T16:00:00,4,,Nada Cerović,nada.cerovic.2514@example.com,+381-11-555-3514,0
+E000116,C02515,2026-04-01,basic,west,45,8.77,12,2,0,15,2026-03-25T15:00:00,9,,Nada Borović,nada.borovic.2515@example.com,+381-11-555-3515,0
+E000117,C02516,2026-06-01,basic,west,27,9.30,7,2,0,15,2026-05-16T18:00:00,5,,Nada Lipić,nada.lipic.2516@example.com,+381-11-555-3516,0
+E000118,C02517,2026-04-01,basic,west,13,10.02,14,0,1,20,2026-03-17T07:00:00,5,,Lazar Hrastić,lazar.hrastic.2517@example.com,+381-11-555-3517,0
+E000119,C02518,2026-04-01,plus,south,27,19.83,20,0,0,0,2026-03-23T14:00:00,6,,Vera Vrbić,vera.vrbic.2518@example.com,+381-11-555-3518,0
+E000120,C02519,2026-04-01,plus,north,57,21.93,8,1,0,5,2026-03-10T14:00:00,8,missing a feature,Sava Dubović,sava.dubovic.2519@example.com,+381-11-555-3519,1
+E000121,C02520,2026-06-01,basic,south,54,9.46,13,1,0,5,2026-05-12T12:00:00,9,,Danica Borović,danica.borovic.2520@example.com,+381-11-555-3520,0
+E000122,C02521,2026-04-01,basic,north,32,9.44,13,1,0,15,2026-03-26T08:00:00,,switched provider,Vera Hrastić,vera.hrastic.2521@example.com,+381-11-555-3521,1
+E000123,C02522,2026-06-01,pro,west,52,42.05,16,0,0,15,2026-05-15T16:00:00,8,,Danica Lipić,danica.lipic.2522@example.com,+381-11-555-3522,0
+E000124,C02523,2026-04-01,plus,north,45,21.86,7,3,0,10,2026-03-26T09:00:00,,not using it,Danica Kestenić,danica.kestenic.2523@example.com,+381-11-555-3523,1
+E000125,C02524,2026-05-01,basic,west,60,10.51,17,0,0,15,2026-04-18T11:00:00,3,,Danica Javorac,danica.javorac.2524@example.com,+381-11-555-3524,0
+E000126,C02525,2026-04-01,pro,west,34,44.98,16,1,0,10,2026-03-22T08:00:00,4,,Sava Vrbić,sava.vrbic.2525@example.com,+381-11-555-3525,0
+E000127,C02526,2026-04-01,basic,south,43,9.13,10,0,0,20,2026-03-12T11:00:00,9,,Ana Kestenić,ana.kestenic.2526@example.com,+381-11-555-3526,0
+E000128,C02527,2026-06-01,pro,west,51,43.34,7,0,0,5,2026-05-12T19:00:00,5,,Bojan Cerović,bojan.cerovic.2527@example.com,+381-11-555-3527,0
+E000129,C02528,2026-04-01,plus,south,18,20.83,12,2,0,10,2026-03-20T12:00:00,,not using it,Marija Topolić,marija.topolic.2528@example.com,+381-11-555-3528,1
+E000130,C02529,2026-05-01,pro,north,19,41.51,9,4,0,20,2026-04-15T13:00:00,4,,Ivana Kestenić,ivana.kestenic.2529@example.com,+381-11-555-3529,0
+E000131,C02530,2026-06-01,plus,west,43,20.37,12,3,0,5,2026-05-18T08:00:00,6,too expensive,Ana Vrbić,ana.vrbic.2530@example.com,+381-11-555-3530,1
+E000132,C02531,2026-06-01,plus,east,20,19.93,8,2,0,10,2026-05-17T08:00:00,,too expensive,Danica Hrastić,danica.hrastic.2531@example.com,+381-11-555-3531,1
+E000133,C02532,2026-05-01,pro,south,54,42.91,4,7,0,15,2026-04-22T12:00:00,8,,Danica Dubović,danica.dubovic.2532@example.com,+381-11-555-3532,0
+E000134,C02533,2026-06-01,pro,west,34,41.60,11,1,0,0,2026-05-27T17:00:00,10,,Danica Vrbić,danica.vrbic.2533@example.com,+381-11-555-3533,0
+E000135,C02534,2026-05-01,plus,west,22,20.09,10,0,0,10,2026-04-24T11:00:00,5,,Ana Grabić,ana.grabic.2534@example.com,+381-11-555-3534,0
+E000136,C02535,2026-05-01,basic,west,8,10.84,7,1,0,20,2026-04-09T10:00:00,4,,Marija Vrbić,marija.vrbic.2535@example.com,+381-11-555-3535,0
+E000137,C02536,2026-04-01,basic,west,7,7.92,9,0,0,20,2026-03-13T14:00:00,,switched provider,Danica Dubović,danica.dubovic.2536@example.com,+381-11-555-3536,1
+E000138,C02537,2026-06-01,basic,east,20,9.21,14,1,0,0,2026-05-14T11:00:00,8,,Sava Hrastić,sava.hrastic.2537@example.com,+381-11-555-3537,0
+E000139,C02538,2026-06-01,plus,west,25,20.93,8,2,0,15,2026-05-25T12:00:00,6,,Nada Kestenić,nada.kestenic.2538@example.com,+381-11-555-3538,0
+E000140,C02539,2026-06-01,basic,north,32,9.64,8,1,0,0,2026-05-29T18:00:00,4,,Ana Lipić,ana.lipic.2539@example.com,+381-11-555-3539,0
+E000141,C02540,2026-04-01,basic,east,2,9.45,19,1,0,5,2026-03-16T19:00:00,9,,Jasna Lipić,jasna.lipic.2540@example.com,+381-11-555-3540,0
+E000142,C02541,2026-04-01,basic,west,48,10.35,15,0,0,10,2026-03-24T14:00:00,4,,Vera Hrastić,vera.hrastic.2541@example.com,+381-11-555-3541,0
+E000143,C02542,2026-04-01,legacy,west,48,15.12,3,2,0,15,2026-03-26T12:00:00,,other,Ivana Kestenić,ivana.kestenic.2542@example.com,+381-11-555-3542,1
+E000144,C02543,2026-04-01,basic,west,36,9.90,15,0,0,10,2026-04-06T09:00:00,,,Danica Topolić,danica.topolic.2543@example.com,+381-11-555-3543,0
+E000145,C02544,2026-06-01,plus,east,59,18.94,7,0,0,10,2026-05-17T13:00:00,7,,Nada Dubović,nada.dubovic.2544@example.com,+381-11-555-3544,0
+E000146,C02545,2026-05-01,plus,south,28,21.81,16,1,0,20,2026-04-28T09:00:00,4,,Ana Borović,ana.borovic.2545@example.com,+381-11-555-3545,0
+E000147,C02546,2026-06-01,basic,south,44,9.69,20,0,0,10,2026-05-20T10:00:00,9,,Lazar Grabić,lazar.grabic.2546@example.com,+381-11-555-3546,0
+E000148,C02547,2026-06-01,pro,west,43,40.89,14,3,0,15,2026-05-29T11:00:00,8,,Ana Vrbić,ana.vrbic.2547@example.com,+381-11-555-3547,0
+E000149,C02548,2026-04-01,legacy,north,43,14.26,9,2,0,20,2026-03-10T07:00:00,7,,Jasna Cerović,jasna.cerovic.2548@example.com,+381-11-555-3548,0
+E000150,C02549,2026-04-01,pro,south,16,45.96,10,0,0,10,2026-03-10T06:00:00,,,Vera Javorac,vera.javorac.2549@example.com,+381-11-555-3549,0
+E000151,C02550,2026-05-01,basic,east,24,9.48,20,0,0,0,2026-04-18T16:00:00,5,,Ana Grabić,ana.grabic.2550@example.com,+381-11-555-3550,0
+E000152,C02551,2026-04-01,pro,west,7,44.35,13,1,0,0,2026-03-28T10:00:00,7,,Danica Vrbić,danica.vrbic.2551@example.com,+381-11-555-3551,0
+E000153,C02552,2026-06-01,plus,south,50,19.98,11,0,0,15,2026-05-11T08:00:00,6,,Jasna Topolić,jasna.topolic.2552@example.com,+381-11-555-3552,0
+E000154,C02553,2026-04-01,plus,east,43,20.49,17,0,0,15,2026-03-30T15:00:00,8,,Sava Cerović,sava.cerovic.2553@example.com,+381-11-555-3553,0
+E000155,C02554,2026-05-01,basic,west,40,8.90,8,1,1,15,2026-04-16T13:00:00,7,,Lazar Javorac,lazar.javorac.2554@example.com,+381-11-555-3554,0
+E000156,C02555,2026-04-01,plus,north,26,20.24,18,0,0,15,2026-03-11T17:00:00,8,,Nada Topolić,nada.topolic.2555@example.com,+381-11-555-3555,0
+E000157,C02556,2026-04-01,basic,south,52,9.53,10,2,0,5,2026-03-14T16:00:00,,too expensive,Petar Javorac,petar.javorac.2556@example.com,+381-11-555-3556,1
+E000158,C02557,2026-05-01,basic,west,3,9.42,14,2,0,15,2026-04-21T15:00:00,5,,Jasna Grabić,jasna.grabic.2557@example.com,+381-11-555-3557,0
+E000159,C02558,2026-05-01,legacy,east,45,15.29,14,0,0,0,2026-04-17T14:00:00,6,,Nada Dubović,nada.dubovic.2558@example.com,+381-11-555-3558,0
+E000160,C02559,2026-04-01,legacy,west,20,13.88,11,0,1,10,2026-03-10T06:00:00,4,,Petar Topolić,petar.topolic.2559@example.com,+381-11-555-3559,0
+E000161,C02560,2026-04-01,plus,east,1,19.83,17,0,0,0,2026-03-20T16:00:00,6,,Ana Grabić,ana.grabic.2560@example.com,+381-11-555-3560,0
+E000162,C02561,2026-05-01,basic,south,1,8.29,18,0,1,20,2026-04-13T13:00:00,9,,Jasna Hrastić,jasna.hrastic.2561@example.com,+381-11-555-3561,0
+E000163,C02562,2026-06-01,legacy,south,46,13.66,14,1,0,15,2026-05-16T11:00:00,8,,Lazar Cerović,lazar.cerovic.2562@example.com,+381-11-555-3562,0
+E000164,C02563,2026-04-01,basic,east,17,8.75,15,3,0,20,2026-03-10T12:00:00,7,,Petar Cerović,petar.cerovic.2563@example.com,+381-11-555-3563,0
+E000165,C02564,2026-04-01,pro,east,59,42.55,16,0,0,0,2026-03-16T15:00:00,5,,Nada Vrbić,nada.vrbic.2564@example.com,+381-11-555-3564,0
+E000166,C02565,2026-04-01,plus,west,40,18.86,13,1,0,5,2026-03-13T08:00:00,,not using it,Petar Javorac,petar.javorac.2565@example.com,+381-11-555-3565,1
+E000167,C02566,2026-04-01,legacy,south,26,16.34,8,1,0,0,2026-03-15T13:00:00,7,,Vera Dubović,vera.dubovic.2566@example.com,+381-11-555-3566,0
+E000168,C02567,2026-04-01,pro,west,7,41.64,9,2,0,0,2026-03-31T12:00:00,8,,Nada Grabić,nada.grabic.2567@example.com,+381-11-555-3567,0
+E000169,C02568,2026-06-01,basic,east,18,9.64,9,1,0,20,2026-05-12T17:00:00,7,,Petar Vrbić,petar.vrbic.2568@example.com,+381-11-555-3568,0
+E000170,C02569,2026-04-01,basic,east,27,10.63,22,0,0,5,2026-03-31T17:00:00,7,,Nada Javorac,nada.javorac.2569@example.com,+381-11-555-3569,0
+E000171,C02570,2026-05-01,basic,east,48,8.82,10,1,0,15,2026-04-14T09:00:00,8,,Ana Javorac,ana.javorac.2570@example.com,+381-11-555-3570,0
+E000172,C02571,2026-05-01,basic,north,11,9.33,9,3,0,15,2026-04-21T17:00:00,7,,Goran Borović,goran.borovic.2571@example.com,+381-11-555-3571,0
+E000173,C02572,2026-04-01,pro,south,23,39.56,7,1,0,15,2026-03-10T15:00:00,5,,Lazar Vrbić,lazar.vrbic.2572@example.com,+381-11-555-3572,0
+E000174,C02573,2026-06-01,pro,west,50,39.92,9,0,1,20,2026-05-17T11:00:00,5,,Nada Hrastić,nada.hrastic.2573@example.com,+381-11-555-3573,0
+E000175,C02574,2026-05-01,plus,west,2,19.86,16,0,0,0,2026-04-27T18:00:00,4,,Sava Cerović,sava.cerovic.2574@example.com,+381-11-555-3574,0
+E000176,C02575,2026-05-01,plus,north,30,22.27,12,1,0,15,2026-04-12T09:00:00,9,,Petar Hrastić,petar.hrastic.2575@example.com,+381-11-555-3575,0
+E000177,C02576,2026-06-01,pro,south,25,39.86,9,2,0,20,2026-05-31T12:00:00,10,,Sava Javorac,sava.javorac.2576@example.com,+381-11-555-3576,0
+E000178,C02577,2026-05-01,plus,east,15,20.90,10,1,0,20,2026-04-18T16:00:00,3,,Petar Vrbić,petar.vrbic.2577@example.com,+381-11-555-3577,0
+E000179,C02578,2026-04-01,basic,north,49,9.07,14,0,0,10,2026-03-18T08:00:00,3,,Petar Borović,petar.borovic.2578@example.com,+381-11-555-3578,0
+E000180,C02579,2026-06-01,basic,north,21,9.03,11,2,0,0,2026-05-31T06:00:00,8,,Ana Hrastić,ana.hrastic.2579@example.com,+381-11-555-3579,0
+E000181,C02580,2026-04-01,legacy,east,32,15.18,17,0,0,20,2026-03-20T15:00:00,7,,Sava Borović,sava.borovic.2580@example.com,+381-11-555-3580,0
+E000182,C02581,2026-06-01,plus,north,51,17.80,1,3,0,20,2026-05-21T18:00:00,8,other,Marija Lipić,marija.lipic.2581@example.com,+381-11-555-3581,1
+E000183,C02582,2026-04-01,plus,west,54,18.32,8,1,2,10,2026-03-30T08:00:00,9,,Goran Borović,goran.borovic.2582@example.com,+381-11-555-3582,0
+E000184,C02583,2026-06-01,plus,west,57,21.48,15,2,1,5,2026-05-27T10:00:00,8,,Lazar Topolić,lazar.topolic.2583@example.com,+381-11-555-3583,0
+E000185,C02584,2026-06-01,plus,west,8,19.72,18,0,0,0,2026-05-30T07:00:00,4,,Sava Lipić,sava.lipic.2584@example.com,+381-11-555-3584,0
+E000186,C02585,2026-06-01,plus,north,8,20.03,12,1,0,5,2026-05-21T17:00:00,6,,Nada Cerović,nada.cerovic.2585@example.com,+381-11-555-3585,0
+E000187,C02586,2026-04-01,plus,north,8,19.53,17,1,0,20,2026-03-29T18:00:00,5,,Lazar Topolić,lazar.topolic.2586@example.com,+381-11-555-3586,0
+E000188,C02587,2026-06-01,plus,south,31,18.83,19,0,0,10,2026-05-13T17:00:00,7,,Vera Kestenić,vera.kestenic.2587@example.com,+381-11-555-3587,0
+E000189,C02588,2026-04-01,basic,east,43,10.08,20,1,0,5,2026-03-16T08:00:00,,,Sava Hrastić,sava.hrastic.2588@example.com,+381-11-555-3588,0
+E000190,C02589,2026-05-01,basic,north,15,9.88,13,0,0,15,2026-04-25T07:00:00,10,,Vera Borović,vera.borovic.2589@example.com,+381-11-555-3589,0
+E000191,C02590,2026-05-01,basic,north,14,9.88,12,2,0,15,2026-04-25T09:00:00,9,,Sava Cerović,sava.cerovic.2590@example.com,+381-11-555-3590,0
+E000192,C02591,2026-05-01,plus,north,58,21.71,14,1,0,15,2026-04-27T17:00:00,4,,Jasna Borović,jasna.borovic.2591@example.com,+381-11-555-3591,0
+E000193,C02592,2026-06-01,basic,east,21,9.80,9,0,0,20,2026-05-14T17:00:00,7,,Goran Dubović,goran.dubovic.2592@example.com,+381-11-555-3592,0
+E000194,C02593,2026-05-01,pro,west,11,42.73,16,0,0,20,2026-04-15T16:00:00,9,,Sava Kestenić,sava.kestenic.2593@example.com,+381-11-555-3593,0
+E000195,C02594,2026-06-01,basic,east,46,10.29,20,0,0,10,2026-05-17T06:00:00,4,,Ivana Borović,ivana.borovic.2594@example.com,+381-11-555-3594,0
+E000196,C02595,2026-05-01,legacy,west,1,15.63,15,0,0,0,2026-04-30T13:00:00,7,,Goran Topolić,goran.topolic.2595@example.com,+381-11-555-3595,0
+E000197,C02596,2026-04-01,basic,east,1,9.12,10,3,0,0,2026-03-18T10:00:00,4,,Nada Grabić,nada.grabic.2596@example.com,+381-11-555-3596,0
+E000198,C02597,2026-06-01,basic,north,17,9.23,19,0,0,0,2026-05-15T08:00:00,5,,Lazar Vrbić,lazar.vrbic.2597@example.com,+381-11-555-3597,0
+E000199,C02598,2026-06-01,plus,west,24,19.47,11,0,0,20,2026-05-26T12:00:00,5,other,Jasna Javorac,jasna.javorac.2598@example.com,+381-11-555-3598,1
+E000200,C02599,2026-04-01,plus,north,26,19.97,13,1,0,15,2026-03-24T18:00:00,7,,Lazar Topolić,lazar.topolic.2599@example.com,+381-11-555-3599,0
+E000201,C02600,2026-06-01,plus,west,36,20.48,13,2,0,20,2026-05-31T08:00:00,6,,Danica Lipić,danica.lipic.2600@example.com,+381-11-555-3600,0
+E000202,C02601,2026-04-01,plus,south,48,17.48,10,1,1,15,2026-03-14T09:00:00,4,,Jasna Grabić,jasna.grabic.2601@example.com,+381-11-555-3601,0
+E000203,C02602,2026-04-01,pro,east,24,41.02,15,1,0,0,2026-03-11T12:00:00,10,,Bojan Kestenić,bojan.kestenic.2602@example.com,+381-11-555-3602,0
+E000204,C02603,2026-06-01,plus,east,7,19.59,9,2,0,0,2026-05-21T11:00:00,2,too expensive,Ana Vrbić,ana.vrbic.2603@example.com,+381-11-555-3603,1
+E000205,C02604,2026-04-01,basic,east,12,9.17,9,2,0,5,2026-03-23T19:00:00,5,,Vera Borović,vera.borovic.2604@example.com,+381-11-555-3604,0
+E000206,C02605,2026-04-01,plus,north,20,20.31,15,1,0,5,2026-03-15T13:00:00,7,,Marija Vrbić,marija.vrbic.2605@example.com,+381-11-555-3605,0
+E000207,C02606,2026-06-01,basic,west,54,9.12,27,0,1,10,2026-05-17T14:00:00,3,,Petar Hrastić,petar.hrastic.2606@example.com,+381-11-555-3606,0
+E000208,C02607,2026-04-01,pro,north,46,41.95,4,1,0,0,2026-03-11T10:00:00,6,,Sava Dubović,sava.dubovic.2607@example.com,+381-11-555-3607,0
+E000209,C02608,2026-06-01,basic,east,39,9.66,13,2,0,15,2026-05-13T06:00:00,,,Marija Dubović,marija.dubovic.2608@example.com,+381-11-555-3608,0
+E000210,C02609,2026-04-01,basic,north,7,10.85,1,5,0,10,2026-03-28T07:00:00,,not using it,Marija Cerović,marija.cerovic.2609@example.com,+381-11-555-3609,1
+E000211,C02610,2026-05-01,plus,north,27,20.84,13,0,0,5,2026-04-21T13:00:00,8,,Lazar Vrbić,lazar.vrbic.2610@example.com,+381-11-555-3610,0
+E000212,C02611,2026-06-01,plus,north,39,18.56,12,1,1,5,2026-05-10T07:00:00,6,,Vera Hrastić,vera.hrastic.2611@example.com,+381-11-555-3611,0
+E000213,C02612,2026-06-01,legacy,south,23,14.19,23,0,0,5,2026-05-19T07:00:00,9,,Bojan Hrastić,bojan.hrastic.2612@example.com,+381-11-555-3612,0
+E000214,C02613,2026-06-01,basic,south,41,9.40,13,2,0,10,2026-05-21T19:00:00,6,,Lazar Kestenić,lazar.kestenic.2613@example.com,+381-11-555-3613,0
+E000215,C02614,2026-04-01,plus,south,43,19.45,13,1,0,10,2026-03-24T12:00:00,5,,Lazar Javorac,lazar.javorac.2614@example.com,+381-11-555-3614,0
+E000216,C02615,2026-06-01,basic,east,46,9.00,6,1,0,20,2026-05-19T09:00:00,4,,Danica Hrastić,danica.hrastic.2615@example.com,+381-11-555-3615,1
+E000217,C02616,2026-05-01,pro,west,27,42.75,9,0,0,20,2026-04-23T06:00:00,5,,Jasna Cerović,jasna.cerovic.2616@example.com,+381-11-555-3616,0
+E000218,C02617,2026-06-01,plus,north,1,19.04,7,1,0,15,2026-05-21T16:00:00,5,,Petar Vrbić,petar.vrbic.2617@example.com,+381-11-555-3617,0
+E000219,C02618,2026-04-01,legacy,east,9,15.87,21,1,0,15,2026-03-24T17:00:00,6,,Ana Hrastić,ana.hrastic.2618@example.com,+381-11-555-3618,0
+E000220,C02619,2026-06-01,plus,west,59,22.13,10,2,0,0,2026-05-11T15:00:00,6,,Danica Kestenić,danica.kestenic.2619@example.com,+381-11-555-3619,0
+E000221,C02620,2026-06-01,basic,east,28,10.19,8,2,1,10,2026-05-20T15:00:00,5,,Nada Javorac,nada.javorac.2620@example.com,+381-11-555-3620,0
+E000222,C02621,2026-05-01,basic,north,17,10.29,9,2,0,5,2026-04-20T06:00:00,3,not using it,Vera Hrastić,vera.hrastic.2621@example.com,+381-11-555-3621,1
+E000223,C02622,2026-05-01,pro,east,11,48.06,9,0,0,20,2026-04-19T13:00:00,9,,Danica Lipić,danica.lipic.2622@example.com,+381-11-555-3622,0
+E000224,C02623,2026-06-01,basic,west,10,9.55,13,1,0,20,2026-06-07T09:00:00,8,,Bojan Cerović,bojan.cerovic.2623@example.com,+381-11-555-3623,0
+E000225,C02624,2026-06-01,plus,north,9,21.76,11,0,1,0,2026-05-30T11:00:00,,not using it,Lazar Kestenić,lazar.kestenic.2624@example.com,+381-11-555-3624,1
+E000226,C02625,2026-05-01,pro,north,35,41.20,15,3,0,0,2026-04-28T13:00:00,,,Goran Kestenić,goran.kestenic.2625@example.com,+381-11-555-3625,0
+E000227,C02626,2026-06-01,legacy,north,59,12.43,4,1,0,15,2026-05-14T08:00:00,,,Lazar Borović,lazar.borovic.2626@example.com,+381-11-555-3626,0
+E000228,C02627,2026-06-01,plus,south,15,19.23,14,3,0,5,2026-05-17T18:00:00,3,,Sava Vrbić,sava.vrbic.2627@example.com,+381-11-555-3627,0
+E000229,C02628,2026-06-01,legacy,west,28,14.06,9,1,1,0,2026-05-24T10:00:00,8,,Marija Hrastić,marija.hrastic.2628@example.com,+381-11-555-3628,0
+E000230,C02629,2026-05-01,pro,west,46,41.63,4,1,0,20,2026-04-27T18:00:00,6,,Jasna Cerović,jasna.cerovic.2629@example.com,+381-11-555-3629,0
+E000231,C02630,2026-05-01,basic,north,60,9.90,8,3,0,20,2026-04-30T14:00:00,,missing a feature,Lazar Grabić,lazar.grabic.2630@example.com,+381-11-555-3630,1
+E000232,C02631,2026-04-01,pro,west,44,40.08,17,1,0,15,2026-03-29T09:00:00,6,,Vera Borović,vera.borovic.2631@example.com,+381-11-555-3631,0
+E000233,C02632,2026-04-01,plus,west,39,19.86,17,0,0,5,2026-03-28T14:00:00,,,Goran Cerović,goran.cerovic.2632@example.com,+381-11-555-3632,0
+E000234,C02633,2026-06-01,basic,west,23,9.84,17,2,0,0,2026-05-26T08:00:00,,,Lazar Vrbić,lazar.vrbic.2633@example.com,+381-11-555-3633,0
+E000235,C02634,2026-06-01,basic,south,4,8.82,11,2,0,20,2026-05-30T13:00:00,6,,Bojan Topolić,bojan.topolic.2634@example.com,+381-11-555-3634,0
+E000236,C02635,2026-04-01,basic,east,18,10.16,6,0,0,15,2026-03-24T10:00:00,2,,Sava Dubović,sava.dubovic.2635@example.com,+381-11-555-3635,0
+E000237,C02636,2026-04-01,basic,east,47,9.23,19,2,0,15,2026-03-24T16:00:00,4,other,Ana Hrastić,ana.hrastic.2636@example.com,+381-11-555-3636,1
+E000238,C02637,2026-05-01,basic,north,42,10.44,22,0,0,15,2026-04-19T10:00:00,,,Ivana Vrbić,ivana.vrbic.2637@example.com,+381-11-555-3637,0
+E000239,C02638,2026-05-01,pro,west,55,47.41,11,0,0,0,2026-04-17T13:00:00,6,,Bojan Javorac,bojan.javorac.2638@example.com,+381-11-555-3638,0
+E000240,C02639,2026-06-01,legacy,north,49,14.33,9,0,1,0,2026-05-16T15:00:00,2,other,Petar Topolić,petar.topolic.2639@example.com,+381-11-555-3639,1
+E000241,C02640,2026-04-01,pro,west,60,42.27,10,0,0,10,2026-03-31T18:00:00,8,,Ivana Dubović,ivana.dubovic.2640@example.com,+381-11-555-3640,0
+E000242,C02641,2026-06-01,legacy,west,12,13.52,14,0,0,20,2026-05-14T07:00:00,7,,Marija Borović,marija.borovic.2641@example.com,+381-11-555-3641,0
+E000243,C02642,2026-04-01,legacy,north,34,14.97,4,1,0,5,2026-03-20T19:00:00,,,Bojan Topolić,bojan.topolic.2642@example.com,+381-11-555-3642,0
+E000244,C02643,2026-06-01,basic,north,12,9.87,16,0,1,5,2026-05-18T13:00:00,7,,Goran Dubović,goran.dubovic.2643@example.com,+381-11-555-3643,0
+E000245,C02644,2026-05-01,legacy,west,19,14.85,7,2,0,15,2026-04-20T19:00:00,5,other,Bojan Cerović,bojan.cerovic.2644@example.com,+381-11-555-3644,1
+E000246,C02645,2026-06-01,basic,west,7,9.23,15,1,1,20,2026-05-11T08:00:00,4,,Vera Lipić,vera.lipic.2645@example.com,+381-11-555-3645,0
+E000247,C02646,2026-05-01,plus,south,59,20.36,21,0,0,15,2026-04-22T09:00:00,4,,Petar Topolić,petar.topolic.2646@example.com,+381-11-555-3646,0
+E000248,C02647,2026-06-01,plus,north,8,21.81,11,0,0,5,2026-05-22T13:00:00,9,,Petar Cerović,petar.cerovic.2647@example.com,+381-11-555-3647,0
+E000249,C02648,2026-05-01,pro,north,45,44.92,11,1,0,5,2026-04-21T08:00:00,6,,Nada Borović,nada.borovic.2648@example.com,+381-11-555-3648,0
+E000250,C02649,2026-06-01,plus,east,45,21.76,8,1,0,10,2026-05-19T08:00:00,4,,Lazar Kestenić,lazar.kestenic.2649@example.com,+381-11-555-3649,0
+E000251,C02650,2026-04-01,basic,east,16,9.45,15,0,0,10,2026-03-13T13:00:00,7,,Petar Vrbić,petar.vrbic.2650@example.com,+381-11-555-3650,0
+E000252,C02651,2026-05-01,basic,north,15,10.06,9,0,0,0,2026-04-09T10:00:00,5,,Lazar Hrastić,lazar.hrastic.2651@example.com,+381-11-555-3651,0
+E000253,C02652,2026-04-01,plus,south,52,20.03,17,0,0,10,2026-03-30T14:00:00,,switched provider,Ivana Javorac,ivana.javorac.2652@example.com,+381-11-555-3652,1
+E000254,C02653,2026-06-01,legacy,west,45,14.62,10,1,0,20,2026-05-16T07:00:00,4,too expensive,Lazar Cerović,lazar.cerovic.2653@example.com,+381-11-555-3653,1
+E000255,C02654,2026-04-01,legacy,west,48,15.01,12,2,0,5,2026-03-14T07:00:00,5,,Petar Lipić,petar.lipic.2654@example.com,+381-11-555-3654,0
+E000256,C02655,2026-06-01,plus,north,10,19.43,13,1,0,20,2026-05-29T18:00:00,,,Goran Lipić,goran.lipic.2655@example.com,+381-11-555-3655,1
+E000257,C02656,2026-05-01,legacy,north,11,13.95,2,1,0,10,2026-04-18T15:00:00,6,other,Ana Lipić,ana.lipic.2656@example.com,+381-11-555-3656,1
+E000258,C02657,2026-05-01,pro,south,18,41.14,15,3,1,0,2026-04-17T16:00:00,,,Bojan Kestenić,bojan.kestenic.2657@example.com,+381-11-555-3657,0
+E000259,C02658,2026-04-01,pro,west,7,43.74,7,0,0,5,2026-03-29T07:00:00,,,Goran Javorac,goran.javorac.2658@example.com,+381-11-555-3658,0
+E000260,C02659,2026-06-01,pro,west,42,40.06,20,0,0,5,2026-05-17T11:00:00,6,,Marija Hrastić,marija.hrastic.2659@example.com,+381-11-555-3659,0
+E000261,C02660,2026-04-01,basic,east,28,9.84,5,2,0,0,2026-03-11T17:00:00,,,Goran Grabić,goran.grabic.2660@example.com,+381-11-555-3660,0
+E000262,C02661,2026-04-01,basic,east,42,9.15,16,2,0,5,2026-03-26T12:00:00,10,,Lazar Grabić,lazar.grabic.2661@example.com,+381-11-555-3661,0
+E000263,C02662,2026-06-01,basic,north,31,8.80,3,2,0,10,2026-05-22T11:00:00,,other,Petar Vrbić,petar.vrbic.2662@example.com,+381-11-555-3662,1
+E000264,C02663,2026-05-01,pro,south,8,43.35,15,1,0,0,2026-04-15T13:00:00,10,,Ivana Lipić,ivana.lipic.2663@example.com,+381-11-555-3663,0
+E000265,C02664,2026-04-01,basic,west,24,9.61,5,4,0,0,2026-03-16T10:00:00,,other,Petar Borović,petar.borovic.2664@example.com,+381-11-555-3664,1
+E000266,C02665,2026-04-01,basic,east,39,8.33,6,2,0,5,2026-03-18T15:00:00,8,,Danica Grabić,danica.grabic.2665@example.com,+381-11-555-3665,0
+E000267,C02666,2026-06-01,pro,west,47,42.50,6,1,2,15,2026-05-12T18:00:00,,switched provider,Danica Topolić,danica.topolic.2666@example.com,+381-11-555-3666,1
+E000268,C02667,2026-05-01,pro,east,29,39.39,9,0,0,10,2026-04-30T14:00:00,8,,Lazar Hrastić,lazar.hrastic.2667@example.com,+381-11-555-3667,0
+E000269,C02668,2026-06-01,pro,north,7,45.13,12,0,0,0,2026-05-30T10:00:00,,,Jasna Dubović,jasna.dubovic.2668@example.com,+381-11-555-3668,0
+E000270,C02669,2026-04-01,plus,south,16,21.76,11,1,1,0,2026-03-14T19:00:00,6,,Vera Hrastić,vera.hrastic.2669@example.com,+381-11-555-3669,0
+E000271,C02670,2026-05-01,legacy,north,5,14.55,15,2,0,0,2026-04-30T10:00:00,4,,Danica Dubović,danica.dubovic.2670@example.com,+381-11-555-3670,0
+E000272,C02671,2026-05-01,basic,north,21,10.64,9,1,1,0,2026-04-23T06:00:00,,not using it,Goran Dubović,goran.dubovic.2671@example.com,+381-11-555-3671,1
+E000273,C02672,2026-04-01,basic,west,53,9.60,1,2,0,5,2026-03-21T07:00:00,,,Danica Borović,danica.borovic.2672@example.com,+381-11-555-3672,1
+E000274,C02673,2026-05-01,plus,south,34,20.58,13,1,1,10,2026-04-20T17:00:00,4,not using it,Petar Vrbić,petar.vrbic.2673@example.com,+381-11-555-3673,1
+E000275,C02674,2026-04-01,basic,north,3,10.61,13,2,0,15,2026-03-30T16:00:00,8,,Vera Grabić,vera.grabic.2674@example.com,+381-11-555-3674,0
+E000276,C02675,2026-04-01,legacy,north,45,14.16,9,0,0,10,2026-03-18T16:00:00,5,,Petar Topolić,petar.topolic.2675@example.com,+381-11-555-3675,0
+E000277,C02676,2026-04-01,basic,south,1,9.15,17,1,0,20,2026-03-15T15:00:00,8,,Nada Borović,nada.borovic.2676@example.com,+381-11-555-3676,0
+E000278,C02677,2026-04-01,pro,north,28,44.79,4,4,0,5,2026-03-11T14:00:00,6,,Danica Grabić,danica.grabic.2677@example.com,+381-11-555-3677,0
+E000279,C02678,2026-05-01,plus,south,23,22.80,13,0,1,5,2026-04-25T09:00:00,5,,Nada Grabić,nada.grabic.2678@example.com,+381-11-555-3678,0
+E000280,C02679,2026-06-01,basic,north,49,10.22,24,0,0,5,2026-05-26T11:00:00,7,,Petar Borović,petar.borovic.2679@example.com,+381-11-555-3679,0
+E000281,C02680,2026-05-01,plus,south,2,21.06,1,0,0,20,2026-05-05T09:00:00,7,,Bojan Vrbić,bojan.vrbic.2680@example.com,+381-11-555-3680,0
+E000282,C02681,2026-04-01,basic,west,8,9.63,7,4,1,5,2026-03-10T19:00:00,6,,Vera Topolić,vera.topolic.2681@example.com,+381-11-555-3681,0
+E000283,C02682,2026-05-01,plus,north,4,23.33,17,0,1,5,2026-04-23T16:00:00,,,Nada Vrbić,nada.vrbic.2682@example.com,+381-11-555-3682,0
+E000284,C02683,2026-04-01,legacy,south,37,14.34,14,0,0,10,2026-03-23T18:00:00,,,Bojan Hrastić,bojan.hrastic.2683@example.com,+381-11-555-3683,0
+E000285,C02684,2026-04-01,basic,south,43,8.73,18,0,0,10,2026-03-27T13:00:00,10,,Ivana Borović,ivana.borovic.2684@example.com,+381-11-555-3684,0
+E000286,C02685,2026-06-01,basic,south,59,9.31,16,1,0,0,2026-05-24T11:00:00,8,,Ivana Javorac,ivana.javorac.2685@example.com,+381-11-555-3685,0
+E000287,C02686,2026-06-01,plus,east,5,20.17,11,0,0,5,2026-05-11T15:00:00,9,,Bojan Cerović,bojan.cerovic.2686@example.com,+381-11-555-3686,0
+E000288,C02687,2026-05-01,pro,west,9,43.37,8,0,0,0,2026-04-30T06:00:00,7,,Goran Javorac,goran.javorac.2687@example.com,+381-11-555-3687,0
+E000289,C02688,2026-06-01,plus,north,19,18.20,6,1,1,5,2026-05-10T17:00:00,4,switched provider,Lazar Javorac,lazar.javorac.2688@example.com,+381-11-555-3688,1
+E000290,C02689,2026-04-01,basic,east,13,10.31,15,0,0,5,2026-03-26T16:00:00,,,Danica Topolić,danica.topolic.2689@example.com,+381-11-555-3689,0
+E000291,C02690,2026-06-01,legacy,west,45,12.42,15,0,0,10,2026-05-28T17:00:00,6,,Marija Cerović,marija.cerovic.2690@example.com,+381-11-555-3690,0
+E000292,C02691,2026-06-01,basic,north,29,9.85,16,0,0,10,2026-05-20T19:00:00,6,,Danica Javorac,danica.javorac.2691@example.com,+381-11-555-3691,0
+E000293,C02692,2026-06-01,legacy,east,11,15.54,4,1,0,20,2026-05-25T10:00:00,,,Danica Hrastić,danica.hrastic.2692@example.com,+381-11-555-3692,0
+E000294,C02693,2026-05-01,pro,north,8,46.87,13,4,0,15,2026-04-16T12:00:00,5,,Vera Kestenić,vera.kestenic.2693@example.com,+381-11-555-3693,0
+E000295,C02694,2026-05-01,pro,west,38,44.57,5,0,0,5,2026-04-16T16:00:00,,,Jasna Topolić,jasna.topolic.2694@example.com,+381-11-555-3694,0
+E000296,C02695,2026-06-01,pro,north,31,42.63,18,1,0,20,2026-05-31T15:00:00,6,,Ana Grabić,ana.grabic.2695@example.com,+381-11-555-3695,0
+E000297,C02696,2026-05-01,basic,south,42,9.92,8,2,2,15,2026-04-12T11:00:00,,,Ana Topolić,ana.topolic.2696@example.com,+381-11-555-3696,0
+E000298,C02697,2026-04-01,basic,west,58,9.92,21,1,0,0,2026-03-15T09:00:00,6,,Ana Vrbić,ana.vrbic.2697@example.com,+381-11-555-3697,0
+E000299,C02698,2026-05-01,plus,west,13,21.37,8,1,0,5,2026-04-11T18:00:00,9,,Danica Javorac,danica.javorac.2698@example.com,+381-11-555-3698,0
+E000300,C02699,2026-05-01,basic,north,29,9.19,13,1,0,0,2026-04-12T19:00:00,5,,Nada Vrbić,nada.vrbic.2699@example.com,+381-11-555-3699,0
+E000301,C02700,2026-06-01,basic,north,12,9.90,12,2,0,5,2026-05-29T10:00:00,6,,Bojan Cerović,bojan.cerovic.2700@example.com,+381-11-555-3700,0
+E000302,C02701,2026-04-01,basic,west,45,8.96,13,1,0,15,2026-04-16T09:00:00,8,,Bojan Topolić,bojan.topolic.2701@example.com,+381-11-555-3701,0
+E000303,C02702,2026-05-01,plus,south,23,22.41,21,0,0,15,2026-04-16T07:00:00,10,,Marija Cerović,marija.cerovic.2702@example.com,+381-11-555-3702,0
+E000304,C02703,2026-05-01,plus,north,36,22.56,3,6,0,15,2026-04-09T08:00:00,10,,Nada Hrastić,nada.hrastic.2703@example.com,+381-11-555-3703,0
+E000305,C02704,2026-06-01,pro,east,25,38.57,11,4,0,5,2026-05-30T12:00:00,2,too expensive,Jasna Lipić,jasna.lipic.2704@example.com,+381-11-555-3704,1
+E000306,C02705,2026-06-01,pro,north,33,44.78,13,2,0,15,2026-05-10T09:00:00,,missing a feature,Jasna Grabić,jasna.grabic.2705@example.com,+381-11-555-3705,1
+E000307,C02706,2026-05-01,legacy,east,35,14.92,6,1,1,0,2026-04-18T13:00:00,,,Petar Borović,petar.borovic.2706@example.com,+381-11-555-3706,0
+E000308,C02707,2026-06-01,pro,north,40,43.30,8,0,0,5,2026-05-17T15:00:00,2,,Sava Kestenić,sava.kestenic.2707@example.com,+381-11-555-3707,0
+E000309,C02708,2026-06-01,legacy,west,6,15.13,10,1,0,15,2026-05-19T18:00:00,,switched provider,Nada Kestenić,nada.kestenic.2708@example.com,+381-11-555-3708,1
+E000310,C02709,2026-06-01,legacy,west,21,13.52,18,1,0,0,2026-05-17T19:00:00,,missing a feature,Sava Cerović,sava.cerovic.2709@example.com,+381-11-555-3709,1
+E000311,C02710,2026-04-01,pro,north,28,47.35,0,3,0,10,2026-03-21T07:00:00,5,,Lazar Grabić,lazar.grabic.2710@example.com,+381-11-555-3710,0
+E000312,C02711,2026-05-01,plus,west,6,19.25,12,0,0,20,2026-04-27T15:00:00,,,Vera Grabić,vera.grabic.2711@example.com,+381-11-555-3711,0
+E000313,C02712,2026-04-01,pro,south,41,45.32,17,1,0,15,2026-03-25T06:00:00,5,,Danica Topolić,danica.topolic.2712@example.com,+381-11-555-3712,0
+E000314,C02713,2026-05-01,legacy,west,52,13.40,10,2,0,15,2026-05-18T09:00:00,7,,Goran Topolić,goran.topolic.2713@example.com,+381-11-555-3713,0
+E000315,C02714,2026-06-01,plus,south,19,19.45,2,2,0,15,2026-06-06T09:00:00,7,,Goran Cerović,goran.cerovic.2714@example.com,+381-11-555-3714,0
+E000316,C02715,2026-04-01,legacy,west,20,14.77,8,1,0,0,2026-03-30T07:00:00,8,,Marija Dubović,marija.dubovic.2715@example.com,+381-11-555-3715,0
+E000317,C02716,2026-04-01,plus,north,15,20.10,16,1,0,5,2026-03-14T14:00:00,8,,Jasna Javorac,jasna.javorac.2716@example.com,+381-11-555-3716,0
+E000318,C02717,2026-05-01,legacy,west,49,13.66,17,0,0,0,2026-04-28T11:00:00,7,,Nada Dubović,nada.dubovic.2717@example.com,+381-11-555-3717,0
+E000319,C02718,2026-05-01,pro,south,29,39.88,16,1,1,0,2026-04-15T15:00:00,5,,Bojan Cerović,bojan.cerovic.2718@example.com,+381-11-555-3718,0
+E000320,C02719,2026-05-01,basic,west,42,10.22,17,0,0,0,2026-04-10T14:00:00,9,,Petar Borović,petar.borovic.2719@example.com,+381-11-555-3719,0
+E000321,C02720,2026-04-01,basic,south,34,9.65,10,2,0,10,2026-03-29T09:00:00,3,missing a feature,Lazar Javorac,lazar.javorac.2720@example.com,+381-11-555-3720,1
+E000322,C02721,2026-05-01,pro,west,27,41.32,13,1,0,5,2026-04-12T12:00:00,,,Danica Cerović,danica.cerovic.2721@example.com,+381-11-555-3721,0
+E000323,C02722,2026-05-01,legacy,east,30,15.13,19,0,1,20,2026-04-23T10:00:00,7,,Sava Javorac,sava.javorac.2722@example.com,+381-11-555-3722,0
+E000324,C02723,2026-06-01,basic,east,45,8.88,11,1,0,15,2026-05-22T11:00:00,,switched provider,Danica Grabić,danica.grabic.2723@example.com,+381-11-555-3723,1
+E000325,C02724,2026-05-01,basic,north,6,9.28,8,1,0,5,2026-04-24T07:00:00,5,,Marija Javorac,marija.javorac.2724@example.com,+381-11-555-3724,0
+E000326,C02725,2026-04-01,basic,west,46,9.27,12,1,1,10,2026-03-24T10:00:00,,other,Nada Borović,nada.borovic.2725@example.com,+381-11-555-3725,1
+E000327,C02726,2026-04-01,basic,south,46,9.56,16,0,1,10,2026-03-26T06:00:00,3,,Lazar Kestenić,lazar.kestenic.2726@example.com,+381-11-555-3726,0
+E000328,C02727,2026-04-01,plus,north,54,21.85,8,0,0,20,2026-03-24T13:00:00,9,,Ivana Kestenić,ivana.kestenic.2727@example.com,+381-11-555-3727,0
+E000329,C02728,2026-04-01,basic,north,24,8.84,7,1,0,20,2026-03-24T18:00:00,7,,Lazar Javorac,lazar.javorac.2728@example.com,+381-11-555-3728,0
+E000330,C02729,2026-04-01,pro,west,6,37.94,11,0,1,15,2026-03-27T18:00:00,,too expensive,Vera Grabić,vera.grabic.2729@example.com,+381-11-555-3729,1
+E000331,C02730,2026-04-01,plus,east,33,20.57,21,1,0,0,2026-03-31T18:00:00,3,,Lazar Javorac,lazar.javorac.2730@example.com,+381-11-555-3730,0
+E000332,C02731,2026-05-01,pro,west,58,45.44,18,0,0,15,2026-04-28T18:00:00,8,,Lazar Grabić,lazar.grabic.2731@example.com,+381-11-555-3731,0
+E000333,C02732,2026-06-01,pro,north,35,43.27,18,1,0,5,2026-06-08T09:00:00,8,,Danica Cerović,danica.cerovic.2732@example.com,+381-11-555-3732,0
+E000334,C02733,2026-04-01,basic,east,28,9.51,10,2,0,20,2026-03-14T11:00:00,,missing a feature,Petar Dubović,petar.dubovic.2733@example.com,+381-11-555-3733,1
+E000335,C02734,2026-06-01,plus,south,47,20.33,13,2,1,20,2026-05-26T15:00:00,10,,Petar Vrbić,petar.vrbic.2734@example.com,+381-11-555-3734,0
+E000336,C02735,2026-06-01,basic,south,6,9.97,15,0,0,15,2026-05-20T11:00:00,7,,Petar Dubović,petar.dubovic.2735@example.com,+381-11-555-3735,0
+E000337,C02736,2026-05-01,plus,north,48,22.04,9,0,0,5,2026-04-21T15:00:00,,,Jasna Hrastić,jasna.hrastic.2736@example.com,+381-11-555-3736,0
+E000338,C02737,2026-04-01,plus,south,22,19.69,24,0,0,20,2026-03-17T14:00:00,,,Nada Vrbić,nada.vrbic.2737@example.com,+381-11-555-3737,0
+E000339,C02738,2026-05-01,basic,south,4,10.24,11,1,0,20,2026-04-25T06:00:00,4,,Petar Javorac,petar.javorac.2738@example.com,+381-11-555-3738,0
+E000340,C02739,2026-04-01,basic,east,28,8.94,12,0,0,20,2026-03-20T06:00:00,5,,Lazar Lipić,lazar.lipic.2739@example.com,+381-11-555-3739,0
+E000341,C02740,2026-05-01,legacy,north,5,14.56,13,0,0,10,2026-04-12T18:00:00,6,,Ana Cerović,ana.cerovic.2740@example.com,+381-11-555-3740,0
+E000342,C02741,2026-05-01,legacy,west,41,15.09,9,0,1,10,2026-04-12T09:00:00,,too expensive,Sava Borović,sava.borovic.2741@example.com,+381-11-555-3741,1
+E000343,C02742,2026-05-01,basic,east,34,9.36,17,1,0,0,2026-04-10T16:00:00,7,,Sava Lipić,sava.lipic.2742@example.com,+381-11-555-3742,0
+E000344,C02743,2026-06-01,basic,north,52,10.18,11,3,0,10,2026-05-13T13:00:00,4,,Lazar Javorac,lazar.javorac.2743@example.com,+381-11-555-3743,0
+E000345,C02744,2026-05-01,pro,east,49,41.25,16,1,0,10,2026-04-11T16:00:00,6,,Lazar Javorac,lazar.javorac.2744@example.com,+381-11-555-3744,0
+E000346,C02745,2026-06-01,legacy,west,45,15.43,3,0,0,5,2026-05-12T09:00:00,6,,Petar Hrastić,petar.hrastic.2745@example.com,+381-11-555-3745,0
+E000347,C02746,2026-06-01,basic,west,46,9.20,9,0,1,15,2026-05-21T17:00:00,,,Bojan Grabić,bojan.grabic.2746@example.com,+381-11-555-3746,0
+E000348,C02747,2026-06-01,basic,east,5,10.17,19,2,0,10,2026-05-11T09:00:00,3,other,Petar Vrbić,petar.vrbic.2747@example.com,+381-11-555-3747,1
+E000349,C02748,2026-04-01,pro,east,45,37.43,10,1,0,10,2026-03-13T18:00:00,7,,Ana Cerović,ana.cerovic.2748@example.com,+381-11-555-3748,0
+E000350,C02749,2026-06-01,plus,south,9,19.56,5,1,0,20,2026-05-14T19:00:00,,not using it,Ana Hrastić,ana.hrastic.2749@example.com,+381-11-555-3749,1
+E000351,C02750,2026-04-01,legacy,west,44,15.89,23,0,1,10,2026-03-27T15:00:00,6,,Petar Dubović,petar.dubovic.2750@example.com,+381-11-555-3750,0
+E000352,C02751,2026-06-01,legacy,north,44,15.34,8,1,0,20,2026-05-28T15:00:00,0,switched provider,Marija Topolić,marija.topolic.2751@example.com,+381-11-555-3751,1
+E000353,C02752,2026-05-01,legacy,west,12,16.30,11,0,0,10,2026-04-09T13:00:00,7,,Danica Hrastić,danica.hrastic.2752@example.com,+381-11-555-3752,0
+E000354,C02753,2026-05-01,basic,north,44,10.06,5,1,0,15,2026-04-16T16:00:00,1,,Ivana Cerović,ivana.cerovic.2753@example.com,+381-11-555-3753,0
+E000355,C02754,2026-05-01,basic,south,32,8.91,16,1,0,5,2026-04-11T06:00:00,5,,Ivana Vrbić,ivana.vrbic.2754@example.com,+381-11-555-3754,0
+E000356,C02755,2026-06-01,basic,south,34,8.99,15,2,0,0,2026-05-10T07:00:00,6,,Sava Javorac,sava.javorac.2755@example.com,+381-11-555-3755,0
+E000357,C02756,2026-05-01,plus,north,43,18.69,18,0,0,20,2026-04-27T15:00:00,4,,Nada Vrbić,nada.vrbic.2756@example.com,+381-11-555-3756,0
+E000358,C02757,2026-06-01,plus,west,10,18.85,8,6,0,5,2026-06-08T09:00:00,3,missing a feature,Nada Lipić,nada.lipic.2757@example.com,+381-11-555-3757,1
+E000359,C02758,2026-05-01,pro,south,29,41.71,14,1,0,5,2026-05-19T09:00:00,,missing a feature,Bojan Grabić,bojan.grabic.2758@example.com,+381-11-555-3758,1
+E000360,C02759,2026-06-01,basic,east,39,9.79,6,3,1,10,2026-05-19T06:00:00,6,,Marija Hrastić,marija.hrastic.2759@example.com,+381-11-555-3759,0
+E000361,C02760,2026-04-01,basic,north,54,9.75,13,1,0,15,2026-03-27T16:00:00,6,,Vera Dubović,vera.dubovic.2760@example.com,+381-11-555-3760,0
+E000362,C02761,2026-06-01,legacy,west,56,14.81,6,2,0,10,2026-05-24T10:00:00,9,,Jasna Grabić,jasna.grabic.2761@example.com,+381-11-555-3761,0
+E000363,C02762,2026-04-01,pro,west,53,42.33,6,1,0,10,2026-03-14T06:00:00,,switched provider,Nada Hrastić,nada.hrastic.2762@example.com,+381-11-555-3762,1
+E000364,C02763,2026-04-01,basic,north,43,9.94,17,1,0,5,2026-03-11T15:00:00,4,,Ivana Grabić,ivana.grabic.2763@example.com,+381-11-555-3763,0
+E000365,C02764,2026-06-01,basic,west,39,8.50,15,2,0,20,2026-06-20T09:00:00,6,,Ivana Borović,ivana.borovic.2764@example.com,+381-11-555-3764,0
+E000366,C02765,2026-06-01,plus,north,58,23.97,3,5,0,10,2026-05-23T10:00:00,,missing a feature,Vera Cerović,vera.cerovic.2765@example.com,+381-11-555-3765,1
+E000367,C02766,2026-05-01,basic,north,16,9.90,9,1,0,0,2026-04-21T08:00:00,9,,Sava Kestenić,sava.kestenic.2766@example.com,+381-11-555-3766,0
+E000368,C02767,2026-04-01,plus,north,60,20.32,8,1,0,0,2026-03-19T17:00:00,10,,Petar Dubović,petar.dubovic.2767@example.com,+381-11-555-3767,0
+E000369,C02768,2026-04-01,basic,south,41,9.48,6,2,0,0,2026-03-18T10:00:00,3,,Lazar Borović,lazar.borovic.2768@example.com,+381-11-555-3768,1
+E000370,C02769,2026-05-01,plus,south,42,20.24,15,1,1,10,2026-04-23T15:00:00,8,,Nada Borović,nada.borovic.2769@example.com,+381-11-555-3769,0
+E000371,C02770,2026-05-01,pro,south,5,43.56,14,1,0,10,2026-04-10T18:00:00,5,,Danica Cerović,danica.cerovic.2770@example.com,+381-11-555-3770,0
+E000372,C02771,2026-05-01,basic,north,59,10.18,20,3,0,20,2026-04-16T12:00:00,6,,Lazar Grabić,lazar.grabic.2771@example.com,+381-11-555-3771,0
+E000373,C02772,2026-04-01,pro,east,47,43.12,18,0,1,10,2026-03-17T13:00:00,8,,Nada Javorac,nada.javorac.2772@example.com,+381-11-555-3772,0
+E000374,C02773,2026-05-01,plus,west,29,20.90,10,1,1,5,2026-04-09T07:00:00,7,,Bojan Borović,bojan.borovic.2773@example.com,+381-11-555-3773,0
+E000375,C02774,2026-06-01,basic,south,42,9.70,12,0,0,10,2026-05-22T06:00:00,7,,Jasna Dubović,jasna.dubovic.2774@example.com,+381-11-555-3774,0
+E000376,C02775,2026-04-01,pro,south,10,39.57,8,1,0,20,2026-03-27T10:00:00,,,Marija Grabić,marija.grabic.2775@example.com,+381-11-555-3775,0
+E000377,C02776,2026-04-01,plus,east,24,19.10,12,1,1,15,2026-03-22T07:00:00,6,,Ivana Hrastić,ivana.hrastic.2776@example.com,+381-11-555-3776,0
+E000378,C02777,2026-06-01,pro,north,41,43.52,8,2,0,5,2026-05-19T13:00:00,7,,Danica Lipić,danica.lipic.2777@example.com,+381-11-555-3777,0
+E000379,C02778,2026-06-01,plus,north,1,21.92,15,3,0,15,2026-05-27T19:00:00,5,,Jasna Vrbić,jasna.vrbic.2778@example.com,+381-11-555-3778,0
+E000380,C02779,2026-05-01,pro,east,47,39.03,5,1,0,0,2026-04-15T08:00:00,7,,Lazar Grabić,lazar.grabic.2779@example.com,+381-11-555-3779,0
+E000381,C02780,2026-04-01,basic,south,2,9.37,11,2,0,10,2026-03-19T18:00:00,7,,Sava Vrbić,sava.vrbic.2780@example.com,+381-11-555-3780,0
+E000382,C02781,2026-04-01,plus,north,12,20.87,13,1,0,10,2026-03-17T19:00:00,4,,Ana Borović,ana.borovic.2781@example.com,+381-11-555-3781,0
+E000383,C02782,2026-05-01,basic,south,13,10.30,11,0,0,15,2026-04-14T10:00:00,5,,Vera Topolić,vera.topolic.2782@example.com,+381-11-555-3782,0
+E000384,C02783,2026-05-01,plus,west,59,20.20,9,0,0,5,2026-04-13T14:00:00,8,,Vera Dubović,vera.dubovic.2783@example.com,+381-11-555-3783,0
+E000385,C02784,2026-06-01,plus,east,46,20.44,6,2,0,10,2026-05-22T13:00:00,6,,Jasna Kestenić,jasna.kestenic.2784@example.com,+381-11-555-3784,0
+E000386,C02785,2026-04-01,legacy,south,4,15.46,9,2,0,0,2026-03-30T13:00:00,5,missing a feature,Bojan Topolić,bojan.topolic.2785@example.com,+381-11-555-3785,1
+E000387,C02786,2026-06-01,legacy,south,57,14.61,9,3,0,20,2026-06-14T09:00:00,5,,Ana Hrastić,ana.hrastic.2786@example.com,+381-11-555-3786,0
+E000388,C02787,2026-05-01,basic,east,28,9.55,22,0,1,20,2026-04-18T19:00:00,7,,Goran Borović,goran.borovic.2787@example.com,+381-11-555-3787,0
+E000389,C02788,2026-05-01,plus,south,18,19.10,16,0,0,20,2026-04-17T07:00:00,6,,Lazar Javorac,lazar.javorac.2788@example.com,+381-11-555-3788,0
+E000390,C02789,2026-05-01,plus,west,28,20.11,15,0,0,5,2026-04-20T13:00:00,5,,Sava Topolić,sava.topolic.2789@example.com,+381-11-555-3789,0
+E000391,C02790,2026-06-01,basic,south,28,9.95,12,5,0,15,2026-06-11T09:00:00,,,Ivana Grabić,ivana.grabic.2790@example.com,+381-11-555-3790,0
+E000392,C02791,2026-06-01,pro,south,22,42.64,6,2,0,0,2026-05-12T19:00:00,6,,Ana Borović,ana.borovic.2791@example.com,+381-11-555-3791,0
+E000393,C02792,2026-05-01,basic,west,23,10.29,15,2,0,20,2026-04-15T12:00:00,5,,Sava Topolić,sava.topolic.2792@example.com,+381-11-555-3792,0
+E000394,C02793,2026-06-01,legacy,east,25,13.16,6,1,0,10,2026-05-12T17:00:00,,,Goran Grabić,goran.grabic.2793@example.com,+381-11-555-3793,0
+E000395,C02794,2026-05-01,plus,west,20,18.57,18,4,1,20,2026-04-30T12:00:00,7,,Sava Vrbić,sava.vrbic.2794@example.com,+381-11-555-3794,0
+E000396,C02795,2026-05-01,basic,north,1,9.78,22,0,0,5,2026-04-10T17:00:00,4,,Danica Borović,danica.borovic.2795@example.com,+381-11-555-3795,0
+E000397,C02796,2026-04-01,basic,east,53,10.07,12,1,0,10,2026-03-22T17:00:00,5,,Ivana Grabić,ivana.grabic.2796@example.com,+381-11-555-3796,0
+E000398,C02797,2026-04-01,pro,east,36,42.68,17,3,0,5,2026-03-20T19:00:00,6,,Danica Javorac,danica.javorac.2797@example.com,+381-11-555-3797,0
+E000399,C02798,2026-06-01,basic,north,9,9.89,16,0,0,5,2026-05-14T18:00:00,2,,Lazar Lipić,lazar.lipic.2798@example.com,+381-11-555-3798,0
+E000400,C02799,2026-04-01,legacy,west,35,14.72,12,1,0,15,2026-03-29T16:00:00,4,,Sava Cerović,sava.cerovic.2799@example.com,+381-11-555-3799,0
+E000401,C02800,2026-06-01,legacy,south,11,14.17,7,1,0,20,2026-05-15T11:00:00,6,,Petar Javorac,petar.javorac.2800@example.com,+381-11-555-3800,0
+E000402,C02801,2026-04-01,basic,south,58,9.22,12,0,0,15,2026-03-21T09:00:00,6,,Marija Topolić,marija.topolic.2801@example.com,+381-11-555-3801,0
+E000403,C02802,2026-04-01,plus,north,36,22.79,7,1,0,10,2026-03-19T12:00:00,7,,Bojan Cerović,bojan.cerovic.2802@example.com,+381-11-555-3802,0
+E000404,C02803,2026-06-01,basic,west,35,9.31,12,0,2,20,2026-05-27T18:00:00,6,,Bojan Lipić,bojan.lipic.2803@example.com,+381-11-555-3803,0
+E000405,C02804,2026-04-01,pro,west,39,40.76,8,4,0,0,2026-03-14T08:00:00,,not using it,Jasna Borović,jasna.borovic.2804@example.com,+381-11-555-3804,1
+E000406,C02805,2026-05-01,basic,south,43,9.32,10,0,0,5,2026-04-15T11:00:00,4,,Lazar Cerović,lazar.cerovic.2805@example.com,+381-11-555-3805,0
+E000407,C02806,2026-04-01,basic,north,41,9.70,15,0,0,20,2026-03-15T14:00:00,9,,Danica Lipić,danica.lipic.2806@example.com,+381-11-555-3806,0
+E000408,C02807,2026-05-01,pro,east,1,43.91,13,0,0,0,2026-04-18T12:00:00,4,,Vera Dubović,vera.dubovic.2807@example.com,+381-11-555-3807,0
+E000409,C02808,2026-04-01,basic,east,25,9.18,1,0,0,0,2026-03-12T12:00:00,5,,Sava Javorac,sava.javorac.2808@example.com,+381-11-555-3808,0
+E000410,C02809,2026-04-01,pro,east,28,37.54,17,0,0,5,2026-04-10T09:00:00,5,,Danica Vrbić,danica.vrbic.2809@example.com,+381-11-555-3809,0
+E000411,C02810,2026-05-01,basic,north,6,9.58,10,1,0,0,2026-04-14T18:00:00,,,Nada Cerović,nada.cerovic.2810@example.com,+381-11-555-3810,0
+E000412,C02811,2026-06-01,basic,east,55,8.46,18,2,0,10,2026-05-26T17:00:00,6,,Marija Cerović,marija.cerovic.2811@example.com,+381-11-555-3811,0
+E000413,C02812,2026-06-01,plus,east,24,20.13,9,2,1,0,2026-05-25T08:00:00,8,,Goran Dubović,goran.dubovic.2812@example.com,+381-11-555-3812,0
+E000414,C02813,2026-04-01,pro,west,45,40.33,10,3,0,15,2026-03-23T18:00:00,10,,Marija Borović,marija.borovic.2813@example.com,+381-11-555-3813,0
+E000415,C02814,2026-05-01,pro,east,38,43.20,13,1,0,15,2026-04-28T19:00:00,5,,Ana Topolić,ana.topolic.2814@example.com,+381-11-555-3814,0
+E000416,C02815,2026-05-01,plus,west,36,20.50,4,1,0,15,2026-04-24T13:00:00,5,missing a feature,Danica Cerović,danica.cerovic.2815@example.com,+381-11-555-3815,1
+E000417,C02816,2026-04-01,basic,west,40,10.20,11,2,0,5,2026-03-12T18:00:00,4,,Goran Borović,goran.borovic.2816@example.com,+381-11-555-3816,0
+E000418,C02817,2026-06-01,basic,south,44,9.68,8,1,0,10,2026-05-22T06:00:00,7,,Marija Lipić,marija.lipic.2817@example.com,+381-11-555-3817,0
+E000419,C02818,2026-04-01,plus,east,1,20.51,15,0,1,15,2026-04-08T09:00:00,3,,Vera Kestenić,vera.kestenic.2818@example.com,+381-11-555-3818,0
+E000420,C02819,2026-05-01,pro,west,57,40.09,13,3,0,0,2026-04-24T15:00:00,8,,Ivana Lipić,ivana.lipic.2819@example.com,+381-11-555-3819,0
+E000421,C02820,2026-06-01,basic,south,23,10.16,17,1,0,15,2026-05-29T17:00:00,10,,Petar Hrastić,petar.hrastic.2820@example.com,+381-11-555-3820,0
+E000422,C02821,2026-04-01,plus,north,16,20.77,19,0,1,5,2026-03-11T12:00:00,9,,Danica Kestenić,danica.kestenic.2821@example.com,+381-11-555-3821,0
+E000423,C02822,2026-06-01,plus,east,42,19.36,15,0,0,5,2026-05-31T16:00:00,7,,Nada Topolić,nada.topolic.2822@example.com,+381-11-555-3822,0
+E000424,C02823,2026-05-01,basic,south,29,9.77,18,2,0,20,2026-04-09T14:00:00,,,Vera Hrastić,vera.hrastic.2823@example.com,+381-11-555-3823,0
+E000425,C02824,2026-04-01,plus,east,39,20.02,13,1,0,15,2026-03-10T14:00:00,6,,Nada Kestenić,nada.kestenic.2824@example.com,+381-11-555-3824,0
+E000426,C02825,2026-05-01,pro,north,22,43.03,7,0,0,5,2026-04-23T18:00:00,5,,Petar Hrastić,petar.hrastic.2825@example.com,+381-11-555-3825,0
+E000427,C02826,2026-04-01,pro,north,40,43.60,9,1,0,20,2026-03-16T12:00:00,6,,Jasna Grabić,jasna.grabic.2826@example.com,+381-11-555-3826,0
+E000428,C02827,2026-06-01,pro,east,54,35.23,6,1,0,15,2026-05-29T09:00:00,6,,Nada Vrbić,nada.vrbic.2827@example.com,+381-11-555-3827,0
+E000429,C02828,2026-06-01,legacy,east,36,14.63,7,1,0,0,2026-05-29T12:00:00,7,switched provider,Ana Cerović,ana.cerovic.2828@example.com,+381-11-555-3828,1
+E000430,C02829,2026-04-01,plus,south,59,20.50,19,0,0,20,2026-03-30T17:00:00,5,,Ana Borović,ana.borovic.2829@example.com,+381-11-555-3829,0
+E000431,C02830,2026-04-01,pro,south,15,42.10,7,0,0,20,2026-04-16T09:00:00,7,,Ivana Javorac,ivana.javorac.2830@example.com,+381-11-555-3830,0
+E000432,C02831,2026-06-01,pro,east,14,48.42,9,4,0,15,2026-05-21T07:00:00,7,,Marija Kestenić,marija.kestenic.2831@example.com,+381-11-555-3831,0
+E000433,C02832,2026-05-01,plus,east,37,20.26,9,1,0,5,2026-04-15T06:00:00,6,,Ivana Grabić,ivana.grabic.2832@example.com,+381-11-555-3832,0
+E000434,C02833,2026-05-01,basic,north,36,9.98,9,2,0,0,2026-04-20T06:00:00,,missing a feature,Ivana Topolić,ivana.topolic.2833@example.com,+381-11-555-3833,1
+E000435,C02834,2026-05-01,basic,west,15,9.37,14,5,0,5,2026-04-21T16:00:00,10,,Nada Grabić,nada.grabic.2834@example.com,+381-11-555-3834,0
+E000436,C02835,2026-05-01,legacy,south,22,14.98,17,2,0,10,2026-04-22T13:00:00,6,,Goran Topolić,goran.topolic.2835@example.com,+381-11-555-3835,0
+E000437,C02836,2026-06-01,legacy,east,57,14.99,11,0,1,15,2026-05-18T12:00:00,8,,Goran Grabić,goran.grabic.2836@example.com,+381-11-555-3836,0
+E000438,C02837,2026-04-01,pro,west,20,39.43,14,2,0,20,2026-03-23T19:00:00,7,,Goran Grabić,goran.grabic.2837@example.com,+381-11-555-3837,0
+E000439,C02838,2026-04-01,legacy,east,7,16.18,2,2,0,5,2026-03-17T11:00:00,8,,Lazar Lipić,lazar.lipic.2838@example.com,+381-11-555-3838,0
+E000440,C02839,2026-04-01,basic,south,19,9.94,12,1,0,15,2026-03-19T09:00:00,5,,Goran Vrbić,goran.vrbic.2839@example.com,+381-11-555-3839,0
+E000441,C02840,2026-06-01,basic,east,3,9.93,11,3,0,0,2026-05-14T15:00:00,7,,Sava Kestenić,sava.kestenic.2840@example.com,+381-11-555-3840,0
+E000442,C02841,2026-04-01,pro,south,14,41.59,5,1,1,20,2026-03-26T09:00:00,6,,Petar Javorac,petar.javorac.2841@example.com,+381-11-555-3841,0
+E000443,C02842,2026-04-01,basic,east,11,9.17,8,0,0,0,2026-03-12T06:00:00,9,,Ana Cerović,ana.cerovic.2842@example.com,+381-11-555-3842,0
+E000444,C02843,2026-06-01,basic,east,12,9.00,12,1,1,10,2026-06-12T09:00:00,3,too expensive,Marija Grabić,marija.grabic.2843@example.com,+381-11-555-3843,1
+E000445,C02844,2026-04-01,pro,north,10,36.01,18,0,0,0,2026-03-26T12:00:00,6,,Vera Kestenić,vera.kestenic.2844@example.com,+381-11-555-3844,0
+E000446,C02845,2026-05-01,basic,north,14,9.65,7,0,0,10,2026-04-17T12:00:00,5,too expensive,Marija Javorac,marija.javorac.2845@example.com,+381-11-555-3845,1
+E000447,C02846,2026-05-01,plus,west,7,20.07,8,0,0,5,2026-04-30T12:00:00,3,,Danica Javorac,danica.javorac.2846@example.com,+381-11-555-3846,0
+E000448,C02847,2026-05-01,pro,north,29,45.15,5,0,0,5,2026-05-09T09:00:00,4,,Jasna Topolić,jasna.topolic.2847@example.com,+381-11-555-3847,0
+E000449,C02848,2026-05-01,basic,west,31,9.34,10,0,0,0,2026-04-26T19:00:00,6,,Ivana Topolić,ivana.topolic.2848@example.com,+381-11-555-3848,0
+E000450,C02849,2026-04-01,basic,north,59,9.65,22,0,0,10,2026-03-28T13:00:00,5,,Petar Vrbić,petar.vrbic.2849@example.com,+381-11-555-3849,0
+E000451,C02850,2026-04-01,basic,east,18,9.17,9,2,0,20,2026-03-29T15:00:00,10,,Sava Topolić,sava.topolic.2850@example.com,+381-11-555-3850,0
+E000452,C02851,2026-04-01,plus,south,5,19.10,16,0,0,5,2026-03-20T17:00:00,6,,Petar Vrbić,petar.vrbic.2851@example.com,+381-11-555-3851,0
+E000453,C02852,2026-06-01,legacy,east,16,15.05,11,1,1,10,2026-05-19T15:00:00,8,,Ivana Lipić,ivana.lipic.2852@example.com,+381-11-555-3852,0
+E000454,C02853,2026-06-01,plus,east,58,20.12,14,1,0,15,2026-05-22T08:00:00,8,,Vera Borović,vera.borovic.2853@example.com,+381-11-555-3853,0
+E000455,C02854,2026-04-01,plus,east,4,18.45,16,1,1,0,2026-03-24T08:00:00,6,,Bojan Javorac,bojan.javorac.2854@example.com,+381-11-555-3854,0
+E000456,C02855,2026-06-01,plus,east,13,22.05,20,0,0,10,2026-05-22T10:00:00,4,,Marija Lipić,marija.lipic.2855@example.com,+381-11-555-3855,0
+E000457,C02856,2026-06-01,plus,north,31,22.34,7,1,0,20,2026-05-21T18:00:00,7,,Marija Javorac,marija.javorac.2856@example.com,+381-11-555-3856,0
+E000458,C02857,2026-05-01,basic,east,30,9.49,7,0,0,20,2026-04-19T19:00:00,6,,Lazar Borović,lazar.borovic.2857@example.com,+381-11-555-3857,0
+E000459,C02858,2026-04-01,pro,north,10,42.52,4,5,1,0,2026-03-20T09:00:00,,switched provider,Ivana Hrastić,ivana.hrastic.2858@example.com,+381-11-555-3858,1
+E000460,C02859,2026-04-01,basic,west,56,8.70,7,0,0,10,2026-03-16T06:00:00,,missing a feature,Lazar Kestenić,lazar.kestenic.2859@example.com,+381-11-555-3859,1
+E000461,C02860,2026-04-01,legacy,west,45,16.56,7,1,0,5,2026-03-25T18:00:00,7,,Ana Cerović,ana.cerovic.2860@example.com,+381-11-555-3860,0
+E000462,C02861,2026-04-01,legacy,north,49,14.72,16,1,0,0,2026-03-26T12:00:00,,,Lazar Lipić,lazar.lipic.2861@example.com,+381-11-555-3861,0
+E000463,C02862,2026-04-01,legacy,south,19,15.10,7,2,0,0,2026-03-15T08:00:00,6,,Bojan Cerović,bojan.cerovic.2862@example.com,+381-11-555-3862,0
+E000464,C02863,2026-06-01,plus,north,54,21.65,11,2,0,20,2026-05-21T19:00:00,8,not using it,Sava Dubović,sava.dubovic.2863@example.com,+381-11-555-3863,1
+E000465,C02864,2026-06-01,pro,south,12,43.17,13,2,0,10,2026-05-23T07:00:00,3,,Nada Borović,nada.borovic.2864@example.com,+381-11-555-3864,0
+E000466,C02865,2026-06-01,basic,south,22,9.64,12,2,0,20,2026-05-20T13:00:00,6,,Nada Kestenić,nada.kestenic.2865@example.com,+381-11-555-3865,0
+E000467,C02866,2026-04-01,basic,north,41,10.64,6,3,0,20,2026-03-14T06:00:00,5,,Goran Topolić,goran.topolic.2866@example.com,+381-11-555-3866,0
+E000468,C02867,2026-04-01,plus,east,18,20.52,8,4,0,0,2026-03-13T16:00:00,7,,Lazar Topolić,lazar.topolic.2867@example.com,+381-11-555-3867,0
+E000469,C02868,2026-05-01,plus,east,51,19.97,22,0,1,10,2026-04-28T16:00:00,9,,Danica Topolić,danica.topolic.2868@example.com,+381-11-555-3868,0
+E000470,C02869,2026-06-01,plus,north,14,21.33,12,0,1,15,2026-05-25T13:00:00,,,Nada Vrbić,nada.vrbic.2869@example.com,+381-11-555-3869,0
+E000471,C02870,2026-05-01,plus,east,29,21.97,9,0,0,0,2026-05-21T09:00:00,,missing a feature,Danica Hrastić,danica.hrastic.2870@example.com,+381-11-555-3870,1
+E000472,C02871,2026-04-01,basic,east,16,8.54,11,0,1,0,2026-03-21T09:00:00,5,,Vera Vrbić,vera.vrbic.2871@example.com,+381-11-555-3871,0
+E000473,C02872,2026-06-01,basic,west,36,10.74,14,1,0,10,2026-05-25T16:00:00,6,,Bojan Dubović,bojan.dubovic.2872@example.com,+381-11-555-3872,0
+E000474,C02873,2026-04-01,plus,west,47,21.50,15,0,0,5,2026-03-13T12:00:00,8,,Danica Javorac,danica.javorac.2873@example.com,+381-11-555-3873,0
+E000475,C02874,2026-05-01,pro,east,4,39.12,14,0,0,10,2026-04-10T19:00:00,8,,Sava Dubović,sava.dubovic.2874@example.com,+381-11-555-3874,0
+E000476,C02875,2026-05-01,legacy,west,38,15.08,6,2,0,5,2026-04-20T17:00:00,7,,Marija Topolić,marija.topolic.2875@example.com,+381-11-555-3875,0
+E000477,C02876,2026-06-01,plus,east,56,18.77,16,1,0,20,2026-05-17T11:00:00,7,,Petar Topolić,petar.topolic.2876@example.com,+381-11-555-3876,0
+E000478,C02877,2026-05-01,plus,east,8,21.00,10,0,0,0,2026-04-30T12:00:00,7,,Marija Lipić,marija.lipic.2877@example.com,+381-11-555-3877,0
+E000479,C02878,2026-06-01,plus,west,18,20.55,10,2,1,15,2026-05-29T15:00:00,7,,Marija Kestenić,marija.kestenic.2878@example.com,+381-11-555-3878,0
+E000480,C02879,2026-05-01,plus,north,49,20.38,5,1,0,20,2026-04-25T12:00:00,8,,Ana Grabić,ana.grabic.2879@example.com,+381-11-555-3879,0
+E000481,C02880,2026-06-01,basic,north,60,9.47,19,1,1,10,2026-06-04T09:00:00,7,,Jasna Grabić,jasna.grabic.2880@example.com,+381-11-555-3880,0
+E000482,C02881,2026-06-01,plus,south,7,19.95,23,0,0,15,2026-05-16T07:00:00,6,,Ana Vrbić,ana.vrbic.2881@example.com,+381-11-555-3881,0
+E000483,C02882,2026-05-01,legacy,north,36,14.41,21,0,1,20,2026-04-27T07:00:00,2,,Marija Borović,marija.borovic.2882@example.com,+381-11-555-3882,0
+E000484,C02883,2026-06-01,pro,east,14,43.71,18,0,0,20,2026-05-18T17:00:00,6,,Danica Vrbić,danica.vrbic.2883@example.com,+381-11-555-3883,0
+E000485,C02884,2026-05-01,plus,south,35,22.13,15,2,0,10,2026-04-27T16:00:00,6,,Vera Vrbić,vera.vrbic.2884@example.com,+381-11-555-3884,0
+E000486,C02885,2026-05-01,basic,east,56,9.75,9,2,0,10,2026-04-10T12:00:00,7,,Nada Topolić,nada.topolic.2885@example.com,+381-11-555-3885,0
+E000487,C02886,2026-05-01,legacy,south,60,14.03,8,4,0,5,2026-04-23T07:00:00,4,other,Jasna Kestenić,jasna.kestenic.2886@example.com,+381-11-555-3886,1
+E000488,C02887,2026-04-01,basic,west,16,10.58,5,1,2,0,2026-03-18T16:00:00,,not using it,Bojan Topolić,bojan.topolic.2887@example.com,+381-11-555-3887,1
+E000489,C02888,2026-05-01,basic,north,12,10.17,15,0,0,10,2026-04-20T09:00:00,5,,Bojan Grabić,bojan.grabic.2888@example.com,+381-11-555-3888,0
+E000490,C02889,2026-05-01,basic,south,46,9.67,18,0,1,20,2026-04-14T19:00:00,5,,Goran Vrbić,goran.vrbic.2889@example.com,+381-11-555-3889,0
+E000491,C02890,2026-04-01,legacy,west,59,15.19,18,0,0,20,2026-03-14T19:00:00,6,,Ana Topolić,ana.topolic.2890@example.com,+381-11-555-3890,0
+E000492,C02891,2026-04-01,pro,north,18,44.28,14,1,0,0,2026-03-29T06:00:00,7,,Bojan Topolić,bojan.topolic.2891@example.com,+381-11-555-3891,0
+E000493,C02892,2026-04-01,pro,south,3,44.03,13,2,0,10,2026-03-27T07:00:00,6,,Goran Grabić,goran.grabic.2892@example.com,+381-11-555-3892,0
+E000494,C02893,2026-05-01,plus,east,18,20.20,7,2,0,15,2026-04-29T07:00:00,7,,Sava Topolić,sava.topolic.2893@example.com,+381-11-555-3893,0
+E000495,C02894,2026-06-01,pro,west,31,44.59,15,1,0,15,2026-05-23T16:00:00,7,,Ana Topolić,ana.topolic.2894@example.com,+381-11-555-3894,0
+E000496,C02895,2026-06-01,basic,north,11,9.52,8,3,0,15,2026-05-12T19:00:00,6,,Marija Lipić,marija.lipic.2895@example.com,+381-11-555-3895,0
+E000497,C02896,2026-04-01,plus,west,48,18.76,8,1,0,10,2026-03-30T10:00:00,6,,Jasna Grabić,jasna.grabic.2896@example.com,+381-11-555-3896,0
+E000498,C02897,2026-04-01,plus,east,30,20.78,14,1,0,20,2026-03-12T09:00:00,6,,Vera Kestenić,vera.kestenic.2897@example.com,+381-11-555-3897,0
+E000499,C02898,2026-04-01,pro,east,41,42.03,11,1,0,5,2026-03-26T06:00:00,,,Goran Topolić,goran.topolic.2898@example.com,+381-11-555-3898,0
+E000500,C02899,2026-05-01,legacy,south,60,15.44,19,0,0,10,2026-04-27T07:00:00,6,,Vera Javorac,vera.javorac.2899@example.com,+381-11-555-3899,0
+E000501,C02900,2026-05-01,legacy,north,19,14.76,20,0,0,0,2026-04-17T19:00:00,10,,Nada Cerović,nada.cerovic.2900@example.com,+381-11-555-3900,0
+E000502,C02901,2026-04-01,pro,south,24,42.85,17,0,0,5,2026-03-22T11:00:00,6,,Vera Vrbić,vera.vrbic.2901@example.com,+381-11-555-3901,0
+E000503,C02902,2026-06-01,pro,north,19,38.33,12,0,0,0,2026-05-15T12:00:00,6,,Nada Borović,nada.borovic.2902@example.com,+381-11-555-3902,0
+E000504,C02903,2026-04-01,plus,east,12,21.85,21,0,0,5,2026-03-24T14:00:00,7,,Danica Borović,danica.borovic.2903@example.com,+381-11-555-3903,0
+E000505,C02904,2026-04-01,pro,east,45,40.07,14,2,0,10,2026-03-27T10:00:00,3,not using it,Sava Grabić,sava.grabic.2904@example.com,+381-11-555-3904,1
+E000506,C02905,2026-04-01,basic,south,10,9.75,0,3,0,10,2026-03-11T14:00:00,7,,Marija Vrbić,marija.vrbic.2905@example.com,+381-11-555-3905,0
+E000507,C02906,2026-04-01,basic,south,33,9.22,19,0,0,20,2026-03-21T12:00:00,10,,Lazar Dubović,lazar.dubovic.2906@example.com,+381-11-555-3906,0
+E000508,C02907,2026-05-01,plus,north,27,19.31,20,0,0,20,2026-04-20T19:00:00,7,,Lazar Kestenić,lazar.kestenic.2907@example.com,+381-11-555-3907,0
+E000509,C02908,2026-06-01,legacy,east,50,15.15,3,0,0,15,2026-05-16T18:00:00,5,,Marija Topolić,marija.topolic.2908@example.com,+381-11-555-3908,0
+E000510,C02909,2026-04-01,plus,south,52,19.43,11,1,0,5,2026-03-21T11:00:00,5,,Nada Lipić,nada.lipic.2909@example.com,+381-11-555-3909,0
+E000511,C02910,2026-04-01,plus,east,4,18.79,8,1,0,20,2026-03-30T11:00:00,9,,Ivana Topolić,ivana.topolic.2910@example.com,+381-11-555-3910,0
+E000512,C02911,2026-04-01,plus,north,1,19.97,12,1,0,20,2026-03-12T11:00:00,6,,Petar Borović,petar.borovic.2911@example.com,+381-11-555-3911,0
+E000513,C02912,2026-05-01,plus,east,45,18.84,13,0,0,10,2026-04-28T18:00:00,,,Vera Cerović,vera.cerovic.2912@example.com,+381-11-555-3912,0
+E000514,C02913,2026-04-01,basic,east,22,9.83,13,0,0,5,2026-03-31T14:00:00,7,,Ivana Javorac,ivana.javorac.2913@example.com,+381-11-555-3913,0
+E000515,C02914,2026-06-01,plus,east,53,19.88,12,3,0,10,2026-05-21T19:00:00,4,,Sava Cerović,sava.cerovic.2914@example.com,+381-11-555-3914,0
+E000516,C02915,2026-06-01,legacy,north,4,15.69,1,0,1,0,2026-05-12T12:00:00,6,,Bojan Grabić,bojan.grabic.2915@example.com,+381-11-555-3915,0
+E000517,C02916,2026-04-01,basic,south,52,9.20,5,1,0,20,2026-03-22T09:00:00,6,,Jasna Hrastić,jasna.hrastic.2916@example.com,+381-11-555-3916,0
+E000518,C02917,2026-05-01,pro,south,29,37.18,8,2,0,15,2026-04-14T15:00:00,,switched provider,Ivana Grabić,ivana.grabic.2917@example.com,+381-11-555-3917,1
+E000519,C02918,2026-04-01,plus,south,58,21.82,18,1,0,0,2026-03-18T12:00:00,9,,Jasna Grabić,jasna.grabic.2918@example.com,+381-11-555-3918,0
+E000520,C02919,2026-05-01,basic,east,45,9.46,10,2,0,20,2026-04-14T08:00:00,6,,Ana Topolić,ana.topolic.2919@example.com,+381-11-555-3919,0
+E000521,C02920,2026-06-01,plus,south,39,22.76,17,0,0,10,2026-05-15T10:00:00,4,,Ana Grabić,ana.grabic.2920@example.com,+381-11-555-3920,0
+E000522,C02921,2026-04-01,basic,west,10,9.81,13,0,0,10,2026-03-18T09:00:00,5,,Danica Borović,danica.borovic.2921@example.com,+381-11-555-3921,0
+E000523,C02922,2026-04-01,plus,north,58,20.13,10,2,0,0,2026-03-24T18:00:00,8,,Goran Grabić,goran.grabic.2922@example.com,+381-11-555-3922,0
+E000524,C02923,2026-05-01,legacy,south,56,16.06,1,3,0,15,2026-04-14T09:00:00,,too expensive,Marija Grabić,marija.grabic.2923@example.com,+381-11-555-3923,1
+E000525,C02924,2026-04-01,pro,south,3,38.06,16,0,0,10,2026-03-28T10:00:00,5,,Lazar Javorac,lazar.javorac.2924@example.com,+381-11-555-3924,0
+E000526,C02925,2026-05-01,plus,south,4,20.59,19,0,0,10,2026-05-09T09:00:00,,,Marija Cerović,marija.cerovic.2925@example.com,+381-11-555-3925,0
+E000527,C02926,2026-06-01,basic,south,2,9.09,8,1,0,20,2026-05-14T07:00:00,6,other,Ana Hrastić,ana.hrastic.2926@example.com,+381-11-555-3926,1
+E000528,C02927,2026-05-01,basic,south,33,9.71,19,0,0,0,2026-04-11T18:00:00,,,Sava Topolić,sava.topolic.2927@example.com,+381-11-555-3927,0
+E000529,C02928,2026-04-01,plus,north,17,20.68,18,1,0,20,2026-03-12T10:00:00,,,Nada Lipić,nada.lipic.2928@example.com,+381-11-555-3928,0
+E000530,C02929,2026-04-01,basic,west,8,9.27,9,2,0,0,2026-03-23T14:00:00,,,Ana Grabić,ana.grabic.2929@example.com,+381-11-555-3929,0
+E000531,C02930,2026-06-01,plus,east,27,16.57,12,2,0,20,2026-05-26T14:00:00,9,,Jasna Cerović,jasna.cerovic.2930@example.com,+381-11-555-3930,0
+E000532,C02931,2026-05-01,pro,west,50,41.31,13,1,0,0,2026-04-10T12:00:00,8,,Goran Borović,goran.borovic.2931@example.com,+381-11-555-3931,0
+E000533,C02932,2026-04-01,plus,south,24,21.32,10,2,0,5,2026-03-14T08:00:00,4,,Sava Lipić,sava.lipic.2932@example.com,+381-11-555-3932,0
+E000534,C02933,2026-06-01,basic,west,8,8.97,8,0,1,10,2026-05-12T16:00:00,7,,Sava Hrastić,sava.hrastic.2933@example.com,+381-11-555-3933,0
+E000535,C02934,2026-04-01,basic,west,17,8.75,11,3,0,15,2026-03-31T10:00:00,5,,Marija Javorac,marija.javorac.2934@example.com,+381-11-555-3934,0
+E000536,C02935,2026-04-01,legacy,north,26,14.88,15,0,0,10,2026-03-25T10:00:00,10,,Goran Borović,goran.borovic.2935@example.com,+381-11-555-3935,0
+E000537,C02936,2026-06-01,legacy,north,6,13.35,15,1,0,10,2026-05-24T07:00:00,8,,Jasna Vrbić,jasna.vrbic.2936@example.com,+381-11-555-3936,0
+E000538,C02937,2026-06-01,basic,west,3,8.90,17,0,0,20,2026-05-15T10:00:00,4,,Ana Vrbić,ana.vrbic.2937@example.com,+381-11-555-3937,0
+E000539,C02938,2026-05-01,basic,west,1,9.39,12,2,0,10,2026-04-11T12:00:00,8,,Bojan Kestenić,bojan.kestenic.2938@example.com,+381-11-555-3938,0
+E000540,C02939,2026-06-01,plus,east,5,22.27,10,1,0,20,2026-05-26T12:00:00,7,,Vera Dubović,vera.dubovic.2939@example.com,+381-11-555-3939,0
+E000541,C02940,2026-05-01,basic,west,42,10.36,3,0,0,0,2026-04-09T07:00:00,6,,Ana Dubović,ana.dubovic.2940@example.com,+381-11-555-3940,0
+E000542,C02941,2026-06-01,basic,west,12,9.38,17,2,0,5,2026-05-21T12:00:00,5,,Lazar Kestenić,lazar.kestenic.2941@example.com,+381-11-555-3941,0
+E000543,C02942,2026-04-01,plus,north,28,20.74,16,1,0,15,2026-03-17T08:00:00,,other,Ivana Grabić,ivana.grabic.2942@example.com,+381-11-555-3942,1
+E000544,C02943,2026-06-01,basic,north,23,10.07,13,1,0,15,2026-05-26T12:00:00,6,,Nada Lipić,nada.lipic.2943@example.com,+381-11-555-3943,0
+E000545,C02944,2026-06-01,plus,north,49,22.22,9,0,0,5,2026-05-26T13:00:00,,,Bojan Borović,bojan.borovic.2944@example.com,+381-11-555-3944,0
+E000546,C02945,2026-05-01,basic,west,43,8.14,7,2,0,5,2026-04-15T10:00:00,8,,Ana Lipić,ana.lipic.2945@example.com,+381-11-555-3945,0
+E000547,C02946,2026-05-01,plus,east,52,18.59,16,1,0,20,2026-04-16T06:00:00,,,Danica Topolić,danica.topolic.2946@example.com,+381-11-555-3946,0
+E000548,C02947,2026-04-01,legacy,east,26,12.34,7,3,0,20,2026-03-16T12:00:00,7,,Danica Lipić,danica.lipic.2947@example.com,+381-11-555-3947,0
+E000549,C02948,2026-04-01,pro,north,51,41.03,16,0,0,20,2026-03-28T15:00:00,5,,Ivana Cerović,ivana.cerovic.2948@example.com,+381-11-555-3948,0
+E000550,C02949,2026-05-01,plus,east,31,20.86,19,0,0,0,2026-04-30T07:00:00,6,,Vera Cerović,vera.cerovic.2949@example.com,+381-11-555-3949,0
+E000551,C02950,2026-06-01,plus,west,53,18.65,21,2,0,15,2026-05-14T09:00:00,4,,Marija Topolić,marija.topolic.2950@example.com,+381-11-555-3950,0
+E000552,C02951,2026-06-01,basic,east,8,9.61,15,1,0,5,2026-06-08T09:00:00,7,,Ana Hrastić,ana.hrastic.2951@example.com,+381-11-555-3951,0
+E000553,C02952,2026-05-01,pro,north,28,39.61,1,2,2,15,2026-04-10T08:00:00,5,,Danica Borović,danica.borovic.2952@example.com,+381-11-555-3952,0
+E000554,C02953,2026-06-01,legacy,east,24,14.20,11,1,0,0,2026-05-18T14:00:00,6,,Ana Dubović,ana.dubovic.2953@example.com,+381-11-555-3953,0
+E000555,C02954,2026-04-01,pro,west,18,40.64,17,2,0,20,2026-03-23T15:00:00,8,,Lazar Cerović,lazar.cerovic.2954@example.com,+381-11-555-3954,0
+E000556,C02955,2026-06-01,pro,east,28,41.85,17,1,0,15,2026-05-24T17:00:00,6,,Bojan Borović,bojan.borovic.2955@example.com,+381-11-555-3955,0
+E000557,C02956,2026-05-01,plus,east,60,19.48,20,1,0,5,2026-04-29T06:00:00,8,,Nada Grabić,nada.grabic.2956@example.com,+381-11-555-3956,0
+E000558,C02957,2026-04-01,basic,south,56,9.50,10,1,0,10,2026-03-22T07:00:00,6,,Vera Lipić,vera.lipic.2957@example.com,+381-11-555-3957,0
+E000559,C02958,2026-06-01,basic,west,21,9.84,8,1,0,5,2026-05-12T11:00:00,6,,Marija Vrbić,marija.vrbic.2958@example.com,+381-11-555-3958,0
+E000560,C02959,2026-04-01,legacy,south,7,15.07,22,0,0,0,2026-03-29T11:00:00,4,,Sava Borović,sava.borovic.2959@example.com,+381-11-555-3959,0
+E000561,C02960,2026-05-01,legacy,east,9,15.30,14,1,0,10,2026-04-12T09:00:00,6,,Nada Lipić,nada.lipic.2960@example.com,+381-11-555-3960,0
+E000562,C02961,2026-04-01,basic,west,56,8.31,13,0,0,15,2026-03-14T07:00:00,7,,Jasna Vrbić,jasna.vrbic.2961@example.com,+381-11-555-3961,0
+E000563,C02962,2026-06-01,legacy,north,6,15.27,17,3,0,5,2026-05-12T15:00:00,8,,Danica Vrbić,danica.vrbic.2962@example.com,+381-11-555-3962,0
+E000564,C02963,2026-05-01,plus,west,20,20.80,9,1,0,10,2026-04-10T10:00:00,6,,Lazar Grabić,lazar.grabic.2963@example.com,+381-11-555-3963,0
+E000565,C02964,2026-06-01,pro,west,12,40.85,22,1,0,10,2026-05-14T18:00:00,10,,Vera Hrastić,vera.hrastic.2964@example.com,+381-11-555-3964,0
+E000566,C02965,2026-04-01,pro,north,23,40.91,6,2,0,15,2026-03-14T18:00:00,5,,Vera Javorac,vera.javorac.2965@example.com,+381-11-555-3965,0
+E000567,C02966,2026-04-01,basic,south,38,10.29,4,3,1,20,2026-03-24T10:00:00,4,missing a feature,Goran Cerović,goran.cerovic.2966@example.com,+381-11-555-3966,1
+E000568,C02967,2026-06-01,legacy,north,11,15.41,0,3,1,10,2026-05-19T11:00:00,,switched provider,Ana Topolić,ana.topolic.2967@example.com,+381-11-555-3967,1
+E000569,C02968,2026-06-01,pro,north,7,42.12,5,0,0,0,2026-05-27T18:00:00,6,,Sava Lipić,sava.lipic.2968@example.com,+381-11-555-3968,0
+E000570,C02969,2026-04-01,basic,west,45,10.25,23,1,0,0,2026-03-16T12:00:00,5,,Goran Borović,goran.borovic.2969@example.com,+381-11-555-3969,0
+E000571,C02970,2026-04-01,plus,north,58,20.82,8,2,1,15,2026-03-15T06:00:00,,,Marija Dubović,marija.dubovic.2970@example.com,+381-11-555-3970,0
+E000572,C02971,2026-05-01,plus,north,37,21.00,15,2,0,20,2026-04-27T18:00:00,6,,Ana Dubović,ana.dubovic.2971@example.com,+381-11-555-3971,0
+E000573,C02972,2026-06-01,basic,south,24,10.02,10,0,0,5,2026-05-10T08:00:00,7,,Ivana Grabić,ivana.grabic.2972@example.com,+381-11-555-3972,0
+E000574,C02973,2026-06-01,basic,west,3,9.44,20,0,1,0,2026-05-25T06:00:00,2,,Nada Grabić,nada.grabic.2973@example.com,+381-11-555-3973,0
+E000575,C02974,2026-06-01,plus,east,7,19.86,14,1,0,20,2026-05-20T07:00:00,9,,Ana Hrastić,ana.hrastic.2974@example.com,+381-11-555-3974,0
+E000576,C02975,2026-04-01,basic,west,36,8.75,2,3,1,20,2026-03-30T15:00:00,5,,Petar Kestenić,petar.kestenic.2975@example.com,+381-11-555-3975,0
+E000577,C02976,2026-05-01,pro,east,43,41.05,8,0,0,15,2026-04-24T18:00:00,6,,Jasna Borović,jasna.borovic.2976@example.com,+381-11-555-3976,0
+E000578,C02977,2026-06-01,plus,north,34,22.37,15,0,0,5,2026-05-23T12:00:00,8,,Ivana Grabić,ivana.grabic.2977@example.com,+381-11-555-3977,0
+E000579,C02978,2026-05-01,basic,south,48,9.47,9,1,0,0,2026-04-11T19:00:00,8,,Lazar Grabić,lazar.grabic.2978@example.com,+381-11-555-3978,0
+E000580,C02979,2026-06-01,plus,west,39,20.53,13,2,0,10,2026-05-16T15:00:00,4,,Bojan Cerović,bojan.cerovic.2979@example.com,+381-11-555-3979,0
+E000581,C02980,2026-04-01,plus,west,33,19.30,4,2,0,10,2026-03-16T13:00:00,,too expensive,Nada Vrbić,nada.vrbic.2980@example.com,+381-11-555-3980,1
+E000582,C02981,2026-05-01,basic,north,25,10.19,15,0,0,0,2026-04-18T11:00:00,7,,Goran Kestenić,goran.kestenic.2981@example.com,+381-11-555-3981,0
+E000583,C02982,2026-05-01,plus,west,58,19.37,3,4,0,5,2026-04-14T19:00:00,,,Danica Topolić,danica.topolic.2982@example.com,+381-11-555-3982,0
+E000584,C02983,2026-05-01,pro,east,32,47.24,23,0,0,5,2026-04-13T06:00:00,8,,Lazar Lipić,lazar.lipic.2983@example.com,+381-11-555-3983,0
+E000585,C02984,2026-05-01,basic,south,25,8.94,10,0,0,10,2026-04-14T16:00:00,10,,Nada Cerović,nada.cerovic.2984@example.com,+381-11-555-3984,0
+E000586,C02985,2026-05-01,basic,south,13,8.92,11,1,0,10,2026-04-21T13:00:00,2,other,Ivana Vrbić,ivana.vrbic.2985@example.com,+381-11-555-3985,1
+E000587,C02986,2026-06-01,plus,south,60,19.71,16,1,1,20,2026-05-24T10:00:00,7,,Ivana Dubović,ivana.dubovic.2986@example.com,+381-11-555-3986,0
+E000588,C02987,2026-06-01,basic,south,45,9.47,5,2,0,10,2026-05-18T14:00:00,6,too expensive,Nada Grabić,nada.grabic.2987@example.com,+381-11-555-3987,1
+E000589,C02988,2026-04-01,plus,north,23,20.19,26,0,0,15,2026-03-30T16:00:00,9,,Bojan Borović,bojan.borovic.2988@example.com,+381-11-555-3988,0
+E000590,C02989,2026-04-01,pro,south,38,44.73,19,1,0,10,2026-03-23T19:00:00,8,,Goran Topolić,goran.topolic.2989@example.com,+381-11-555-3989,0
+E000591,C02990,2026-04-01,plus,south,43,19.06,8,0,1,10,2026-03-20T14:00:00,5,,Lazar Hrastić,lazar.hrastic.2990@example.com,+381-11-555-3990,0
+E000592,C02991,2026-05-01,plus,north,19,21.36,18,1,1,0,2026-04-10T15:00:00,7,,Marija Dubović,marija.dubovic.2991@example.com,+381-11-555-3991,0
+E000593,C02992,2026-05-01,plus,east,47,19.96,14,2,0,20,2026-04-22T18:00:00,6,,Jasna Hrastić,jasna.hrastic.2992@example.com,+381-11-555-3992,0
+E000594,C02993,2026-04-01,legacy,east,5,13.71,8,3,0,15,2026-03-22T09:00:00,2,,Nada Dubović,nada.dubovic.2993@example.com,+381-11-555-3993,0
+E000595,C02994,2026-06-01,plus,east,3,19.44,5,2,0,5,2026-05-16T08:00:00,,not using it,Petar Javorac,petar.javorac.2994@example.com,+381-11-555-3994,1
+E000596,C02995,2026-04-01,basic,south,32,8.73,10,0,0,15,2026-03-27T19:00:00,6,,Ana Vrbić,ana.vrbic.2995@example.com,+381-11-555-3995,0
+E000597,C02996,2026-06-01,plus,west,47,19.08,19,1,1,5,2026-05-29T06:00:00,7,,Sava Javorac,sava.javorac.2996@example.com,+381-11-555-3996,0
+E000598,C02997,2026-04-01,basic,east,20,9.75,15,0,1,0,2026-03-25T11:00:00,,,Marija Vrbić,marija.vrbic.2997@example.com,+381-11-555-3997,0
+E000599,C02998,2026-05-01,pro,south,10,38.21,18,1,0,5,2026-04-24T07:00:00,8,,Danica Dubović,danica.dubovic.2998@example.com,+381-11-555-3998,0
+E000600,C02999,2026-06-01,pro,north,10,45.75,9,2,0,10,2026-05-28T11:00:00,4,,Jasna Topolić,jasna.topolic.2999@example.com,+381-11-555-3999,0
+E000601,C03000,2026-05-01,pro,west,12,45.43,12,0,0,10,2026-04-10T12:00:00,7,,Ivana Topolić,ivana.topolic.3000@example.com,+381-11-555-4000,0
+E000602,C03001,2026-04-01,plus,east,60,21.28,18,2,1,15,2026-03-29T16:00:00,6,,Marija Dubović,marija.dubovic.3001@example.com,+381-11-555-4001,0
+E000603,C03002,2026-05-01,plus,north,37,22.08,11,1,0,0,2026-04-21T08:00:00,4,,Goran Javorac,goran.javorac.3002@example.com,+381-11-555-4002,0
+E000604,C03003,2026-04-01,basic,south,6,9.12,23,0,1,5,2026-03-13T13:00:00,6,,Bojan Cerović,bojan.cerovic.3003@example.com,+381-11-555-4003,0
+E000605,C03004,2026-05-01,legacy,south,30,14.59,11,0,0,20,2026-04-22T18:00:00,7,,Ivana Borović,ivana.borovic.3004@example.com,+381-11-555-4004,0
+E000606,C03005,2026-04-01,plus,north,52,19.74,17,0,0,0,2026-03-25T19:00:00,8,,Bojan Kestenić,bojan.kestenic.3005@example.com,+381-11-555-4005,0
+E000607,C03006,2026-06-01,plus,north,38,21.36,19,0,0,15,2026-05-22T19:00:00,7,,Petar Javorac,petar.javorac.3006@example.com,+381-11-555-4006,0
+E000608,C03007,2026-06-01,pro,east,60,43.07,26,0,0,20,2026-05-26T10:00:00,3,,Bojan Kestenić,bojan.kestenic.3007@example.com,+381-11-555-4007,0
+E000609,C03008,2026-06-01,basic,east,24,9.28,6,1,0,20,2026-05-14T10:00:00,3,not using it,Goran Cerović,goran.cerovic.3008@example.com,+381-11-555-4008,1
+E000610,C03009,2026-06-01,basic,south,44,9.76,16,0,0,0,2026-05-31T19:00:00,8,,Vera Dubović,vera.dubovic.3009@example.com,+381-11-555-4009,0
+E000611,C03010,2026-05-01,pro,south,45,42.20,6,3,0,20,2026-04-10T07:00:00,1,not using it,Sava Grabić,sava.grabic.3010@example.com,+381-11-555-4010,1
+E000612,C03011,2026-06-01,plus,north,50,20.19,8,2,0,5,2026-05-22T18:00:00,5,other,Bojan Hrastić,bojan.hrastic.3011@example.com,+381-11-555-4011,1
+E000613,C03012,2026-05-01,pro,south,3,37.28,11,0,1,5,2026-04-26T18:00:00,8,,Danica Vrbić,danica.vrbic.3012@example.com,+381-11-555-4012,0
+E000614,C03013,2026-06-01,basic,west,11,10.28,14,1,0,5,2026-05-27T06:00:00,,,Bojan Vrbić,bojan.vrbic.3013@example.com,+381-11-555-4013,0
+E000615,C03014,2026-04-01,pro,east,32,46.61,16,1,0,15,2026-03-10T16:00:00,7,,Ana Javorac,ana.javorac.3014@example.com,+381-11-555-4014,0
+E000616,C03015,2026-06-01,plus,north,57,20.42,5,1,1,15,2026-05-29T15:00:00,,missing a feature,Danica Javorac,danica.javorac.3015@example.com,+381-11-555-4015,1
+E000617,C03016,2026-04-01,pro,north,26,44.09,14,1,0,20,2026-03-13T17:00:00,4,,Marija Javorac,marija.javorac.3016@example.com,+381-11-555-4016,0
+E000618,C03017,2026-05-01,plus,north,60,18.41,0,0,1,20,2026-04-22T09:00:00,4,not using it,Bojan Borović,bojan.borovic.3017@example.com,+381-11-555-4017,1
+E000619,C03018,2026-05-01,basic,north,5,8.35,6,1,0,0,2026-04-28T17:00:00,5,,Goran Cerović,goran.cerovic.3018@example.com,+381-11-555-4018,0
+E000620,C03019,2026-05-01,basic,south,41,9.72,6,2,0,20,2026-04-26T18:00:00,,,Petar Grabić,petar.grabic.3019@example.com,+381-11-555-4019,0
+E000621,C03020,2026-04-01,basic,south,19,9.58,7,0,0,0,2026-03-14T10:00:00,6,too expensive,Ana Kestenić,ana.kestenic.3020@example.com,+381-11-555-4020,1
+E000622,C03021,2026-04-01,basic,west,6,9.75,13,0,0,5,2026-03-19T15:00:00,6,,Lazar Lipić,lazar.lipic.3021@example.com,+381-11-555-4021,0
+E000623,C03022,2026-04-01,basic,east,4,10.13,14,3,0,5,2026-03-31T09:00:00,4,,Goran Cerović,goran.cerovic.3022@example.com,+381-11-555-4022,0
+E000624,C03023,2026-04-01,plus,east,16,19.37,18,0,0,0,2026-03-16T12:00:00,6,,Goran Dubović,goran.dubovic.3023@example.com,+381-11-555-4023,0
+E000625,C03024,2026-05-01,basic,south,14,10.25,13,2,1,20,2026-04-25T12:00:00,8,,Ivana Borović,ivana.borovic.3024@example.com,+381-11-555-4024,0
+E000626,C03025,2026-05-01,pro,east,35,40.09,13,0,0,20,2026-04-13T19:00:00,9,,Nada Cerović,nada.cerovic.3025@example.com,+381-11-555-4025,0
+E000627,C03026,2026-06-01,plus,east,43,21.21,7,3,0,0,2026-05-20T15:00:00,5,not using it,Jasna Grabić,jasna.grabic.3026@example.com,+381-11-555-4026,1
+E000628,C03027,2026-04-01,plus,west,6,21.59,7,2,1,0,2026-03-28T06:00:00,4,,Goran Cerović,goran.cerovic.3027@example.com,+381-11-555-4027,0
+E000629,C03028,2026-04-01,pro,north,42,42.70,17,1,0,0,2026-03-18T19:00:00,5,,Jasna Borović,jasna.borovic.3028@example.com,+381-11-555-4028,0
+E000630,C03029,2026-06-01,basic,north,24,9.31,16,0,0,0,2026-05-12T17:00:00,8,,Marija Borović,marija.borovic.3029@example.com,+381-11-555-4029,0
+E000631,C03030,2026-04-01,pro,south,44,41.54,19,1,0,20,2026-03-25T11:00:00,9,,Sava Lipić,sava.lipic.3030@example.com,+381-11-555-4030,0
+E000632,C03031,2026-06-01,basic,east,15,9.63,9,1,0,15,2026-06-10T09:00:00,,switched provider,Ana Vrbić,ana.vrbic.3031@example.com,+381-11-555-4031,1
+E000633,C03032,2026-05-01,basic,east,38,10.03,12,1,0,15,2026-04-12T16:00:00,5,too expensive,Lazar Javorac,lazar.javorac.3032@example.com,+381-11-555-4032,1
+E000634,C03033,2026-06-01,pro,north,25,38.20,14,4,1,15,2026-05-17T10:00:00,9,,Ivana Vrbić,ivana.vrbic.3033@example.com,+381-11-555-4033,0
+E000635,C03034,2026-06-01,basic,south,38,9.36,15,2,0,10,2026-05-25T10:00:00,6,,Goran Kestenić,goran.kestenic.3034@example.com,+381-11-555-4034,0
+E000636,C03035,2026-04-01,plus,west,43,20.38,16,0,0,20,2026-03-12T17:00:00,5,,Marija Kestenić,marija.kestenic.3035@example.com,+381-11-555-4035,0
+E000637,C03036,2026-05-01,legacy,east,50,14.12,11,1,0,0,2026-04-24T13:00:00,5,,Petar Hrastić,petar.hrastic.3036@example.com,+381-11-555-4036,0
+E000638,C03037,2026-05-01,pro,west,11,40.72,23,1,0,0,2026-04-27T06:00:00,4,,Sava Borović,sava.borovic.3037@example.com,+381-11-555-4037,0
+E000639,C03038,2026-05-01,pro,south,24,42.59,21,0,0,10,2026-04-11T17:00:00,7,,Petar Dubović,petar.dubovic.3038@example.com,+381-11-555-4038,0
+E000640,C03039,2026-05-01,plus,west,58,21.35,11,0,0,15,2026-04-10T14:00:00,7,switched provider,Petar Cerović,petar.cerovic.3039@example.com,+381-11-555-4039,1
+E000641,C03040,2026-05-01,basic,west,27,9.26,9,0,0,10,2026-04-12T19:00:00,7,,Lazar Grabić,lazar.grabic.3040@example.com,+381-11-555-4040,0
+E000642,C03041,2026-06-01,pro,south,17,40.63,18,0,0,5,2026-06-11T09:00:00,5,,Lazar Borović,lazar.borovic.3041@example.com,+381-11-555-4041,0
+E000643,C03042,2026-05-01,pro,south,30,37.19,4,4,0,10,2026-04-24T14:00:00,,missing a feature,Ana Grabić,ana.grabic.3042@example.com,+381-11-555-4042,1
+E000644,C03043,2026-05-01,plus,east,49,20.97,2,1,0,15,2026-04-30T11:00:00,8,,Goran Vrbić,goran.vrbic.3043@example.com,+381-11-555-4043,0
+E000645,C03044,2026-05-01,legacy,south,55,14.27,9,0,0,20,2026-04-15T09:00:00,,switched provider,Bojan Cerović,bojan.cerovic.3044@example.com,+381-11-555-4044,1
+E000646,C03045,2026-05-01,legacy,east,32,16.01,5,1,0,10,2026-04-30T08:00:00,8,,Jasna Grabić,jasna.grabic.3045@example.com,+381-11-555-4045,0
+E000647,C03046,2026-05-01,plus,west,44,19.90,8,1,0,15,2026-04-26T15:00:00,,missing a feature,Bojan Cerović,bojan.cerovic.3046@example.com,+381-11-555-4046,1
+E000648,C03047,2026-06-01,pro,west,38,42.21,5,1,0,20,2026-05-23T17:00:00,6,,Ana Hrastić,ana.hrastic.3047@example.com,+381-11-555-4047,0
+E000649,C03048,2026-05-01,basic,east,3,9.32,11,0,1,5,2026-04-27T19:00:00,6,,Sava Dubović,sava.dubovic.3048@example.com,+381-11-555-4048,0
+E000650,C03049,2026-05-01,basic,north,21,9.28,0,1,0,20,2026-04-21T08:00:00,,too expensive,Nada Vrbić,nada.vrbic.3049@example.com,+381-11-555-4049,1
+E000651,C03050,2026-05-01,basic,south,26,9.11,16,0,0,10,2026-04-26T06:00:00,9,,Ana Grabić,ana.grabic.3050@example.com,+381-11-555-4050,0
+E000652,C03051,2026-05-01,legacy,south,23,15.60,17,2,0,0,2026-04-30T12:00:00,7,,Jasna Vrbić,jasna.vrbic.3051@example.com,+381-11-555-4051,0
+E000653,C03052,2026-05-01,pro,south,44,44.47,18,0,0,10,2026-04-28T17:00:00,9,,Jasna Kestenić,jasna.kestenic.3052@example.com,+381-11-555-4052,0
+E000654,C03053,2026-05-01,pro,east,42,45.46,16,1,0,15,2026-04-10T17:00:00,10,,Goran Borović,goran.borovic.3053@example.com,+381-11-555-4053,0
+E000655,C03054,2026-05-01,legacy,east,48,14.66,6,2,0,0,2026-04-13T06:00:00,2,,Ivana Lipić,ivana.lipic.3054@example.com,+381-11-555-4054,0
+E000656,C03055,2026-04-01,legacy,south,25,14.53,12,0,0,20,2026-03-31T11:00:00,5,,Vera Hrastić,vera.hrastic.3055@example.com,+381-11-555-4055,0
+E000657,C03056,2026-05-01,pro,west,38,42.69,8,1,0,5,2026-04-17T10:00:00,7,,Sava Grabić,sava.grabic.3056@example.com,+381-11-555-4056,0
+E000658,C03057,2026-04-01,plus,north,54,20.98,10,0,0,10,2026-03-14T16:00:00,4,,Bojan Grabić,bojan.grabic.3057@example.com,+381-11-555-4057,0
+E000659,C03058,2026-04-01,plus,south,24,22.55,13,0,1,10,2026-03-29T13:00:00,7,,Petar Hrastić,petar.hrastic.3058@example.com,+381-11-555-4058,0
+E000660,C03059,2026-04-01,plus,south,32,19.49,9,0,0,5,2026-03-23T08:00:00,6,,Nada Javorac,nada.javorac.3059@example.com,+381-11-555-4059,0
+E000661,C03060,2026-04-01,basic,west,28,8.65,6,4,0,0,2026-03-14T16:00:00,2,other,Petar Cerović,petar.cerovic.3060@example.com,+381-11-555-4060,1
+E000662,C03061,2026-04-01,basic,north,39,10.00,4,1,0,20,2026-03-28T19:00:00,8,,Ivana Dubović,ivana.dubovic.3061@example.com,+381-11-555-4061,0
+E000663,C03062,2026-04-01,plus,east,22,21.61,14,1,0,20,2026-03-18T19:00:00,3,,Sava Kestenić,sava.kestenic.3062@example.com,+381-11-555-4062,0
+E000664,C03063,2026-04-01,plus,south,35,20.77,12,2,1,15,2026-03-20T08:00:00,7,,Bojan Hrastić,bojan.hrastic.3063@example.com,+381-11-555-4063,0
+E000665,C03064,2026-05-01,plus,west,43,21.30,1,3,0,0,2026-05-04T09:00:00,6,,Lazar Borović,lazar.borovic.3064@example.com,+381-11-555-4064,1
+E000666,C03065,2026-05-01,basic,south,7,9.62,18,1,1,10,2026-04-29T12:00:00,7,,Jasna Grabić,jasna.grabic.3065@example.com,+381-11-555-4065,0
+E000667,C03066,2026-06-01,legacy,south,23,15.79,13,3,0,0,2026-05-11T16:00:00,4,other,Bojan Dubović,bojan.dubovic.3066@example.com,+381-11-555-4066,1
+E000668,C03067,2026-06-01,legacy,north,50,15.45,4,0,0,20,2026-05-19T16:00:00,8,,Goran Cerović,goran.cerovic.3067@example.com,+381-11-555-4067,0
+E000669,C03068,2026-04-01,plus,north,29,21.03,16,1,0,10,2026-03-15T19:00:00,6,,Goran Cerović,goran.cerovic.3068@example.com,+381-11-555-4068,0
+E000670,C03069,2026-06-01,basic,south,39,9.46,12,1,1,10,2026-05-29T11:00:00,5,,Bojan Grabić,bojan.grabic.3069@example.com,+381-11-555-4069,0
+E000671,C03070,2026-05-01,legacy,south,25,14.40,14,2,0,0,2026-04-09T07:00:00,,,Jasna Grabić,jasna.grabic.3070@example.com,+381-11-555-4070,0
+E000672,C03071,2026-06-01,plus,east,44,21.35,3,4,0,15,2026-05-19T12:00:00,,not using it,Petar Kestenić,petar.kestenic.3071@example.com,+381-11-555-4071,1
+E000673,C03072,2026-05-01,basic,south,56,9.90,0,2,0,0,2026-04-13T14:00:00,,switched provider,Nada Hrastić,nada.hrastic.3072@example.com,+381-11-555-4072,1
+E000674,C03073,2026-04-01,legacy,south,37,15.98,17,1,0,20,2026-03-28T19:00:00,6,,Sava Topolić,sava.topolic.3073@example.com,+381-11-555-4073,0
+E000675,C03074,2026-04-01,plus,south,50,20.59,10,0,0,5,2026-03-16T13:00:00,6,,Sava Lipić,sava.lipic.3074@example.com,+381-11-555-4074,0
+E000676,C03075,2026-06-01,pro,north,11,41.91,18,0,0,20,2026-05-11T17:00:00,5,,Vera Grabić,vera.grabic.3075@example.com,+381-11-555-4075,0
+E000677,C03076,2026-04-01,legacy,east,24,14.36,10,1,0,15,2026-03-18T17:00:00,8,,Ana Topolić,ana.topolic.3076@example.com,+381-11-555-4076,0
+E000678,C03077,2026-04-01,basic,west,20,9.29,16,1,0,15,2026-03-19T11:00:00,5,,Ivana Lipić,ivana.lipic.3077@example.com,+381-11-555-4077,0
+E000679,C03078,2026-04-01,basic,west,51,9.86,18,2,0,5,2026-03-10T09:00:00,5,,Nada Lipić,nada.lipic.3078@example.com,+381-11-555-4078,0
+E000680,C03079,2026-04-01,basic,north,34,9.76,16,0,0,0,2026-03-19T11:00:00,6,,Ivana Grabić,ivana.grabic.3079@example.com,+381-11-555-4079,0
+E000681,C03080,2026-06-01,basic,west,26,9.20,12,0,0,10,2026-05-11T09:00:00,7,,Nada Lipić,nada.lipic.3080@example.com,+381-11-555-4080,0
+E000682,C03081,2026-05-01,legacy,west,55,13.28,4,2,0,5,2026-04-11T14:00:00,6,,Ivana Kestenić,ivana.kestenic.3081@example.com,+381-11-555-4081,0
+E000683,C03082,2026-06-01,legacy,east,48,14.76,10,1,0,20,2026-05-28T10:00:00,5,,Ana Hrastić,ana.hrastic.3082@example.com,+381-11-555-4082,0
+E000684,C03083,2026-06-01,legacy,north,22,15.33,16,1,0,0,2026-05-17T17:00:00,4,,Jasna Hrastić,jasna.hrastic.3083@example.com,+381-11-555-4083,0
+E000685,C03084,2026-05-01,pro,west,33,37.25,16,1,1,10,2026-04-28T13:00:00,3,too expensive,Danica Javorac,danica.javorac.3084@example.com,+381-11-555-4084,1
+E000686,C03085,2026-06-01,legacy,west,34,15.74,14,2,0,0,2026-05-31T14:00:00,8,,Marija Lipić,marija.lipic.3085@example.com,+381-11-555-4085,0
+E000687,C03086,2026-06-01,plus,north,5,19.54,9,0,0,15,2026-05-30T16:00:00,9,,Bojan Lipić,bojan.lipic.3086@example.com,+381-11-555-4086,0
+E000688,C03087,2026-04-01,plus,south,25,20.10,7,4,0,15,2026-03-16T19:00:00,7,,Vera Javorac,vera.javorac.3087@example.com,+381-11-555-4087,0
+E000689,C03088,2026-06-01,basic,west,5,10.33,13,1,0,15,2026-05-16T16:00:00,4,,Lazar Cerović,lazar.cerovic.3088@example.com,+381-11-555-4088,0
+E000690,C03089,2026-05-01,plus,west,33,21.66,9,1,0,10,2026-04-16T07:00:00,6,,Marija Grabić,marija.grabic.3089@example.com,+381-11-555-4089,0
+E000691,C03090,2026-05-01,plus,north,39,19.63,19,1,0,15,2026-04-14T17:00:00,6,,Nada Javorac,nada.javorac.3090@example.com,+381-11-555-4090,0
+E000692,C03091,2026-04-01,basic,north,42,10.03,0,3,0,10,2026-03-10T18:00:00,,too expensive,Nada Borović,nada.borovic.3091@example.com,+381-11-555-4091,1
+E000693,C03092,2026-05-01,pro,east,43,43.57,9,1,2,5,2026-04-28T19:00:00,4,,Jasna Lipić,jasna.lipic.3092@example.com,+381-11-555-4092,0
+E000694,C03093,2026-04-01,pro,west,38,43.12,9,2,0,5,2026-03-29T19:00:00,6,,Vera Grabić,vera.grabic.3093@example.com,+381-11-555-4093,0
+E000695,C03094,2026-05-01,plus,north,52,20.55,14,0,0,0,2026-04-30T13:00:00,7,,Sava Grabić,sava.grabic.3094@example.com,+381-11-555-4094,0
+E000696,C03095,2026-04-01,plus,north,55,19.22,20,0,0,10,2026-03-20T18:00:00,5,,Vera Cerović,vera.cerovic.3095@example.com,+381-11-555-4095,0
+E000697,C03096,2026-04-01,plus,north,43,20.75,3,1,0,5,2026-03-18T18:00:00,6,,Jasna Dubović,jasna.dubovic.3096@example.com,+381-11-555-4096,0
+E000698,C03097,2026-06-01,pro,west,28,43.95,11,1,0,10,2026-05-29T17:00:00,7,too expensive,Danica Vrbić,danica.vrbic.3097@example.com,+381-11-555-4097,1
+E000699,C03098,2026-06-01,legacy,north,14,15.83,5,2,0,15,2026-05-18T19:00:00,,missing a feature,Sava Dubović,sava.dubovic.3098@example.com,+381-11-555-4098,1
+E000700,C03099,2026-04-01,plus,east,43,19.72,15,2,0,15,2026-03-15T11:00:00,10,,Marija Dubović,marija.dubovic.3099@example.com,+381-11-555-4099,0
+E000701,C03100,2026-05-01,basic,west,36,10.01,11,1,1,0,2026-04-22T13:00:00,6,,Ana Borović,ana.borovic.3100@example.com,+381-11-555-4100,0
+E000702,C03101,2026-05-01,basic,south,19,9.84,13,0,0,0,2026-04-22T18:00:00,7,,Nada Hrastić,nada.hrastic.3101@example.com,+381-11-555-4101,0
+E000703,C03102,2026-06-01,plus,north,12,19.32,16,0,0,5,2026-05-23T18:00:00,7,,Petar Topolić,petar.topolic.3102@example.com,+381-11-555-4102,0
+E000704,C03103,2026-06-01,basic,east,18,9.91,13,1,0,15,2026-05-23T08:00:00,,,Lazar Topolić,lazar.topolic.3103@example.com,+381-11-555-4103,0
+E000705,C03104,2026-06-01,plus,east,24,21.09,8,0,0,20,2026-05-21T08:00:00,7,,Petar Dubović,petar.dubovic.3104@example.com,+381-11-555-4104,0
+E000706,C03105,2026-06-01,basic,south,29,9.36,10,0,0,5,2026-05-22T19:00:00,8,,Sava Dubović,sava.dubovic.3105@example.com,+381-11-555-4105,0
+E000707,C03106,2026-06-01,pro,west,24,37.78,0,5,0,15,2026-06-05T09:00:00,5,,Ivana Hrastić,ivana.hrastic.3106@example.com,+381-11-555-4106,0
+E000708,C03107,2026-06-01,legacy,north,27,14.42,18,2,1,15,2026-05-17T08:00:00,5,,Lazar Hrastić,lazar.hrastic.3107@example.com,+381-11-555-4107,0
+E000709,C03108,2026-04-01,pro,east,4,40.61,10,2,0,20,2026-03-16T19:00:00,6,,Lazar Topolić,lazar.topolic.3108@example.com,+381-11-555-4108,0
+E000710,C03109,2026-06-01,pro,west,36,45.19,20,0,0,5,2026-05-10T12:00:00,7,,Jasna Kestenić,jasna.kestenic.3109@example.com,+381-11-555-4109,0
+E000711,C03110,2026-04-01,plus,east,45,20.96,12,0,0,20,2026-03-15T10:00:00,7,,Ana Hrastić,ana.hrastic.3110@example.com,+381-11-555-4110,0
+E000712,C03111,2026-06-01,plus,west,6,17.83,12,2,1,0,2026-05-13T18:00:00,4,,Jasna Lipić,jasna.lipic.3111@example.com,+381-11-555-4111,0
+E000713,C03112,2026-05-01,basic,south,47,9.40,8,0,1,20,2026-04-23T14:00:00,7,,Nada Dubović,nada.dubovic.3112@example.com,+381-11-555-4112,0
+E000714,C03113,2026-05-01,plus,west,47,20.00,15,0,0,20,2026-04-22T12:00:00,8,,Nada Kestenić,nada.kestenic.3113@example.com,+381-11-555-4113,0
+E000715,C03114,2026-04-01,pro,east,27,37.66,8,1,0,15,2026-03-10T18:00:00,9,,Ivana Cerović,ivana.cerovic.3114@example.com,+381-11-555-4114,0
+E000716,C03115,2026-05-01,basic,south,5,9.07,15,1,0,15,2026-04-27T17:00:00,10,,Ana Javorac,ana.javorac.3115@example.com,+381-11-555-4115,0
+E000717,C03116,2026-05-01,plus,south,48,18.62,11,2,0,10,2026-04-10T16:00:00,5,,Vera Borović,vera.borovic.3116@example.com,+381-11-555-4116,0
+E000718,C03117,2026-05-01,basic,north,11,10.11,17,0,0,0,2026-04-09T19:00:00,5,,Petar Grabić,petar.grabic.3117@example.com,+381-11-555-4117,0
+E000719,C03118,2026-06-01,basic,north,35,8.33,9,1,0,10,2026-05-14T19:00:00,8,,Bojan Javorac,bojan.javorac.3118@example.com,+381-11-555-4118,0
+E000720,C03119,2026-06-01,plus,east,54,19.95,13,1,1,0,2026-05-17T17:00:00,7,,Bojan Javorac,bojan.javorac.3119@example.com,+381-11-555-4119,0
+E000721,C03120,2026-04-01,pro,north,14,42.88,10,1,0,10,2026-03-15T09:00:00,,other,Ivana Vrbić,ivana.vrbic.3120@example.com,+381-11-555-4120,1
+E000722,C03121,2026-04-01,basic,north,15,9.47,6,1,0,0,2026-03-14T19:00:00,8,,Sava Kestenić,sava.kestenic.3121@example.com,+381-11-555-4121,0
+E000723,C03122,2026-04-01,plus,west,21,19.52,16,0,0,5,2026-04-17T09:00:00,9,,Petar Javorac,petar.javorac.3122@example.com,+381-11-555-4122,0
+E000724,C03123,2026-05-01,basic,south,41,9.53,11,1,0,15,2026-04-30T10:00:00,7,,Vera Hrastić,vera.hrastic.3123@example.com,+381-11-555-4123,0
+E000725,C03124,2026-04-01,pro,west,37,43.26,21,0,0,15,2026-03-29T12:00:00,7,,Bojan Hrastić,bojan.hrastic.3124@example.com,+381-11-555-4124,0
+E000726,C03125,2026-06-01,plus,north,41,18.80,19,0,0,20,2026-05-14T08:00:00,9,,Lazar Lipić,lazar.lipic.3125@example.com,+381-11-555-4125,0
+E000727,C03126,2026-04-01,pro,east,60,45.81,12,3,0,20,2026-03-26T18:00:00,4,,Sava Kestenić,sava.kestenic.3126@example.com,+381-11-555-4126,0
+E000728,C03127,2026-06-01,pro,south,46,39.88,14,0,0,10,2026-05-21T18:00:00,7,,Marija Dubović,marija.dubovic.3127@example.com,+381-11-555-4127,0
+E000729,C03128,2026-05-01,pro,west,1,42.02,13,0,0,0,2026-04-30T13:00:00,9,,Vera Lipić,vera.lipic.3128@example.com,+381-11-555-4128,0
+E000730,C03129,2026-05-01,basic,south,3,10.09,19,1,0,10,2026-04-15T09:00:00,4,,Vera Hrastić,vera.hrastic.3129@example.com,+381-11-555-4129,0
+E000731,C03130,2026-06-01,plus,south,60,21.85,11,0,0,0,2026-05-22T11:00:00,6,,Ivana Grabić,ivana.grabic.3130@example.com,+381-11-555-4130,0
+E000732,C03131,2026-06-01,legacy,south,9,14.33,16,1,0,20,2026-05-31T09:00:00,7,,Bojan Kestenić,bojan.kestenic.3131@example.com,+381-11-555-4131,0
+E000733,C03132,2026-06-01,pro,west,51,39.99,20,0,1,20,2026-05-22T17:00:00,10,,Ivana Grabić,ivana.grabic.3132@example.com,+381-11-555-4132,0
+E000734,C03133,2026-04-01,plus,west,32,22.54,14,0,0,5,2026-03-27T18:00:00,6,,Vera Dubović,vera.dubovic.3133@example.com,+381-11-555-4133,0
+E000735,C03134,2026-06-01,pro,north,45,45.97,2,2,0,20,2026-05-20T15:00:00,6,,Sava Grabić,sava.grabic.3134@example.com,+381-11-555-4134,0
+E000736,C03135,2026-05-01,pro,west,42,41.46,18,0,0,15,2026-04-26T06:00:00,7,,Bojan Topolić,bojan.topolic.3135@example.com,+381-11-555-4135,0
+E000737,C03136,2026-05-01,basic,west,27,8.47,16,1,1,5,2026-04-24T08:00:00,9,,Nada Dubović,nada.dubovic.3136@example.com,+381-11-555-4136,0
+E000738,C03137,2026-06-01,basic,east,8,9.82,16,1,0,10,2026-05-21T11:00:00,,switched provider,Nada Vrbić,nada.vrbic.3137@example.com,+381-11-555-4137,1
+E000739,C03138,2026-05-01,plus,east,48,21.45,20,0,1,0,2026-05-10T09:00:00,7,,Petar Vrbić,petar.vrbic.3138@example.com,+381-11-555-4138,0
+E000740,C03139,2026-04-01,plus,west,54,21.20,9,0,1,0,2026-03-20T14:00:00,6,,Jasna Hrastić,jasna.hrastic.3139@example.com,+381-11-555-4139,0
+E000741,C03140,2026-04-01,pro,south,31,39.75,14,2,0,0,2026-03-19T17:00:00,10,,Sava Vrbić,sava.vrbic.3140@example.com,+381-11-555-4140,0
+E000742,C03141,2026-04-01,basic,north,4,9.61,20,0,0,5,2026-03-13T17:00:00,5,,Jasna Grabić,jasna.grabic.3141@example.com,+381-11-555-4141,0
+E000743,C03142,2026-06-01,basic,west,54,9.00,23,0,0,5,2026-05-25T19:00:00,7,,Goran Topolić,goran.topolic.3142@example.com,+381-11-555-4142,0
+E000744,C03143,2026-06-01,basic,east,45,9.43,30,0,0,10,2026-05-21T10:00:00,,,Ana Cerović,ana.cerovic.3143@example.com,+381-11-555-4143,0
+E000745,C03144,2026-05-01,legacy,west,60,13.54,0,1,0,5,2026-04-23T07:00:00,4,not using it,Vera Javorac,vera.javorac.3144@example.com,+381-11-555-4144,1
+E000746,C03145,2026-04-01,plus,north,21,19.34,15,2,0,20,2026-03-10T15:00:00,10,,Lazar Grabić,lazar.grabic.3145@example.com,+381-11-555-4145,0
+E000747,C03146,2026-05-01,legacy,west,30,16.02,13,2,0,20,2026-04-23T07:00:00,6,,Marija Borović,marija.borovic.3146@example.com,+381-11-555-4146,0
+E000748,C03147,2026-06-01,legacy,east,14,15.02,8,1,0,5,2026-05-22T18:00:00,10,,Danica Cerović,danica.cerovic.3147@example.com,+381-11-555-4147,0
+E000749,C03148,2026-06-01,plus,south,25,20.23,6,5,0,10,2026-05-30T12:00:00,,too expensive,Vera Vrbić,vera.vrbic.3148@example.com,+381-11-555-4148,1
+E000750,C03149,2026-05-01,plus,east,8,19.55,12,1,0,15,2026-04-27T18:00:00,6,,Marija Hrastić,marija.hrastic.3149@example.com,+381-11-555-4149,0
+E000751,C03150,2026-04-01,basic,east,20,10.28,11,1,0,0,2026-03-10T14:00:00,7,switched provider,Nada Dubović,nada.dubovic.3150@example.com,+381-11-555-4150,1
+E000752,C03151,2026-04-01,plus,west,8,21.35,0,1,0,20,2026-03-12T12:00:00,,not using it,Marija Javorac,marija.javorac.3151@example.com,+381-11-555-4151,1
+E000753,C03152,2026-04-01,pro,west,20,40.81,10,0,0,5,2026-03-10T11:00:00,5,switched provider,Lazar Topolić,lazar.topolic.3152@example.com,+381-11-555-4152,1
+E000754,C03153,2026-06-01,pro,east,42,42.31,9,2,0,15,2026-05-23T17:00:00,5,,Sava Kestenić,sava.kestenic.3153@example.com,+381-11-555-4153,0
+E000755,C03154,2026-04-01,basic,east,54,8.74,6,3,0,20,2026-03-18T14:00:00,7,,Marija Dubović,marija.dubovic.3154@example.com,+381-11-555-4154,0
+E000756,C03155,2026-05-01,pro,south,39,45.11,10,3,0,20,2026-04-16T19:00:00,,,Sava Kestenić,sava.kestenic.3155@example.com,+381-11-555-4155,0
+E000757,C03156,2026-04-01,pro,east,55,36.64,14,1,0,10,2026-03-15T08:00:00,5,,Petar Vrbić,petar.vrbic.3156@example.com,+381-11-555-4156,0
+E000758,C03157,2026-06-01,plus,south,20,22.04,6,3,0,10,2026-05-16T17:00:00,7,,Sava Grabić,sava.grabic.3157@example.com,+381-11-555-4157,0
+E000759,C03158,2026-06-01,basic,east,7,9.62,9,1,0,15,2026-05-29T10:00:00,,not using it,Sava Vrbić,sava.vrbic.3158@example.com,+381-11-555-4158,1
+E000760,C03159,2026-06-01,legacy,east,3,14.55,23,0,0,0,2026-05-12T12:00:00,3,,Danica Vrbić,danica.vrbic.3159@example.com,+381-11-555-4159,0
+E000761,C03160,2026-06-01,pro,south,56,40.40,13,0,0,0,2026-05-21T14:00:00,4,,Ivana Grabić,ivana.grabic.3160@example.com,+381-11-555-4160,0
+E000762,C03161,2026-06-01,basic,south,60,9.95,13,3,0,15,2026-05-13T13:00:00,4,,Vera Hrastić,vera.hrastic.3161@example.com,+381-11-555-4161,0
+E000763,C03162,2026-05-01,basic,west,8,10.69,11,1,0,0,2026-04-22T17:00:00,9,,Jasna Lipić,jasna.lipic.3162@example.com,+381-11-555-4162,0
+E000764,C03163,2026-04-01,plus,south,58,19.22,8,3,0,20,2026-04-16T09:00:00,8,,Petar Javorac,petar.javorac.3163@example.com,+381-11-555-4163,0
+E000765,C03164,2026-06-01,pro,south,51,42.29,15,1,0,5,2026-05-16T12:00:00,8,,Ana Borović,ana.borovic.3164@example.com,+381-11-555-4164,0
+E000766,C03165,2026-05-01,plus,north,32,20.27,18,0,1,20,2026-04-14T15:00:00,7,,Ivana Lipić,ivana.lipic.3165@example.com,+381-11-555-4165,0
+E000767,C03166,2026-06-01,basic,north,18,9.36,6,0,0,20,2026-05-20T07:00:00,5,,Bojan Grabić,bojan.grabic.3166@example.com,+381-11-555-4166,0
+E000768,C03167,2026-04-01,basic,south,18,9.57,19,1,0,10,2026-03-23T07:00:00,8,,Ivana Hrastić,ivana.hrastic.3167@example.com,+381-11-555-4167,0
+E000769,C03168,2026-06-01,plus,west,27,21.09,14,1,0,10,2026-05-30T12:00:00,8,,Danica Lipić,danica.lipic.3168@example.com,+381-11-555-4168,0
+E000770,C03169,2026-05-01,basic,north,31,7.94,21,2,0,0,2026-04-14T17:00:00,3,,Petar Borović,petar.borovic.3169@example.com,+381-11-555-4169,0
+E000771,C03170,2026-05-01,plus,south,25,20.00,14,1,0,0,2026-04-22T06:00:00,7,,Ana Grabić,ana.grabic.3170@example.com,+381-11-555-4170,0
+E000772,C03171,2026-06-01,pro,south,36,41.82,9,1,0,20,2026-05-29T13:00:00,4,,Sava Javorac,sava.javorac.3171@example.com,+381-11-555-4171,0
+E000773,C03172,2026-05-01,legacy,north,57,14.63,14,0,0,5,2026-04-30T08:00:00,5,,Petar Hrastić,petar.hrastic.3172@example.com,+381-11-555-4172,0
+E000774,C03173,2026-05-01,pro,north,36,49.63,22,0,0,15,2026-04-26T17:00:00,5,,Jasna Kestenić,jasna.kestenic.3173@example.com,+381-11-555-4173,0
+E000775,C03174,2026-04-01,pro,north,9,42.80,6,0,0,15,2026-03-20T06:00:00,9,,Danica Borović,danica.borovic.3174@example.com,+381-11-555-4174,0
+E000776,C03175,2026-06-01,plus,north,10,21.56,5,1,0,15,2026-05-21T13:00:00,7,switched provider,Vera Grabić,vera.grabic.3175@example.com,+381-11-555-4175,1
+E000777,C03176,2026-04-01,pro,west,21,42.72,19,0,0,10,2026-03-17T19:00:00,6,,Ivana Javorac,ivana.javorac.3176@example.com,+381-11-555-4176,0
+E000778,C03177,2026-06-01,pro,north,60,43.64,17,0,0,5,2026-05-21T19:00:00,,switched provider,Marija Lipić,marija.lipic.3177@example.com,+381-11-555-4177,1
+E000779,C03178,2026-04-01,basic,north,6,10.47,11,2,0,10,2026-03-23T17:00:00,6,,Petar Grabić,petar.grabic.3178@example.com,+381-11-555-4178,0
+E000780,C03179,2026-05-01,plus,north,43,21.33,13,0,0,20,2026-04-11T09:00:00,8,,Bojan Kestenić,bojan.kestenic.3179@example.com,+381-11-555-4179,0
+E000781,C03180,2026-06-01,pro,north,58,44.51,15,0,0,5,2026-05-26T14:00:00,10,,Jasna Borović,jasna.borovic.3180@example.com,+381-11-555-4180,0
+E000782,C03181,2026-06-01,basic,south,54,9.87,8,1,0,15,2026-05-25T18:00:00,6,,Danica Grabić,danica.grabic.3181@example.com,+381-11-555-4181,0
+E000783,C03182,2026-06-01,plus,south,57,20.11,15,0,0,0,2026-05-30T15:00:00,6,,Vera Lipić,vera.lipic.3182@example.com,+381-11-555-4182,0
+E000784,C03183,2026-04-01,basic,north,30,9.03,18,0,0,0,2026-03-30T09:00:00,,too expensive,Goran Vrbić,goran.vrbic.3183@example.com,+381-11-555-4183,1
+E000785,C03184,2026-04-01,plus,west,59,22.28,4,1,0,10,2026-03-21T08:00:00,,too expensive,Marija Grabić,marija.grabic.3184@example.com,+381-11-555-4184,1
+E000786,C03185,2026-04-01,basic,west,34,9.55,9,2,0,0,2026-03-14T15:00:00,9,,Sava Kestenić,sava.kestenic.3185@example.com,+381-11-555-4185,0
+E000787,C03186,2026-04-01,basic,west,55,9.58,21,0,0,15,2026-03-31T19:00:00,7,,Nada Hrastić,nada.hrastic.3186@example.com,+381-11-555-4186,0
+E000788,C03187,2026-04-01,legacy,east,14,13.95,15,0,0,10,2026-03-20T13:00:00,10,,Marija Topolić,marija.topolic.3187@example.com,+381-11-555-4187,0
+E000789,C03188,2026-04-01,basic,south,33,10.10,18,0,0,10,2026-03-30T15:00:00,7,,Goran Topolić,goran.topolic.3188@example.com,+381-11-555-4188,0
+E000790,C03189,2026-05-01,basic,east,36,8.54,21,0,0,10,2026-04-09T06:00:00,8,,Marija Borović,marija.borovic.3189@example.com,+381-11-555-4189,0
+E000791,C03190,2026-05-01,basic,north,49,9.61,9,0,0,15,2026-04-21T06:00:00,5,missing a feature,Jasna Kestenić,jasna.kestenic.3190@example.com,+381-11-555-4190,1
+E000792,C03191,2026-06-01,basic,south,18,10.56,18,0,0,0,2026-05-18T15:00:00,7,,Lazar Grabić,lazar.grabic.3191@example.com,+381-11-555-4191,0
+E000793,C03192,2026-05-01,plus,east,55,20.87,9,0,0,5,2026-04-19T13:00:00,8,,Bojan Borović,bojan.borovic.3192@example.com,+381-11-555-4192,0
+E000794,C03193,2026-06-01,plus,north,47,19.65,20,2,0,20,2026-05-20T13:00:00,6,,Vera Javorac,vera.javorac.3193@example.com,+381-11-555-4193,0
+E000795,C03194,2026-05-01,legacy,south,40,15.62,8,1,0,0,2026-04-26T13:00:00,6,,Goran Topolić,goran.topolic.3194@example.com,+381-11-555-4194,0
+E000796,C03195,2026-06-01,plus,west,2,20.30,6,1,0,15,2026-05-17T17:00:00,7,,Jasna Lipić,jasna.lipic.3195@example.com,+381-11-555-4195,0
+E000797,C03196,2026-04-01,legacy,west,7,14.20,9,3,0,0,2026-03-12T09:00:00,,,Goran Kestenić,goran.kestenic.3196@example.com,+381-11-555-4196,1
+E000798,C03197,2026-04-01,basic,east,46,9.32,9,1,0,20,2026-03-15T19:00:00,6,,Petar Dubović,petar.dubovic.3197@example.com,+381-11-555-4197,0
+E000799,C03198,2026-05-01,legacy,south,47,14.31,4,1,0,0,2026-04-30T16:00:00,7,,Lazar Grabić,lazar.grabic.3198@example.com,+381-11-555-4198,0
+E000800,C03199,2026-04-01,plus,east,49,23.37,10,2,0,5,2026-03-11T18:00:00,,missing a feature,Ivana Lipić,ivana.lipic.3199@example.com,+381-11-555-4199,1
+E000801,C03200,2026-05-01,basic,north,12,9.94,11,0,1,5,2026-04-27T10:00:00,9,,Lazar Javorac,lazar.javorac.3200@example.com,+381-11-555-4200,0
+E000802,C03201,2026-06-01,plus,east,52,20.59,12,0,0,5,2026-05-19T08:00:00,,,Lazar Cerović,lazar.cerovic.3201@example.com,+381-11-555-4201,0
+E000803,C03202,2026-05-01,basic,west,27,9.67,3,6,0,5,2026-04-17T16:00:00,,,Danica Cerović,danica.cerovic.3202@example.com,+381-11-555-4202,1
+E000804,C03203,2026-05-01,basic,east,53,9.33,17,0,0,5,2026-04-25T08:00:00,4,,Bojan Vrbić,bojan.vrbic.3203@example.com,+381-11-555-4203,0
+E000805,C03204,2026-06-01,pro,north,56,41.57,15,0,0,15,2026-05-31T13:00:00,4,,Jasna Grabić,jasna.grabic.3204@example.com,+381-11-555-4204,0
+E000806,C03205,2026-06-01,basic,north,29,9.75,12,0,0,15,2026-05-23T08:00:00,,,Ana Topolić,ana.topolic.3205@example.com,+381-11-555-4205,0
+E000807,C03206,2026-05-01,legacy,east,12,14.38,20,0,0,15,2026-04-13T14:00:00,5,,Sava Kestenić,sava.kestenic.3206@example.com,+381-11-555-4206,0
+E000808,C03207,2026-05-01,plus,east,39,18.96,14,0,0,10,2026-04-10T12:00:00,4,,Petar Dubović,petar.dubovic.3207@example.com,+381-11-555-4207,0
+E000809,C03208,2026-05-01,plus,east,5,19.69,16,0,0,5,2026-04-10T13:00:00,10,,Jasna Lipić,jasna.lipic.3208@example.com,+381-11-555-4208,0
+E000810,C03209,2026-05-01,pro,north,39,39.73,21,0,0,15,2026-04-17T12:00:00,6,,Marija Borović,marija.borovic.3209@example.com,+381-11-555-4209,0
+E000811,C03210,2026-06-01,basic,east,34,9.03,6,1,0,10,2026-05-18T11:00:00,,missing a feature,Lazar Cerović,lazar.cerovic.3210@example.com,+381-11-555-4210,1
+E000812,C03211,2026-04-01,pro,west,39,46.16,16,2,0,5,2026-03-23T12:00:00,6,,Ivana Borović,ivana.borovic.3211@example.com,+381-11-555-4211,0
+E000813,C03212,2026-05-01,pro,east,52,42.85,16,0,0,10,2026-04-15T07:00:00,5,,Bojan Javorac,bojan.javorac.3212@example.com,+381-11-555-4212,0
+E000814,C03213,2026-04-01,pro,west,22,38.74,13,1,0,15,2026-03-22T15:00:00,6,,Ivana Vrbić,ivana.vrbic.3213@example.com,+381-11-555-4213,0
+E000815,C03214,2026-06-01,plus,south,9,20.89,16,0,0,5,2026-05-25T18:00:00,7,,Nada Dubović,nada.dubovic.3214@example.com,+381-11-555-4214,0
+E000816,C03215,2026-05-01,basic,west,36,9.73,16,1,0,15,2026-04-17T14:00:00,5,,Bojan Cerović,bojan.cerovic.3215@example.com,+381-11-555-4215,0
+E000817,C03216,2026-05-01,basic,south,12,10.07,12,1,0,10,2026-04-25T18:00:00,5,,Bojan Cerović,bojan.cerovic.3216@example.com,+381-11-555-4216,0
+E000818,C03217,2026-05-01,pro,north,8,41.96,3,1,0,10,2026-04-09T06:00:00,10,,Danica Lipić,danica.lipic.3217@example.com,+381-11-555-4217,0
+E000819,C03218,2026-04-01,pro,east,50,37.69,9,1,0,5,2026-03-23T19:00:00,7,,Lazar Hrastić,lazar.hrastic.3218@example.com,+381-11-555-4218,0
+E000820,C03219,2026-05-01,basic,south,31,9.41,14,0,0,5,2026-04-14T17:00:00,4,,Sava Borović,sava.borovic.3219@example.com,+381-11-555-4219,0
+E000821,C03220,2026-05-01,basic,east,52,8.99,15,0,0,0,2026-04-14T18:00:00,5,,Vera Hrastić,vera.hrastic.3220@example.com,+381-11-555-4220,0
+E000822,C03221,2026-04-01,plus,west,23,22.23,16,2,0,15,2026-03-21T09:00:00,7,,Danica Dubović,danica.dubovic.3221@example.com,+381-11-555-4221,0
+E000823,C03222,2026-04-01,basic,north,3,10.34,4,3,0,15,2026-03-23T15:00:00,4,too expensive,Ana Kestenić,ana.kestenic.3222@example.com,+381-11-555-4222,1
+E000824,C03223,2026-05-01,legacy,west,17,15.23,11,5,1,15,2026-04-30T17:00:00,6,missing a feature,Ivana Cerović,ivana.cerovic.3223@example.com,+381-11-555-4223,1
+E000825,C03224,2026-06-01,plus,south,8,17.68,16,0,0,10,2026-05-28T17:00:00,7,,Petar Vrbić,petar.vrbic.3224@example.com,+381-11-555-4224,0
+E000826,C03225,2026-06-01,plus,east,5,19.65,14,0,0,0,2026-05-12T16:00:00,7,,Goran Topolić,goran.topolic.3225@example.com,+381-11-555-4225,0
+E000827,C03226,2026-04-01,legacy,east,8,16.76,15,0,1,15,2026-03-19T06:00:00,9,,Goran Cerović,goran.cerovic.3226@example.com,+381-11-555-4226,0
+E000828,C03227,2026-05-01,pro,north,48,40.34,14,1,0,0,2026-04-25T19:00:00,7,,Petar Javorac,petar.javorac.3227@example.com,+381-11-555-4227,0
+E000829,C03228,2026-05-01,basic,south,1,8.03,15,0,0,20,2026-04-24T12:00:00,6,,Sava Borović,sava.borovic.3228@example.com,+381-11-555-4228,0
+E000830,C03229,2026-06-01,pro,south,56,40.65,17,0,0,0,2026-05-16T18:00:00,7,,Goran Hrastić,goran.hrastic.3229@example.com,+381-11-555-4229,0
+E000831,C03230,2026-05-01,pro,north,19,40.77,8,1,0,5,2026-04-21T07:00:00,7,,Nada Vrbić,nada.vrbic.3230@example.com,+381-11-555-4230,0
+E000832,C03231,2026-05-01,pro,north,58,44.39,16,1,0,0,2026-04-10T09:00:00,,,Vera Hrastić,vera.hrastic.3231@example.com,+381-11-555-4231,0
+E000833,C03232,2026-06-01,basic,south,24,9.97,17,4,0,20,2026-05-26T18:00:00,3,,Goran Cerović,goran.cerovic.3232@example.com,+381-11-555-4232,0
+E000834,C03233,2026-04-01,pro,east,1,41.71,18,1,1,20,2026-03-27T10:00:00,6,,Marija Lipić,marija.lipic.3233@example.com,+381-11-555-4233,0
+E000835,C03234,2026-06-01,basic,west,43,9.01,10,1,0,0,2026-05-28T16:00:00,6,,Ana Vrbić,ana.vrbic.3234@example.com,+381-11-555-4234,0
+E000836,C03235,2026-04-01,basic,south,57,9.81,10,2,0,5,2026-03-27T14:00:00,4,,Petar Grabić,petar.grabic.3235@example.com,+381-11-555-4235,0
+E000837,C03236,2026-06-01,plus,east,52,20.08,5,1,0,20,2026-05-31T06:00:00,6,,Bojan Borović,bojan.borovic.3236@example.com,+381-11-555-4236,0
+E000838,C03237,2026-06-01,pro,east,4,44.17,10,1,1,0,2026-05-22T13:00:00,,other,Ivana Lipić,ivana.lipic.3237@example.com,+381-11-555-4237,1
+E000839,C03238,2026-06-01,plus,north,4,20.11,13,0,0,0,2026-05-15T19:00:00,6,,Vera Lipić,vera.lipic.3238@example.com,+381-11-555-4238,0
+E000840,C03239,2026-04-01,plus,east,45,22.71,18,0,1,15,2026-03-15T12:00:00,5,,Sava Hrastić,sava.hrastic.3239@example.com,+381-11-555-4239,0
+E000841,C03240,2026-05-01,basic,west,22,9.12,4,2,0,20,2026-05-14T09:00:00,,,Vera Cerović,vera.cerovic.3240@example.com,+381-11-555-4240,1
+E000842,C03241,2026-05-01,plus,east,38,20.02,12,1,0,0,2026-04-15T14:00:00,6,,Vera Vrbić,vera.vrbic.3241@example.com,+381-11-555-4241,0
+E000843,C03242,2026-04-01,basic,west,34,10.47,18,0,0,0,2026-03-27T07:00:00,4,,Lazar Grabić,lazar.grabic.3242@example.com,+381-11-555-4242,0
+E000844,C03243,2026-05-01,basic,south,10,9.25,16,1,0,0,2026-04-30T19:00:00,4,,Sava Javorac,sava.javorac.3243@example.com,+381-11-555-4243,0
+E000845,C03244,2026-05-01,basic,north,5,10.04,14,2,0,15,2026-04-28T11:00:00,6,,Danica Vrbić,danica.vrbic.3244@example.com,+381-11-555-4244,0
+E000846,C03245,2026-05-01,plus,south,47,21.26,23,0,0,0,2026-04-28T13:00:00,6,,Ana Vrbić,ana.vrbic.3245@example.com,+381-11-555-4245,0
+E000847,C03246,2026-05-01,plus,east,30,18.96,10,1,0,20,2026-04-28T07:00:00,7,,Lazar Dubović,lazar.dubovic.3246@example.com,+381-11-555-4246,0
+E000848,C03247,2026-05-01,plus,east,2,19.29,5,2,0,5,2026-04-18T14:00:00,6,,Petar Dubović,petar.dubovic.3247@example.com,+381-11-555-4247,0
+E000849,C03248,2026-06-01,basic,west,50,9.94,13,1,0,0,2026-05-12T09:00:00,5,,Nada Lipić,nada.lipic.3248@example.com,+381-11-555-4248,0
+E000850,C03249,2026-04-01,basic,north,56,10.27,6,2,0,15,2026-03-28T10:00:00,,switched provider,Petar Grabić,petar.grabic.3249@example.com,+381-11-555-4249,1
+E000851,C01033,2026-04-01,plus,south,36,19.08,5,1,0,10,2026-03-19T17:00:00,6,,Vera Dubović,vera.dubovic.1033@example.com,+381-11-555-2033,0
+E000852,C01278,2026-05-01,plus,east,8,19.78,23,0,0,15,2026-04-11T07:00:00,7,,Goran Dubović,goran.dubovic.1278@example.com,+381-11-555-2278,0
+E000853,C00059,2026-04-01,pro,west,56,37.22,17,2,0,10,2026-03-13T16:00:00,4,,Danica Kestenić,danica.kestenic.59@example.com,+381-11-555-1059,0
+E000854,C00690,2026-06-01,basic,north,8,10.14,9,2,0,20,2026-05-16T18:00:00,4,other,Bojan Kestenić,bojan.kestenic.690@example.com,+381-11-555-1690,1
+E000855,C01290,2026-05-01,basic,east,45,9.53,22,0,0,0,2026-04-10T09:00:00,8,,Nada Javorac,nada.javorac.1290@example.com,+381-11-555-2290,0
+E000856,C00244,2026-05-01,pro,east,21,36.03,12,1,0,5,2026-04-23T12:00:00,9,,Jasna Grabić,jasna.grabic.244@example.com,+381-11-555-1244,0
+E000857,C01285,2026-04-01,plus,east,55,19.29,12,2,1,10,2026-03-26T14:00:00,4,too expensive,Ana Borović,ana.borovic.1285@example.com,+381-11-555-2285,1
+E000858,C00651,2026-05-01,basic,north,54,10.14,0,1,0,5,2026-04-09T06:00:00,,other,Vera Dubović,vera.dubovic.651@example.com,+381-11-555-1651,1
+E000859,C01559,2026-04-01,plus,west,6,20.21,16,1,0,15,2026-03-16T15:00:00,,not using it,Nada Topolić,nada.topolic.1559@example.com,+381-11-555-2559,1
+E000860,C00770,2026-06-01,plus,north,38,21.33,16,1,0,20,2026-05-10T19:00:00,7,,Goran Hrastić,goran.hrastic.770@example.com,+381-11-555-1770,0
+E000861,C01991,2026-05-01,basic,south,28,9.16,2,1,0,5,2026-04-09T18:00:00,5,,Marija Lipić,marija.lipic.1991@example.com,+381-11-555-2991,0
+E000862,C01679,2026-06-01,plus,east,11,21.40,7,5,1,20,2026-05-23T16:00:00,10,,Ana Cerović,ana.cerovic.1679@example.com,+381-11-555-2679,0
+E000863,C00371,2026-06-01,legacy,south,47,14.35,9,2,1,10,2026-05-22T14:00:00,,,Ana Grabić,ana.grabic.371@example.com,+381-11-555-1371,1
+E000864,C01269,2026-04-01,basic,south,27,10.31,22,1,0,5,2026-03-29T08:00:00,6,,Ivana Topolić,ivana.topolic.1269@example.com,+381-11-555-2269,0
+E000865,C02359,2026-04-01,legacy,north,59,16.16,12,3,0,0,2026-03-26T18:00:00,6,,Marija Vrbić,marija.vrbic.2359@example.com,+381-11-555-3359,0
+E000866,C00479,2026-04-01,plus,south,17,20.65,16,0,0,5,2026-03-28T13:00:00,7,,Petar Borović,petar.borovic.479@example.com,+381-11-555-1479,0
+E000867,C01988,2026-04-01,plus,west,44,17.98,10,0,0,0,2026-03-20T06:00:00,7,,Vera Cerović,vera.cerovic.1988@example.com,+381-11-555-2988,0
+E000868,C00124,2026-06-01,plus,west,43,19.92,15,0,0,15,2026-05-14T11:00:00,6,,Marija Dubović,marija.dubovic.124@example.com,+381-11-555-1124,0
+E000869,C01887,2026-06-01,plus,west,32,21.20,14,2,0,20,2026-05-10T07:00:00,8,,Vera Hrastić,vera.hrastic.1887@example.com,+381-11-555-2887,0
+E000870,C01196,2026-05-01,basic,east,48,10.21,8,3,0,15,2026-04-26T16:00:00,8,,Lazar Cerović,lazar.cerovic.1196@example.com,+381-11-555-2196,0
+E000871,C02289,2026-04-01,legacy,south,53,16.61,8,0,0,0,2026-03-14T06:00:00,7,,Lazar Hrastić,lazar.hrastic.2289@example.com,+381-11-555-3289,0
+E000872,C00982,2026-06-01,plus,east,56,20.05,19,0,0,10,2026-05-20T11:00:00,5,,Sava Topolić,sava.topolic.982@example.com,+381-11-555-1982,0
+E000873,C00899,2026-06-01,basic,west,26,9.87,10,1,0,20,2026-05-10T16:00:00,7,,Danica Cerović,danica.cerovic.899@example.com,+381-11-555-1899,0
+E000874,C01993,2026-04-01,basic,north,10,9.83,10,3,0,15,2026-03-17T16:00:00,6,,Jasna Hrastić,jasna.hrastic.1993@example.com,+381-11-555-2993,0
+E000875,C00343,2026-06-01,basic,east,38,9.71,16,1,0,0,2026-05-27T18:00:00,7,,Lazar Topolić,lazar.topolic.343@example.com,+381-11-555-1343,0
+E000876,C02322,2026-05-01,plus,east,2,19.78,8,2,0,10,2026-04-27T07:00:00,3,,Nada Hrastić,nada.hrastic.2322@example.com,+381-11-555-3322,0
+E000877,C01208,2026-04-01,plus,north,48,21.70,11,1,0,10,2026-03-26T11:00:00,,,Sava Hrastić,sava.hrastic.1208@example.com,+381-11-555-2208,0
+E000878,C00383,2026-05-01,basic,north,59,9.70,15,1,0,15,2026-04-11T14:00:00,,,Ana Borović,ana.borovic.383@example.com,+381-11-555-1383,0
+E000879,C00127,2026-05-01,plus,east,57,19.94,13,3,0,15,2026-04-17T11:00:00,6,,Ana Borović,ana.borovic.127@example.com,+381-11-555-1127,0
+E000880,C00522,2026-04-01,plus,south,8,19.84,4,0,0,10,2026-03-31T06:00:00,,too expensive,Nada Lipić,nada.lipic.522@example.com,+381-11-555-1522,1
+E000881,C02205,2026-05-01,basic,south,44,10.05,18,1,0,5,2026-04-22T08:00:00,9,,Vera Borović,vera.borovic.2205@example.com,+381-11-555-3205,0
+E000882,C00749,2026-05-01,basic,south,28,10.72,7,3,0,5,2026-04-19T06:00:00,5,other,Nada Grabić,nada.grabic.749@example.com,+381-11-555-1749,1
+E000883,C00808,2026-04-01,legacy,east,36,15.42,19,0,0,5,2026-03-31T19:00:00,8,,Lazar Dubović,lazar.dubovic.808@example.com,+381-11-555-1808,0
+E000884,C02086,2026-06-01,plus,north,41,21.92,16,0,1,0,2026-05-11T11:00:00,7,,Lazar Borović,lazar.borovic.2086@example.com,+381-11-555-3086,0
+E000885,C00209,2026-04-01,plus,north,15,20.87,10,0,0,5,2026-03-25T14:00:00,,missing a feature,Bojan Topolić,bojan.topolic.209@example.com,+381-11-555-1209,1
+E000886,C01947,2026-05-01,legacy,south,29,15.87,14,3,0,20,2026-04-19T13:00:00,6,,Ivana Javorac,ivana.javorac.1947@example.com,+381-11-555-2947,0
+E000887,C02127,2026-05-01,plus,south,1,21.58,5,1,0,20,2026-04-19T09:00:00,10,,Marija Dubović,marija.dubovic.2127@example.com,+381-11-555-3127,0
+E000888,C00788,2026-05-01,basic,north,3,9.63,9,0,0,15,2026-04-10T13:00:00,,not using it,Petar Cerović,petar.cerovic.788@example.com,+381-11-555-1788,1
+E000889,C01811,2026-06-01,pro,south,16,39.50,0,3,1,10,2026-05-30T14:00:00,6,,Nada Topolić,nada.topolic.1811@example.com,+381-11-555-2811,0
+E000890,C01668,2026-05-01,plus,north,14,18.60,10,0,0,0,2026-05-17T09:00:00,6,,Marija Cerović,marija.cerovic.1668@example.com,+381-11-555-2668,0
+E000891,C01720,2026-05-01,legacy,north,28,14.82,12,2,0,0,2026-04-15T09:00:00,2,,Marija Cerović,marija.cerovic.1720@example.com,+381-11-555-2720,0
+E000892,C01963,2026-06-01,pro,north,47,38.78,17,1,1,20,2026-05-27T14:00:00,8,,Bojan Cerović,bojan.cerovic.1963@example.com,+381-11-555-2963,0
+E000893,C00550,2026-05-01,plus,south,60,19.49,6,3,0,5,2026-04-23T07:00:00,10,,Goran Vrbić,goran.vrbic.550@example.com,+381-11-555-1550,0
+E000894,C01893,2026-04-01,plus,west,53,20.44,10,1,0,5,2026-03-18T08:00:00,,missing a feature,Goran Lipić,goran.lipic.1893@example.com,+381-11-555-2893,1
+E000895,C01456,2026-06-01,basic,north,57,9.32,12,1,0,20,2026-05-24T14:00:00,,,Jasna Topolić,jasna.topolic.1456@example.com,+381-11-555-2456,0
+E000896,C01418,2026-06-01,pro,north,51,43.28,13,2,0,20,2026-05-21T16:00:00,7,,Jasna Topolić,jasna.topolic.1418@example.com,+381-11-555-2418,0
+E000897,C00569,2026-06-01,plus,east,10,21.93,10,0,1,15,2026-05-31T07:00:00,,,Vera Grabić,vera.grabic.569@example.com,+381-11-555-1569,0
+E000898,C00736,2026-05-01,basic,west,12,9.16,16,0,0,10,2026-04-24T17:00:00,9,,Danica Topolić,danica.topolic.736@example.com,+381-11-555-1736,0
+E000899,C00455,2026-05-01,plus,south,26,19.61,14,1,0,10,2026-04-24T07:00:00,5,not using it,Ivana Borović,ivana.borovic.455@example.com,+381-11-555-1455,1
+E000900,C01061,2026-04-01,basic,west,46,9.59,7,2,0,0,2026-04-21T09:00:00,,other,Bojan Vrbić,bojan.vrbic.1061@example.com,+381-11-555-2061,1
+E000901,C01766,2026-05-01,basic,west,21,10.07,12,0,0,0,2026-04-17T14:00:00,10,,Sava Vrbić,sava.vrbic.1766@example.com,+381-11-555-2766,0
+E000902,C01623,2026-04-01,legacy,east,35,16.28,25,0,0,20,2026-03-24T15:00:00,9,,Jasna Hrastić,jasna.hrastic.1623@example.com,+381-11-555-2623,0
+E000903,C02282,2026-06-01,plus,south,2,20.81,11,1,0,5,2026-05-19T15:00:00,7,,Ana Cerović,ana.cerovic.2282@example.com,+381-11-555-3282,0
+E000904,C00112,2026-06-01,legacy,south,15,16.96,8,0,0,10,2026-05-23T07:00:00,5,,Petar Cerović,petar.cerovic.112@example.com,+381-11-555-1112,0
+E000905,C00875,2026-04-01,plus,west,50,21.27,18,0,0,0,2026-03-26T15:00:00,5,,Jasna Vrbić,jasna.vrbic.875@example.com,+381-11-555-1875,0
+E000906,C00563,2026-04-01,basic,east,18,9.56,18,0,0,0,2026-03-20T13:00:00,5,,Ivana Lipić,ivana.lipic.563@example.com,+381-11-555-1563,0
+E000907,C01529,2026-05-01,plus,south,34,19.51,16,0,0,0,2026-04-29T18:00:00,10,,Nada Grabić,nada.grabic.1529@example.com,+381-11-555-2529,0
+E000908,C02163,2026-06-01,legacy,north,27,13.96,12,0,0,15,2026-05-13T10:00:00,,other,Ivana Dubović,ivana.dubovic.2163@example.com,+381-11-555-3163,1
+E000909,C00142,2026-05-01,plus,east,20,20.42,10,1,0,5,2026-04-30T06:00:00,,,Ana Javorac,ana.javorac.142@example.com,+381-11-555-1142,0
+E000910,C01284,2026-06-01,pro,west,14,39.39,12,3,0,5,2026-05-11T18:00:00,4,,Nada Vrbić,nada.vrbic.1284@example.com,+381-11-555-2284,0
+E000911,C01981,2026-04-01,pro,east,42,46.39,8,2,1,5,2026-03-31T09:00:00,,,Ivana Javorac,ivana.javorac.1981@example.com,+381-11-555-2981,0
+E000912,C01684,2026-05-01,legacy,north,36,14.15,14,0,0,5,2026-04-17T10:00:00,8,,Sava Cerović,sava.cerovic.1684@example.com,+381-11-555-2684,0
+E000913,C01538,2026-04-01,plus,south,48,22.39,12,1,0,0,2026-03-22T15:00:00,10,,Ivana Lipić,ivana.lipic.1538@example.com,+381-11-555-2538,0
+E000914,C01615,2026-04-01,plus,south,32,19.91,3,1,0,15,2026-03-15T18:00:00,,missing a feature,Lazar Grabić,lazar.grabic.1615@example.com,+381-11-555-2615,1
+E000915,C02366,2026-04-01,pro,east,52,43.52,16,0,0,15,2026-03-20T18:00:00,8,,Danica Dubović,danica.dubovic.2366@example.com,+381-11-555-3366,0
+E000916,C02046,2026-04-01,basic,west,1,9.90,10,0,0,20,2026-03-19T14:00:00,9,,Bojan Vrbić,bojan.vrbic.2046@example.com,+381-11-555-3046,0
+E000917,C00705,2026-06-01,plus,west,31,21.00,6,2,0,5,2026-05-10T11:00:00,,,Danica Cerović,danica.cerovic.705@example.com,+381-11-555-1705,0
+E000918,C00279,2026-06-01,pro,south,6,42.73,3,2,0,5,2026-05-21T11:00:00,4,,Jasna Topolić,jasna.topolic.279@example.com,+381-11-555-1279,0
+E000919,C01640,2026-05-01,basic,east,52,9.04,11,1,0,0,2026-04-25T11:00:00,8,,Bojan Kestenić,bojan.kestenic.1640@example.com,+381-11-555-2640,0
+E000920,C01331,2026-04-01,legacy,north,18,13.77,19,0,0,0,2026-03-24T19:00:00,6,,Ivana Topolić,ivana.topolic.1331@example.com,+381-11-555-2331,0
+E000921,C02213,2026-05-01,pro,south,25,41.20,7,1,0,20,2026-04-17T12:00:00,,,Ana Javorac,ana.javorac.2213@example.com,+381-11-555-3213,0
+E000922,C00258,2026-04-01,plus,north,26,19.31,16,2,0,5,2026-03-17T10:00:00,,,Nada Dubović,nada.dubovic.258@example.com,+381-11-555-1258,0
+E000923,C00695,2026-04-01,plus,north,51,20.20,16,2,0,20,2026-03-11T06:00:00,8,,Vera Javorac,vera.javorac.695@example.com,+381-11-555-1695,0
+E000924,C01134,2026-05-01,legacy,west,45,15.90,13,0,0,0,2026-04-15T12:00:00,4,,Ivana Lipić,ivana.lipic.1134@example.com,+381-11-555-2134,0
+E000925,C00644,2026-04-01,basic,east,18,9.01,18,1,0,15,2026-03-28T12:00:00,6,,Bojan Javorac,bojan.javorac.644@example.com,+381-11-555-1644,0
+E000926,C01774,2026-05-01,plus,east,54,21.09,9,1,0,15,2026-04-19T07:00:00,8,,Ivana Hrastić,ivana.hrastic.1774@example.com,+381-11-555-2774,0
+E000927,C01762,2026-05-01,legacy,east,15,15.78,11,0,0,20,2026-04-20T15:00:00,6,,Jasna Lipić,jasna.lipic.1762@example.com,+381-11-555-2762,0
+E000928,C00758,2026-04-01,plus,east,57,18.51,4,2,0,0,2026-03-31T08:00:00,,,Petar Hrastić,petar.hrastic.758@example.com,+381-11-555-1758,0
+E000929,C01933,2026-05-01,basic,north,10,9.54,18,3,0,0,2026-05-16T09:00:00,2,,Bojan Dubović,bojan.dubovic.1933@example.com,+381-11-555-2933,0
+E000930,C00738,2026-04-01,plus,east,9,19.02,2,0,0,10,2026-03-26T16:00:00,7,,Sava Vrbić,sava.vrbic.738@example.com,+381-11-555-1738,0
+E000931,C00354,2026-05-01,basic,north,57,10.52,14,3,0,15,2026-04-23T17:00:00,9,,Sava Topolić,sava.topolic.354@example.com,+381-11-555-1354,0
+E000932,C01087,2026-06-01,plus,east,15,20.60,16,1,0,20,2026-05-23T18:00:00,8,,Vera Lipić,vera.lipic.1087@example.com,+381-11-555-2087,0
+E000933,C01323,2026-06-01,pro,west,18,41.80,12,0,0,0,2026-05-24T08:00:00,7,,Nada Cerović,nada.cerovic.1323@example.com,+381-11-555-2323,0
+E000934,C00837,2026-04-01,pro,south,5,44.47,18,1,0,15,2026-04-10T09:00:00,7,,Sava Lipić,sava.lipic.837@example.com,+381-11-555-1837,0
+E000935,C02384,2026-06-01,legacy,east,8,16.26,22,0,0,0,2026-05-24T08:00:00,7,,Marija Dubović,marija.dubovic.2384@example.com,+381-11-555-3384,0
+E000936,C00989,2026-04-01,basic,east,54,9.61,14,2,1,20,2026-03-12T13:00:00,,,Vera Grabić,vera.grabic.989@example.com,+381-11-555-1989,0
+E000937,C00459,2026-06-01,basic,south,45,9.30,15,2,0,10,2026-05-28T07:00:00,6,,Vera Cerović,vera.cerovic.459@example.com,+381-11-555-1459,0
+E000938,C00952,2026-05-01,plus,west,38,20.50,7,0,0,5,2026-04-19T07:00:00,4,missing a feature,Ana Vrbić,ana.vrbic.952@example.com,+381-11-555-1952,1
+E000939,C01094,2026-04-01,legacy,east,9,14.76,16,0,0,10,2026-03-24T19:00:00,7,,Jasna Topolić,jasna.topolic.1094@example.com,+381-11-555-2094,0
+E000940,C02375,2026-05-01,legacy,east,42,13.42,13,1,0,5,2026-04-27T17:00:00,5,,Jasna Lipić,jasna.lipic.2375@example.com,+381-11-555-3375,0
+E000941,C01235,2026-06-01,plus,east,21,20.88,15,2,0,20,2026-06-03T09:00:00,3,,Sava Vrbić,sava.vrbic.1235@example.com,+381-11-555-2235,0
+E000942,C01649,2026-05-01,pro,east,26,45.56,11,0,0,5,2026-04-11T07:00:00,6,,Lazar Lipić,lazar.lipic.1649@example.com,+381-11-555-2649,0
+E000943,C00781,2026-06-01,plus,west,57,19.75,21,1,0,10,2026-05-17T14:00:00,5,,Petar Borović,petar.borovic.781@example.com,+381-11-555-1781,0
+E000944,C00799,2026-06-01,basic,west,11,9.83,22,0,2,5,2026-05-18T08:00:00,8,,Marija Borović,marija.borovic.799@example.com,+381-11-555-1799,0
+E000945,C02000,2026-06-01,basic,north,1,9.24,9,1,0,10,2026-05-26T13:00:00,7,,Lazar Javorac,lazar.javorac.2000@example.com,+381-11-555-3000,0
+E000946,C01132,2026-05-01,basic,south,60,8.97,13,1,0,20,2026-04-19T17:00:00,,,Lazar Dubović,lazar.dubovic.1132@example.com,+381-11-555-2132,0
+E000947,C02314,2026-04-01,basic,south,55,9.62,10,2,0,0,2026-03-23T10:00:00,3,too expensive,Sava Kestenić,sava.kestenic.2314@example.com,+381-11-555-3314,1
+E000948,C00121,2026-05-01,plus,south,8,19.99,8,0,0,20,2026-04-27T12:00:00,5,,Ivana Hrastić,ivana.hrastic.121@example.com,+381-11-555-1121,0
+E000949,C00415,2026-06-01,basic,north,45,9.35,20,2,0,5,2026-05-15T13:00:00,,,Ivana Hrastić,ivana.hrastic.415@example.com,+381-11-555-1415,0
+E000950,C02178,2026-05-01,pro,south,11,44.52,8,1,0,5,2026-04-27T19:00:00,6,missing a feature,Marija Javorac,marija.javorac.2178@example.com,+381-11-555-3178,1
+E000951,C01604,2026-04-01,basic,east,21,9.34,15,0,1,20,2026-03-14T10:00:00,5,,Vera Lipić,vera.lipic.1604@example.com,+381-11-555-2604,0
+E000952,C02012,2026-06-01,pro,north,5,40.71,10,0,0,10,2026-05-14T13:00:00,,,Bojan Vrbić,bojan.vrbic.2012@example.com,+381-11-555-3012,0
+E000953,C02114,2026-06-01,legacy,north,20,15.61,10,1,1,20,2026-05-22T16:00:00,,,Marija Dubović,marija.dubovic.2114@example.com,+381-11-555-3114,1
+E000954,C00240,2026-05-01,basic,east,6,10.36,13,1,0,10,2026-04-25T15:00:00,,,Danica Kestenić,danica.kestenic.240@example.com,+381-11-555-1240,1
+E000955,C01917,2026-06-01,legacy,east,8,13.88,13,1,0,10,2026-05-13T09:00:00,6,,Vera Kestenić,vera.kestenic.1917@example.com,+381-11-555-2917,0
+E000956,C00546,2026-06-01,plus,west,7,22.81,16,0,1,0,2026-05-22T18:00:00,5,,Sava Hrastić,sava.hrastic.546@example.com,+381-11-555-1546,0
+E000957,C01923,2026-05-01,basic,south,50,8.44,3,1,0,0,2026-04-24T06:00:00,6,,Lazar Kestenić,lazar.kestenic.1923@example.com,+381-11-555-2923,0
+E000958,C01306,2026-06-01,basic,south,32,9.58,16,1,0,0,2026-05-24T12:00:00,,,Marija Hrastić,marija.hrastic.1306@example.com,+381-11-555-2306,0
+E000959,C00376,2026-04-01,plus,north,55,20.09,8,1,0,20,2026-03-11T11:00:00,5,,Nada Dubović,nada.dubovic.376@example.com,+381-11-555-1376,0
+E000960,C02338,2026-04-01,basic,east,46,10.34,17,1,1,5,2026-03-10T07:00:00,7,other,Nada Topolić,nada.topolic.2338@example.com,+381-11-555-3338,1
+E000961,C00000,2025-09-01,pro,east,23,42.78,13,0,0,5,2025-08-20T17:00:00,7,,Danica Topolić,danica.topolic.0@example.com,+381-11-555-1000,0
+E000962,C00001,2025-09-01,legacy,north,13,14.33,9,0,2,0,2025-08-11T13:00:00,9,,Lazar Hrastić,lazar.hrastic.1@example.com,+381-11-555-1001,0
+E000963,C00002,2025-11-01,basic,south,17,9.67,14,0,0,5,2025-10-30T18:00:00,8,,Bojan Lipić,bojan.lipic.2@example.com,+381-11-555-1002,0
+E000964,C00003,2025-08-01,basic,north,42,9.04,9,0,0,15,2025-07-27T15:00:00,3,,Danica Kestenić,danica.kestenic.3@example.com,+381-11-555-1003,0
+E000965,C00004,2026-03-01,basic,west,58,9.08,17,0,0,10,2026-02-09T12:00:00,,missing a feature,Bojan Borović,bojan.borovic.4@example.com,+381-11-555-1004,1
+E000966,C00005,2025-07-01,basic,east,15,9.48,14,0,0,15,2025-06-18T18:00:00,10,,Lazar Lipić,lazar.lipic.5@example.com,+381-11-555-1005,0
+E000967,C00006,2026-01-01,basic,west,26,8.74,15,0,0,5,2025-12-30T15:00:00,7,,Marija Javorac,marija.javorac.6@example.com,+381-11-555-1006,0
+E000968,C00007,2026-02-01,pro,south,43,40.02,7,0,0,15,2026-01-29T13:00:00,5,,Goran Javorac,goran.javorac.7@example.com,+381-11-555-1007,0
+E000969,C00008,2025-11-01,pro,east,28,38.23,9,0,0,15,2025-10-15T17:00:00,9,,Nada Grabić,nada.grabic.8@example.com,+381-11-555-1008,0
+E000970,C00009,2026-02-01,basic,north,26,9.37,11,0,0,20,2026-01-17T14:00:00,10,,Bojan Kestenić,bojan.kestenic.9@example.com,+381-11-555-1009,0
+E000971,C00010,2025-08-01,legacy,west,8,14.85,19,2,0,20,2025-07-25T13:00:00,5,,Vera Grabić,vera.grabic.10@example.com,+381-11-555-1010,0
+E000972,C00011,2025-07-01,basic,east,45,9.19,25,1,0,20,2025-06-14T14:00:00,8,,Jasna Lipić,jasna.lipic.11@example.com,+381-11-555-1011,0
+E000973,C00012,2025-10-01,plus,west,11,18.63,15,0,1,20,2025-09-19T09:00:00,4,,Danica Javorac,danica.javorac.12@example.com,+381-11-555-1012,0
+E000974,C00013,2026-03-01,basic,south,8,8.49,13,2,0,20,2026-02-22T09:00:00,6,,Goran Grabić,goran.grabic.13@example.com,+381-11-555-1013,0
+E000975,C00014,2026-01-01,legacy,west,30,13.98,19,0,0,0,2025-12-30T11:00:00,4,,Nada Grabić,nada.grabic.14@example.com,+381-11-555-1014,0
+E000976,C00015,2025-12-01,plus,south,57,16.68,20,0,1,5,2025-11-28T09:00:00,8,,Bojan Kestenić,bojan.kestenic.15@example.com,+381-11-555-1015,0
+E000977,C00016,2026-01-01,plus,north,20,19.83,6,3,0,20,2025-12-19T07:00:00,3,switched provider,Marija Borović,marija.borovic.16@example.com,+381-11-555-1016,1
+E000978,C00017,2026-03-01,plus,west,54,20.07,19,0,0,20,2026-02-27T08:00:00,6,,Marija Cerović,marija.cerovic.17@example.com,+381-11-555-1017,0
+E000979,C00018,2026-03-01,plus,north,38,19.78,7,1,0,5,2026-02-21T16:00:00,6,too expensive,Marija Dubović,marija.dubovic.18@example.com,+381-11-555-1018,1
+E000980,C00019,2025-07-01,basic,north,10,9.29,24,1,0,5,2025-06-21T13:00:00,6,,Goran Kestenić,goran.kestenic.19@example.com,+381-11-555-1019,0
+E000981,C00020,2025-09-01,basic,south,10,8.82,8,2,0,20,2025-08-27T16:00:00,5,switched provider,Jasna Javorac,jasna.javorac.20@example.com,+381-11-555-1020,1
+E000982,C00021,2026-02-01,basic,north,31,9.22,14,0,0,10,2026-01-30T19:00:00,,,Lazar Cerović,lazar.cerovic.21@example.com,+381-11-555-1021,0
+E000983,C00022,2026-03-01,legacy,west,55,13.98,12,0,0,0,2026-02-22T19:00:00,10,,Goran Topolić,goran.topolic.22@example.com,+381-11-555-1022,0
+E000984,C00023,2026-01-01,basic,west,56,9.13,13,2,0,0,2025-12-20T07:00:00,9,,Bojan Dubović,bojan.dubovic.23@example.com,+381-11-555-1023,0
+E000985,C00024,2025-09-01,plus,south,28,18.28,17,0,0,10,2025-08-11T15:00:00,5,,Nada Hrastić,nada.hrastic.24@example.com,+381-11-555-1024,0
+E000986,C00025,2025-12-01,pro,west,38,40.53,15,0,1,5,2025-11-21T08:00:00,10,,Goran Hrastić,goran.hrastic.25@example.com,+381-11-555-1025,0
+E000987,C00026,2026-01-01,basic,south,7,8.50,13,1,0,5,2025-12-16T08:00:00,,switched provider,Bojan Cerović,bojan.cerovic.26@example.com,+381-11-555-1026,1
+E000988,C00027,2025-09-01,pro,east,8,37.03,1,2,0,15,2025-08-26T10:00:00,,,Nada Topolić,nada.topolic.27@example.com,+381-11-555-1027,0
+E000989,C00028,2025-09-01,legacy,west,53,11.83,16,1,0,10,2025-08-23T11:00:00,8,,Ivana Vrbić,ivana.vrbic.28@example.com,+381-11-555-1028,0
+E000990,C00029,2025-11-01,basic,south,8,9.78,14,1,0,10,2025-10-22T18:00:00,8,,Nada Dubović,nada.dubovic.29@example.com,+381-11-555-1029,0
+E000991,C00030,2025-08-01,plus,south,17,20.13,20,0,0,5,2025-07-30T11:00:00,3,,Nada Vrbić,nada.vrbic.30@example.com,+381-11-555-1030,0
+E000992,C00031,2025-07-01,pro,east,25,34.90,13,0,1,20,2025-06-30T14:00:00,,,Bojan Topolić,bojan.topolic.31@example.com,+381-11-555-1031,0
+E000993,C00032,2025-09-01,basic,west,51,9.63,20,1,0,5,2025-08-29T17:00:00,6,,Ivana Dubović,ivana.dubovic.32@example.com,+381-11-555-1032,0
+E000994,C00033,2025-12-01,pro,south,42,39.06,16,0,1,15,2025-11-28T08:00:00,7,,Goran Borović,goran.borovic.33@example.com,+381-11-555-1033,0
+E000995,C00034,2025-08-01,basic,south,32,8.41,4,2,1,15,2025-07-30T11:00:00,,,Ana Hrastić,ana.hrastic.34@example.com,+381-11-555-1034,0
+E000996,C00035,2025-10-01,plus,south,23,21.59,8,1,0,0,2025-09-17T12:00:00,6,,Marija Lipić,marija.lipic.35@example.com,+381-11-555-1035,0
+E000997,C00036,2026-02-01,plus,west,8,18.99,20,0,0,5,2026-01-10T19:00:00,6,,Petar Javorac,petar.javorac.36@example.com,+381-11-555-1036,0
+E000998,C00037,2025-09-01,plus,east,54,20.02,13,1,1,20,2025-08-14T18:00:00,4,other,Sava Javorac,sava.javorac.37@example.com,+381-11-555-1037,1
+E000999,C00038,2025-11-01,plus,east,21,18.31,17,0,0,20,2025-10-22T11:00:00,4,,Vera Topolić,vera.topolic.38@example.com,+381-11-555-1038,0
+E001000,C00039,2026-02-01,plus,north,2,21.31,17,0,0,10,2026-01-31T12:00:00,3,,Jasna Hrastić,jasna.hrastic.39@example.com,+381-11-555-1039,0

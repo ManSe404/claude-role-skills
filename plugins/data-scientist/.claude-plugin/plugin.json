@@ -1,0 +1,10 @@
+{
+  "name": "data-scientist",
+  "description": "Four skills for data scientists: ds-frame, ds-dataset, ds-evaluate and ds-experiment. They decide before modelling whether a rule, a score or a real model should be built, audit a training set for leakage, compare models from files of predictions so noise is called noise, and read A/B tests so a broken split or a win that does not survive correction cannot pass. Each computes with its own scripts and ends in one self-contained web page.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Stefan Seman"
+  },
+  "license": "MIT",
+  "keywords": ["data-science", "machine-learning", "model-evaluation", "leakage", "ab-testing", "calibration", "skills"]
+}

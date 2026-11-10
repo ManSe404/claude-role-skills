@@ -1,0 +1,36 @@
+{
+  "skill": "ai-stack",
+  "title": "Acme Mutual claims assistant: stack",
+  "subtitle": "Which model, retrieval and hosting the assistant uses, and what it costs.",
+  "meta": {"project": "acme-solution", "date": "2026-11-04"},
+  "verdict": {"text": "Azure OpenAI in East US, the only region with the chosen model at launch; retrieval over a vector index.", "tone": "warn"},
+  "sections": [
+    {
+      "id": "stack",
+      "title": "Stack",
+      "blocks": [
+        {"type": "kv", "items": [["Model", "Azure OpenAI, chosen for quality on long claim letters"], ["Retrieval", "Azure AI Search vector index"], ["Region", "East US: the model is not yet available elsewhere"]]}
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "The AI stack of the Acme Mutual claims platform",
+    "regions": [{"name": "East US", "why": "the only region with the chosen model at launch"}],
+    "data": [{"name": "claim text sent to the model", "class": "personal", "where": ["Model endpoint"], "rule": "not decided here"}],
+    "components": [
+      {"id": "llm", "label": "Model endpoint", "tech": "Azure OpenAI", "kind": "model", "region": "East US"},
+      {"id": "search", "label": "Vector index", "tech": "Azure AI Search", "kind": "retrieval", "region": "East US"},
+      {"id": "claims_db", "label": "Claims database", "tech": "PostgreSQL", "kind": "store"}
+    ],
+    "costs": [
+      {"item": "Model calls for drafting and routing", "monthly": 1420.0, "currency": "USD", "as_of": "2026-03-02", "source": "EXAMPLE price table saved 2026-03-02, not real prices", "cloud": "Azure"},
+      {"item": "Embeddings and the search index", "monthly": 610.0, "currency": "USD", "as_of": "2026-03-02", "source": "EXAMPLE price table saved 2026-03-02, not real prices", "cloud": "Azure"}
+    ],
+    "decisions": [
+      {"title": "Model hosting", "chosen": "Azure OpenAI in East US", "because": "the only region with the chosen model at launch"}
+    ],
+    "assumptions": ["Team of 5 engineers.", "About 30,000 claims a year, 6 documents each."],
+    "open": ["Will the chosen model reach an EU region before go-live?"]
+  }
+}

@@ -83,6 +83,46 @@ def logistics_repo(tmp_path_factory: pytest.TempPathFactory) -> Path:
     return target
 
 
+@pytest.fixture(scope="session")
+def cloud_repo(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """The acme-cloud fixture, built once per test run. Tests must not change it."""
+    target = tmp_path_factory.mktemp("fixture") / "acme-cloud"
+    build_fixture.build("acme-cloud", target)
+    return target
+
+
+@pytest.fixture(scope="session")
+def aws_repo(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """The acme-cloud-aws fixture, built once per test run. Tests must not change it."""
+    target = tmp_path_factory.mktemp("fixture") / "acme-cloud-aws"
+    build_fixture.build("acme-cloud-aws", target)
+    return target
+
+
+@pytest.fixture(scope="session")
+def solution_repo(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """The acme-solution fixture, built once per test run. Tests must not change it."""
+    target = tmp_path_factory.mktemp("fixture") / "acme-solution"
+    build_fixture.build("acme-solution", target)
+    return target
+
+
+@pytest.fixture(scope="session")
+def sales_repo(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """The acme-sales fixture, built once per test run. Tests must not change it."""
+    target = tmp_path_factory.mktemp("fixture") / "acme-sales"
+    build_fixture.build("acme-sales", target)
+    return target
+
+
+@pytest.fixture(scope="session")
+def churn_repo(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """The acme-churn fixture, built once per test run. Tests must not change it."""
+    target = tmp_path_factory.mktemp("fixture") / "acme-churn"
+    build_fixture.build("acme-churn", target)
+    return target
+
+
 def make_repo(path: Path, files: dict[str, str]) -> Path:
     """A small git repo with one commit, for tests that need their own layout."""
     path.mkdir(parents=True, exist_ok=True)

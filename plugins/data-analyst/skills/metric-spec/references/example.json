@@ -1,0 +1,500 @@
+{
+  "skill": "metric-spec",
+  "title": "Net revenue: one definition for finance and BI",
+  "subtitle": "Finance and the BI dashboard report different October 2026 net revenue. This page proposes one definition and measures what it would change.",
+  "meta": {
+    "repo": "acme-sales",
+    "commit": "fe28e88",
+    "date": "2026-11-10"
+  },
+  "verdict": {
+    "text": "Proposed for finance to decide: net revenue is `sum(net_amount)` of completed, non-staff orders, one row per `order_id`, in the calendar month of `order_date`, in EUR, without shipping. On the sample, October 2026 becomes **EUR 84,800.00**: EUR 590.00 (0.7%) below finance's EUR 85,390.00 and EUR 2,825.03 (3.2%) below the dashboard's EUR 87,625.03.",
+    "tone": "warn"
+  },
+  "stats": [
+    {
+      "label": "Definitions found",
+      "value": "6",
+      "note": "5 different October numbers"
+    },
+    {
+      "label": "Largest gap",
+      "value": "EUR 6,757.38",
+      "note": "7.9% of the finance number, revenue_by_region against revenue_by_line",
+      "tone": "bad"
+    },
+    {
+      "label": "Finance against BI",
+      "value": "EUR 2,235.03",
+      "note": "2.6% of the finance number",
+      "tone": "warn"
+    },
+    {
+      "label": "Proposed October",
+      "value": "EUR 84,800.00",
+      "note": "870 orders",
+      "tone": "info"
+    },
+    {
+      "label": "Rows in the sample",
+      "value": "1,807",
+      "note": "orders; 4,725 across 5 files"
+    }
+  ],
+  "sections": [
+    {
+      "id": "definition",
+      "title": "The definition",
+      "intro": "A proposal: the finance owner decides. Every field can be computed from `orders`.",
+      "blocks": [
+        {
+          "type": "kv",
+          "items": [
+            [
+              "Metric",
+              "Net revenue: what Acme earned on completed customer orders, before tax and shipping, in the month the order was placed."
+            ],
+            [
+              "Grain",
+              "One row per `order_id` in `orders`. The sample has no duplicates (1,807 rows, 1,807 ids). No test in `models/marts/schema.yml` enforces this, so a duplicate row would count twice."
+            ],
+            [
+              "Filters",
+              "In this order: (1) `status = 'completed'`, which leaves out `returned` and `cancelled`; (2) `channel <> 'staff'`. Either condition also drops a row whose column is empty; the sample has no empty `status` or `channel`."
+            ],
+            [
+              "Formula",
+              "`sum(net_amount)`"
+            ],
+            [
+              "Time window",
+              "Counted by `order_date`, in calendar months. `order_date` is the UTC day of `order_ts` on all 1,807 rows. **No rule says when a month closes**, so quote a number with its load date. The numbers here use rows loaded through 2026-11-04."
+            ],
+            [
+              "Currency",
+              "EUR, no conversion, no rate. `orders` has no currency column; the ledger is EUR on all 1,719 rows and equals `net_amount` rounded to whole euros on 1,710 of the 1,713 orders that link to it. No definition has a rule for another currency."
+            ],
+            [
+              "Owner",
+              "`finance-reporting@example.com`, the owner named on `mart_net_revenue` (`models/marts/schema.yml:7`). The README says finance owns `net_revenue`. Nobody has agreed to this definition yet."
+            ],
+            [
+              "Not included",
+              "Shipping fee (`shipping_fee`, EUR 676.20 on these October orders). Tax, per the mart's comment, with no tax column in the sample to check it [med]. Returned orders (EUR 2,292.26 placed in October). Cancelled orders (EUR 423.36). Staff orders (EUR 590.00). Nothing is deducted for `order_promotions`."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "where",
+      "title": "Where it is defined today",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Name",
+            "File:line",
+            "Formula",
+            "Filters",
+            "Date column",
+            "Owner",
+            "October on the sample (EUR)",
+            "Rows kept"
+          ],
+          "align": [
+            "left",
+            "left",
+            "left",
+            "left",
+            "left",
+            "left",
+            "right",
+            "right"
+          ],
+          "rows": [
+            [
+              "Finance mart",
+              "`models/marts/mart_net_revenue.sql:5`",
+              "`sum(net_amount)`",
+              "`status = 'completed'`",
+              "`order_date`",
+              "`finance-reporting@example.com`",
+              "85,390.00",
+              "878"
+            ],
+            [
+              "BI dashboard",
+              "`reports/dashboards/revenue_dashboard.sql:4`",
+              "`sum(net_amount + shipping_fee)`",
+              "`status in ('completed', 'returned')`, `channel <> 'staff'`",
+              "`shipped_date`",
+              "BI team (comment, line 1)",
+              "87,625.03",
+              "896"
+            ],
+            [
+              "October review, `sep_vs_oct`, October branch",
+              "`reports/october_review/sep_vs_oct.sql:7`",
+              "`sum(net_amount)`",
+              "`status = 'completed'`",
+              "`order_date`",
+              "not stated",
+              "85,390.00",
+              "878"
+            ],
+            [
+              "October review, `revenue_by_region`",
+              "`reports/october_review/revenue_by_region.sql:4`",
+              "`sum(net_amount)`",
+              "`status = 'completed'`, `region <> 'unknown'`",
+              "`order_date`",
+              "not stated",
+              "81,842.62",
+              "842"
+            ],
+            [
+              "October review, `revenue_by_line`",
+              "`reports/october_review/revenue_by_line.sql:4`",
+              "`sum(net_amount)` over a left join to `order_promotions`",
+              "`status = 'completed'`",
+              "`order_date`",
+              "not stated",
+              "88,600.00",
+              "918"
+            ],
+            [
+              "Finance ledger (no query in the repo)",
+              "`docs/questions/number-reconcile.md:4`",
+              "`sum(amount)`",
+              "`account = '4000-SALES'`",
+              "`posted_at`",
+              "finance [med]",
+              "83,884.00",
+              "862"
+            ]
+          ]
+        },
+        {
+          "type": "list",
+          "title": "What each one counts",
+          "items": [
+            "`revenue_by_line` repeats an order once per promotion. 40 completed October orders carry two promotions, which adds EUR 3,210.00. The October review's headline of EUR 88,600.00 comes from this query.",
+            "`revenue_by_region` drops 36 completed orders worth EUR 3,547.38: 6 with region `unknown` and 30 with an empty region, because `region <> 'unknown'` also drops empty values.",
+            "`sep_vs_oct` matches finance for October. Its September branch stops at 24 September (line 5), so its September figure is a partial month.",
+            "The ledger is in whole euros and posts in local time [med]. It also holds 4 orders posted twice and 2 rows with no matching order. Reconciling it is a separate question (`docs/questions/number-reconcile.md`), not done here."
+          ]
+        },
+        {
+          "type": "list",
+          "title": "When they last changed",
+          "items": [
+            "Finance mart: unchanged since it was created on 2026-08-11 (`259e85d`).",
+            "BI dashboard: created on 2026-09-02 (`ff00fad`) with `shipped_date`, returned orders and the shipping fee. Staff orders were left out on 2026-10-14 (`b29710c`). Neither commit gives a reason.",
+            "Nothing in the repo reads `mart_net_revenue`: the dashboard reads `staging.stg_orders` and the review reads `analytics.orders`, which is how the definitions drifted apart."
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "title": "Sources not seen",
+          "text": "The BI tool's own filters or calculated fields on top of this SQL, finance's close workbook, the board pack and the ERP itself. The sample has one `orders` extract, so it cannot show any difference between `analytics.orders` and `stg_orders`."
+        }
+      ]
+    },
+    {
+      "id": "differ",
+      "title": "How far they differ",
+      "blocks": [
+        {
+          "type": "chart",
+          "kind": "waterfall",
+          "title": "From the finance number to the BI number, October 2026",
+          "unit": "EUR",
+          "places": 2,
+          "items": [
+            {
+              "label": "Finance mart",
+              "value": 85390.0,
+              "total": true
+            },
+            {
+              "label": "Count by shipped_date",
+              "value": 152.79
+            },
+            {
+              "label": "Add returned orders",
+              "value": 2035.57
+            },
+            {
+              "label": "Leave out staff",
+              "value": -634.43
+            },
+            {
+              "label": "Add shipping fee",
+              "value": 681.1
+            },
+            {
+              "label": "BI dashboard",
+              "value": 87625.03,
+              "total": true
+            }
+          ],
+          "caption": "Each step is applied on top of the one before it."
+        },
+        {
+          "type": "table",
+          "title": "The walk, finance to BI",
+          "columns": [
+            "Step",
+            "Effect (EUR)",
+            "Number after (EUR)",
+            "Orders kept"
+          ],
+          "align": [
+            "left",
+            "right",
+            "right",
+            "right"
+          ],
+          "rows": [
+            [
+              "Start: finance mart",
+              null,
+              "85,390.00",
+              "878"
+            ],
+            [
+              "Date: `order_date` to `shipped_date`",
+              "+152.79",
+              "85,542.79",
+              "881"
+            ],
+            [
+              "Status: add `returned`",
+              "+2,035.57",
+              "87,578.36",
+              "904"
+            ],
+            [
+              "Channel: leave out `staff`",
+              "-634.43",
+              "86,943.93",
+              "896"
+            ],
+            [
+              "Value: add `shipping_fee`",
+              "+681.10",
+              "87,625.03",
+              "896"
+            ],
+            [
+              "End: BI dashboard",
+              "+2,235.03",
+              "87,625.03",
+              "896"
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "text": "**The steps add up to the whole gap**, in this order: date, status, channel, value. The order changes each step's share, not the total. Across the three orders I ran, the date step ranges from -143.43 to +152.79, returned orders from +2,035.57 to +2,292.26, staff from -590.00 to -634.43 and shipping from +676.20 to +681.10."
+        },
+        {
+          "type": "callout",
+          "tone": "warn",
+          "text": "**The small date step hides large movement.** Completed orders worth EUR 4,584.37 (50 orders) were placed in September and shipped in October, and EUR 4,431.58 (47 orders) were placed in October and shipped in November. Only the net shows on the chart, and nothing makes them cancel in another month."
+        },
+        {
+          "type": "table",
+          "title": "The proposal against each number",
+          "columns": [
+            "Definition",
+            "October (EUR)",
+            "Proposal minus this (EUR)",
+            "As a share of this"
+          ],
+          "align": [
+            "left",
+            "right",
+            "right",
+            "right"
+          ],
+          "rows": [
+            [
+              "Finance mart",
+              "85,390.00",
+              "-590.00",
+              "-0.7%"
+            ],
+            [
+              "BI dashboard",
+              "87,625.03",
+              "-2,825.03",
+              "-3.2%"
+            ],
+            [
+              "October review, `sep_vs_oct`",
+              "85,390.00",
+              "-590.00",
+              "-0.7%"
+            ],
+            [
+              "October review, `revenue_by_region`",
+              "81,842.62",
+              "+2,957.38",
+              "+3.6%"
+            ],
+            [
+              "October review, `revenue_by_line`",
+              "88,600.00",
+              "-3,800.00",
+              "-4.3%"
+            ],
+            [
+              "Finance ledger",
+              "83,884.00",
+              "+916.00",
+              "+1.1%"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "title": "Why this definition",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "The difference",
+            "The choice",
+            "The reason"
+          ],
+          "rows": [
+            [
+              "Date: `order_date` (finance) or `shipped_date` (BI)",
+              "`order_date`",
+              "The mart is what finance closes on (`models/marts/schema.yml:5`), and the ledger books the sale when the order is placed: 1,701 of 1,717 linked ledger rows carry the order's own date. [high]"
+            ],
+            [
+              "Status: `completed` only (finance) or with `returned` (BI)",
+              "`completed` only",
+              "None of the 51 returned orders in the sample is in the sales ledger, and a returned order keeps a positive `net_amount` with no reversing row, so counting one adds a sale that was given back. [high]"
+            ],
+            [
+              "Staff orders: in (finance) or out (BI)",
+              "Out, for finance to confirm",
+              "None of the 13 staff orders is in the sales ledger, where 1,713 of the 1,719 completed web and store orders are, and the mart gives no reason to keep them. This is the one choice that moves finance's own number, by EUR 590.00 in October. The extract holds only account `4000-SALES`, so staff orders may be booked elsewhere. [med]"
+            ],
+            [
+              "Shipping: `net_amount` (finance) or `net_amount + shipping_fee` (BI)",
+              "`net_amount` only",
+              "The mart's comment says without the shipping fee. On the 273 orders where the two differ in whole euros, the ledger matches `net_amount` and never the sum. [high]"
+            ],
+            [
+              "Grain: one row per order, or per order and promotion (`revenue_by_line`)",
+              "One row per `order_id`",
+              "An order is one sale; the join repeats the 40 orders that carry two promotions. [high]"
+            ],
+            [
+              "Region: all orders, or without `unknown` and empty regions (`revenue_by_region`)",
+              "All orders",
+              "Region does not decide whether a sale happened: all 36 dropped orders are in the ledger. A breakdown should show them as their own row so it adds up to the total. [high]"
+            ],
+            [
+              "Time zone: `order_date` is a UTC day, the ledger is in local time",
+              "`order_date` as stored, until finance decides",
+              "Every definition that uses `order_date` already gets this day, and nothing in the repo names a business time zone. On local days October would be EUR 84,686.80, which is EUR 113.20 lower. [med]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "title": "Open questions",
+      "blocks": [
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "**Finance reporting:** should staff orders stay out? The ledger leaves them out and the mart has counted them since 2026-08-11. If they stay in, the proposal equals finance's number, EUR 85,390.00 for October. The BI team can say why they left them out on 2026-10-14.",
+            "**Finance reporting:** when does a month close? 32 orders placed on 27 October, worth EUR 4,200.00, reached the warehouse on 4 November, so finance's logic gave EUR 81,190.00 on the 2 November run and EUR 85,390.00 afterwards. The repo has no cut-off rule.",
+            "**Finance reporting:** is a business day UTC or Central European local time, as the ledger posts? Local days bring in 4 orders from the evening of 30 September UTC and move out 5 from the evening of 31 October UTC, a net EUR -113.20 for October.",
+            "**Finance reporting:** should a return reduce the month of the sale or the month of the return? `status` holds only the current state, so a return after the close lowers a closed month. The sample has no return date to measure it.",
+            "**Finance reporting:** what does `net_amount` already exclude? The mart's comment says tax; nothing says whether promotions are already taken off. The definition takes `net_amount` as it is, as every existing definition does.",
+            "**BI team:** does the dashboard need a shipped-date number for operations? If so it is a different metric and needs its own name.",
+            "**Finance reporting and BI team:** `docs/questions/number-moved.md:3` calls EUR 81,190.00 the dashboard's figure for the 2 November run, but that is the finance logic on the rows loaded by then. `revenue_dashboard.sql` gives EUR 83,405.43 at that load. Which query produced it?"
+          ]
+        },
+        {
+          "type": "list",
+          "title": "Assumed for this page",
+          "items": [
+            "October means calendar October 2026, on the rows loaded through 2026-11-04.",
+            "The sample's `orders` stands in for `erp.orders`, `stg_orders` and `analytics.orders`, which the README describes as the same extract.",
+            "The ledger extract shows what finance books as sales, and it is the evidence for the status, staff, shipping and date choices.",
+            "The ledger's local time is Central European: it is exactly 2 hours after `order_ts` for orders through 24 October and 1 hour from 25 October, on every row posted at the moment of the order.",
+            "`net_amount` is in EUR, inferred from the ledger, because `orders` has no currency column.",
+            "`revenue_by_line` and the local-day figures were computed on derived tables outside the repo. Local days use `Europe/Belgrade` for the Central European zone. Every other number comes straight from `orders` and `ledger`."
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "net revenue of Acme Home Goods, October 2026, on the acme-sales sample",
+    "decisions": [
+      {
+        "title": "Date",
+        "chosen": "order_date, as a UTC day",
+        "because": "the mart is what finance closes on and the ledger books at the order"
+      },
+      {
+        "title": "Status",
+        "chosen": "completed only",
+        "because": "none of the 51 returned orders is in the sales ledger"
+      },
+      {
+        "title": "Staff orders",
+        "chosen": "out, for finance to confirm",
+        "because": "none of the 13 staff orders is in the sales ledger"
+      },
+      {
+        "title": "Shipping fee",
+        "chosen": "not included",
+        "because": "the mart's comment and the ledger amounts"
+      },
+      {
+        "title": "Grain",
+        "chosen": "one row per order_id",
+        "because": "an order is one sale"
+      },
+      {
+        "title": "Region",
+        "chosen": "no region filter",
+        "because": "region does not decide whether a sale happened"
+      }
+    ],
+    "assumptions": [
+      "October is calendar October 2026, on rows loaded through 2026-11-04",
+      "the sample orders file stands in for erp.orders, stg_orders and analytics.orders",
+      "the ledger extract shows what finance books as sales",
+      "the ledger's local time is Central European",
+      "net_amount is in EUR"
+    ],
+    "open": [
+      "Finance reporting: should staff orders stay out (EUR 590.00 in October)",
+      "Finance reporting: when does a month close (EUR 4,200.00 of October arrived on 4 November)",
+      "Finance reporting: UTC or local business day (EUR -113.20 for October)",
+      "Finance reporting: does a return reduce the month of sale or the month of return",
+      "Finance reporting: what net_amount already excludes",
+      "BI team: does the dashboard need a separate shipped-date metric",
+      "Finance reporting and BI team: which query produced EUR 81,190.00 for the 2 November run"
+    ]
+  }
+}

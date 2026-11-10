@@ -1,0 +1,2256 @@
+{
+ "skill": "cloud-map",
+ "title": "acme-cloud, mapped",
+ "subtitle": "What runs for Acme Tickets, what the internet can reach, and where code and deployment differ.",
+ "meta": {
+  "repo": "acme-cloud",
+  "commit": "a509e4e",
+  "date": "2026-11-10",
+  "export": "az-resource-list-2026-11-08.json"
+ },
+ "verdict": {
+  "text": "Acme Tickets is one Azure subscription in `westeurope`: a .NET portal on App Service, a queue worker on an internal Container Apps environment, one SQL database, and a reports part deployed with Bicep, plus a Redis cache only the deployment knows about. By the code the internet can reach the SQL server from any address through a rule named temporary, read the reports `exports` container without signing in, and call a reports API with no sign-in in the code, and the first two should not be open.",
+  "tone": "bad"
+ },
+ "stats": [
+  {
+   "label": "Resources",
+   "value": 39,
+   "note": "38 managed + 1 read-only DNS zone; Redis is extra, only in the export",
+   "tone": "info"
+  },
+  {
+   "label": "Public resources",
+   "value": 5,
+   "note": "by the code; Redis unknown",
+   "tone": "bad"
+  },
+  {
+   "label": "Stopped at a boundary",
+   "value": 6,
+   "note": "4 private resources, 2 private endpoints",
+   "tone": "ok"
+  },
+  {
+   "label": "Unresolved",
+   "value": 4,
+   "note": "all opened; only the storage name stays unproven",
+   "tone": "warn"
+  },
+  {
+   "label": "Drift",
+   "value": 2,
+   "note": "1 only in code, 1 only in the export; 19 not compared",
+   "tone": "warn"
+  }
+ ],
+ "sections": [
+  {
+   "id": "estate",
+   "title": "The estate",
+   "intro": "Click a box for its name, type, file and settings. Switch level to open the groups, the network, or everything. Flows and reach are in the controls above the drawing; the flows play at the Everything level, which also has the complete reach list, because lower levels fold boxes together.",
+   "blocks": [
+    {
+     "type": "nested",
+     "title": "Acme Tickets on Azure",
+     "levels": [
+      {
+       "id": "subscription",
+       "label": "Subscription",
+       "open": [
+        "sub"
+       ],
+       "note": "The resource groups in the one subscription."
+      },
+      {
+       "id": "groups",
+       "label": "Resource groups",
+       "open": [
+        "sub",
+        "rg_app",
+        "rg_data",
+        "rg_network",
+        "rg_reports",
+        "rg_dns",
+        "unplaced"
+       ],
+       "note": "What each resource group holds."
+      },
+      {
+       "id": "network",
+       "label": "Network",
+       "open": [
+        "sub",
+        "rg_app",
+        "rg_data",
+        "rg_network",
+        "rg_reports",
+        "rg_dns",
+        "unplaced",
+        "vnet",
+        "snet_app",
+        "snet_jobs",
+        "snet_data"
+       ],
+       "note": "The VNet and its subnets. A resource in a subnet is drawn there, even when its group is another one: its card names the group."
+      },
+      {
+       "id": "all",
+       "label": "Everything",
+       "open": [
+        "sub",
+        "rg_app",
+        "rg_data",
+        "rg_network",
+        "rg_reports",
+        "rg_dns",
+        "unplaced",
+        "vnet",
+        "snet_app",
+        "snet_jobs",
+        "snet_data",
+        "cae_jobs",
+        "nsg_jobs",
+        "sb_ns",
+        "sql",
+        "st_reports",
+        "cae_reports",
+        "dns_zone"
+       ],
+       "note": "Left out: three diagnostic settings, the blob service and the subnet-NSG association. They add nothing to the picture and are listed in the table below."
+      }
+     ],
+     "boxes": [
+      {
+       "id": "internet",
+       "label": "Internet",
+       "kind": "user",
+       "note": "Any address on the internet: where the reach walk starts."
+      },
+      {
+       "id": "sub",
+       "label": "Acme Tickets prod",
+       "kind": "ops",
+       "tech": "Azure subscription",
+       "note": "The one subscription of the estate [high].",
+       "details": [
+        [
+         "Name",
+         "The Acme Tickets production subscription"
+        ],
+        [
+         "Type",
+         "Subscription"
+        ],
+        [
+         "Where",
+         "infra/terraform/variables.tf:1"
+        ],
+        [
+         "Id",
+         "All zeros, both as the code default and in the export"
+        ],
+        [
+         "Bicep",
+         "`targetScope = 'subscription'` names no id (main.bicep:2); the export places its group here [high]"
+        ]
+       ]
+      },
+      {
+       "id": "rg_app",
+       "label": "rg-acme-tickets-prod-app",
+       "kind": "ops",
+       "parent": "sub",
+       "tech": "Resource group",
+       "details": [
+        [
+         "Name",
+         "rg-acme-tickets-prod-app"
+        ],
+        [
+         "Type",
+         "Microsoft.Resources/resourceGroups"
+        ],
+        [
+         "Where",
+         "infra/terraform/main.tf:3"
+        ],
+        [
+         "Location",
+         "westeurope"
+        ]
+       ]
+      },
+      {
+       "id": "rg_data",
+       "label": "rg-acme-tickets-prod-data",
+       "kind": "ops",
+       "parent": "sub",
+       "tech": "Resource group",
+       "details": [
+        [
+         "Name",
+         "rg-acme-tickets-prod-data"
+        ],
+        [
+         "Type",
+         "Microsoft.Resources/resourceGroups"
+        ],
+        [
+         "Where",
+         "infra/terraform/main.tf:9"
+        ],
+        [
+         "Location",
+         "westeurope"
+        ]
+       ]
+      },
+      {
+       "id": "rg_network",
+       "label": "rg-acme-tickets-prod-network",
+       "kind": "ops",
+       "parent": "sub",
+       "tech": "Resource group",
+       "details": [
+        [
+         "Name",
+         "rg-acme-tickets-prod-network"
+        ],
+        [
+         "Type",
+         "Microsoft.Resources/resourceGroups"
+        ],
+        [
+         "Where",
+         "infra/terraform/main.tf:15"
+        ],
+        [
+         "Location",
+         "westeurope"
+        ]
+       ]
+      },
+      {
+       "id": "rg_reports",
+       "label": "rg-acme-reports-prod",
+       "kind": "ops",
+       "parent": "sub",
+       "tech": "Resource group",
+       "note": "Owned by the analytics team, deployed with Bicep.",
+       "details": [
+        [
+         "Name",
+         "rg-acme-reports-prod"
+        ],
+        [
+         "Type",
+         "Microsoft.Resources/resourceGroups"
+        ],
+        [
+         "Where",
+         "infra/bicep/main.bicep:10"
+        ],
+        [
+         "Location",
+         "westeurope"
+        ]
+       ]
+      },
+      {
+       "id": "rg_dns",
+       "label": "rg-acme-shared-dns",
+       "kind": "ops",
+       "parent": "sub",
+       "tech": "Resource group",
+       "note": "Read by the code, not managed by it.",
+       "details": [
+        [
+         "Name",
+         "rg-acme-shared-dns"
+        ],
+        [
+         "Type",
+         "Resource group"
+        ],
+        [
+         "Where",
+         "infra/terraform/main.tf:29"
+        ],
+        [
+         "Managed by",
+         "Nothing in this repository: named in a data source only [high]"
+        ]
+       ]
+      },
+      {
+       "id": "vnet",
+       "label": "vnet-acme-tickets-prod",
+       "kind": "ops",
+       "parent": "rg_network",
+       "tech": "Virtual network",
+       "details": [
+        [
+         "Name",
+         "vnet-acme-tickets-prod"
+        ],
+        [
+         "Type",
+         "Microsoft.Network/virtualNetworks"
+        ],
+        [
+         "Where",
+         "infra/terraform/network.tf:1"
+        ],
+        [
+         "Address space",
+         "10.20.0.0/16 (network.tf:5)"
+        ],
+        [
+         "DNS",
+         "No custom DNS servers and no private DNS zone link in the code [high]"
+        ]
+       ]
+      },
+      {
+       "id": "snet_app",
+       "label": "snet-app",
+       "kind": "ops",
+       "parent": "vnet",
+       "tech": "Subnet, 10.20.1.0/24",
+       "details": [
+        [
+         "Name",
+         "snet-app"
+        ],
+        [
+         "Type",
+         "Microsoft.Network/virtualNetworks/subnets"
+        ],
+        [
+         "Where",
+         "infra/terraform/network.tf:9"
+        ],
+        [
+         "Delegation",
+         "Microsoft.Web/serverFarms (network.tf:19): only for the portal's outbound traffic"
+        ]
+       ]
+      },
+      {
+       "id": "snet_jobs",
+       "label": "snet-jobs",
+       "kind": "ops",
+       "parent": "vnet",
+       "tech": "Subnet, 10.20.2.0/23",
+       "details": [
+        [
+         "Name",
+         "snet-jobs"
+        ],
+        [
+         "Type",
+         "Microsoft.Network/virtualNetworks/subnets"
+        ],
+        [
+         "Where",
+         "infra/terraform/network.tf:24"
+        ],
+        [
+         "NSG",
+         "nsg-acme-tickets-prod-jobs (network.tf:68)"
+        ]
+       ]
+      },
+      {
+       "id": "snet_data",
+       "label": "snet-data",
+       "kind": "ops",
+       "parent": "vnet",
+       "tech": "Subnet, 10.20.4.0/24",
+       "details": [
+        [
+         "Name",
+         "snet-data"
+        ],
+        [
+         "Type",
+         "Microsoft.Network/virtualNetworks/subnets"
+        ],
+        [
+         "Where",
+         "infra/terraform/network.tf:31"
+        ],
+        [
+         "Holds",
+         "The two private endpoints"
+        ]
+       ]
+      },
+      {
+       "id": "portal",
+       "label": "Portal",
+       "kind": "service",
+       "parent": "snet_app",
+       "tech": "App Service, Linux, .NET 8",
+       "note": "The public web front; its inbound side is public.",
+       "details": [
+        [
+         "Name",
+         "app-acme-tickets-prod-portal"
+        ],
+        [
+         "Type",
+         "Microsoft.Web/sites"
+        ],
+        [
+         "Where",
+         "infra/terraform/app.tf:12"
+        ],
+        [
+         "Group",
+         "rg-acme-tickets-prod-app"
+        ],
+        [
+         "Exposure",
+         "Public: no private endpoint, no `public_network_access_enabled`, no access restrictions in the code (app.tf:12-38) [high]"
+        ],
+        [
+         "TLS",
+         "`https_only` true, minimum TLS 1.2 (app.tf:17, 21)"
+        ],
+        [
+         "VNet",
+         "`virtual_network_subnet_id` on snet-app (app.tf:18), outbound only [med]"
+        ],
+        [
+         "Identity",
+         "None: the resource has no `identity` block [high]"
+        ],
+        [
+         "Settings",
+         "`SQL_SERVER`, `TICKET_STORAGE`, `SERVICEBUS_NAMESPACE`, `KEY_VAULT_URL`, `ASPNETCORE_ENVIRONMENT`, and `SMTP_PASSWORD`, a literal value in the code (app.tf:34), against the README rule that secrets go in Key Vault [high]"
+        ]
+       ],
+       "flag": "warn"
+      },
+      {
+       "id": "plan",
+       "label": "App Service plan",
+       "kind": "service",
+       "parent": "rg_app",
+       "tech": "P1v3, 1 instance",
+       "details": [
+        [
+         "Name",
+         "plan-acme-tickets-prod"
+        ],
+        [
+         "Type",
+         "Microsoft.Web/serverfarms"
+        ],
+        [
+         "Where",
+         "infra/terraform/app.tf:1"
+        ],
+        [
+         "SKU",
+         "P1v3, Linux, 1 worker, not zone balanced (app.tf:5-8)"
+        ],
+        [
+         "Export",
+         "P1v3, capacity 1: matches"
+        ]
+       ]
+      },
+      {
+       "id": "cae_jobs",
+       "label": "Jobs environment",
+       "kind": "service",
+       "parent": "snet_jobs",
+       "tech": "Container Apps, internal",
+       "details": [
+        [
+         "Name",
+         "cae-acme-tickets-prod"
+        ],
+        [
+         "Type",
+         "Microsoft.App/managedEnvironments"
+        ],
+        [
+         "Where",
+         "infra/terraform/app.tf:40"
+        ],
+        [
+         "Group",
+         "rg-acme-tickets-prod-app"
+        ],
+        [
+         "Exposure",
+         "Internal: `internal_load_balancer_enabled` true (app.tf:46) [high]"
+        ],
+        [
+         "Subnet",
+         "`infrastructure_subnet_id` on snet-jobs (app.tf:45)"
+        ],
+        [
+         "Logs",
+         "To log-acme-tickets-prod (app.tf:44)"
+        ]
+       ]
+      },
+      {
+       "id": "worker",
+       "label": "Worker",
+       "kind": "service",
+       "parent": "cae_jobs",
+       "tech": "Container App",
+       "note": "Pulls from the queues; nothing calls it.",
+       "details": [
+        [
+         "Name",
+         "ca-acme-tickets-prod-worker"
+        ],
+        [
+         "Type",
+         "Microsoft.App/containerApps"
+        ],
+        [
+         "Where",
+         "infra/terraform/modules/worker/main.tf:30"
+        ],
+        [
+         "Group",
+         "rg-acme-tickets-prod-app"
+        ],
+        [
+         "Exposure",
+         "No ingress block, internal environment [high]"
+        ],
+        [
+         "Image",
+         "tickets-worker:1.8.2 from acrticketsprod.azurecr.io (app.tf:57)"
+        ],
+        [
+         "Replicas",
+         "1 to 4 (modules/worker/main.tf:43-44)"
+        ],
+        [
+         "Identity",
+         "System-assigned (modules/worker/main.tf:39); no role assignment in the code [high]"
+        ],
+        [
+         "Settings",
+         "`SERVICEBUS_NAMESPACE`"
+        ]
+       ]
+      },
+      {
+       "id": "pe_vault",
+       "label": "PE: vault",
+       "kind": "guard",
+       "parent": "snet_data",
+       "tech": "Private endpoint",
+       "details": [
+        [
+         "Name",
+         "pe-acme-tickets-prod-vault"
+        ],
+        [
+         "Type",
+         "Microsoft.Network/privateEndpoints"
+        ],
+        [
+         "Where",
+         "infra/terraform/data.tf:64"
+        ],
+        [
+         "Group",
+         "rg-acme-tickets-prod-network"
+        ],
+        [
+         "Connects",
+         "Key Vault, subresource `vault` (data.tf:72-73)"
+        ],
+        [
+         "DNS",
+         "No `private_dns_zone_group` and no private DNS zone in code or export [high]"
+        ]
+       ]
+      },
+      {
+       "id": "pe_tickets",
+       "label": "PE: ticket blobs",
+       "kind": "guard",
+       "parent": "snet_data",
+       "tech": "Private endpoint",
+       "details": [
+        [
+         "Name",
+         "pe-acme-tickets-prod-tickets"
+        ],
+        [
+         "Type",
+         "Microsoft.Network/privateEndpoints"
+        ],
+        [
+         "Where",
+         "infra/terraform/data.tf:78"
+        ],
+        [
+         "Group",
+         "rg-acme-tickets-prod-network"
+        ],
+        [
+         "Connects",
+         "Ticket storage, subresource `blob` (data.tf:86-87)"
+        ],
+        [
+         "DNS",
+         "No `private_dns_zone_group` and no private DNS zone in code or export [high]"
+        ]
+       ]
+      },
+      {
+       "id": "nsg_jobs",
+       "label": "NSG jobs",
+       "kind": "guard",
+       "parent": "rg_network",
+       "tech": "Network security group",
+       "details": [
+        [
+         "Name",
+         "nsg-acme-tickets-prod-jobs"
+        ],
+        [
+         "Type",
+         "Microsoft.Network/networkSecurityGroups"
+        ],
+        [
+         "Where",
+         "infra/terraform/network.tf:38"
+        ],
+        [
+         "Attached to",
+         "snet-jobs (network.tf:68)"
+        ],
+        [
+         "Other rule",
+         "`allow-https-from-lb`, 443 from AzureLoadBalancer (network.tf:43)"
+        ]
+       ]
+      },
+      {
+       "id": "nsg_ssh",
+       "label": "allow-ssh-admin",
+       "kind": "guard",
+       "parent": "nsg_jobs",
+       "tech": "NSG rule",
+       "note": "Port 22 open to any source; nothing in the code listens there.",
+       "details": [
+        [
+         "Name",
+         "allow-ssh-admin"
+        ],
+        [
+         "Type",
+         "Microsoft.Network/networkSecurityGroups/securityRules"
+        ],
+        [
+         "Where",
+         "infra/terraform/network.tf:55"
+        ],
+        [
+         "Rule",
+         "Inbound Allow, TCP 22, source `*` (network.tf:62-63) [high]"
+        ],
+        [
+         "Listener",
+         "None in code or export: an internal environment and no public IP [high]"
+        ]
+       ],
+       "flag": "warn"
+      },
+      {
+       "id": "sb_ns",
+       "label": "Service Bus",
+       "kind": "store",
+       "parent": "rg_app",
+       "tech": "Standard namespace",
+       "note": "Public endpoint; Entra ID sign-in only.",
+       "details": [
+        [
+         "Name",
+         "sb-acme-tickets-prod"
+        ],
+        [
+         "Type",
+         "Microsoft.ServiceBus/namespaces"
+        ],
+        [
+         "Where",
+         "infra/terraform/messaging.tf:1"
+        ],
+        [
+         "SKU",
+         "Standard (messaging.tf:5); private endpoints need Premium [high]"
+        ],
+        [
+         "Sign-in",
+         "`local_auth_enabled` false (messaging.tf:7): no SAS keys, Entra ID only"
+        ]
+       ]
+      },
+      {
+       "id": "q_emails",
+       "label": "ticket-emails",
+       "kind": "store",
+       "parent": "sb_ns",
+       "tech": "Queue",
+       "details": [
+        [
+         "Name",
+         "ticket-emails"
+        ],
+        [
+         "Type",
+         "Microsoft.ServiceBus/namespaces/queues"
+        ],
+        [
+         "Where",
+         "infra/terraform/messaging.tf:11"
+        ],
+        [
+         "Export",
+         "Queues are not listed, so not compared"
+        ]
+       ]
+      },
+      {
+       "id": "q_holds",
+       "label": "seat-holds",
+       "kind": "store",
+       "parent": "sb_ns",
+       "tech": "Queue",
+       "details": [
+        [
+         "Name",
+         "seat-holds"
+        ],
+        [
+         "Type",
+         "Microsoft.ServiceBus/namespaces/queues"
+        ],
+        [
+         "Where",
+         "infra/terraform/messaging.tf:11"
+        ],
+        [
+         "Export",
+         "Queues are not listed, so not compared"
+        ]
+       ]
+      },
+      {
+       "id": "log",
+       "label": "Log Analytics",
+       "kind": "ops",
+       "parent": "rg_app",
+       "tech": "PerGB2018, 30 days",
+       "note": "Diagnostic settings from the portal, vault and Service Bus end here; those three are left out of the drawing.",
+       "details": [
+        [
+         "Name",
+         "log-acme-tickets-prod"
+        ],
+        [
+         "Type",
+         "Microsoft.OperationalInsights/workspaces"
+        ],
+        [
+         "Where",
+         "infra/terraform/monitoring.tf:1"
+        ],
+        [
+         "Retention",
+         "30 days (monitoring.tf:6)"
+        ],
+        [
+         "Receives",
+         "Portal, vault and Service Bus diagnostics (monitoring.tf:19, 29, 39); the jobs environment's logs (app.tf:44)"
+        ]
+       ]
+      },
+      {
+       "id": "appi",
+       "label": "App Insights",
+       "kind": "ops",
+       "parent": "rg_app",
+       "tech": "Application Insights",
+       "note": "The portal has no setting that points at it.",
+       "details": [
+        [
+         "Name",
+         "appi-acme-tickets-prod-portal"
+        ],
+        [
+         "Type",
+         "Microsoft.Insights/components"
+        ],
+        [
+         "Where",
+         "infra/terraform/monitoring.tf:10"
+        ],
+        [
+         "Wiring",
+         "No connection string in the portal's settings (app.tf:28-35) [high]"
+        ]
+       ],
+       "flag": "warn"
+      },
+      {
+       "id": "sql",
+       "label": "SQL server",
+       "kind": "store",
+       "parent": "rg_data",
+       "tech": "Azure SQL",
+       "note": "Public endpoint; no private endpoint.",
+       "details": [
+        [
+         "Name",
+         "sql-acme-tickets-prod"
+        ],
+        [
+         "Type",
+         "Microsoft.Sql/servers"
+        ],
+        [
+         "Where",
+         "infra/terraform/data.tf:1"
+        ],
+        [
+         "TLS",
+         "Minimum 1.2 (data.tf:8)"
+        ],
+        [
+         "Sign-in",
+         "SQL login with a password from a variable (data.tf:6-7); no Entra-only setting [high]"
+        ]
+       ],
+       "flag": "warn"
+      },
+      {
+       "id": "db",
+       "label": "db-tickets",
+       "kind": "store",
+       "parent": "sql",
+       "tech": "GP_Gen5_2, 100 GB",
+       "details": [
+        [
+         "Name",
+         "db-tickets"
+        ],
+        [
+         "Type",
+         "Microsoft.Sql/servers/databases"
+        ],
+        [
+         "Where",
+         "infra/terraform/data.tf:12"
+        ],
+        [
+         "SKU",
+         "GP_Gen5_2, 100 GB, not zone redundant (data.tf:15-17)"
+        ],
+        [
+         "Export",
+         "GP_Gen5_2: matches"
+        ]
+       ]
+      },
+      {
+       "id": "fw_all",
+       "label": "allow-all-temporary",
+       "kind": "guard",
+       "parent": "sql",
+       "tech": "Firewall rule",
+       "note": "Opens the server to every address.",
+       "details": [
+        [
+         "Name",
+         "allow-all-temporary"
+        ],
+        [
+         "Type",
+         "Microsoft.Sql/servers/firewallRules"
+        ],
+        [
+         "Where",
+         "infra/terraform/data.tf:21"
+        ],
+        [
+         "Range",
+         "0.0.0.0 to 255.255.255.255 (data.tf:24-25) [high]"
+        ],
+        [
+         "History",
+         "Added 2026-07-14 in commit 9aac734, \"Open the database for the load test\""
+        ],
+        [
+         "Export",
+         "Firewall rules are not listed, so the deployed state is not confirmed"
+        ]
+       ],
+       "flag": "bad"
+      },
+      {
+       "id": "st_tickets",
+       "label": "Ticket files",
+       "kind": "store",
+       "parent": "rg_data",
+       "tech": "Storage, ZRS",
+       "details": [
+        [
+         "Name",
+         "stacmetickets + 6-character suffix (export candidate: stacmeticketsqx7k2p [med])"
+        ],
+        [
+         "Type",
+         "Microsoft.Storage/storageAccounts"
+        ],
+        [
+         "Where",
+         "infra/terraform/data.tf:28"
+        ],
+        [
+         "Exposure",
+         "Public network access off (data.tf:35), no anonymous access (data.tf:36) [high]"
+        ],
+        [
+         "Replication",
+         "ZRS (data.tf:33); the export candidate is Standard_ZRS"
+        ]
+       ]
+      },
+      {
+       "id": "st_backups",
+       "label": "Backups",
+       "kind": "store",
+       "parent": "rg_data",
+       "tech": "Storage, GRS",
+       "note": "In the code, not in the export.",
+       "details": [
+        [
+         "Name",
+         "stacmebackupsprod"
+        ],
+        [
+         "Type",
+         "Microsoft.Storage/storageAccounts"
+        ],
+        [
+         "Where",
+         "infra/terraform/data.tf:40"
+        ],
+        [
+         "Exposure",
+         "Public network access off (data.tf:47) [high]"
+        ],
+        [
+         "Export",
+         "No row: only in code"
+        ]
+       ],
+       "flag": "warn"
+      },
+      {
+       "id": "kv",
+       "label": "Key Vault",
+       "kind": "store",
+       "parent": "rg_data",
+       "tech": "Standard, RBAC",
+       "details": [
+        [
+         "Name",
+         "kv-acme-tickets-prod"
+        ],
+        [
+         "Type",
+         "Microsoft.KeyVault/vaults"
+        ],
+        [
+         "Where",
+         "infra/terraform/data.tf:52"
+        ],
+        [
+         "Exposure",
+         "Public network access off (data.tf:60) [high]"
+        ],
+        [
+         "Access",
+         "RBAC (data.tf:59); no role assignment in the code [high]"
+        ],
+        [
+         "Purge protection",
+         "On (data.tf:58)"
+        ]
+       ]
+      },
+      {
+       "id": "redis",
+       "label": "Redis sessions",
+       "kind": "store",
+       "parent": "rg_data",
+       "tech": "Azure Cache, Standard C1",
+       "note": "Only in the export.",
+       "details": [
+        [
+         "Name",
+         "redis-acme-sessions-prod"
+        ],
+        [
+         "Type",
+         "Microsoft.Cache/Redis"
+        ],
+        [
+         "Where",
+         "Export row only, exports/az-resource-list-2026-11-08.json:237"
+        ],
+        [
+         "SKU",
+         "Standard, family C, capacity 1 (export)"
+        ],
+        [
+         "Exposure",
+         "Not readable from this export. Redis has a public endpoint unless it is closed [guess]"
+        ],
+        [
+         "Used by",
+         "Unknown: no setting in the code names it"
+        ]
+       ],
+       "flag": "warn"
+      },
+      {
+       "id": "st_reports",
+       "label": "Report storage",
+       "kind": "store",
+       "parent": "rg_reports",
+       "tech": "Storage, LRS",
+       "note": "Public endpoint, no network rules, anonymous reads allowed.",
+       "details": [
+        [
+         "Name",
+         "stacmereportsprod"
+        ],
+        [
+         "Type",
+         "Microsoft.Storage/storageAccounts"
+        ],
+        [
+         "Where",
+         "infra/bicep/modules/reports.bicep:5"
+        ],
+        [
+         "Anonymous",
+         "`allowBlobPublicAccess: true` (reports.bicep:13) [high]"
+        ],
+        [
+         "Network",
+         "No network rules in the code: open to every network [med]"
+        ],
+        [
+         "TLS",
+         "Minimum 1.2, HTTPS only (reports.bicep:14-15)"
+        ],
+        [
+         "Export",
+         "Standard_LRS: matches"
+        ]
+       ],
+       "flag": "bad"
+      },
+      {
+       "id": "c_exports",
+       "label": "exports",
+       "kind": "store",
+       "parent": "st_reports",
+       "tech": "Blob container",
+       "note": "Any blob can be read without signing in.",
+       "details": [
+        [
+         "Name",
+         "exports"
+        ],
+        [
+         "Type",
+         "Microsoft.Storage/storageAccounts/blobServices/containers"
+        ],
+        [
+         "Where",
+         "infra/bicep/modules/reports.bicep:24"
+        ],
+        [
+         "Access",
+         "`publicAccess: 'Blob'` (reports.bicep:28) [high]"
+        ],
+        [
+         "Export",
+         "Containers are not listed, so not compared"
+        ]
+       ],
+       "flag": "bad"
+      },
+      {
+       "id": "cae_reports",
+       "label": "Reports env",
+       "kind": "service",
+       "parent": "rg_reports",
+       "tech": "Container Apps, no VNet",
+       "details": [
+        [
+         "Name",
+         "cae-acme-reports-prod"
+        ],
+        [
+         "Type",
+         "Microsoft.App/managedEnvironments"
+        ],
+        [
+         "Where",
+         "infra/bicep/modules/reports.bicep:32"
+        ],
+        [
+         "Network",
+         "No VNet configuration (reports.bicep:32-38) [high]"
+        ],
+        [
+         "Zones",
+         "`zoneRedundant: false` (reports.bicep:36)"
+        ]
+       ]
+      },
+      {
+       "id": "reports_api",
+       "label": "Reports API",
+       "kind": "service",
+       "parent": "cae_reports",
+       "tech": "Container App",
+       "note": "External ingress, no sign-in in the code.",
+       "details": [
+        [
+         "Name",
+         "ca-acme-reports-prod"
+        ],
+        [
+         "Type",
+         "Microsoft.App/containerApps"
+        ],
+        [
+         "Where",
+         "infra/bicep/modules/reports.bicep:40"
+        ],
+        [
+         "Exposure",
+         "`external: true`, port 8080 (reports.bicep:50-51) [high]"
+        ],
+        [
+         "Sign-in",
+         "None in the Bicep; what the app does itself is not in this repo [med]"
+        ],
+        [
+         "Image",
+         "reports-api:latest from acrticketsprod.azurecr.io (reports.bicep:58)"
+        ],
+        [
+         "Identity",
+         "System-assigned (reports.bicep:44); no role assignment in the code [high]"
+        ],
+        [
+         "Settings",
+         "`REPORTS_STORAGE`, the account name (reports.bicep:65-66)"
+        ],
+        [
+         "Replicas",
+         "1 to 2 (reports.bicep:72-73)"
+        ]
+       ],
+       "flag": "warn"
+      },
+      {
+       "id": "dns_zone",
+       "label": "tickets.example.com",
+       "kind": "ops",
+       "parent": "rg_dns",
+       "tech": "Public DNS zone",
+       "details": [
+        [
+         "Name",
+         "tickets.example.com"
+        ],
+        [
+         "Type",
+         "Microsoft.Network/dnsZones"
+        ],
+        [
+         "Where",
+         "infra/terraform/main.tf:27"
+        ],
+        [
+         "Managed by",
+         "Read through a data source; the zone itself is outside this code"
+        ]
+       ]
+      },
+      {
+       "id": "dns_www",
+       "label": "www CNAME",
+       "kind": "ops",
+       "parent": "dns_zone",
+       "tech": "DNS record, TTL 300",
+       "details": [
+        [
+         "Name",
+         "www"
+        ],
+        [
+         "Type",
+         "azurerm_dns_cname_record"
+        ],
+        [
+         "Where",
+         "infra/terraform/main.tf:32"
+        ],
+        [
+         "Points at",
+         "The portal's default hostname (main.tf:37) [high]"
+        ],
+        [
+         "Export",
+         "Record sets are not listed, so not compared"
+        ],
+        [
+         "Binding",
+         "No custom hostname binding on the portal in the code [high]"
+        ]
+       ]
+      },
+      {
+       "id": "unplaced",
+       "label": "Not placed by the code",
+       "kind": "ops",
+       "note": "No resource group in the code, or no resource in the code at all."
+      },
+      {
+       "id": "ag",
+       "label": "Alert group",
+       "kind": "ops",
+       "parent": "unplaced",
+       "tech": "Action group",
+       "note": "No alert rule uses it.",
+       "details": [
+        [
+         "Name",
+         "ag-acme-tickets-prod"
+        ],
+        [
+         "Type",
+         "Microsoft.Insights/actionGroups"
+        ],
+        [
+         "Where",
+         "infra/arm/alerts.json:11"
+        ],
+        [
+         "Group",
+         "The template names none; the export has it in rg-acme-tickets-prod-app [high]"
+        ],
+        [
+         "Receivers",
+         "One email address (alerts.json:19-24)"
+        ]
+       ],
+       "flag": "warn"
+      },
+      {
+       "id": "acr",
+       "label": "Registry",
+       "kind": "system",
+       "parent": "unplaced",
+       "tech": "Container registry [guess]",
+       "note": "Named in code, not declared.",
+       "details": [
+        [
+         "Name",
+         "acrticketsprod.azurecr.io"
+        ],
+        [
+         "Type",
+         "Container registry [guess]"
+        ],
+        [
+         "Where",
+         "infra/terraform/variables.tf:31 and infra/bicep/modules/reports.bicep:58"
+        ],
+        [
+         "Pull",
+         "Neither container app has a `registry` block [high]; how images are pulled is unknown"
+        ]
+       ],
+       "flag": "warn"
+      }
+     ],
+     "links": [
+      {
+       "from": "internet",
+       "to": "dns_www",
+       "label": "lookup"
+      },
+      {
+       "from": "dns_www",
+       "to": "portal",
+       "label": "CNAME"
+      },
+      {
+       "from": "internet",
+       "to": "portal",
+       "label": "HTTPS"
+      },
+      {
+       "from": "internet",
+       "to": "fw_all",
+       "label": "any address",
+       "flag": "bad"
+      },
+      {
+       "from": "fw_all",
+       "to": "db",
+       "label": "admits"
+      },
+      {
+       "from": "portal",
+       "to": "plan",
+       "label": "runs on"
+      },
+      {
+       "from": "portal",
+       "to": "fw_all",
+       "label": "SQL_SERVER"
+      },
+      {
+       "from": "portal",
+       "to": "pe_tickets",
+       "label": "TICKET_STORAGE"
+      },
+      {
+       "from": "pe_tickets",
+       "to": "st_tickets",
+       "label": "blob"
+      },
+      {
+       "from": "portal",
+       "to": "pe_vault",
+       "label": "KEY_VAULT_URL"
+      },
+      {
+       "from": "pe_vault",
+       "to": "kv",
+       "label": "vault"
+      },
+      {
+       "from": "portal",
+       "to": "sb_ns",
+       "label": "namespace set"
+      },
+      {
+       "from": "worker",
+       "to": "sb_ns",
+       "label": "namespace set"
+      },
+      {
+       "from": "internet",
+       "to": "sb_ns",
+       "label": "Entra only"
+      },
+      {
+       "from": "internet",
+       "to": "reports_api",
+       "label": "ingress 8080"
+      },
+      {
+       "from": "reports_api",
+       "to": "st_reports",
+       "label": "REPORTS_STORAGE"
+      },
+      {
+       "from": "internet",
+       "to": "st_reports",
+       "label": "anonymous read",
+       "flag": "bad"
+      },
+      {
+       "from": "worker",
+       "to": "acr",
+       "label": "image [guess]"
+      },
+      {
+       "from": "reports_api",
+       "to": "acr",
+       "label": "image [guess]"
+      }
+     ],
+     "flows": [
+      {
+       "id": "sale",
+       "title": "A customer buys a ticket: portal to the database",
+       "variants": [
+        "all"
+       ],
+       "steps": [
+        {
+         "from": "internet",
+         "to": "dns_www",
+         "text": "The browser looks up `www.tickets.example.com`. The CNAME points at the portal's default hostname (`record`, main.tf:37) [high]. The code binds no custom hostname to the app, so this name may not serve the portal [med]."
+        },
+        {
+         "from": "internet",
+         "to": "portal",
+         "text": "HTTPS only, TLS 1.2 minimum (`https_only`, app.tf:17; `minimum_tls_version`, app.tf:21) [high]. Nothing stands in front of it: no WAF and no access restrictions in the code."
+        },
+        {
+         "from": "portal",
+         "to": "fw_all",
+         "text": "`SQL_SERVER` gives the server name (app.tf:30). The code has no SQL private endpoint and no VNet rule, so the connection goes to the public endpoint [high]. The only rule in the code that admits it is `allow-all-temporary` (data.tf:21)."
+        },
+        {
+         "from": "fw_all",
+         "to": "db",
+         "text": "`db-tickets`, `GP_Gen5_2`, 100 GB, not zone redundant (data.tf:12-18) [high]. That the portal queries this database is inferred from the setting: the application code is not here [med]. How it signs in is unknown: no identity and no connection string in the code."
+        }
+       ]
+      },
+      {
+       "id": "ticket-file",
+       "title": "The portal stores a ticket file in the private account",
+       "variants": [
+        "all"
+       ],
+       "steps": [
+        {
+         "from": "portal",
+         "to": "pe_tickets",
+         "text": "`TICKET_STORAGE` is the blob endpoint (app.tf:31). VNet integration on `snet-app` (`virtual_network_subnet_id`, app.tf:18) gives the portal a way to the private endpoint in `snet-data` (data.tf:78) [high]. **Gap:** neither the code nor the export has a private DNS zone, so the blob name resolves to the public address [med], where public access is off."
+        },
+        {
+         "from": "pe_tickets",
+         "to": "st_tickets",
+         "text": "The private endpoint for `blob` (data.tf:87) leads into the account. `public_network_access_enabled = false` (data.tf:35) and no anonymous access (data.tf:36) [high]. With the DNS gap above this path may not work at all [med]. The Key Vault has the same private-endpoint shape and the same gap (data.tf:64)."
+        }
+       ]
+      },
+      {
+       "id": "background",
+       "title": "Queued work: emails and seat holds",
+       "variants": [
+        "all"
+       ],
+       "steps": [
+        {
+         "from": "portal",
+         "to": "sb_ns",
+         "text": "`SERVICEBUS_NAMESPACE` (app.tf:32) names the namespace; the queues are `ticket-emails` and `seat-holds` (messaging.tf:12) [high]. Which queue it writes to is not stated. **Gap:** `local_auth_enabled = false` (messaging.tf:7) allows Entra ID only, and the portal has no identity, so the code gives it no way to sign in [med]."
+        },
+        {
+         "from": "worker",
+         "to": "sb_ns",
+         "text": "The worker gets the same namespace (`SERVICEBUS_NAMESPACE`, modules/worker/main.tf:53) and a system-assigned identity (main.tf:39) [high]. It pulls outward, so nothing calls it: no ingress and an internal environment (app.tf:46) [high]. **Gap:** no role assignment in the code; `principal_id` is output and never used (modules/worker/main.tf:60) [high]."
+        }
+       ]
+      },
+      {
+       "id": "report",
+       "title": "A partner fetches a report",
+       "variants": [
+        "all"
+       ],
+       "steps": [
+        {
+         "from": "internet",
+         "to": "reports_api",
+         "text": "`external: true`, target port 8080 (reports.bicep:50-51) [high]. No sign-in in the Bicep and no VNet on the environment (reports.bicep:32-38) [med]."
+        },
+        {
+         "from": "reports_api",
+         "to": "st_reports",
+         "text": "`REPORTS_STORAGE` holds the account name (reports.bicep:65-66) [high]. That the API reads the `exports` container is inferred from the file's first comment (reports.bicep:1) [med]. No role assignment in the code, so how it signs in is unknown."
+        },
+        {
+         "from": "internet",
+         "to": "st_reports",
+         "text": "The same files can be fetched directly, without the API: `allowBlobPublicAccess: true` (reports.bicep:13) and `publicAccess: 'Blob'` on `exports` (reports.bicep:28) allow anonymous reads of any blob whose URL is known [high]."
+        }
+       ]
+      }
+     ],
+     "reach": {
+      "label": "Internet",
+      "from": [
+       "internet"
+      ],
+      "stops": [
+       "pe_tickets",
+       "pe_vault",
+       "st_tickets",
+       "st_backups",
+       "kv",
+       "worker",
+       "vnet"
+      ],
+      "targets": [
+       "portal",
+       "db",
+       "sql",
+       "sb_ns",
+       "st_reports",
+       "reports_api",
+       "cae_reports",
+       "st_tickets",
+       "st_backups",
+       "kv",
+       "worker"
+      ]
+     }
+    },
+    {
+     "type": "callout",
+     "tone": "warn",
+     "text": "Links are read from settings and attributes, not from traffic: the application code is not in this repository. The links to the registry are [guess]."
+    }
+   ]
+  },
+  {
+   "id": "inventory",
+   "title": "What is there",
+   "intro": "39 rows from the code and the Redis cache from the export. The two queues are one block in the code, so one row.",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Name",
+      "Type",
+      "Category",
+      "Placed in",
+      "File"
+     ],
+     "rows": [
+      [
+       "ag-acme-tickets-prod",
+       "Microsoft.Insights/actionGroups",
+       "monitoring",
+       "Not placed by the code; export: rg-acme-tickets-prod-app",
+       "infra/arm/alerts.json:11"
+      ],
+      [
+       "to-log-analytics",
+       "Microsoft.Insights/diagnosticSettings",
+       "monitoring",
+       "On its target resource",
+       "infra/terraform/monitoring.tf:19"
+      ],
+      [
+       "to-log-analytics",
+       "Microsoft.Insights/diagnosticSettings",
+       "monitoring",
+       "On its target resource",
+       "infra/terraform/monitoring.tf:29"
+      ],
+      [
+       "to-log-analytics",
+       "Microsoft.Insights/diagnosticSettings",
+       "monitoring",
+       "On its target resource",
+       "infra/terraform/monitoring.tf:39"
+      ],
+      [
+       "rg-acme-reports-prod",
+       "Microsoft.Resources/resourceGroups",
+       "scope",
+       "Subscription",
+       "infra/bicep/main.bicep:10"
+      ],
+      [
+       "rg-acme-tickets-prod-app",
+       "Microsoft.Resources/resourceGroups",
+       "scope",
+       "Subscription",
+       "infra/terraform/main.tf:3"
+      ],
+      [
+       "rg-acme-tickets-prod-data",
+       "Microsoft.Resources/resourceGroups",
+       "scope",
+       "Subscription",
+       "infra/terraform/main.tf:9"
+      ],
+      [
+       "rg-acme-tickets-prod-network",
+       "Microsoft.Resources/resourceGroups",
+       "scope",
+       "Subscription",
+       "infra/terraform/main.tf:15"
+      ],
+      [
+       "ca-acme-reports-prod",
+       "Microsoft.App/containerApps",
+       "compute",
+       "rg-acme-reports-prod",
+       "infra/bicep/modules/reports.bicep:40"
+      ],
+      [
+       "cae-acme-reports-prod",
+       "Microsoft.App/managedEnvironments",
+       "compute",
+       "rg-acme-reports-prod",
+       "infra/bicep/modules/reports.bicep:32"
+      ],
+      [
+       "default",
+       "Microsoft.Storage/storageAccounts/blobServices",
+       "storage",
+       "rg-acme-reports-prod",
+       "infra/bicep/modules/reports.bicep:19"
+      ],
+      [
+       "exports",
+       "Microsoft.Storage/storageAccounts/blobServices/containers",
+       "storage",
+       "rg-acme-reports-prod",
+       "infra/bicep/modules/reports.bicep:24"
+      ],
+      [
+       "stacmereportsprod",
+       "Microsoft.Storage/storageAccounts",
+       "storage",
+       "rg-acme-reports-prod",
+       "infra/bicep/modules/reports.bicep:5"
+      ],
+      [
+       "tickets.example.com",
+       "Microsoft.Network/dnsZones",
+       "network",
+       "rg-acme-shared-dns",
+       "infra/terraform/main.tf:27"
+      ],
+      [
+       "www",
+       "azurerm_dns_cname_record",
+       "other",
+       "rg-acme-shared-dns / tickets.example.com",
+       "infra/terraform/main.tf:32"
+      ],
+      [
+       "plan-acme-tickets-prod",
+       "Microsoft.Web/serverfarms",
+       "compute",
+       "rg-acme-tickets-prod-app",
+       "infra/terraform/app.tf:1"
+      ],
+      [
+       "sb-acme-tickets-prod",
+       "Microsoft.ServiceBus/namespaces",
+       "messaging",
+       "rg-acme-tickets-prod-app",
+       "infra/terraform/messaging.tf:1"
+      ],
+      [
+       "ticket-emails, seat-holds (one block, 2 queues)",
+       "Microsoft.ServiceBus/namespaces/queues",
+       "messaging",
+       "rg-acme-tickets-prod-app",
+       "infra/terraform/messaging.tf:11"
+      ],
+      [
+       "appi-acme-tickets-prod-portal",
+       "Microsoft.Insights/components",
+       "monitoring",
+       "rg-acme-tickets-prod-app",
+       "infra/terraform/monitoring.tf:10"
+      ],
+      [
+       "log-acme-tickets-prod",
+       "Microsoft.OperationalInsights/workspaces",
+       "monitoring",
+       "rg-acme-tickets-prod-app",
+       "infra/terraform/monitoring.tf:1"
+      ],
+      [
+       "db-tickets",
+       "Microsoft.Sql/servers/databases",
+       "database",
+       "rg-acme-tickets-prod-data",
+       "infra/terraform/data.tf:12"
+      ],
+      [
+       "sql-acme-tickets-prod",
+       "Microsoft.Sql/servers",
+       "database",
+       "rg-acme-tickets-prod-data",
+       "infra/terraform/data.tf:1"
+      ],
+      [
+       "allow-all-temporary",
+       "Microsoft.Sql/servers/firewallRules",
+       "network",
+       "rg-acme-tickets-prod-data",
+       "infra/terraform/data.tf:21"
+      ],
+      [
+       "kv-acme-tickets-prod",
+       "Microsoft.KeyVault/vaults",
+       "secrets",
+       "rg-acme-tickets-prod-data",
+       "infra/terraform/data.tf:52"
+      ],
+      [
+       "stacmebackupsprod (only in code)",
+       "Microsoft.Storage/storageAccounts",
+       "storage",
+       "rg-acme-tickets-prod-data",
+       "infra/terraform/data.tf:40"
+      ],
+      [
+       "stacmetickets + suffix (export: stacmeticketsqx7k2p [med])",
+       "Microsoft.Storage/storageAccounts",
+       "storage",
+       "rg-acme-tickets-prod-data",
+       "infra/terraform/data.tf:28"
+      ],
+      [
+       "allow-https-from-lb",
+       "Microsoft.Network/networkSecurityGroups/securityRules",
+       "network",
+       "rg-acme-tickets-prod-network",
+       "infra/terraform/network.tf:43"
+      ],
+      [
+       "allow-ssh-admin",
+       "Microsoft.Network/networkSecurityGroups/securityRules",
+       "network",
+       "rg-acme-tickets-prod-network",
+       "infra/terraform/network.tf:55"
+      ],
+      [
+       "nsg-acme-tickets-prod-jobs",
+       "Microsoft.Network/networkSecurityGroups",
+       "network",
+       "rg-acme-tickets-prod-network",
+       "infra/terraform/network.tf:38"
+      ],
+      [
+       "vnet-acme-tickets-prod",
+       "Microsoft.Network/virtualNetworks",
+       "network",
+       "rg-acme-tickets-prod-network",
+       "infra/terraform/network.tf:1"
+      ],
+      [
+       "app-acme-tickets-prod-portal",
+       "Microsoft.Web/sites",
+       "compute",
+       "snet-app in vnet-acme-tickets-prod (group rg-acme-tickets-prod-app)",
+       "infra/terraform/app.tf:12"
+      ],
+      [
+       "pe-acme-tickets-prod-tickets",
+       "Microsoft.Network/privateEndpoints",
+       "network",
+       "snet-data in vnet-acme-tickets-prod (group rg-acme-tickets-prod-network)",
+       "infra/terraform/data.tf:78"
+      ],
+      [
+       "pe-acme-tickets-prod-vault",
+       "Microsoft.Network/privateEndpoints",
+       "network",
+       "snet-data in vnet-acme-tickets-prod (group rg-acme-tickets-prod-network)",
+       "infra/terraform/data.tf:64"
+      ],
+      [
+       "ca-acme-tickets-prod-worker",
+       "Microsoft.App/containerApps",
+       "compute",
+       "snet-jobs in vnet-acme-tickets-prod (group rg-acme-tickets-prod-app)",
+       "infra/terraform/modules/worker/main.tf:30"
+      ],
+      [
+       "cae-acme-tickets-prod",
+       "Microsoft.App/managedEnvironments",
+       "compute",
+       "snet-jobs in vnet-acme-tickets-prod (group rg-acme-tickets-prod-app)",
+       "infra/terraform/app.tf:40"
+      ],
+      [
+       "snet-jobs to nsg-acme-tickets-prod-jobs",
+       "Microsoft.Network/virtualNetworks/subnets/networkSecurityGroupAssociation",
+       "network",
+       "snet-jobs in vnet-acme-tickets-prod (group rg-acme-tickets-prod-network)",
+       "infra/terraform/network.tf:68"
+      ],
+      [
+       "snet-app",
+       "Microsoft.Network/virtualNetworks/subnets",
+       "network",
+       "vnet-acme-tickets-prod (group rg-acme-tickets-prod-network)",
+       "infra/terraform/network.tf:9"
+      ],
+      [
+       "snet-data",
+       "Microsoft.Network/virtualNetworks/subnets",
+       "network",
+       "vnet-acme-tickets-prod (group rg-acme-tickets-prod-network)",
+       "infra/terraform/network.tf:31"
+      ],
+      [
+       "snet-jobs",
+       "Microsoft.Network/virtualNetworks/subnets",
+       "network",
+       "vnet-acme-tickets-prod (group rg-acme-tickets-prod-network)",
+       "infra/terraform/network.tf:24"
+      ],
+      [
+       "redis-acme-sessions-prod (only in the export)",
+       "Microsoft.Cache/Redis",
+       "database",
+       "rg-acme-tickets-prod-data",
+       "exports/az-resource-list-2026-11-08.json:237"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "internet",
+   "title": "What the internet can reach",
+   "intro": "Public means any address on the internet can get to it, signed in or not. All of this is from the code; the export has no network settings.",
+   "blocks": [
+    {
+     "type": "table",
+     "title": "Reachable, or unknown",
+     "columns": [
+      "Resource",
+      "How",
+      "What stops it"
+     ],
+     "rows": [
+      [
+       "`db-tickets` on `sql-acme-tickets-prod`",
+       "Public endpoint and rule `allow-all-temporary`, 0.0.0.0 to 255.255.255.255 (data.tf:21-26). Added for a load test on 2026-07-14 (commit 9aac734). No private endpoint and no VNet rule [high].",
+       "A SQL login only. The export does not list firewall rules, so the deployed state is not confirmed."
+      ],
+      [
+       "`exports` container on `stacmereportsprod`",
+       "Anonymous read of any blob whose URL is known: `allowBlobPublicAccess: true` and `publicAccess: 'Blob'` (reports.bicep:13, 28). No network rules on the account [high].",
+       "Nothing."
+      ],
+      [
+       "`ca-acme-reports-prod`",
+       "External ingress on 8080 (reports.bicep:50-51); the environment has no VNet (reports.bicep:32-38) [high].",
+       "No sign-in in the Bicep. What the application does itself is not in this repository [med]."
+      ],
+      [
+       "`app-acme-tickets-prod-portal`",
+       "Any address over HTTPS: no access restrictions, no private endpoint (app.tf:12-38) [high]. The public front, by design.",
+       "TLS 1.2 and HTTPS only. No WAF and no access restrictions."
+      ],
+      [
+       "`sb-acme-tickets-prod`",
+       "Public endpoint: the Standard tier cannot have a private endpoint (messaging.tf:5) [high].",
+       "Entra ID sign-in only: `local_auth_enabled = false` (messaging.tf:7) [high]."
+      ],
+      [
+       "`redis-acme-sessions-prod`",
+       "Not known. The export holds no network settings; Redis has a public endpoint unless it is closed [guess]. Not counted in the 5 public resources and not linked in the drawing, so the reach view leaves it out.",
+       "Unknown."
+      ],
+      [
+       "NSG rule `allow-ssh-admin`",
+       "Port 22 from any source on `snet-jobs` (network.tf:55-65). It opens nothing today: the subnet holds an internal environment, and there is no public IP or VM in the code or the export [high]. It is not a path, and not counted as public.",
+       "Nothing, if anything with a public address ever lands in this subnet."
+      ]
+     ]
+    },
+    {
+     "type": "table",
+     "title": "Stopped at a boundary",
+     "columns": [
+      "Resource",
+      "Why",
+      "File"
+     ],
+     "rows": [
+      [
+       "Ticket files (`stacmetickets…`)",
+       "`public_network_access_enabled = false` (data.tf:35); private endpoint only",
+       "data.tf:28"
+      ],
+      [
+       "`kv-acme-tickets-prod`",
+       "`public_network_access_enabled = false` (data.tf:60); private endpoint only",
+       "data.tf:52"
+      ],
+      [
+       "`stacmebackupsprod`",
+       "`public_network_access_enabled = false` (data.tf:47). Only in code",
+       "data.tf:40"
+      ],
+      [
+       "`ca-acme-tickets-prod-worker`",
+       "No ingress, and its environment is internal (app.tf:46)",
+       "modules/worker/main.tf:30"
+      ],
+      [
+       "`pe-acme-tickets-prod-tickets`",
+       "Private endpoint in `snet-data`: reachable only inside the network",
+       "data.tf:78"
+      ],
+      [
+       "`pe-acme-tickets-prod-vault`",
+       "Private endpoint in `snet-data`: reachable only inside the network",
+       "data.tf:64"
+      ]
+     ]
+    },
+    {
+     "type": "callout",
+     "tone": "info",
+     "text": "A visitor cannot reach the ticket files or the Key Vault directly. The portal is inside that boundary, so a fault in its own code is a way past it [med]."
+    }
+   ]
+  },
+  {
+   "id": "drift",
+   "title": "Code and deployment",
+   "intro": "Export of 2026-11-08 against the code at commit a509e4e: 19 resources matched by type and name.",
+   "blocks": [
+    {
+     "type": "table",
+     "title": "Only in code",
+     "columns": [
+      "Name",
+      "Type",
+      "File",
+      "Note"
+     ],
+     "rows": [
+      [
+       "stacmebackupsprod",
+       "Microsoft.Storage/storageAccounts",
+       "infra/terraform/data.tf:40",
+       "No row in the export, and nothing in the code refers to it [high]."
+      ]
+     ]
+    },
+    {
+     "type": "table",
+     "title": "Only in the export",
+     "columns": [
+      "Name",
+      "Type",
+      "Group",
+      "Note"
+     ],
+     "rows": [
+      [
+       "redis-acme-sessions-prod",
+       "Microsoft.Cache/Redis",
+       "rg-acme-tickets-prod-data",
+       "Standard C1, westeurope. Nothing in the code declares or names it [high]. Created outside this repository, against the README's rule."
+      ]
+     ]
+    },
+    {
+     "type": "table",
+     "title": "Not compared",
+     "columns": [
+      "What",
+      "Count",
+      "Why"
+     ],
+     "rows": [
+      [
+       "Resource groups",
+       4,
+       "`az resource list` does not list them. All 4 names, and `rg-acme-shared-dns`, appear as the `resourceGroup` of exported rows [high]."
+      ],
+      [
+       "Subnets",
+       3,
+       "Not listed by this export."
+      ],
+      [
+       "NSG rules and the subnet-NSG association",
+       3,
+       "Not listed by this export."
+      ],
+      [
+       "SQL firewall rule `allow-all-temporary`",
+       1,
+       "Not listed: whether it is applied today cannot be read from here."
+      ],
+      [
+       "Service Bus queues (one block, two queues)",
+       1,
+       "Not listed."
+      ],
+      [
+       "Blob service and the `exports` container",
+       2,
+       "Not listed: whether anonymous access is applied today cannot be read from here."
+      ],
+      [
+       "Diagnostic settings",
+       3,
+       "Not listed."
+      ],
+      [
+       "DNS CNAME `www`",
+       1,
+       "A record set: not listed, and the type is unknown to the script."
+      ],
+      [
+       "Ticket storage account",
+       1,
+       "Not comparable: the name holds a random suffix. Candidate `stacmeticketsqx7k2p`: same type and group, ZRS, a 6-character lowercase suffix like `random_string.suffix` (main.tf:21-25) [med]."
+      ]
+     ]
+    },
+    {
+     "type": "text",
+     "text": "The script compares by type, name and location. By hand, the SKUs of the plan, Service Bus, database and both storage accounts match, and the exported tags differ from the code's: every row carries only `product: tickets`. Something outside this code sets tags [guess]."
+    }
+   ]
+  },
+  {
+   "id": "unread",
+   "title": "What could not be read",
+   "intro": "The first four rows are what the script could not follow; each was opened by hand. The rest are gaps the script does not report.",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Kind",
+      "Resource",
+      "File",
+      "What stays unknown"
+     ],
+     "rows": [
+      [
+       "for_each",
+       "azurerm_servicebus_queue.queues",
+       "infra/terraform/messaging.tf:11",
+       "Opened: `toset` of two literal names, so 2 queues. Whether they exist today is not in the export."
+      ],
+      [
+       "dynamic-name",
+       "azurerm_servicebus_queue.queues",
+       "infra/terraform/messaging.tf:11",
+       "Opened: `each.value` is `ticket-emails` and `seat-holds`. Nothing stays unknown."
+      ],
+      [
+       "dynamic-name",
+       "azurerm_storage_account.tickets",
+       "infra/terraform/data.tf:28",
+       "The name ends in `random_string.suffix.result`, known only from state, which was not opened. The export candidate fits but does not prove it [med]."
+      ],
+      [
+       "unknown-type",
+       "azurerm_dns_cname_record.portal",
+       "infra/terraform/main.tf:32",
+       "Opened: `www` in `tickets.example.com`, to the portal's default hostname. Not confirmed deployed, and no hostname binding on the app in the code."
+      ],
+      [
+       "no code at all",
+       "Role assignments",
+       "none in the repository",
+       "No role assignment in the code, and the export cannot list them. Who may use Key Vault, Service Bus, storage and SQL stays unknown."
+      ],
+      [
+       "named, not declared",
+       "acrticketsprod.azurecr.io",
+       "infra/terraform/variables.tf:31, infra/bicep/modules/reports.bicep:58",
+       "Not a resource in the code and not in the export. Its subscription, and how images are pulled, stay unknown."
+      ],
+      [
+       "not in the repository",
+       "Application code",
+       "none in the repository",
+       "What the portal, worker and reports API actually call, which queue each uses and how each signs in. Every request link is inferred from settings."
+      ],
+      [
+       "not in the repository",
+       "Terraform state",
+       "infra/terraform/versions.tf",
+       "No `backend` block, and state files are git-ignored: where the state lives is unknown. No state or variable file was opened."
+      ]
+     ]
+    },
+    {
+     "type": "list",
+     "title": "Assumed, because no questions were asked",
+     "items": [
+      "The export of 2026-11-08 is taken as the deployed state; anything newer is not seen.",
+      "Names are computed from the variable defaults (`environment = prod`, `location = westeurope`): no tfvars or parameter files were read.",
+      "A setting not written in the code is taken at its Azure default: public access on for SQL, App Service and Storage, no network rules on Storage [med].",
+      "`stacmeticketsqx7k2p` is treated as the Terraform ticket account [med].",
+      "The portal and the worker are drawn as using what their settings name. The settings were read; the requests were not observed.",
+      "The Bicep's resources are drawn in the same subscription because the export places them there."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "open",
+   "title": "Open questions",
+   "blocks": [
+    {
+     "type": "list",
+     "ordered": true,
+     "items": [
+      "Is `allow-all-temporary` still applied? It was added for a load test on 2026-07-14. Before removing it, the portal needs another way in: it is the only rule in the code that admits the portal [med].",
+      "What is in the `exports` container? It is readable without signing in, and the README says customer data stays in the EU.",
+      "Who created `redis-acme-sessions-prod`, what uses it, and what is its network setting? The README says changes go through this repository.",
+      "Was `stacmebackupsprod` never applied, or removed? Nothing in the code writes to it, so where do backups go?",
+      "`SMTP_PASSWORD` is a literal in the code (app.tf:34) and so in the git history. Against the README's Key Vault rule; should it be rotated and moved?",
+      "How does the portal sign in to Key Vault and Service Bus? It has no identity, the vault uses RBAC, and Service Bus accepts Entra ID only.",
+      "Where do the worker's and the reports API's permissions come from? No role assignment is in the code, and the worker's `principal_id` output is unused.",
+      "Is there a private DNS zone outside this subscription? Without one the private endpoints are not found by name from the portal [med].",
+      "Does `www.tickets.example.com` work? There is a CNAME, but no hostname binding or certificate in the code.",
+      "Should Application Insights be wired to the portal, and should any alert use `ag-acme-tickets-prod`? Neither is connected in code or export.",
+      "Where is the Terraform state, and who runs it? `variables.tf` says the SQL password is set from a pipeline, the README says laptops, and there is no backend block."
+     ]
+    }
+   ]
+  }
+ ],
+ "facts": {
+  "version": 1,
+  "scope": "The Azure estate of Acme Tickets: one subscription, code at a509e4e, export of 2026-11-08",
+  "regions": [
+   {
+    "name": "westeurope",
+    "why": "README rule: production runs here, customer data stays in the EU"
+   }
+  ],
+  "data": [
+   {
+    "name": "ticket database",
+    "class": "customer data (assumed)",
+    "where": [
+     "sql-acme-tickets-prod/db-tickets"
+    ],
+    "rule": "stays in the EU"
+   },
+   {
+    "name": "ticket files",
+    "class": "customer data (assumed)",
+    "where": [
+     "stacmetickets + suffix"
+    ],
+    "rule": "stays in the EU"
+   },
+   {
+    "name": "report exports",
+    "class": "unknown",
+    "where": [
+     "stacmereportsprod/exports"
+    ],
+    "rule": "readable anonymously by the code"
+   },
+   {
+    "name": "sessions",
+    "class": "unknown",
+    "where": [
+     "redis-acme-sessions-prod"
+    ],
+    "rule": "only in the export"
+   }
+  ],
+  "components": [
+   {
+    "id": "portal",
+    "label": "Portal",
+    "tech": "App Service, Linux, .NET 8",
+    "kind": "service"
+   },
+   {
+    "id": "worker",
+    "label": "Worker",
+    "tech": "Container App, internal environment",
+    "kind": "service"
+   },
+   {
+    "id": "reports_api",
+    "label": "Reports API",
+    "tech": "Container App, external ingress",
+    "kind": "service"
+   },
+   {
+    "id": "db",
+    "label": "db-tickets",
+    "tech": "Azure SQL, GP_Gen5_2",
+    "kind": "store"
+   },
+   {
+    "id": "sb_ns",
+    "label": "Service Bus",
+    "tech": "Standard",
+    "kind": "store"
+   },
+   {
+    "id": "kv",
+    "label": "Key Vault",
+    "tech": "Standard, RBAC",
+    "kind": "store"
+   },
+   {
+    "id": "st_tickets",
+    "label": "Ticket files",
+    "tech": "Storage, ZRS",
+    "kind": "store"
+   },
+   {
+    "id": "st_reports",
+    "label": "Report storage",
+    "tech": "Storage, LRS",
+    "kind": "store"
+   },
+   {
+    "id": "redis",
+    "label": "Redis sessions",
+    "tech": "Azure Cache, Standard C1",
+    "kind": "store"
+   }
+  ],
+  "assumptions": [
+   "The export of 2026-11-08 is taken as the deployed state; anything newer is not seen.",
+   "Names are computed from the variable defaults (`environment = prod`, `location = westeurope`): no tfvars or parameter files were read.",
+   "A setting not written in the code is taken at its Azure default: public access on for SQL, App Service and Storage, no network rules on Storage [med].",
+   "`stacmeticketsqx7k2p` is treated as the Terraform ticket account [med].",
+   "The portal and the worker are drawn as using what their settings name. The settings were read; the requests were not observed.",
+   "The Bicep's resources are drawn in the same subscription because the export places them there."
+  ],
+  "open": [
+   "Is `allow-all-temporary` still applied? It was added for a load test on 2026-07-14. Before removing it, the portal needs another way in: it is the only rule in the code that admits the portal [med].",
+   "What is in the `exports` container? It is readable without signing in, and the README says customer data stays in the EU.",
+   "Who created `redis-acme-sessions-prod`, what uses it, and what is its network setting? The README says changes go through this repository.",
+   "Was `stacmebackupsprod` never applied, or removed? Nothing in the code writes to it, so where do backups go?",
+   "`SMTP_PASSWORD` is a literal in the code (app.tf:34) and so in the git history. Against the README's Key Vault rule; should it be rotated and moved?",
+   "How does the portal sign in to Key Vault and Service Bus? It has no identity, the vault uses RBAC, and Service Bus accepts Entra ID only.",
+   "Where do the worker's and the reports API's permissions come from? No role assignment is in the code, and the worker's `principal_id` output is unused.",
+   "Is there a private DNS zone outside this subscription? Without one the private endpoints are not found by name from the portal [med].",
+   "Does `www.tickets.example.com` work? There is a CNAME, but no hostname binding or certificate in the code.",
+   "Should Application Insights be wired to the portal, and should any alert use `ag-acme-tickets-prod`? Neither is connected in code or export.",
+   "Where is the Terraform state, and who runs it? `variables.tf` says the SQL password is set from a pipeline, the README says laptops, and there is no backend block."
+  ]
+ }
+}

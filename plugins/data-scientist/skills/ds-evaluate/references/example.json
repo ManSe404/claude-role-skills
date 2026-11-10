@@ -1,0 +1,1484 @@
+{
+ "skill": "ds-evaluate",
+ "title": "Acme Stream churn: which model should build the retention list",
+ "subtitle": "Three score columns compared on the same 3,000 rows, with a false positive at EUR 25 and a false negative at EUR 90.",
+ "meta": {
+  "repo": "acme-churn",
+  "commit": "6ae5575",
+  "date": "2026-11-10",
+  "file": "data/predictions.csv"
+ },
+ "verdict": {
+  "tone": "warn",
+  "text": "Keep `baseline_score` for now. `gbt_v7` is really better on this file by +0.086 ROC-AUC [+0.059, +0.114], but it is trained on `cancellation_reason` and other columns unknown at list time, so retrain it before trusting that. `logreg_v2` is inside the noise."
+ },
+ "stats": [
+  {
+   "label": "Rows",
+   "value": "3,000",
+   "note": "every model scored every row; ids unique",
+   "tone": "info"
+  },
+  {
+   "label": "Churn rate",
+   "value": "19.1%",
+   "note": "[17.7%, 20.5%]; the brief says 16 to 17 in 100",
+   "tone": "info"
+  },
+  {
+   "label": "Best model on this file",
+   "value": "gbt_v7",
+   "note": "ROC-AUC +0.086 [+0.059, +0.114] over the baseline; columns leak",
+   "tone": "warn"
+  },
+  {
+   "label": "Saving over the baseline, out of bag",
+   "value": "EUR 2,419 per 1,000",
+   "note": "[983, 3,936]; do not bank it until retrained",
+   "tone": "warn"
+  },
+  {
+   "label": "Inside the noise",
+   "value": "logreg_v2",
+   "note": "all five metrics; ROC-AUC +0.011 [-0.013, +0.034]",
+   "tone": "info"
+  },
+  {
+   "label": "Team's bar, 33.3% recall and 40% precision",
+   "value": "gbt_v7 only, narrowly",
+   "note": "precision 46.8% [42.1%, 51.6%], recall 34.6% [30.8%, 38.6%]; the recall interval crosses 33.3%",
+   "tone": "warn"
+  }
+ ],
+ "sections": [
+  {
+   "id": "comparison",
+   "title": "The comparison",
+   "intro": "Every model scored the same 3,000 rows and every id is unique, so each difference is paired: 2,000 bootstrap resamples, seed 7, with the same rows drawn for all three. ROC-AUC is the primary metric, set before the run.",
+   "blocks": [
+    {
+     "type": "table",
+     "title": "Each model on the same 3,000 rows (value and 95% interval)",
+     "columns": [
+      "Model",
+      "ROC-AUC",
+      "PR-AUC",
+      "Log loss (lower is better)",
+      "Brier (lower is better)",
+      "Cost per 1,000 decisions, EUR, at its best threshold on this file"
+     ],
+     "rows": [
+      [
+       "`baseline_score` (baseline)",
+       "0.650 [0.625, 0.675]",
+       "0.314 [0.278, 0.350]",
+       "0.464 [0.444, 0.487]",
+       "0.147 [0.139, 0.156]",
+       "14,133 [13,152, 14,893]"
+      ],
+      [
+       "`logreg_v2`",
+       "0.660 [0.635, 0.684]",
+       "0.317 [0.286, 0.357]",
+       "0.461 [0.441, 0.482]",
+       "0.146 [0.138, 0.155]",
+       "14,160 [13,068, 14,968]"
+      ],
+      [
+       "`gbt_v7`",
+       "0.736 [0.712, 0.758]",
+       "0.404 [0.365, 0.448]",
+       "0.574 [0.552, 0.598]",
+       "0.192 [0.184, 0.200]",
+       "11,797 [10,945, 12,528]"
+      ]
+     ]
+    },
+    {
+     "type": "table",
+     "title": "Paired difference against baseline_score (positive means better than the baseline)",
+     "columns": [
+      "Model",
+      "Metric",
+      "Improvement",
+      "95% interval",
+      "Resamples where it is better",
+      "Reading"
+     ],
+     "rows": [
+      [
+       "`logreg_v2`",
+       "ROC-AUC",
+       "+0.011",
+       "[-0.013, +0.034]",
+       "80.2%",
+       "inside the noise"
+      ],
+      [
+       "`logreg_v2`",
+       "PR-AUC",
+       "+0.004",
+       "[-0.026, +0.036]",
+       "64.5%",
+       "inside the noise"
+      ],
+      [
+       "`logreg_v2`",
+       "Log loss",
+       "+0.0037",
+       "[-0.0034, +0.0110]",
+       "84.5%",
+       "inside the noise"
+      ],
+      [
+       "`logreg_v2`",
+       "Brier",
+       "+0.0009",
+       "[-0.0015, +0.0034]",
+       "77.8%",
+       "inside the noise"
+      ],
+      [
+       "`logreg_v2`",
+       "Cost per 1,000 (EUR saved)",
+       "-27",
+       "[-799, +850]",
+       "51.0%",
+       "inside the noise"
+      ],
+      [
+       "`gbt_v7`",
+       "ROC-AUC",
+       "+0.086",
+       "[+0.059, +0.114]",
+       "100.0%",
+       "better"
+      ],
+      [
+       "`gbt_v7`",
+       "PR-AUC",
+       "+0.090",
+       "[+0.051, +0.129]",
+       "100.0%",
+       "better"
+      ],
+      [
+       "`gbt_v7`",
+       "Log loss",
+       "-0.1096",
+       "[-0.1371, -0.0815]",
+       "0.0%",
+       "worse"
+      ],
+      [
+       "`gbt_v7`",
+       "Brier",
+       "-0.0449",
+       "[-0.0551, -0.0339]",
+       "0.0%",
+       "worse"
+      ],
+      [
+       "`gbt_v7`",
+       "Cost per 1,000 (EUR saved)",
+       "+2,337",
+       "[+1,443, +3,207]",
+       "100.0%",
+       "better"
+      ]
+     ]
+    },
+    {
+     "type": "text",
+     "text": "**`logreg_v2` is inside the noise on every metric.** Its ROC-AUC difference of +0.011 has the interval [-0.013, +0.034]: the data rule out a gain above 0.034 and a loss above 0.013, and cannot tell it apart from the baseline inside that range.\n\n**`gbt_v7` ranks better and its probabilities are worse.** ROC-AUC, PR-AUC and cost are better than the baseline with the whole interval above zero, while log loss and Brier are worse with the whole interval below zero. See Calibration."
+    },
+    {
+     "type": "callout",
+     "tone": "warn",
+     "text": "Read the `gbt_v7` numbers with The recommendation in mind. Its gain is real on this file, but `model/features.py` gives it columns that are not known at list time, so this file does not show what it would do in use. [high]"
+    }
+   ]
+  },
+  {
+   "id": "calibration",
+   "title": "Calibration",
+   "intro": "A score is calibrated when, among rows given 0.3, about 30 in 100 churn. Each bin holds 300 rows, a tenth of the file, and has a Wilson interval on its observed rate.",
+   "blocks": [
+    {
+     "type": "callout",
+     "tone": "bad",
+     "text": "**`gbt_v7` is miscalibrated: 8 of 10 bins are outside their interval.** Its mean predicted probability is 0.376 against 0.191 observed, so its scores run about twice too high. In the top bin it says 0.888 and 0.503 churn. Its scores cannot be read as probabilities, and only a threshold measured on data works for it until it is recalibrated on held-out data."
+    },
+    {
+     "type": "text",
+     "text": "`baseline_score` and `logreg_v2` both have 0 of 10 bins outside their interval: mean predicted 0.189 and 0.190 against 0.191 observed."
+    },
+    {
+     "type": "chart",
+     "kind": "line",
+     "title": "gbt_v7: predicted against observed churn",
+     "unit": "probability",
+     "x_label": "Score bin, 1 is the lowest tenth of scores",
+     "places": 3,
+     "categories": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10"
+     ],
+     "series": [
+      {
+       "name": "Mean predicted",
+       "values": [
+        0.028517,
+        0.077642,
+        0.131346,
+        0.19623,
+        0.276784,
+        0.373535,
+        0.468764,
+        0.590991,
+        0.727422,
+        0.88771
+       ]
+      },
+      {
+       "name": "Observed churn",
+       "values": [
+        0.043333,
+        0.063333,
+        0.083333,
+        0.113333,
+        0.123333,
+        0.163333,
+        0.236667,
+        0.25,
+        0.326667,
+        0.503333
+       ]
+      }
+     ]
+    },
+    {
+     "type": "chart",
+     "kind": "line",
+     "title": "baseline_score: predicted against observed churn",
+     "unit": "probability",
+     "x_label": "Score bin, 1 is the lowest tenth of scores",
+     "places": 3,
+     "categories": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10"
+     ],
+     "series": [
+      {
+       "name": "Mean predicted",
+       "values": [
+        0.073291,
+        0.104526,
+        0.124267,
+        0.14439,
+        0.163078,
+        0.182196,
+        0.207252,
+        0.238993,
+        0.279403,
+        0.374635
+       ]
+      },
+      {
+       "name": "Observed churn",
+       "values": [
+        0.08,
+        0.13,
+        0.116667,
+        0.146667,
+        0.13,
+        0.193333,
+        0.243333,
+        0.22,
+        0.27,
+        0.376667
+       ]
+      }
+     ]
+    },
+    {
+     "type": "table",
+     "title": "Calibration bins",
+     "columns": [
+      "Model",
+      "Bin",
+      "Rows",
+      "Mean predicted",
+      "Observed",
+      "Observed 95% interval",
+      "Gap",
+      "Mean inside interval"
+     ],
+     "rows": [
+      [
+       "`baseline_score`",
+       1,
+       300,
+       "0.073",
+       "0.080",
+       "[0.054, 0.116]",
+       "-0.007",
+       "yes"
+      ],
+      [
+       "`baseline_score`",
+       2,
+       300,
+       "0.105",
+       "0.130",
+       "[0.097, 0.173]",
+       "-0.025",
+       "yes"
+      ],
+      [
+       "`baseline_score`",
+       3,
+       300,
+       "0.124",
+       "0.117",
+       "[0.085, 0.158]",
+       "+0.008",
+       "yes"
+      ],
+      [
+       "`baseline_score`",
+       4,
+       300,
+       "0.144",
+       "0.147",
+       "[0.111, 0.191]",
+       "-0.002",
+       "yes"
+      ],
+      [
+       "`baseline_score`",
+       5,
+       300,
+       "0.163",
+       "0.130",
+       "[0.097, 0.173]",
+       "+0.033",
+       "yes"
+      ],
+      [
+       "`baseline_score`",
+       6,
+       300,
+       "0.182",
+       "0.193",
+       "[0.153, 0.242]",
+       "-0.011",
+       "yes"
+      ],
+      [
+       "`baseline_score`",
+       7,
+       300,
+       "0.207",
+       "0.243",
+       "[0.198, 0.295]",
+       "-0.036",
+       "yes"
+      ],
+      [
+       "`baseline_score`",
+       8,
+       300,
+       "0.239",
+       "0.220",
+       "[0.177, 0.270]",
+       "+0.019",
+       "yes"
+      ],
+      [
+       "`baseline_score`",
+       9,
+       300,
+       "0.279",
+       "0.270",
+       "[0.223, 0.323]",
+       "+0.009",
+       "yes"
+      ],
+      [
+       "`baseline_score`",
+       10,
+       300,
+       "0.375",
+       "0.377",
+       "[0.324, 0.433]",
+       "-0.002",
+       "yes"
+      ],
+      [
+       "`logreg_v2`",
+       1,
+       300,
+       "0.073",
+       "0.060",
+       "[0.038, 0.093]",
+       "+0.013",
+       "yes"
+      ],
+      [
+       "`logreg_v2`",
+       2,
+       300,
+       "0.104",
+       "0.103",
+       "[0.074, 0.143]",
+       "+0.000",
+       "yes"
+      ],
+      [
+       "`logreg_v2`",
+       3,
+       300,
+       "0.125",
+       "0.123",
+       "[0.091, 0.165]",
+       "+0.002",
+       "yes"
+      ],
+      [
+       "`logreg_v2`",
+       4,
+       300,
+       "0.147",
+       "0.160",
+       "[0.123, 0.206]",
+       "-0.013",
+       "yes"
+      ],
+      [
+       "`logreg_v2`",
+       5,
+       300,
+       "0.166",
+       "0.163",
+       "[0.126, 0.209]",
+       "+0.003",
+       "yes"
+      ],
+      [
+       "`logreg_v2`",
+       6,
+       300,
+       "0.186",
+       "0.183",
+       "[0.144, 0.231]",
+       "+0.003",
+       "yes"
+      ],
+      [
+       "`logreg_v2`",
+       7,
+       300,
+       "0.209",
+       "0.217",
+       "[0.174, 0.267]",
+       "-0.007",
+       "yes"
+      ],
+      [
+       "`logreg_v2`",
+       8,
+       300,
+       "0.237",
+       "0.233",
+       "[0.189, 0.284]",
+       "+0.004",
+       "yes"
+      ],
+      [
+       "`logreg_v2`",
+       9,
+       300,
+       "0.278",
+       "0.287",
+       "[0.238, 0.340]",
+       "-0.009",
+       "yes"
+      ],
+      [
+       "`logreg_v2`",
+       10,
+       300,
+       "0.371",
+       "0.377",
+       "[0.324, 0.433]",
+       "-0.006",
+       "yes"
+      ],
+      [
+       "`gbt_v7`",
+       1,
+       300,
+       "0.029",
+       "0.043",
+       "[0.025, 0.073]",
+       "-0.015",
+       "yes"
+      ],
+      [
+       "`gbt_v7`",
+       2,
+       300,
+       "0.078",
+       "0.063",
+       "[0.041, 0.097]",
+       "+0.014",
+       "yes"
+      ],
+      [
+       "`gbt_v7`",
+       3,
+       300,
+       "0.131",
+       "0.083",
+       "[0.057, 0.120]",
+       "+0.048",
+       "no"
+      ],
+      [
+       "`gbt_v7`",
+       4,
+       300,
+       "0.196",
+       "0.113",
+       "[0.082, 0.154]",
+       "+0.083",
+       "no"
+      ],
+      [
+       "`gbt_v7`",
+       5,
+       300,
+       "0.277",
+       "0.123",
+       "[0.091, 0.165]",
+       "+0.153",
+       "no"
+      ],
+      [
+       "`gbt_v7`",
+       6,
+       300,
+       "0.374",
+       "0.163",
+       "[0.126, 0.209]",
+       "+0.210",
+       "no"
+      ],
+      [
+       "`gbt_v7`",
+       7,
+       300,
+       "0.469",
+       "0.237",
+       "[0.192, 0.288]",
+       "+0.232",
+       "no"
+      ],
+      [
+       "`gbt_v7`",
+       8,
+       300,
+       "0.591",
+       "0.250",
+       "[0.204, 0.302]",
+       "+0.341",
+       "no"
+      ],
+      [
+       "`gbt_v7`",
+       9,
+       300,
+       "0.727",
+       "0.327",
+       "[0.276, 0.382]",
+       "+0.401",
+       "no"
+      ],
+      [
+       "`gbt_v7`",
+       10,
+       300,
+       "0.888",
+       "0.503",
+       "[0.447, 0.560]",
+       "+0.384",
+       "no"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "threshold",
+   "title": "Threshold",
+   "intro": "The cheapest threshold is measured from the two error costs. Picking it on the rows it is costed on flatters it, so the out-of-sample columns are the numbers to quote: the split-half figure from the script, and an out-of-bag bootstrap of the same choice, which carries an interval.",
+   "blocks": [
+    {
+     "type": "chart",
+     "kind": "line",
+     "title": "Cost per 1,000 decisions against the share given an offer (EUR 25 and EUR 90)",
+     "unit": "EUR",
+     "x_label": "Share of subscribers given an offer",
+     "y_label": "EUR per 1,000 decisions",
+     "zero": false,
+     "categories": [
+      "0%",
+      "5%",
+      "10%",
+      "15%",
+      "20%",
+      "25%",
+      "30%",
+      "35%",
+      "40%",
+      "45%",
+      "50%",
+      "55%",
+      "60%",
+      "65%",
+      "70%",
+      "75%",
+      "80%",
+      "85%",
+      "90%",
+      "95%",
+      "100%"
+     ],
+     "series": [
+      {
+       "name": "baseline_score",
+       "values": [
+        17160.0,
+        15918.33,
+        15328.33,
+        14815.0,
+        14723.33,
+        14823.33,
+        14693.33,
+        14410.0,
+        14395.0,
+        14380.0,
+        14671.67,
+        15116.67,
+        15676.67,
+        16160.0,
+        16490.0,
+        17088.33,
+        17648.33,
+        18131.67,
+        18653.33,
+        19366.67,
+        20233.33
+       ]
+      },
+      {
+       "name": "logreg_v2",
+       "values": [
+        17160.0,
+        15841.67,
+        15328.33,
+        14661.67,
+        14531.67,
+        14363.33,
+        14348.33,
+        14180.0,
+        14356.67,
+        14686.67,
+        14748.33,
+        15116.67,
+        15370.0,
+        15738.33,
+        16030.0,
+        16475.0,
+        17111.67,
+        17863.33,
+        18423.33,
+        19213.33,
+        20233.33
+       ]
+      },
+      {
+       "name": "gbt_v7",
+       "values": [
+        17160.0,
+        15343.33,
+        13871.67,
+        13051.67,
+        12615.0,
+        12370.0,
+        12240.0,
+        11956.67,
+        12018.33,
+        12463.33,
+        12640.0,
+        13200.0,
+        13721.67,
+        14358.33,
+        14918.33,
+        15708.33,
+        16460.0,
+        17250.0,
+        18231.67,
+        19251.67,
+        20233.33
+       ]
+      }
+     ],
+     "caption": "Each line starts at acting on nobody and ends at acting on everyone. Costs are measured on the same rows as the thresholds; see the table for the out-of-sample figures."
+    },
+    {
+     "type": "table",
+     "title": "Best threshold per model at EUR 25 and EUR 90",
+     "columns": [
+      "Model",
+      "Cheapest threshold",
+      "Share given an offer",
+      "TP",
+      "FP",
+      "FN",
+      "TN",
+      "Precision and 95% interval",
+      "Recall and 95% interval",
+      "Cost per 1,000 on this file",
+      "Out-of-sample cost per 1,000 (split-half)",
+      "Out-of-bag cost per 1,000 and 95% interval"
+     ],
+     "rows": [
+      [
+       "`baseline_score`",
+       "0.201",
+       "37.3%",
+       322,
+       796,
+       250,
+       1632,
+       "28.8% [26.2%, 31.5%]",
+       "56.3% [52.2%, 60.3%]",
+       "14,133",
+       "14,385",
+       "14,532 [13,282, 16,073]"
+      ],
+      [
+       "`logreg_v2`",
+       "0.210",
+       "34.8%",
+       305,
+       738,
+       267,
+       1690,
+       "29.2% [26.6%, 32.1%]",
+       "53.3% [49.2%, 57.4%]",
+       "14,160",
+       "14,438",
+       "14,570 [13,265, 15,970]"
+      ],
+      [
+       "`gbt_v7`",
+       "0.431",
+       "38.5%",
+       391,
+       764,
+       181,
+       1664,
+       "33.9% [31.2%, 36.6%]",
+       "68.4% [64.4%, 72.0%]",
+       "11,797",
+       "12,252",
+       "12,113 [10,949, 13,387]"
+      ]
+     ]
+    },
+    {
+     "type": "table",
+     "title": "The two trivial policies, EUR 25 and EUR 90",
+     "columns": [
+      "Policy",
+      "Cost per 1,000",
+      "95% interval from the churn rate"
+     ],
+     "rows": [
+      [
+       "Act on nobody",
+       "17,160",
+       "[15,931, 18,460]"
+      ],
+      [
+       "Act on everyone",
+       "20,233",
+       "[19,872, 20,575]"
+      ]
+     ]
+    },
+    {
+     "type": "table",
+     "title": "EUR saved per 1,000 decisions, paired and out of bag (threshold chosen on the drawn rows, costed on the rows left out)",
+     "columns": [
+      "False-negative cost",
+      "Model",
+      "Against",
+      "Saving per 1,000",
+      "95% interval",
+      "Reading",
+      "EUR per year at 480,000 decisions"
+     ],
+     "rows": [
+      [
+       "EUR 90 (as given)",
+       "`logreg_v2`",
+       "`baseline_score`",
+       "-38",
+       "[-1,344, +1,228]",
+       "inside the noise",
+       "not annualised: inside the noise"
+      ],
+      [
+       "EUR 90 (as given)",
+       "`gbt_v7`",
+       "`baseline_score`",
+       "+2,419",
+       "[+983, +3,936]",
+       "better",
+       "+1.16M [+0.47M, +1.89M]"
+      ],
+      [
+       "EUR 90 (as given)",
+       "`baseline_score`",
+       "sending no offers",
+       "+2,619",
+       "[+1,226, +4,116]",
+       "better",
+       "+1.26M [+0.59M, +1.98M]"
+      ],
+      [
+       "EUR 90 (as given)",
+       "`logreg_v2`",
+       "sending no offers",
+       "+2,581",
+       "[+1,138, +3,927]",
+       "better",
+       "+1.24M [+0.55M, +1.88M]"
+      ],
+      [
+       "EUR 90 (as given)",
+       "`gbt_v7`",
+       "sending no offers",
+       "+5,038",
+       "[+3,510, +6,601]",
+       "better",
+       "+2.42M [+1.68M, +3.17M]"
+      ],
+      [
+       "EUR 65 (sensitivity)",
+       "`logreg_v2`",
+       "`baseline_score`",
+       "+129",
+       "[-783, +1,082]",
+       "inside the noise",
+       "not annualised: inside the noise"
+      ],
+      [
+       "EUR 65 (sensitivity)",
+       "`gbt_v7`",
+       "`baseline_score`",
+       "+1,371",
+       "[+382, +2,359]",
+       "better",
+       "+0.66M [+0.18M, +1.13M]"
+      ],
+      [
+       "EUR 65 (sensitivity)",
+       "`baseline_score`",
+       "sending no offers",
+       "+784",
+       "[-175, +1,516]",
+       "inside the noise",
+       "not annualised: inside the noise"
+      ],
+      [
+       "EUR 65 (sensitivity)",
+       "`logreg_v2`",
+       "sending no offers",
+       "+912",
+       "[-5, +1,703]",
+       "inside the noise",
+       "not annualised: inside the noise"
+      ],
+      [
+       "EUR 65 (sensitivity)",
+       "`gbt_v7`",
+       "sending no offers",
+       "+2,154",
+       "[+1,057, +3,125]",
+       "better",
+       "+1.03M [+0.51M, +1.50M]"
+      ]
+     ]
+    },
+    {
+     "type": "table",
+     "title": "The team's bar from the brief: recall of at least 33.3% with precision of at least 40%",
+     "columns": [
+      "Model",
+      "Threshold with highest precision at recall of 33.3% or more",
+      "Share given an offer",
+      "Precision",
+      "Recall",
+      "Precision out of bag",
+      "Recall out of bag",
+      "Resamples meeting both",
+      "Bar met"
+     ],
+     "rows": [
+      [
+       "`baseline_score`",
+       "0.255",
+       "20.0%",
+       "32.3% [28.7%, 36.2%]",
+       "33.9% [30.2%, 37.9%]",
+       "31.9% [27.5%, 36.4%]",
+       "34.0% [24.9%, 45.3%]",
+       "0.0%",
+       "no"
+      ],
+      [
+       "`logreg_v2`",
+       "0.258",
+       "18.9%",
+       "33.6% [29.9%, 37.6%]",
+       "33.4% [29.6%, 37.4%]",
+       "33.2% [28.7%, 37.6%]",
+       "33.7% [25.4%, 42.8%]",
+       "0.1%",
+       "no"
+      ],
+      [
+       "`gbt_v7`",
+       "0.740",
+       "14.1%",
+       "46.8% [42.1%, 51.6%]",
+       "34.6% [30.8%, 38.6%]",
+       "46.3% [40.6%, 52.0%]",
+       "33.9% [25.5%, 41.9%]",
+       "58.5%",
+       "point estimate only"
+      ]
+     ]
+    },
+    {
+     "type": "text",
+     "text": "**The cost of reading `gbt_v7`'s scores as probabilities.** With a break-even probability of 0.217 (25 divided by 115), `gbt_v7` costs EUR 13,872 per 1,000 on this file against EUR 11,797 at the threshold measured on this file. The break-even rule works for `baseline_score` and `logreg_v2` (EUR 14,578 and EUR 14,245) because their probabilities are calibrated. These break-even costs are point values on this file."
+    },
+    {
+     "type": "callout",
+     "tone": "warn",
+     "text": "**Assumption on the costs.** [guess] The page uses EUR 25 and EUR 90 as given. The brief gets EUR 90 as 30 percent of a EUR 300 margin, but a churner on the list also receives the EUR 25 credit, so the net value of a correct offer is EUR 65. As a sensitivity, EUR 65 moves the break-even probability from 0.217 to 0.278 and shrinks the list. `gbt_v7` still saves money against the baseline, by EUR 1,371 per 1,000 [382, 2,359], but **`baseline_score` no longer clearly beats sending no offers**: EUR 784 per 1,000 [-175, 1,516]."
+    },
+    {
+     "type": "table",
+     "title": "The same table with a false negative at EUR 65 (sensitivity)",
+     "columns": [
+      "Model",
+      "Cheapest threshold",
+      "Share given an offer",
+      "TP",
+      "FP",
+      "FN",
+      "TN",
+      "Precision and 95% interval",
+      "Recall and 95% interval",
+      "Cost per 1,000 on this file",
+      "Out-of-sample cost per 1,000 (split-half)",
+      "Out-of-bag cost per 1,000 and 95% interval"
+     ],
+     "rows": [
+      [
+       "`baseline_score`",
+       "0.279",
+       "14.8%",
+       159,
+       285,
+       413,
+       2143,
+       "35.8% [31.5%, 40.4%]",
+       "27.8% [24.3%, 31.6%]",
+       "11,323",
+       "11,763",
+       "11,603 [10,485, 12,766]"
+      ],
+      [
+       "`logreg_v2`",
+       "0.278",
+       "14.8%",
+       163,
+       280,
+       409,
+       2148,
+       "36.8% [32.4%, 41.4%]",
+       "28.5% [25.0%, 32.3%]",
+       "11,195",
+       "11,278",
+       "11,474 [10,352, 12,647]"
+      ],
+      [
+       "`gbt_v7`",
+       "0.656",
+       "20.0%",
+       249,
+       350,
+       323,
+       2078,
+       "41.6% [37.7%, 45.6%]",
+       "43.5% [39.5%, 47.6%]",
+       "9,915",
+       "10,120",
+       "10,232 [9,244, 11,190]"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "slices",
+   "title": "Slices",
+   "intro": "ROC-AUC per value of `plan` and `region`. Every slice has at least 100 rows and 10 of each class, so all are ranked. There are 24 slice and model pairs, so about one can look clearly worse by chance.",
+   "blocks": [
+    {
+     "type": "chart",
+     "kind": "bar",
+     "title": "Worst shortfalls against each model's own whole-file ROC-AUC",
+     "x_label": "ROC-AUC points below the whole file",
+     "places": 3,
+     "categories": [
+      "gbt_v7, plan=legacy",
+      "baseline_score, region=east",
+      "logreg_v2, region=north",
+      "baseline_score, plan=plus",
+      "gbt_v7, region=east",
+      "logreg_v2, plan=plus",
+      "baseline_score, region=north",
+      "logreg_v2, plan=pro"
+     ],
+     "series": [
+      {
+       "name": "Shortfall",
+       "values": [
+        0.1632,
+        0.055,
+        0.0341,
+        0.0286,
+        0.0225,
+        0.0194,
+        0.014,
+        0.0129
+       ]
+      }
+     ],
+     "caption": "The full table with each slice's ROC-AUC and 95% interval is below."
+    },
+    {
+     "type": "table",
+     "title": "Every slice and model below its whole-file ROC-AUC, worst first (9 of 24)",
+     "columns": [
+      "Model",
+      "Slice",
+      "Rows",
+      "Churners",
+      "ROC-AUC",
+      "95% interval",
+      "Whole file",
+      "Shortfall",
+      "Clearly worse than whole file",
+      "Against baseline, paired 95% interval",
+      "Reading against baseline"
+     ],
+     "rows": [
+      [
+       "`gbt_v7`",
+       "plan = legacy",
+       353,
+       74,
+       "0.573",
+       "[0.498, 0.649]",
+       "0.736",
+       "0.163",
+       "yes",
+       "[-0.183, -0.002]",
+       "worse"
+      ],
+      [
+       "`baseline_score`",
+       "region = east",
+       795,
+       146,
+       "0.595",
+       "[0.548, 0.646]",
+       "0.650",
+       "0.055",
+       "yes",
+       "the baseline itself",
+       "n/a"
+      ],
+      [
+       "`logreg_v2`",
+       "region = north",
+       750,
+       139,
+       "0.626",
+       "[0.573, 0.677]",
+       "0.660",
+       "0.034",
+       "no",
+       "[-0.056, +0.041]",
+       "inside the noise"
+      ],
+      [
+       "`baseline_score`",
+       "plan = plus",
+       1051,
+       213,
+       "0.621",
+       "[0.579, 0.661]",
+       "0.650",
+       "0.029",
+       "no",
+       "the baseline itself",
+       "n/a"
+      ],
+      [
+       "`gbt_v7`",
+       "region = east",
+       795,
+       146,
+       "0.714",
+       "[0.671, 0.756]",
+       "0.736",
+       "0.023",
+       "no",
+       "[+0.063, +0.172]",
+       "better"
+      ],
+      [
+       "`logreg_v2`",
+       "plan = plus",
+       1051,
+       213,
+       "0.641",
+       "[0.599, 0.681]",
+       "0.660",
+       "0.019",
+       "no",
+       "[-0.017, +0.053]",
+       "inside the noise"
+      ],
+      [
+       "`baseline_score`",
+       "region = north",
+       750,
+       139,
+       "0.636",
+       "[0.580, 0.686]",
+       "0.650",
+       "0.014",
+       "no",
+       "the baseline itself",
+       "n/a"
+      ],
+      [
+       "`logreg_v2`",
+       "plan = pro",
+       577,
+       121,
+       "0.648",
+       "[0.593, 0.705]",
+       "0.660",
+       "0.013",
+       "no",
+       "[-0.055, +0.051]",
+       "inside the noise"
+      ],
+      [
+       "`gbt_v7`",
+       "region = south",
+       735,
+       148,
+       "0.734",
+       "[0.690, 0.774]",
+       "0.736",
+       "0.002",
+       "no",
+       "[-0.013, +0.090]",
+       "inside the noise"
+      ]
+     ]
+    },
+    {
+     "type": "text",
+     "text": "**`gbt_v7` on `plan = legacy` is the worst slice.** ROC-AUC 0.573 [0.498, 0.649] on 353 rows, with an interval that reaches chance level at 0.5. It is clearly below its own whole-file value, and worse than the baseline there too, by a paired interval of [-0.183, -0.002] that only just excludes zero.\n\n**`baseline_score` on `region = east`** is clearly below its own whole-file value at 0.595 [0.548, 0.646]. Both candidates are better than the baseline in that region: `gbt_v7` by [+0.063, +0.172], `logreg_v2` by [+0.026, +0.125]. That is the only slice of eight where `logreg_v2` beats the baseline."
+    }
+   ]
+  },
+  {
+   "id": "recommendation",
+   "title": "The recommendation",
+   "blocks": [
+    {
+     "type": "callout",
+     "tone": "warn",
+     "text": "**Keep `baseline_score` for now and do not move to either candidate.** `gbt_v7` is the only real gain, but it was trained on columns that are unavailable at list time. Retrain it without them and run this comparison again on a clean holdout. `logreg_v2` is inside the noise, so there is nothing to gain by switching to it."
+    },
+    {
+     "type": "decision",
+     "title": "The options",
+     "factors": [
+      "Gain over the baseline (ROC-AUC)",
+      "The team's bar (recall of 33.3%, precision of 40%)",
+      "Can run at list time"
+     ],
+     "options": [
+      {
+       "label": "`baseline_score` (keep)",
+       "status": "chosen",
+       "why": "A holding position: it is the score in use and nothing here shows it leaks, but its training code is not in the repo [guess], and it misses the team's precision bar. Use it with a threshold measured on data until a rebuilt model is measured.",
+       "cells": [
+        {
+         "rating": "weak",
+         "text": "It is the baseline"
+        },
+        {
+         "rating": "fail",
+         "text": "Precision 32.3% [28.7%, 36.2%] at recall 33.9%"
+        },
+        {
+         "rating": "weak",
+         "text": "[guess] Current score; its training code is not in the repo"
+        }
+       ]
+      },
+      {
+       "label": "`logreg_v2`",
+       "status": "eliminated",
+       "eliminated_by": "Gain over the baseline (ROC-AUC)",
+       "why": "Inside the noise on every metric, so there is no case for changing to it.",
+       "cells": [
+        {
+         "rating": "fail",
+         "text": "+0.011 [-0.013, +0.034], inside the noise"
+        },
+        {
+         "rating": "fail",
+         "text": "Precision 33.6% [29.9%, 37.6%] at recall 33.4%"
+        },
+        {
+         "rating": "weak",
+         "text": "[guess] Its training code is not in the repo"
+        }
+       ]
+      },
+      {
+       "label": "`gbt_v7` as trained",
+       "status": "eliminated",
+       "eliminated_by": "Can run at list time",
+       "why": "Its features include columns known only after the outcome, so its lead on this file does not carry over to use.",
+       "cells": [
+        {
+         "rating": "pass",
+         "text": "+0.086 [+0.059, +0.114], better on this file"
+        },
+        {
+         "rating": "weak",
+         "text": "Precision 46.8% [42.1%, 51.6%] at recall 34.6% [30.8%, 38.6%]; the recall interval crosses 33.3%"
+        },
+        {
+         "rating": "fail",
+         "text": "[high] Trains on `cancellation_reason`"
+        }
+       ]
+      },
+      {
+       "label": "`gbt_v7` retrained without those columns",
+       "status": "viable",
+       "why": "Not built yet: this is the next step, and it is the option to evaluate next.",
+       "cells": [
+        {
+         "rating": "weak",
+         "text": "Not measured"
+        },
+        {
+         "rating": "weak",
+         "text": "Not measured"
+        },
+        {
+         "rating": "pass",
+         "text": "[med] If the features are built as of the snapshot"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "type": "findings",
+     "title": "What stops `gbt_v7` being used as it is, and what makes this file unsafe to rely on",
+     "items": [
+      {
+       "severity": "high",
+       "title": "`gbt_v7` trains on `cancellation_reason`, which exists only after a cancellation",
+       "where": "model/features.py:16, model/extract.py:20, model/extract.py:27, model/train.py:12",
+       "evidence": "The column is in `FEATURES`, the extract joins `cancellations` with no date limit, and `train.py` fits on every column in `FEATURES`. An active subscriber has no such row at list time. [high] How much of the gain it explains cannot be measured from the predictions file. [med]",
+       "fix": "Drop it from `FEATURES` and retrain.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "`days_since_last_login` can see logins after the snapshot",
+       "where": "model/extract.py:18, model/features.py:17, model/features.py:25",
+       "evidence": "`last_login_at` is `max(login_ts)` over all logins with no limit at `snapshot_date`, so the feature uses the future for anyone who logged in after the snapshot. [high]",
+       "fix": "Compute the last login up to `snapshot_date`.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "`nps_last` has no as-of date",
+       "where": "model/extract.py:19, model/extract.py:26",
+       "evidence": "The extract joins `nps_latest` on the customer only, so a survey answered after the snapshot can reach the model. [high] Its effect on `gbt_v7` was not measured. [guess]",
+       "fix": "Take the latest answer up to `snapshot_date`.",
+       "status": "open"
+      },
+      {
+       "severity": "high",
+       "title": "`predictions.csv` cannot be the committed test split",
+       "where": "data/predictions.csv, model/score.py",
+       "evidence": "The file has 3,000 rows, while `test.csv` has 1,000 and `train.csv` 2,400, which together match the brief's 3,400 labelled rows. `model/score.py` writes no `email` column, yet the file has one. [high] If these rows overlap the training rows, every model's numbers here are flattered. [med]",
+       "fix": "Say where the file came from and rescore rows that were not used for training.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "`gbt_v7` is miscalibrated",
+       "where": "the Calibration section",
+       "evidence": "8 of 10 bins are outside their interval, and the mean predicted probability is about twice the observed churn rate.",
+       "fix": "Calibrate on held-out data after retraining, or keep to a threshold measured on data.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "`gbt_v7` may not work on the `legacy` plan",
+       "where": "the Slices section",
+       "evidence": "ROC-AUC 0.573 [0.498, 0.649] on 353 rows, below the baseline there.",
+       "fix": "Recheck after retraining; if it holds, use the baseline for `legacy`.",
+       "status": "open"
+      }
+     ]
+    },
+    {
+     "type": "list",
+     "ordered": true,
+     "title": "What must happen before a model goes to production",
+     "items": [
+      "Rebuild the features as of `snapshot_date`: drop `cancellation_reason`, bound the last login and the NPS answer at the snapshot.",
+      "Retrain `gbt_v7`, score rows that were not used for training and belong to customers not in the training set, and run this comparison again.",
+      "Agree the false-negative cost with the retention team: EUR 90 as given, or EUR 65 once the credit paid to a correct offer is counted. Until then, if a list must go out, `baseline_score` at 0.201 gives an offer to 37.3% of subscribers (EUR 90), and at 0.279 to 14.8% (EUR 65). Neither meets the team's bar.",
+      "If the retrained model is still miscalibrated, calibrate it on held-out data or keep to a measured threshold, chosen on data other than the data it is judged on.",
+      "Check the `legacy` plan again and decide whether that plan needs its own treatment.",
+      "Run `/data-scientist:ds-dataset` on `train.csv` and `test.csv` to audit leakage, customers repeated across the split and the label window across the cut date."
+     ]
+    },
+    {
+     "type": "text",
+     "text": "The brief's estimate of EUR 60,000 a year in staff time is small against the saving at EUR 90: `baseline_score` saves +1.26M a year against sending no offers [+0.59M, +1.98M]. At EUR 65 the same saving is inside the noise, so the case for any list depends on that cost. The yearly figures assume the file's churn rate and the brief's 480,000 decisions. [guess]"
+    }
+   ]
+  },
+  {
+   "id": "not-checked",
+   "title": "What was not checked",
+   "blocks": [
+    {
+     "type": "list",
+     "items": [
+      "How much of `gbt_v7`'s gain comes from the leaking columns. That needs a retrained model, not this file.",
+      "Whether the 3,000 rows overlap the training rows, or whether a customer appears on both sides of the split. `/data-scientist:ds-dataset` is the audit for this. Only the header line and line count of `train.csv` and `test.csv` were read, no rows.",
+      "Whether a model finds the subscribers an offer would keep. The label is churn and the file does not say who already received an offer, so a model can rank likely churners without ranking those an offer would save. The brief's 30 percent save rate is taken as it stands.",
+      "Time and drift: the intervals cover sampling noise only, on one holdout.",
+      "The brief's login-count rule, reported there as about 4 in 10 right and 1 in 5 found. The predictions file has no login count, so it was not compared here.",
+      "Model training details, serving, and the EUR 60,000 staff estimate.",
+      "The file holds a personal column, `email`, that was neither used nor printed. Nothing here needs it, so drop it from the file."
+     ]
+    },
+    {
+     "type": "list",
+     "title": "Assumptions",
+     "items": [
+      "[guess] Assumption: the costs are EUR 25 and EUR 90 as given, with a true positive costing nothing. EUR 65 is run as a sensitivity because a correct offer still pays the EUR 25 credit.",
+      "[guess] Assumption: ROC-AUC is the primary metric, chosen before the run, and the decision itself rests on out-of-sample cost.",
+      "[guess] Assumption: `predictions.csv` is treated as the holdout, as the README calls it, although its size does not match `test.csv`.",
+      "[guess] Assumption: `baseline_score` is the score in use today, from the README's \"the current score\", and it and `logreg_v2` do not use the leaking columns. Their training code is not in the repo.",
+      "[guess] Assumption: one row is one independent decision. The file has no customer id, so a customer in several snapshots would make the intervals too narrow.",
+      "[guess] Assumption: the team's bar means recall of at least 33.3% and precision of at least 40% at one threshold, from \"one in three\" and \"no more than 6 in 10 wasted\".",
+      "[guess] Assumption: yearly figures use the brief's 480,000 decisions and the file's 19.1% churn rate, which is above the brief's 16 to 17 in 100."
+     ]
+    }
+   ]
+  }
+ ],
+ "facts": {
+  "version": 1,
+  "scope": "Choice of churn model for the Acme Stream retention offer list",
+  "costs": [
+   {
+    "item": "building, serving, monitoring and retraining a model",
+    "monthly": 5000.0,
+    "currency": "EUR",
+    "as_of": "2026-11-10",
+    "source": "docs/briefs/retention-offers.md, EUR 60,000 a year"
+   }
+  ],
+  "decisions": [
+   {
+    "title": "Model for the retention list",
+    "chosen": "keep baseline_score, do not ship logreg_v2 or gbt_v7 as trained",
+    "because": "logreg_v2 is inside the noise; gbt_v7 trains on columns unknown at list time"
+   }
+  ],
+  "assumptions": [
+   "the costs are EUR 25 and EUR 90 as given, with a true positive costing nothing. EUR 65 is run as a sensitivity because a correct offer still pays the EUR 25 credit.",
+   "ROC-AUC is the primary metric, chosen before the run, and the decision itself rests on out-of-sample cost.",
+   "`predictions.csv` is treated as the holdout, as the README calls it, although its size does not match `test.csv`.",
+   "`baseline_score` is the score in use today, from the README's \"the current score\", and it and `logreg_v2` do not use the leaking columns. Their training code is not in the repo.",
+   "one row is one independent decision. The file has no customer id, so a customer in several snapshots would make the intervals too narrow.",
+   "the team's bar means recall of at least 33.3% and precision of at least 40% at one threshold, from \"one in three\" and \"no more than 6 in 10 wasted\".",
+   "yearly figures use the brief's 480,000 decisions and the file's 19.1% churn rate, which is above the brief's 16 to 17 in 100."
+  ],
+  "open": [
+   "Is the false-negative cost EUR 90, or EUR 65 once the credit to a correct offer is counted?",
+   "Where do the 3,000 rows in predictions.csv come from, and do they overlap training?",
+   "How does gbt_v7 do once retrained without cancellation_reason and with features as of the snapshot?"
+  ]
+ }
+}

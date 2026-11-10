@@ -1,0 +1,394 @@
+{
+  "skill": "report-review",
+  "title": "October sales review: counting check",
+  "subtitle": "Whether the October review can go to the leadership team on Friday, recounted from its queries and the sample data.",
+  "meta": {
+    "repo": "acme-sales",
+    "commit": "fe28e88",
+    "date": "2026-11-10"
+  },
+  "verdict": {
+    "text": "Do not send it as it is: the report says October is up 14.5%, but with all of September counted October is down 11.1%, EUR 85,390.00 against EUR 96,000.00.",
+    "tone": "bad"
+  },
+  "stats": [
+    {
+      "label": "High findings",
+      "value": 7,
+      "tone": "bad"
+    },
+    {
+      "label": "Medium findings",
+      "value": 1,
+      "tone": "warn"
+    },
+    {
+      "label": "Low findings",
+      "value": 1,
+      "tone": "info"
+    },
+    {
+      "label": "Claims checked",
+      "value": 18,
+      "tone": "info"
+    },
+    {
+      "label": "Claims that changed",
+      "value": 10,
+      "note": "number or conclusion differs",
+      "tone": "bad"
+    }
+  ],
+  "sections": [
+    {
+      "id": "findings",
+      "title": "Findings",
+      "intro": "Every finding was read in the code and counted on the sample data.",
+      "blocks": [
+        {
+          "type": "findings",
+          "items": [
+            {
+              "severity": "high",
+              "status": "open",
+              "title": "September covers only 24 days, so a decline is reported as growth",
+              "where": "reports/october_review/sep_vs_oct.sql:5; report.md:10",
+              "evidence": "Report: October up 14.5%, EUR 85,390.00 against EUR 74,607.00. The query stops September on the 24th and compares those 24 days with all 31 days of October. Full September on the sample: **EUR 96,000.00** (854 completed orders). Corrected change: **down 11.1%** (EUR 10,610.00 lower). Like for like it is worse: per day EUR 3,200.00 against EUR 2,754.52 (down 13.9%), and over the first 24 days EUR 74,607.00 against EUR 62,799.98 (down 15.8%).",
+              "fix": "Change line 5 to `'2026-09-30'`. The headline becomes: October is down 11.1% on September, EUR 85,390.00 against EUR 96,000.00. By line, the fall is in premium (EUR 40,000.00 to EUR 26,000.00), while standard and value rose."
+            },
+            {
+              "severity": "high",
+              "status": "open",
+              "title": "Conversion divides all orders by logged-in visits only",
+              "where": "reports/october_review/conversion.sql:5; report.md:11",
+              "evidence": "Report: 5.22% against a target of 4%. The top counts all 600 orders; the bottom counts only logged-in sessions, 11,500 of 23,000, although the query's comment says orders per visit. Corrected: 600 / 23,000 = **2.61%**. Logged-in orders over logged-in visits gives 299 / 11,500 = 2.60%, so the answer does not depend on which population was meant.",
+              "fix": "Use `sum(sessions)` on lines 4 and 5. The headline becomes: web conversion was 2.61% in October, 1.39 points below the 4% target."
+            },
+            {
+              "severity": "high",
+              "status": "open",
+              "title": "Desktop beats mobile only because mobile traffic is mostly paid social",
+              "where": "reports/october_review/conversion_by_device.sql:9; report.md:12",
+              "evidence": "Report: desktop 4.43%, mobile 1.81%, so move mobile budget to desktop. The two rates are counted correctly, but mobile leads inside every traffic source: direct 7.00% against 6.00%, search 3.50% against 3.00%, paid social 1.32% against 1.00%. Paid social is 87.5% of mobile sessions (14,000 of 16,000) and 14.3% of desktop sessions (1,000 of 7,000), and it converts near 1% on either device. At one common traffic mix, desktop is 2.35% and mobile 2.84% [high]. Each per-source gap is small for its counts, about one standard error, and a combined test gives z = 1.61 [med]. So the data does not prove mobile is better; it only removes the case for desktop.",
+              "fix": "Group by `source, device`, and drop the budget proposal. The headline becomes: the gap between desktop and mobile comes from traffic mix; within each source mobile is level or slightly ahead."
+            },
+            {
+              "severity": "high",
+              "status": "open",
+              "title": "The promotions join counts 40 orders twice",
+              "where": "reports/october_review/revenue_by_line.sql:6; report.md:8",
+              "evidence": "Report: net revenue EUR 88,600.00, while its own headline 3 gives October as EUR 85,390.00. The left join to `order_promotions` repeats the 40 orders that carry two promo codes, all on the standard line. Sum after the join EUR 88,600.00; correct sum **EUR 85,390.00** (the join adds EUR 3,210.00, or 3.8%). Standard becomes EUR 40,590.00 instead of EUR 43,800.00; premium and value do not change.",
+              "fix": "Delete lines 6 and 7, since no column of `p` is used. The headline becomes: net revenue in October was EUR 85,390.00, led by the standard line at EUR 40,590.00."
+            },
+            {
+              "severity": "high",
+              "status": "open",
+              "title": "The store average is a mean of six store means",
+              "where": "reports/october_review/avg_order_by_store.sql:17; report.md:14",
+              "evidence": "Report: EUR 118.89. That is the plain mean of the six store averages, so store 6 with 6 orders weighs as much as store 1 with 120. The average over the 270 store orders is EUR 25,944.83 / 270 = **EUR 96.09**. The report is EUR 22.80, or 23.7%, too high.",
+              "fix": "Replace it with one statement, `select sum(net_amount) / count(*)` under the same filters. The headline becomes: the average order in a store was EUR 96.09."
+            },
+            {
+              "severity": "high",
+              "status": "open",
+              "title": "Store 6 is called the best store on 6 orders",
+              "where": "reports/october_review/report.md:14; reports/october_review/output/avg_order_by_store.csv:7",
+              "evidence": "Report: store 6 is the best store at EUR 240.00 and should be the model for the others. EUR 240.00 is correct, but it rests on **6 orders**, EUR 1,440.00 in total, the smallest revenue of the six stores. All six orders are premium, and premium store orders average EUR 205.53 across all stores [high], so the figure mostly reflects what was sold. Stores 5 (14 orders) and 4 (20 orders) are also under 30. Among stores with at least 30 orders the highest average is store 3, EUR 99.29 on 40 orders.",
+              "fix": "Remove \"best store\" and the proposal. The headline becomes: store 6 is too small to rank, with 6 orders in October. Any ranking should use stores with at least 30 orders and compare within a product line."
+            },
+            {
+              "severity": "high",
+              "status": "open",
+              "title": "The region filter also drops orders with no region",
+              "where": "reports/october_review/revenue_by_region.sql:8; report.md:9",
+              "evidence": "Report: the three regions brought EUR 81,842.62. `region <> 'unknown'` also drops NULLs: 30 completed October orders worth EUR 3,114.50, on top of 6 marked `unknown` worth EUR 432.88. The three named regions do add up to EUR 81,842.62, but with only `unknown` excluded the query totals **EUR 84,957.12**, and the report never says that EUR 3,547.38 (4.2%) of October's EUR 85,390.00 is outside them. No decision in the report rests on this number, so it is the least urgent of the high findings.",
+              "fix": "Use `(region <> 'unknown' or region is null)` and label the extra row as no region. The headline becomes: north, south and west brought EUR 81,842.62; another EUR 3,547.38 (36 orders) has no usable region."
+            },
+            {
+              "severity": "medium",
+              "status": "open",
+              "title": "The chart exaggerates an increase that did not happen",
+              "where": "reports/october_review/monthly_chart.ipynb:23; report.md:19",
+              "evidence": "The axis starts at EUR 70,000, so October's bar is drawn 3.3 times as tall as September's for values 1.14 times apart. September is the 24-day figure and the title says \"Net revenue is growing\". The full-month EUR 96,000.00 would run past the axis top of EUR 90,000. The values are typed into the notebook at line 20, not read from `output/sep_vs_oct.csv` as its heading says, so correcting the query will not correct the chart.",
+              "fix": "Read the corrected CSV, remove `set_ylim` so the bars start at zero, and retitle it, for example \"Net revenue fell 11.1% in October\"."
+            },
+            {
+              "severity": "low",
+              "status": "open",
+              "title": "Not every saved output comes from the committed queries",
+              "where": "reports/october_review/report.md:3; reports/october_review/avg_order_by_store.sql:17",
+              "evidence": "The report says its numbers come from these queries and are saved under `output/`. EUR 118.89 is not in `output/`, and the second statement of `avg_order_by_store.sql` cannot run, because the `store_orders` CTE ends with the first statement at line 15 (it failed on the SQLite copy; CTEs have that scope in standard SQL [high]). `output/conversion.csv` has a `month` column the query does not select, and `output/avg_order_by_store.csv` is sorted by store while the query sorts by average. Every other saved number reproduces exactly.",
+              "fix": "After the fixes, re-run every query and save its output directly, including the store average."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "headlines",
+      "title": "The headlines after correction",
+      "intro": "All six headlines need a change. Four lose their conclusion: the growth, the conversion target, the budget move and store 6.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Claim",
+            "The report's number",
+            "Corrected number",
+            "The conclusion now"
+          ],
+          "rows": [
+            [
+              "Net revenue in October, led by the standard line",
+              "EUR 88,600.00",
+              "EUR 85,390.00",
+              "Lower by EUR 3,210.00. Standard still leads, at EUR 40,590.00."
+            ],
+            [
+              "The three regions together",
+              "EUR 81,842.62",
+              "EUR 84,957.12 with NULL-region orders kept",
+              "The three named regions do total EUR 81,842.62, but EUR 3,547.38 of October is outside them and the report must say so."
+            ],
+            [
+              "October against September",
+              "Up 14.5% (EUR 85,390.00 against EUR 74,607.00)",
+              "Down 11.1% (EUR 85,390.00 against EUR 96,000.00)",
+              "Reversed: October fell."
+            ],
+            [
+              "Web conversion against a 4% target",
+              "5.22%",
+              "2.61%",
+              "Reversed: the target was missed by 1.39 points."
+            ],
+            [
+              "Desktop against mobile, move budget to desktop",
+              "4.43% against 1.81%",
+              "Same rates; at one traffic mix 2.35% against 2.84%",
+              "The proposal is not supported. Mobile leads within every source, by small margins."
+            ],
+            [
+              "Average order in a store",
+              "EUR 118.89",
+              "EUR 96.09",
+              "Lower by EUR 22.80."
+            ],
+            [
+              "Store 6 is the best store and the model",
+              "EUR 240.00",
+              "EUR 240.00 on 6 orders",
+              "The proposal falls: 6 orders are too few to rank."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chart",
+      "title": "One chart for the biggest error",
+      "blocks": [
+        {
+          "type": "chart",
+          "kind": "bar",
+          "title": "Net revenue by month, as reported and corrected",
+          "unit": "EUR",
+          "x_label": "Net revenue",
+          "categories": [
+            "September",
+            "October"
+          ],
+          "series": [
+            {
+              "name": "As reported",
+              "values": [
+                74607,
+                85390
+              ]
+            },
+            {
+              "name": "Corrected",
+              "values": [
+                96000,
+                85390
+              ]
+            }
+          ],
+          "caption": "The reported September covers 1 to 24 September. October is the same in both series."
+        }
+      ]
+    },
+    {
+      "id": "checked",
+      "title": "What was checked",
+      "intro": "Each query was run as written on an in-memory copy of the sample without personal columns. Every saved figure in `output/` reproduced exactly, and the only statement that failed is the store average at `avg_order_by_store.sql:17`.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Claim",
+            "Where",
+            "How it was checked",
+            "Result"
+          ],
+          "rows": [
+            [
+              "Net revenue in October EUR 88,600.00",
+              "reports/october_review/report.md:8",
+              "Ran the query on the sample; `fanout` check; recount",
+              "Wrong: EUR 85,390.00"
+            ],
+            [
+              "Standard is the leading line",
+              "reports/october_review/report.md:8",
+              "Recount by line, without the join",
+              "Holds: EUR 40,590.00 against 26,000.00 and 18,800.00"
+            ],
+            [
+              "Three regions EUR 81,842.62",
+              "reports/october_review/report.md:9",
+              "Ran the query; recount with and without the filter",
+              "Changed: EUR 84,957.12 with NULL-region orders"
+            ],
+            [
+              "October up 14.5%",
+              "reports/october_review/report.md:10",
+              "`windows` check, full months and like for like",
+              "Wrong: down 11.1%"
+            ],
+            [
+              "October EUR 85,390.00",
+              "reports/october_review/report.md:10",
+              "Ran the query; recount",
+              "Holds"
+            ],
+            [
+              "September EUR 74,607.00",
+              "reports/october_review/report.md:10",
+              "`windows` check",
+              "Wrong: 24 days only; full month EUR 96,000.00"
+            ],
+            [
+              "Web conversion 5.22%",
+              "reports/october_review/report.md:11",
+              "Ran the query; ratio recount on all visits and on logged-in visits",
+              "Wrong: 2.61%"
+            ],
+            [
+              "Conversion compared with the 4% target",
+              "reports/october_review/report.md:11",
+              "Compared the corrected rate; the target itself has no source",
+              "Reversed: below target"
+            ],
+            [
+              "Desktop 4.43%",
+              "reports/october_review/report.md:12",
+              "Ran the query; `simpson` check",
+              "Holds"
+            ],
+            [
+              "Mobile 1.81%",
+              "reports/october_review/report.md:12",
+              "Ran the query; `simpson` check",
+              "Holds"
+            ],
+            [
+              "Move mobile budget to desktop",
+              "reports/october_review/report.md:12",
+              "`simpson` check by source and by logged-in status",
+              "Not supported: reversal by source, none by logged-in status"
+            ],
+            [
+              "Average store order EUR 118.89",
+              "reports/october_review/report.md:14",
+              "`avg_of_averages` check",
+              "Wrong: EUR 96.09"
+            ],
+            [
+              "Store 6 average EUR 240.00",
+              "reports/october_review/report.md:14",
+              "Ran the query; `small_groups` check",
+              "Holds, on 6 orders"
+            ],
+            [
+              "Store 6 is best and the model",
+              "reports/october_review/report.md:14",
+              "`small_groups` check; count by product line",
+              "Not supported"
+            ],
+            [
+              "Chart shows September and October",
+              "reports/october_review/report.md:19",
+              "Read the notebook code; recounted its values",
+              "Misleading: truncated axis, 24-day September"
+            ],
+            [
+              "Orders by status 12, 878 and 26",
+              "reports/october_review/report.md:20",
+              "Ran the query; recount",
+              "Holds"
+            ],
+            [
+              "Numbers come from the queries, saved in `output/`",
+              "reports/october_review/report.md:3",
+              "Ran all 8 statements and compared with `output/`",
+              "Partly: one statement cannot run, two outputs differ in shape"
+            ],
+            [
+              "Data refreshed on 5 November",
+              "reports/october_review/report.md:4",
+              "Latest `loaded_at` in the sample",
+              "Consistent: latest load is 4 November"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "not-checked",
+      "title": "What this review did not check",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "**The 4% target.** Nothing in the repository defines it, so I could not check whether it is set on all visits or on logged-in visits. Both readings give about 2.6%, below it.",
+            "**The effect of moving budget.** There is no spend or cost-per-visit data, so the review can only say the device comparison does not support the proposal.",
+            "**The production warehouse.** Only the sample was available. The queries ran on an in-memory SQLite copy of it, not on your warehouse.",
+            "**Whether October has changed since the refresh.** 32 October orders loaded more than 3 days after they were placed, up to 7.8 days, while no September order took more than 0.8 days [high]. All of them had loaded by 4 November, so they are in the data the report used. Anything that loaded after the sample was taken would move October.",
+            "**The drawn chart and the deck.** The notebook has no saved output, so I read its code and did not draw it. The Friday deck is not in the folder.",
+            "**Why revenue fell.** I counted it by product line only and did not analyse the causes.",
+            "**The finance ledger and the BI dashboard.** The report uses neither, so October was not reconciled to the ledger, and `reports/dashboards/` was not reviewed."
+          ]
+        },
+        {
+          "type": "list",
+          "title": "What I assumed",
+          "items": [
+            "The sample is the data behind the report: every saved figure reproduced exactly on it, so corrected numbers are stated as the report's own population.",
+            "Net revenue means the finance definition in `models/marts/mart_net_revenue.sql`: completed orders, by order date, without shipping. The 8 staff orders (EUR 590.00) stay in, as they do in that definition.",
+            "September means the whole calendar month. Nothing in the report explains stopping at 24 September.",
+            "Conversion means orders per visit over all visits, as the comment on `conversion.sql:1` says.",
+            "The region filter was meant to drop only rows marked `unknown`, not rows with no region at all.",
+            "A store needs at least 30 orders to be ranked, the default of this review."
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "October sales review of acme-sales, before it goes out",
+    "assumptions": [
+      "The sample is the data behind the report: every saved figure reproduced exactly on it, so corrected numbers are stated as the report's own population.",
+      "Net revenue means the finance definition in `models/marts/mart_net_revenue.sql`: completed orders, by order date, without shipping. The 8 staff orders (EUR 590.00) stay in, as they do in that definition.",
+      "September means the whole calendar month. Nothing in the report explains stopping at 24 September.",
+      "Conversion means orders per visit over all visits, as the comment on `conversion.sql:1` says.",
+      "The region filter was meant to drop only rows marked `unknown`, not rows with no region at all.",
+      "A store needs at least 30 orders to be ranked, the default of this review."
+    ],
+    "open": [
+      "Where the 4% conversion target is defined, and on which visits.",
+      "Whether any October orders have loaded since the 5 November refresh."
+    ]
+  }
+}

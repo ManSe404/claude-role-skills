@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Reports for the analytics team
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+  ReportCodeBucket:
+    Type: String
+    Default: stagefront-artifacts-prod
+
+Conditions:
+  IsProd: !Equals [!Ref Environment, prod]
+
+Resources:
+  ReportsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub stagefront-reports-${Environment}
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: owner
+          Value: analytics
+
+  ReportsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ReportsBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: PublicRead
+            Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub "${ReportsBucket.Arn}/*"
+
+  ReportRequestsDeadLetter:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub stagefront-report-requests-${Environment}-dlq
+
+  ReportRequests:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub stagefront-report-requests-${Environment}
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ReportRequestsDeadLetter.Arn
+        maxReceiveCount: 3
+
+  ReportBuilderRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub stagefront-report-builder-${Environment}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: reports
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: "*"
+                Resource: "*"
+
+  ReportBuilder:
+    Type: AWS::Lambda::Function
+    Condition: IsProd
+    Properties:
+      FunctionName: !Sub stagefront-report-builder-${Environment}
+      Runtime: python3.13
+      Handler: app.handler
+      Role: !GetAtt ReportBuilderRole.Arn
+      Code:
+        S3Bucket: !Ref ReportCodeBucket
+        S3Key: report-builder/1.4.0.zip
+      Environment:
+        Variables:
+          QUEUE_URL: !Ref ReportRequests
+          BUCKET: !Ref ReportsBucket
+          LOG_LEVEL: !If [IsProd, INFO, DEBUG]

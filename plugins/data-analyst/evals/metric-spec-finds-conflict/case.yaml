@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: metric-spec-finds-conflict
+tags: [data-analyst, metric-spec]
+context:
+  scaffold_script: fixture.sh

@@ -1,0 +1,46 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "The alert topic and the database alarm, from the old account setup",
+  "Parameters": {
+    "AlertAddress": {
+      "Type": "String",
+      "Default": "platform@example.com"
+    }
+  },
+  "Resources": {
+    "AlertTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": "stagefront-alerts",
+        "Subscription": [
+          { "Endpoint": { "Ref": "AlertAddress" }, "Protocol": "email" }
+        ]
+      }
+    },
+    "DatabaseCpuAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": "stagefront-db-cpu",
+        "Namespace": "AWS/RDS",
+        "MetricName": "CPUUtilization",
+        "Dimensions": [
+          { "Name": "DBInstanceIdentifier", "Value": "stagefront-tickets-prod" }
+        ],
+        "Statistic": "Average",
+        "Period": 300,
+        "EvaluationPeriods": 3,
+        "Threshold": 80,
+        "ComparisonOperator": "GreaterThanThreshold",
+        "AlarmActions": [
+          { "Ref": "AlertTopic" }
+        ]
+      }
+    },
+    "SharedDashboards": {
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "TemplateURL": "https://templates.example.com/shared-dashboards.yaml"
+      }
+    }
+  }
+}

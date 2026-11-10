@@ -1,0 +1,922 @@
+{
+  "skill": "number-reconcile",
+  "title": "ERP against the finance ledger, October 2026 net revenue",
+  "subtitle": "Where the ERP and the ledger part, row by row, and how much of the gap each cause accounts for.",
+  "meta": {
+    "repo": "acme-sales",
+    "commit": "fe28e88",
+    "date": "2026-11-10"
+  },
+  "verdict": {
+    "text": "EUR 1,471.00 of the EUR 1,506.00 gap is accounted for by named differences and EUR 35.00 on 3 orders is left unexplained, while 8 one-sided rows inside the accounted part (+412.60 ERP only, −150.00 ledger only) still need a reason before the close.",
+    "tone": "warn"
+  },
+  "stats": [
+    {
+      "label": "Gap, ERP above ledger",
+      "value": "EUR 1,506.00",
+      "tone": "info"
+    },
+    {
+      "label": "Explained, in named buckets",
+      "value": "EUR 1,471.00",
+      "note": "97.7% of the gap",
+      "tone": "ok"
+    },
+    {
+      "label": "Unexplained",
+      "value": "EUR 35.00",
+      "note": "3 orders, same key, different amount",
+      "tone": "bad"
+    },
+    {
+      "label": "Biggest cause: posted in November",
+      "value": "EUR 777.70",
+      "note": "7 orders",
+      "tone": "info"
+    },
+    {
+      "label": "Second: staff orders",
+      "value": "EUR 590.00",
+      "note": "8 orders",
+      "tone": "info"
+    },
+    {
+      "label": "One-sided rows, no reason shown",
+      "value": "6 + 2 rows",
+      "note": "+412.60 in the ERP only, −150.00 in the ledger only",
+      "tone": "warn"
+    }
+  ],
+  "sections": [
+    {
+      "id": "two-numbers",
+      "title": "The two numbers",
+      "blocks": [
+        {
+          "type": "kv",
+          "items": [
+            [
+              "ERP net revenue (A)",
+              "EUR 85,390.00"
+            ],
+            [
+              "A, definition",
+              "Sum of `net_amount` where `status = completed` and `order_date` is in October 2026 (`mart_net_revenue`). `order_date` is the UTC date of `order_ts` on all 1,807 rows."
+            ],
+            [
+              "A, rows and keys",
+              "878 rows, 878 order keys, key unique. 38 October rows of other statuses are filtered out."
+            ],
+            [
+              "A, reproduced",
+              "Yes, to the cent: the question states EUR 85,390.00."
+            ],
+            [
+              "Ledger amount (B)",
+              "EUR 83,884.00"
+            ],
+            [
+              "B, definition",
+              "Sum of `amount` where the date of `posted_at` is in October 2026. One account (`4000-SALES`), one currency (EUR), no filter."
+            ],
+            [
+              "B, rows and keys",
+              "862 rows, 858 order keys: 4 orders appear twice."
+            ],
+            [
+              "B, reproduced",
+              "Computed from the rows only. The question says the ledger \"shows less\" and gives no ledger figure, so there is no stated number to check it against."
+            ],
+            [
+              "The gap, A minus B",
+              "EUR 1,506.00"
+            ]
+          ]
+        },
+        {
+          "type": "list",
+          "title": "What I assumed",
+          "items": [
+            "October is 2026-10-01 to 2026-10-31 on each side's own date column and clock.",
+            "The ledger figure is every row of `ledger.csv` posted in October, because the question names no filter and the file holds one account and one currency.",
+            "`order_id` joins the two files. `ledger.csv` carries it for every row.",
+            "`posted_at` has no time zone in the file. I read it as local time from how it sits against `order_ts`, see the clock row below.",
+            "The ledger extract stops at its last posting, 6 November 2026. Anything posted later cannot be seen here.",
+            "Differences of up to 0.50 count as rounding, because every ledger amount is a whole euro."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gap",
+      "title": "The gap accounted for",
+      "intro": "Amounts are signed: positive means the row makes the ERP higher than the ledger. The buckets add up to the gap exactly, checked in exact fractions and again by an independent recount.",
+      "blocks": [
+        {
+          "type": "chart",
+          "kind": "waterfall",
+          "title": "From the ERP figure to the ledger figure",
+          "unit": "EUR",
+          "places": 2,
+          "items": [
+            {
+              "label": "ERP",
+              "value": 85390.0,
+              "total": true
+            },
+            {
+              "label": "Posted in Nov",
+              "value": -777.7
+            },
+            {
+              "label": "Staff orders",
+              "value": -590.0
+            },
+            {
+              "label": "31 Oct clock",
+              "value": -431.2
+            },
+            {
+              "label": "Only in ERP",
+              "value": -412.6
+            },
+            {
+              "label": "30 Sep clock",
+              "value": 318.0
+            },
+            {
+              "label": "Posted twice",
+              "value": 268.0
+            },
+            {
+              "label": "Manual rows",
+              "value": 150.0
+            },
+            {
+              "label": "Amounts differ",
+              "value": -35.0
+            },
+            {
+              "label": "Rounding",
+              "value": 4.5
+            },
+            {
+              "label": "Ledger",
+              "value": 83884.0,
+              "total": true
+            }
+          ],
+          "caption": "Drawn to scale, so the steps are slivers against totals of about 85,000. The next chart shows the same steps without the totals."
+        },
+        {
+          "type": "chart",
+          "kind": "waterfall",
+          "title": "The same steps, without the two totals",
+          "unit": "EUR",
+          "places": 2,
+          "items": [
+            {
+              "label": "Posted in Nov",
+              "value": -777.7
+            },
+            {
+              "label": "Staff orders",
+              "value": -590.0
+            },
+            {
+              "label": "31 Oct clock",
+              "value": -431.2
+            },
+            {
+              "label": "Only in ERP",
+              "value": -412.6
+            },
+            {
+              "label": "30 Sep clock",
+              "value": 318.0
+            },
+            {
+              "label": "Posted twice",
+              "value": 268.0
+            },
+            {
+              "label": "Manual rows",
+              "value": 150.0
+            },
+            {
+              "label": "Amounts differ",
+              "value": -35.0
+            },
+            {
+              "label": "Rounding",
+              "value": 4.5
+            }
+          ],
+          "caption": "Starts at the ERP figure as zero and ends at −1,506.00, the ledger figure measured from the ERP."
+        },
+        {
+          "type": "table",
+          "title": "Every bucket",
+          "columns": [
+            "Bucket",
+            "Kind",
+            "Amount (EUR)",
+            "Rows",
+            "Share of gap"
+          ],
+          "align": [
+            "left",
+            "left",
+            "right",
+            "right",
+            "right"
+          ],
+          "rows": [
+            [
+              "Posted in November (`timing_a`)",
+              "Timing",
+              "+777.70",
+              7,
+              "51.6%"
+            ],
+            [
+              "Staff orders, never in the ledger (`filtered_a:channel=staff`)",
+              "Filter",
+              "+590.00",
+              8,
+              "39.2%"
+            ],
+            [
+              "31 Oct UTC, 1 Nov on the ledger clock (`time_zone_a`)",
+              "Clock",
+              "+431.20",
+              5,
+              "28.6%"
+            ],
+            [
+              "In the ERP, not in the ledger (`only_in_a`)",
+              "Real difference",
+              "+412.60",
+              6,
+              "27.4%"
+            ],
+            [
+              "30 Sep UTC, 1 Oct on the ledger clock (`time_zone_b`)",
+              "Clock",
+              "−318.00",
+              4,
+              "-21.1%"
+            ],
+            [
+              "Posted twice in the ledger (`duplicates_b`)",
+              "Real difference",
+              "−268.00",
+              4,
+              "-17.8%"
+            ],
+            [
+              "In the ledger, no ERP order (`only_in_b`)",
+              "Real difference",
+              "−150.00",
+              2,
+              "-10.0%"
+            ],
+            [
+              "Same order, different amount (`value_difference`)",
+              "Unexplained",
+              "+35.00",
+              3,
+              "2.3%"
+            ],
+            [
+              "Ledger rounds to whole euros (`rounding`)",
+              "Rounding",
+              "−4.50",
+              849,
+              "-0.3%"
+            ],
+            [
+              "**Total, the gap**",
+              "",
+              "**+1,506.00**",
+              null,
+              "100.0%"
+            ]
+          ]
+        },
+        {
+          "type": "table",
+          "title": "The same total by kind",
+          "columns": [
+            "Kind",
+            "What",
+            "Amount (EUR)",
+            "Share of gap"
+          ],
+          "align": [
+            "left",
+            "left",
+            "right",
+            "right"
+          ],
+          "rows": [
+            [
+              "Timing",
+              "7 orders of 28 to 30 Oct posted on 3 to 6 Nov",
+              "+777.70",
+              "51.6%"
+            ],
+            [
+              "Filter",
+              "Staff orders, every month",
+              "+590.00",
+              "39.2%"
+            ],
+            [
+              "Clock",
+              "UTC against local at the month edges, net",
+              "+113.20",
+              "7.5%"
+            ],
+            [
+              "Rounding",
+              "Ledger keeps whole euros, every month",
+              "−4.50",
+              "-0.3%"
+            ],
+            [
+              "Real difference",
+              "6 ERP-only orders, 2 ledger-only rows, 4 double postings, net",
+              "−5.40",
+              "-0.4%"
+            ],
+            [
+              "Unexplained",
+              "Amounts differ on 3 orders",
+              "+35.00",
+              "2.3%"
+            ],
+            [
+              "**Total, the gap**",
+              "",
+              "**+1,506.00**",
+              "100.0%"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "where",
+      "title": "Where it sits",
+      "intro": "The gap per value of each column, with the share of the gap. Cuts tried: `channel`, `region`, `product_line`, `order_date`, and `batch_id` and `account`, which exist on the ledger side only and showed nothing beyond the 2 manual rows. Late October and the 30 September edge together hold 64.7% of the gap.",
+      "blocks": [
+        {
+          "type": "table",
+          "title": "By channel",
+          "columns": [
+            "channel",
+            "Gap (EUR)",
+            "Share of gap",
+            "Keys"
+          ],
+          "align": [
+            "left",
+            "right",
+            "right",
+            "right"
+          ],
+          "rows": [
+            [
+              "web",
+              "+703.17",
+              "46.7%",
+              602
+            ],
+            [
+              "staff",
+              "+590.00",
+              "39.2%",
+              8
+            ],
+            [
+              "store",
+              "+362.83",
+              "24.1%",
+              272
+            ],
+            [
+              "(no ERP row: the 2 manual ledger rows)",
+              "−150.00",
+              "-10.0%",
+              2
+            ],
+            [
+              "**Total**",
+              "**+1,506.00**",
+              "100.0%",
+              884
+            ]
+          ]
+        },
+        {
+          "type": "table",
+          "title": "By region",
+          "columns": [
+            "region",
+            "Gap (EUR)",
+            "Share of gap",
+            "Keys"
+          ],
+          "align": [
+            "left",
+            "right",
+            "right",
+            "right"
+          ],
+          "rows": [
+            [
+              "south",
+              "+843.44",
+              "56.0%",
+              291
+            ],
+            [
+              "north",
+              "+556.20",
+              "36.9%",
+              282
+            ],
+            [
+              "west",
+              "+255.98",
+              "17.0%",
+              273
+            ],
+            [
+              "(no ERP row: the 2 manual ledger rows)",
+              "−150.00",
+              "-10.0%",
+              2
+            ],
+            [
+              "(empty)",
+              "+0.50",
+              "0.0%",
+              30
+            ],
+            [
+              "unknown",
+              "−0.12",
+              "-0.0%",
+              6
+            ],
+            [
+              "**Total**",
+              "**+1,506.00**",
+              "100.0%",
+              884
+            ]
+          ]
+        },
+        {
+          "type": "table",
+          "title": "By product line",
+          "columns": [
+            "product_line",
+            "Gap (EUR)",
+            "Share of gap",
+            "Keys"
+          ],
+          "align": [
+            "left",
+            "right",
+            "right",
+            "right"
+          ],
+          "rows": [
+            [
+              "standard",
+              "+1,047.00",
+              "69.5%",
+              403
+            ],
+            [
+              "value",
+              "+576.00",
+              "38.2%",
+              352
+            ],
+            [
+              "(no ERP row: the 2 manual ledger rows)",
+              "−150.00",
+              "-10.0%",
+              2
+            ],
+            [
+              "premium",
+              "+33.00",
+              "2.2%",
+              127
+            ],
+            [
+              "**Total**",
+              "**+1,506.00**",
+              "100.0%",
+              884
+            ]
+          ]
+        },
+        {
+          "type": "table",
+          "title": "By order day, days of EUR 30 or more",
+          "columns": [
+            "order_date",
+            "Gap (EUR)",
+            "Share of gap",
+            "Keys"
+          ],
+          "align": [
+            "left",
+            "right",
+            "right",
+            "right"
+          ],
+          "rows": [
+            [
+              "2026-10-30",
+              "+560.26",
+              "37.2%",
+              30
+            ],
+            [
+              "2026-10-31",
+              "+363.12",
+              "24.1%",
+              32
+            ],
+            [
+              "2026-09-30",
+              "−318.00",
+              "-21.1%",
+              4
+            ],
+            [
+              "2026-10-28",
+              "+267.71",
+              "17.8%",
+              45
+            ],
+            [
+              "2026-10-11",
+              "+230.73",
+              "15.3%",
+              34
+            ],
+            [
+              "(no ERP row: the 2 manual ledger rows)",
+              "−150.00",
+              "-10.0%",
+              2
+            ],
+            [
+              "2026-10-12",
+              "+122.20",
+              "8.1%",
+              33
+            ],
+            [
+              "2026-10-05",
+              "+113.12",
+              "7.5%",
+              27
+            ],
+            [
+              "2026-10-29",
+              "+101.47",
+              "6.7%",
+              23
+            ],
+            [
+              "2026-10-02",
+              "+93.23",
+              "6.2%",
+              33
+            ],
+            [
+              "2026-10-07",
+              "+61.67",
+              "4.1%",
+              28
+            ],
+            [
+              "2026-10-15",
+              "+59.24",
+              "3.9%",
+              28
+            ],
+            [
+              "2026-10-08",
+              "−57.66",
+              "-3.8%",
+              24
+            ],
+            [
+              "2026-10-06",
+              "+51.91",
+              "3.4%",
+              28
+            ],
+            [
+              "2026-10-10",
+              "+51.27",
+              "3.4%",
+              22
+            ],
+            [
+              "2026-10-03",
+              "−40.12",
+              "-2.7%",
+              30
+            ],
+            [
+              "(the other 17 days)",
+              "−4.15",
+              "-0.3%",
+              461
+            ],
+            [
+              "**Total**",
+              "**+1,506.00**",
+              "100.0%",
+              884
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "what",
+      "title": "What each difference is",
+      "intro": "[high] means the rows show it, [med] means the rows point to it, [guess] means no row shows it.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Bucket",
+            "What it means",
+            "Evidence",
+            "Which side is right"
+          ],
+          "align": [
+            "left",
+            "left",
+            "left",
+            "left"
+          ],
+          "rows": [
+            [
+              "Posted in November (`timing_a`), +777.70, 7 orders",
+              "Timing. Orders placed 28 to 30 October that the ledger posted 4.7 to 7.9 days later, on 3 to 6 November, so the ledger counts them in November.",
+              "[high] All 7 are in the ledger, in batches 20261103 to 20261106, and all are `standard` line. Every other order with a ledger row (1,710 rows) posts at the order time plus only the clock offset. 89 of the 96 non-staff completed orders of 28 to 30 October posted on time.",
+              "Each side follows its own date rule: the ERP by order date, the ledger by posting date. Nothing here says which rule the close should use."
+            ],
+            [
+              "Staff orders (`filtered_a:channel=staff`), +590.00, 8 orders",
+              "Filter. The finance definition has no staff exclusion, so the ERP figure counts them. The ledger never receives them.",
+              "[high] 13 of 13 staff orders in the extract, all completed, have no ledger row, in either month. [med] The BI dashboard leaves staff out on purpose (`revenue_dashboard.sql`), so the exclusion is known practice. No file says whether staff orders are net revenue.",
+              "Nothing here can say. By its wording `mart_net_revenue` includes them, and the ledger and the BI dashboard do not."
+            ],
+            [
+              "Clock at the month edges (`time_zone_a` +431.20, 5 orders; `time_zone_b` −318.00, 4 orders), net +113.20",
+              "Clock. The same order is dated by two clocks: `order_date` is UTC and `posted_at` is local, so orders in the last hour or two of a month land in different months.",
+              "[high] `posted_at` is exactly 2 hours after `order_ts` on orders before 25 October and exactly 1 hour after from 25 October, the date summer time ended. [high] 5 orders of 31 October at 23:03 to 23:59 UTC posted on 1 November, and 4 orders of 30 September at 22:11 to 22:51 UTC posted on 1 October. [med] The ledger clock is CET/CEST; no file names it.",
+              "Nothing here can say. No file states which clock the close uses."
+            ],
+            [
+              "In the ERP, not in the ledger (`only_in_a`), +412.60, 6 orders",
+              "Real difference. Completed orders with no ledger row up to the last posting in the extract, 6 November.",
+              "[high] Only 6 of 1,719 non-staff completed orders in the file have no ledger row, all placed 2 to 15 October, 4 `web` and 2 `store`. [high] All 6 are `value` line with 3 or 4 units, yet 195 of the 201 October orders with that shape posted, so it is not a filter. [med] They are unlikely to be late: the longest posting delay is 7.9 days and they are 22 to 35 days before the last posting.",
+              "Nothing here can say. The rows show the ERP has them as completed and the ledger has nothing; no row says why."
+            ],
+            [
+              "Posted twice (`duplicates_b`), −268.00, 4 rows",
+              "Real difference. A second ledger row for an order already posted, inside October, so the ledger counts these 4 orders twice.",
+              "[high] 4 orders, 2 ledger rows each, same `posted_at` to the second, same amount, same batch, consecutive `ledger_id`. The ERP has each order once. One pair each in four separate daily batches (3, 5, 8 and 31 October, of 25 to 31 rows), so not a whole batch rerun.",
+              "The rows say the ledger is overstated by 268.00: one ERP order, two identical postings. [high]"
+            ],
+            [
+              "In the ledger, no ERP order (`only_in_b`), −150.00, 2 rows",
+              "Real difference. Ledger rows with no order behind them.",
+              "[high] 100.00 and 50.00, posted at 10:00:00 on 29 October and 11:30:00 on 30 October, in ordinary daily batches, with `MAN`-prefixed keys where every other row uses the `SO-` prefix. [med] They look like manual journal entries. No file describes them.",
+              "Nothing here can say. The entries' author or backup would."
+            ],
+            [
+              "Same order, different amount (`value_difference`), +35.00, 3 orders",
+              "Unexplained. Same order, same period, the ledger lower than the ERP by 10.00, 20.00 and 5.00.",
+              "[high] All 3 are `web`, `premium`, 1 unit, shipping fee 0.00. `order_promotions.csv` has no row for any of them. See the next section.",
+              "Nothing here can say."
+            ],
+            [
+              "Rounding (`rounding`), −4.50, 849 orders",
+              "Rounding. The ledger stores whole euros and the ERP stores cents; the per-row differences net to −4.50.",
+              "[high] Every ledger amount is a whole euro. Matched orders differ by at most 0.50.",
+              "Neither: it follows from the ledger's whole-euro amounts."
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "title": "September, same method",
+          "text": "September's gap is EUR 824.00 and it splits into staff orders +500.00, the month-edge clock +318.00 and rounding +6.00, adding up exactly. [high] So staff orders, the clock and rounding recur every month. The late postings, ERP-only orders, manual rows, double postings and amount differences appear only in October."
+        }
+      ]
+    },
+    {
+      "id": "unexplained",
+      "title": "Still unexplained",
+      "blocks": [
+        {
+          "type": "callout",
+          "tone": "bad",
+          "text": "**EUR 35.00 on 3 orders.** Same key on both sides, and the amounts differ by more than rounding. Nothing in these files says why. A manual credit or a discount applied on one side would explain it [guess], and the credit note or the source document of these 3 postings would settle it."
+        },
+        {
+          "type": "table",
+          "title": "The 3 orders (no keys shown; find them by date and amount)",
+          "columns": [
+            "Order date",
+            "Channel",
+            "Line",
+            "Units",
+            "ERP net",
+            "Ledger amount",
+            "ERP minus ledger"
+          ],
+          "align": [
+            "left",
+            "left",
+            "left",
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "rows": [
+            [
+              "2026-10-02",
+              "web",
+              "premium",
+              1,
+              "112.00",
+              "102.00",
+              "+10.00"
+            ],
+            [
+              "2026-10-03",
+              "web",
+              "premium",
+              1,
+              "126.00",
+              "106.00",
+              "+20.00"
+            ],
+            [
+              "2026-10-28",
+              "web",
+              "premium",
+              1,
+              "122.00",
+              "117.00",
+              "+5.00"
+            ]
+          ]
+        },
+        {
+          "type": "text",
+          "title": "Placed, but with no reason in the data",
+          "text": "These rows are in the buckets above and are counted in the explained total, because they are one-sided rows. Their reason is not shown by any row, and a close should not treat them as settled. The reason would come from the ERP-to-ledger interface log for the 6 orders and from the journal backup for the 2 ledger rows."
+        },
+        {
+          "type": "table",
+          "title": "6 orders in the ERP only, +412.60",
+          "columns": [
+            "Order date",
+            "Channel",
+            "Region",
+            "Line",
+            "Units",
+            "Net amount"
+          ],
+          "align": [
+            "left",
+            "left",
+            "left",
+            "left",
+            "right",
+            "right"
+          ],
+          "rows": [
+            [
+              "2026-10-02",
+              "web",
+              "west",
+              "value",
+              4,
+              "83.58"
+            ],
+            [
+              "2026-10-07",
+              "web",
+              "north",
+              "value",
+              3,
+              "60.77"
+            ],
+            [
+              "2026-10-11",
+              "store",
+              "south",
+              "value",
+              4,
+              "87.45"
+            ],
+            [
+              "2026-10-12",
+              "store",
+              "south",
+              "value",
+              3,
+              "53.28"
+            ],
+            [
+              "2026-10-12",
+              "web",
+              "south",
+              "value",
+              3,
+              "66.84"
+            ],
+            [
+              "2026-10-15",
+              "web",
+              "south",
+              "value",
+              3,
+              "60.68"
+            ]
+          ]
+        },
+        {
+          "type": "table",
+          "title": "2 rows in the ledger only, −150.00",
+          "columns": [
+            "Posted at",
+            "Batch",
+            "Account",
+            "Amount"
+          ],
+          "align": [
+            "left",
+            "left",
+            "left",
+            "right"
+          ],
+          "rows": [
+            [
+              "2026-10-29 10:00:00",
+              "BATCH-20261029",
+              "4000-SALES",
+              "100.00"
+            ],
+            [
+              "2026-10-30 11:30:00",
+              "BATCH-20261030",
+              "4000-SALES",
+              "50.00"
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "October 2026 net revenue, ERP against finance ledger, acme-sales",
+    "assumptions": [
+      "October is 2026-10-01..2026-10-31 on each side's own date and clock",
+      "Ledger figure is all rows posted in October, no filter",
+      "order_id joins the files",
+      "posted_at read as local time from its offset to order_ts",
+      "Ledger extract ends 2026-11-06"
+    ],
+    "open": [
+      "EUR 35.00 on 3 orders: amounts differ, no reason in the data",
+      "6 ERP-only orders (+412.60) have no ledger row and no shown reason",
+      "2 ledger-only rows with MAN-prefixed keys (-150.00) have no ERP order",
+      "Whether staff orders are net revenue, and which clock the close uses, is for finance"
+    ]
+  }
+}

@@ -86,6 +86,7 @@ Each block may have a `title`.
 | `architecture` | `zones`, `components`, `links`, `flows`, `variants`, `reach`, see below |
 | `model` | `areas`, `tables`, `relations`, see below |
 | `nested` | `boxes`, `levels`, `links`, `flows`, `reach`, see below |
+| `chart` | `kind`: bar, line, waterfall, heatmap; `categories` and `series`, or `items`, or `rows`, `columns` and `values`, see below |
 
 A cell is a string, a number or null. Findings are shown high first. A declined finding needs
 its `reason`: it stays on the page, it is never dropped.
@@ -215,6 +216,32 @@ Boxes inside boxes: C4 levels, or a cloud subscription down to a subnet.
 - It behaves like `architecture`: click a box for its card, step a flow, switch the level, and
   `reach` works the same. `#variant=<level>`, `#component=<id>` and `#flow=<id>&step=1` open a state.
 
+## Chart
+
+Data drawn as inline SVG, computed by the renderer: no library, nothing fetched, the same JSON always gives the same
+drawing. Each mark has a tooltip (`<title>`), and the chart's data follows it as a plain table, for readers without the
+drawing and for print. Every number and label is escaped.
+
+```json
+{"type": "chart", "kind": "bar", "title": "Change by driver", "unit": "EUR", "x_label": "Driver",
+ "categories": ["Mix: premium", "Mix: value", "Volume"],
+ "series": [{"name": "Effect", "values": [-7488, -3696, 960]}]}
+```
+
+- `kind: "bar"`: horizontal bars, the value at the tip. `categories` and `series`, up to 6 series as grouped bars.
+  A value may be null or negative. Good for a ranked list; a single series needs no legend.
+- `kind: "line"`: `categories` in time order, the same `series` shape, with an end label and a point every
+  period. The axis starts at zero; `"zero": false` lets it start elsewhere and then the chart says so.
+- `kind: "waterfall"`: `items` as `{"label", "value", "total": true}`. A `total` is a level; the other steps are
+  changes. A total must equal the running sum of the steps before it, to the cent, or the page is not drawn. Use it for a
+  change split into effects: the first period, each effect, the second period. Leave the totals out to chart
+  only the effects, when they are small against the levels.
+- `kind: "heatmap"`: `rows`, `columns` and `values` (one list per row, null for no data), for cohorts. Numbers show in
+  the cells; `"show_values": false` hides them. `"scale": [0, 100]` fixes the range. One hue, darker for less.
+- Optional on any kind: `unit` ("EUR", "%"), `x_label`, `y_label`, `caption` (text, with the usual inline
+  marks), `places` (decimals shown; default none for whole numbers, two otherwise).
+- Give a chart a `title`. Two series with different units do not belong on one chart: use two charts.
+
 ## Facts
 
 `facts` sits at the top level of the page JSON and is not drawn. Other skills read it from the JSON
@@ -236,3 +263,11 @@ something, with what the page already says; leave out a list that has nothing to
 ```
 
 A cost needs its date and source. `version` is 1.
+
+Optional, for joining pages across specialties; leave them out when they do not apply:
+
+- `region` on a component: where that one component runs, when it differs from the page's `regions`.
+- `cloud` and `variant` on a cost: which cloud or variant a line belongs to, so alternatives are not
+  added together. A line with "total" in its `item` stands for that page's cloud or variant.
+- `budget` on the facts: `{"monthly": 6000, "currency": "EUR", "source": "the brief"}`. One currency.
+- `specialists` on the facts: the skills that must run, written by `solution-brief`.

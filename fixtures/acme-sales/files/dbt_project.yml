@@ -1,0 +1,4 @@
+name: acme_sales
+version: "1.0"
+profile: acme_sales
+model-paths: ["models"]

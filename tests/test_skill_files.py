@@ -25,10 +25,21 @@ def test_every_pack_has_its_skills() -> None:
         "ai-architect/ai-pattern",
         "ai-architect/ai-review",
         "ai-architect/ai-stack",
+        "cloud-architect/cloud-design",
+        "cloud-architect/cloud-map",
+        "cloud-architect/cloud-review",
+        "data-analyst/metric-spec",
+        "data-analyst/number-moved",
+        "data-analyst/number-reconcile",
+        "data-analyst/report-review",
         "data-architect/data-map",
         "data-architect/data-model",
         "data-architect/data-platform",
         "data-architect/data-review",
+        "data-scientist/ds-dataset",
+        "data-scientist/ds-evaluate",
+        "data-scientist/ds-experiment",
+        "data-scientist/ds-frame",
         "software-architect/arch-c4",
         "software-architect/arch-evolve",
         "software-architect/arch-review",
@@ -38,6 +49,8 @@ def test_every_pack_has_its_skills() -> None:
         "software-engineering/dependency-audit",
         "software-engineering/impact",
         "software-engineering/test-gap",
+        "solutions-architect/solution-blueprint",
+        "solutions-architect/solution-brief",
     ]
 
 
@@ -60,6 +73,41 @@ def test_skill_links_resolve(skill: Path) -> None:
         assert (skill / rel).is_file(), rel
     for rel in re.findall(r"\]\((references/[\w./-]+)\)", text):
         assert (skill / rel).is_file(), rel
+
+
+CLOUD_SKILLS = [p for p in ALL_SKILLS if p.parent.parent.name == "cloud-architect"]
+
+
+@pytest.mark.parametrize("skill", CLOUD_SKILLS, ids=[p.name for p in CLOUD_SKILLS])
+def test_cloud_skill_text_is_provider_neutral(skill: Path) -> None:
+    body = (skill / "SKILL.md").read_text(encoding="utf-8").split("---\n", 2)[2]
+    azure = ("Azure", "azurerm", "Microsoft.", " az ", "App Service", "Key Vault", "Container Apps")
+    aws = (
+        "AWS",
+        "aws_",
+        " aws ",
+        "Amazon",
+        "CloudFormation",
+        "Fargate",
+        " RDS",
+        " S3 ",
+        "ECS",
+        "Secrets Manager",
+        "IAM",
+    )
+    for word in (*azure, *aws):
+        assert word not in body, f"{word!r} belongs in a provider file, not in {skill.name}/SKILL.md"
+    assert "references/cloud/" in body
+
+
+def test_cloud_core_scripts_name_no_provider() -> None:
+    for name in ("shared/cloud_inventory.py", "shared/cloud_prices.py"):
+        text = (ROOT / name).read_text(encoding="utf-8")
+        for word in ("azurerm", "Microsoft.", "prices.azure.com", "AWS::", "aws_", "amazonaws"):
+            assert word not in text, f"{word!r} belongs in a provider file, not in {name}"
+    rules = (ROOT / "plugins/cloud-architect/skills/cloud-design/scripts/cloud_rules.py").read_text("utf-8").lower()
+    for word in ("azure", "aws", "microsoft"):
+        assert word not in rules, word
 
 
 def test_shared_copies_are_in_sync() -> None:

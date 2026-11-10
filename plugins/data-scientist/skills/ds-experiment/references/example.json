@@ -1,0 +1,647 @@
+{
+ "skill": "ds-experiment",
+ "title": "Renewal-nudge experiment: read-out",
+ "subtitle": "Should we ship the in-app reminder sent 14 days before renewal? Two runs: August (broken) and September (clean).",
+ "meta": {
+  "repo": "acme-churn",
+  "commit": "6ae5575",
+  "date": "2026-11-10",
+  "brief": "docs/briefs/renewal-nudge-experiment.md"
+ },
+ "verdict": {
+  "text": "**Inconclusive, so this result does not support shipping yet.** In the September run renewal rose +2.78 points and both guardrails held, but the rise is significant only before correction (p 0.031, 0.126 after Holm over four metrics) and the corrected interval, −0.45 to +6.00 points, holds both zero and the 2.0-point minimum; the August run cannot be read because its split failed.",
+  "tone": "warn"
+ },
+ "stats": [
+  {
+   "label": "August split p",
+   "value": "0.000075",
+   "note": "2,640 vs 2,360: failed, read-out stopped",
+   "tone": "bad"
+  },
+  {
+   "label": "September units",
+   "value": "6,000",
+   "note": "3,012 control, 2,988 treatment",
+   "tone": "info"
+  },
+  {
+   "label": "September split p",
+   "value": "0.757",
+   "note": "held",
+   "tone": "ok"
+  },
+  {
+   "label": "Renewal effect",
+   "value": "+2.78 pts",
+   "note": "95%: +0.25 to +5.30, before correction",
+   "tone": "info"
+  },
+  {
+   "label": "Corrected p",
+   "value": "0.126",
+   "note": "Holm over 4 metrics; 0.031 before",
+   "tone": "warn"
+  },
+  {
+   "label": "The call",
+   "value": "Inconclusive",
+   "note": "not ship, not do-not-ship",
+   "tone": "warn"
+  }
+ ],
+ "sections": [
+  {
+   "id": "august-split",
+   "title": "August run (experiment_broken.csv): the split failed",
+   "intro": "5,000 subscribers, one row each, no subscriber in both arms. 14 days of assignment, 1 Aug to 14 Aug.",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Arm",
+      "Expected share",
+      "Expected units",
+      "Units",
+      "Observed share"
+     ],
+     "rows": [
+      [
+       "control",
+       "50.0%",
+       "2,500",
+       "2,640",
+       "52.8%"
+      ],
+      [
+       "treatment",
+       "50.0%",
+       "2,500",
+       "2,360",
+       "47.2%"
+      ]
+     ]
+    },
+    {
+     "type": "kv",
+     "items": [
+      [
+       "Chi-square (1 df)",
+       "15.68"
+      ],
+      [
+       "p-value",
+       "0.000075"
+      ],
+      [
+       "Threshold (A2)",
+       "0.001"
+      ],
+      [
+       "Result",
+       "sample ratio mismatch"
+      ]
+     ]
+    },
+    {
+     "type": "callout",
+     "tone": "bad",
+     "text": "**The read-out stops here for this file.** Treatment is 140 subscribers short of an even split, more than chance allows, so the arms are no longer two comparable populations. No metric, guardrail or effect from the August file was computed or is reported on this page. Call for this file: **inconclusive**."
+    },
+    {
+     "type": "chart",
+     "kind": "line",
+     "title": "August: units assigned per day and arm",
+     "unit": "units",
+     "x_label": "Assignment day",
+     "categories": [
+      "1 Aug",
+      "2 Aug",
+      "3 Aug",
+      "4 Aug",
+      "5 Aug",
+      "6 Aug",
+      "7 Aug",
+      "8 Aug",
+      "9 Aug",
+      "10 Aug",
+      "11 Aug",
+      "12 Aug",
+      "13 Aug",
+      "14 Aug"
+     ],
+     "series": [
+      {
+       "name": "control",
+       "values": [
+        207,
+        176,
+        173,
+        200,
+        179,
+        196,
+        188,
+        195,
+        164,
+        175,
+        216,
+        189,
+        193,
+        189
+       ]
+      },
+      {
+       "name": "treatment",
+       "values": [
+        165,
+        173,
+        163,
+        183,
+        173,
+        183,
+        164,
+        149,
+        166,
+        168,
+        190,
+        175,
+        147,
+        161
+       ]
+      }
+     ],
+     "caption": "Counts only. No outcome column was used."
+    },
+    {
+     "type": "text",
+     "text": "Control had more units on 13 of 14 days [high], and the running split first falls under the threshold on 13 Aug [high]. The shortfall is spread across the window with no clear start, so the counts do not identify an intact period to re-read [med]. The brief says the assignment service changed partway through but gives no date, and the file cannot show why units went missing. The September re-run is the way out, so August was not re-read."
+    }
+   ]
+  },
+  {
+   "id": "september-split",
+   "title": "September run (experiment_clean.csv): the split held",
+   "intro": "6,000 subscribers, one row each, no subscriber in both arms, no unit repeated. 14 days of assignment, 1 Sep to 14 Sep.",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Arm",
+      "Expected share",
+      "Expected units",
+      "Units",
+      "Observed share"
+     ],
+     "rows": [
+      [
+       "control",
+       "50.0%",
+       "3,000",
+       "3,012",
+       "50.2%"
+      ],
+      [
+       "treatment",
+       "50.0%",
+       "3,000",
+       "2,988",
+       "49.8%"
+      ]
+     ]
+    },
+    {
+     "type": "kv",
+     "items": [
+      [
+       "Chi-square (1 df)",
+       "0.096"
+      ],
+      [
+       "p-value",
+       "0.757"
+      ],
+      [
+       "Threshold (A2)",
+       "0.001"
+      ],
+      [
+       "Planned units per arm",
+       "at least 2,900: reached (3,012 and 2,988)"
+      ]
+     ]
+    },
+    {
+     "type": "callout",
+     "tone": "ok",
+     "text": "No sample ratio mismatch, so the metrics below can be read."
+    }
+   ]
+  },
+  {
+   "id": "metrics",
+   "title": "September: metrics",
+   "intro": "The family is the four metrics the brief says could each justify shipping, primary included. p-values after correction are Holm over 4. Corrected intervals are the matching Bonferroni intervals. Direction for the three secondaries: A3. Test level: A1.",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Metric",
+      "Role",
+      "Control",
+      "Treatment",
+      "Difference (95%)",
+      "Corrected interval",
+      "p before",
+      "p after",
+      "Sig. before",
+      "Sig. after"
+     ],
+     "rows": [
+      [
+       "`renewed`",
+       "primary",
+       "49.77% (1,499 of 3,012)",
+       "52.54% (1,570 of 2,988)",
+       "+2.78 pts (+0.25 to +5.30)",
+       "−0.45 to +6.00 pts",
+       "0.031",
+       "0.126",
+       "yes",
+       "no"
+      ],
+      [
+       "`upgraded`",
+       "secondary",
+       "8.00% (241 of 3,012)",
+       "8.40% (251 of 2,988)",
+       "+0.40 pts (−0.99 to +1.79)",
+       "−1.37 to +2.17 pts",
+       "0.573",
+       "1.000",
+       "no",
+       "no"
+      ],
+      [
+       "`app_open_7d`",
+       "secondary",
+       "40.01% (1,205 of 3,012)",
+       "40.86% (1,221 of 2,988)",
+       "+0.86 pts (−1.63 to +3.34)",
+       "−2.31 to +4.02 pts",
+       "0.499",
+       "1.000",
+       "no",
+       "no"
+      ],
+      [
+       "`arpu_eur`",
+       "secondary",
+       "29.08 EUR (SD 10.85)",
+       "29.02 EUR (SD 10.87)",
+       "−0.06 EUR (−0.61 to +0.49)",
+       "−0.76 to +0.64 EUR",
+       "0.833",
+       "1.000",
+       "no",
+       "no"
+      ]
+     ]
+    },
+    {
+     "type": "chart",
+     "kind": "bar",
+     "title": "Difference, treatment minus control, with the corrected interval",
+     "unit": "pts",
+     "places": 2,
+     "categories": [
+      "renewed",
+      "upgraded",
+      "app_open_7d"
+     ],
+     "series": [
+      {
+       "name": "Corrected low",
+       "values": [
+        -0.45,
+        -1.37,
+        -2.31
+       ]
+      },
+      {
+       "name": "Difference",
+       "values": [
+        2.78,
+        0.4,
+        0.86
+       ]
+      },
+      {
+       "name": "Corrected high",
+       "values": [
+        6.0,
+        2.17,
+        4.02
+       ]
+      }
+     ],
+     "caption": "Rate metrics, in percentage points. Zero is the no-effect line: a low bar left of zero means the interval holds zero."
+    },
+    {
+     "type": "chart",
+     "kind": "bar",
+     "title": "Difference in revenue per subscriber, with the corrected interval",
+     "unit": "EUR",
+     "places": 2,
+     "categories": [
+      "arpu_eur"
+     ],
+     "series": [
+      {
+       "name": "Corrected low",
+       "values": [
+        -0.759606
+       ]
+      },
+      {
+       "name": "Difference",
+       "values": [
+        -0.05905
+       ]
+      },
+      {
+       "name": "Corrected high",
+       "values": [
+        0.641506
+       ]
+      }
+     ],
+     "caption": "Separate chart because this metric is in euros."
+    },
+    {
+     "type": "callout",
+     "tone": "warn",
+     "text": "`renewed` **is significant only before correction:** p0.031 becomes 0.126 over the four metrics that could each have justified a ship. One metric of four reaching p 0.031 on a single test is what chance looks like. No other metric gets close (smallest p 0.499 before correction), so none of them can justify shipping either."
+    }
+   ]
+  },
+  {
+   "id": "guardrails",
+   "title": "September: guardrails",
+   "intro": "A guardrail holds when the whole 95% interval of the harm is under the margin. Margins are from the brief.",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": [
+      "Guardrail",
+      "Control",
+      "Treatment",
+      "Harm (95%)",
+      "Margin",
+      "Status"
+     ],
+     "rows": [
+      [
+       "`support_contact`",
+       "6.01% (181)",
+       "6.29% (188)",
+       "+0.28 pts (−0.93 to +1.50)",
+       "2.00 pts",
+       "**held**"
+      ],
+      [
+       "`refund_requested`",
+       "1.00% (30)",
+       "1.14% (34)",
+       "+0.14 pts (−0.38 to +0.66)",
+       "0.75 pts",
+       "**held**"
+      ]
+     ]
+    },
+    {
+     "type": "text",
+     "text": "Both held, and neither change is distinguishable from zero. The tighter one is `refund_requested`: its interval reaches +0.66 points against a margin of 0.75."
+    }
+   ]
+  },
+  {
+   "id": "peeking",
+   "title": "September: peeking",
+   "blocks": [
+    {
+     "type": "kv",
+     "items": [
+      [
+       "Dashboard looks (A5)",
+       "10"
+      ],
+      [
+       "True false-positive rate of that many looks",
+       "19.3% at a nominal 5%"
+      ],
+      [
+       "Reached planned size",
+       "yes"
+      ],
+      [
+       "Days below 0.05 in the replay",
+       "3 of 14, the last three"
+      ]
+     ]
+    },
+    {
+     "type": "chart",
+     "kind": "line",
+     "title": "`renewed`: p-value before correction, replayed by assignment day",
+     "y_label": "p-value",
+     "x_label": "Assignment day",
+     "places": 3,
+     "categories": [
+      "1 Sep",
+      "2 Sep",
+      "3 Sep",
+      "4 Sep",
+      "5 Sep",
+      "6 Sep",
+      "7 Sep",
+      "8 Sep",
+      "9 Sep",
+      "10 Sep",
+      "11 Sep",
+      "12 Sep",
+      "13 Sep",
+      "14 Sep"
+     ],
+     "series": [
+      {
+       "name": "p-value",
+       "values": [
+        0.643238,
+        0.238975,
+        0.403661,
+        0.437156,
+        0.413015,
+        0.304062,
+        0.217606,
+        0.050982,
+        0.109294,
+        0.097866,
+        0.060989,
+        0.048643,
+        0.020602,
+        0.031495
+       ]
+      },
+      {
+       "name": "0.05",
+       "values": [
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.05
+       ]
+      }
+     ],
+     "caption": "Replay of final outcomes (A8), before correction. On the 10 working days only the last, 14 Sep, is below 0.05."
+    },
+    {
+     "type": "text",
+     "text": "The 19.3% applies to a team that would stop at the first significant look. This run went to its planned size and length (A6), so the looks do not change the final p-value. They do not rescue it either: the call already fails on the correction."
+    }
+   ]
+  },
+  {
+   "id": "call",
+   "title": "The call and what it rests on",
+   "blocks": [
+    {
+     "type": "callout",
+     "tone": "warn",
+     "text": "**Inconclusive.** The result is neither a ship nor a do-not-ship: it cannot tell a useful effect from none."
+    },
+    {
+     "type": "list",
+     "items": [
+      "**The metric:** `renewed`, 49.77% to 52.54%, a rise of +2.78 points. It is not significant after correction (p 0.126).",
+      "**What the interval rules out:** at the corrected level, a fall of more than 0.45 points and a rise of more than 6.00. It does not rule out zero, and it does not rule out the 2.0-point minimum.",
+      "**The guardrails:** `support_contact` and `refund_requested` both held.",
+      "**The smallest effect this sample could find:** 4.31 points on `renewed`, at 80% power and alpha 0.0125 (A1). That is more than twice the 2.0-point minimum, so the test met its plan but the plan could not reliably find the effect the brief cares about."
+     ]
+    },
+    {
+     "type": "table",
+     "title": "What would settle it: a re-run sized for the 2.0-point minimum (A1, A9)",
+     "columns": [
+      "Design, fixed before launch",
+      "Units per arm",
+      "Total units",
+      "Days at current volume"
+     ],
+     "rows": [
+      [
+       "`renewed` is the only ship metric, the other three are exploratory",
+       "9,808",
+       "19,616",
+       "about 46"
+      ],
+      [
+       "All four can justify shipping, as in September",
+       "13,935",
+       "27,870",
+       "about 65"
+      ]
+     ]
+    },
+    {
+     "type": "text",
+     "text": "The ship metric has to be chosen before the new run starts. Naming `renewed` as the only ship metric now, after seeing this result, would not remove the correction. August cannot be pooled with September. Fix the number of looks in advance, or use a sequential design."
+    }
+   ]
+  },
+  {
+   "id": "assumptions",
+   "title": "Assumptions",
+   "intro": "Made because the brief does not settle them. Each is referred to above by its number.",
+   "blocks": [
+    {
+     "type": "list",
+     "items": [
+      "**A1** [guess] Test level: two-sided alpha 0.05, and 80% power for sizing. The brief gives neither, so these are the defaults.",
+      "**A2** [guess] Split check: a p-value under 0.001 counts as a mismatch, the usual conservative threshold. The brief gives none. Neither run is near it: August is 0.000075, September 0.757.",
+      "**A3** [med] Direction: higher is better for `upgraded`, `app_open_7d` and `arpu_eur`. The brief states a direction only for `renewed` and the guardrails.",
+      "**A4** [guess] August metrics: `upgraded`, `app_open_7d` and `refund_requested` are not in the August file, assumed not collected that month. The split check does not use them and the read-out stopped before any metric.",
+      "**A5** [med] The 10 dashboard looks belong to the September run. The brief does not say which run; September's window has exactly 10 working days.",
+      "**A6** [med] No early stop: assignment ended on plan, not because of a look. Both arms passed 2,900 and assignment lasted the planned 14 days.",
+      "**A7** [guess] Outcomes are final: every subscriber's renewal date had passed when the file was cut. No metric cell is empty, which does not prove it.",
+      "**A8** [med] The running p-value replays final outcomes by assignment day. The dashboard's actual readings are not in the file, so the chart approximates what the team saw.",
+      "**A9** [med] Re-run sizing uses September's control rate of 49.77% as the baseline and 429 new subscribers a day (6,000 over 14 days)."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "limits",
+   "title": "Limits",
+   "blocks": [
+    {
+     "type": "list",
+     "items": [
+      "The intervals cover only the randomness of who got which arm. They do not cover a novelty effect or a change in who becomes eligible.",
+      "One September cycle stands in for a year. Renewal behaviour in other months is not measured [med].",
+      "Outcomes are taken at one renewal date. Whether a reminder moves a subscriber's later renewals is not measured.",
+      "The cause of the August failure is not established. Only the counts were examined.",
+      "Both files contain `email`. It was not used, and it is not printed here."
+     ]
+    }
+   ]
+  }
+ ],
+ "facts": {
+  "version": 1,
+  "scope": "renewal-nudge A/B test in acme-churn: August 2026 and September 2026 runs",
+  "data": [
+   {
+    "name": "subscriber e-mail",
+    "class": "personal",
+    "where": [
+     "data/experiment_broken.csv",
+     "data/experiment_clean.csv"
+    ],
+    "rule": "not needed for the read-out; not used or printed"
+   }
+  ],
+  "decisions": [
+   {
+    "title": "Ship the renewal nudge",
+    "chosen": "inconclusive",
+    "because": "renewed +2.78 pts, p 0.031 before and 0.126 after Holm over 4 metrics; corrected interval −0.45 to +6.00 pts holds zero and the 2.0 pt minimum; both guardrails held; August stopped on a sample ratio mismatch (p 0.000075)"
+   }
+  ],
+  "assumptions": [
+   "A1: Test level: two-sided alpha 0.05, and 80% power for sizing. The brief gives neither, so these are the defaults.",
+   "A2: Split check: a p-value under 0.001 counts as a mismatch, the usual conservative threshold. The brief gives none. Neither run is near it: August is 0.000075, September 0.757.",
+   "A3: Direction: higher is better for `upgraded`, `app_open_7d` and `arpu_eur`. The brief states a direction only for `renewed` and the guardrails.",
+   "A4: August metrics: `upgraded`, `app_open_7d` and `refund_requested` are not in the August file, assumed not collected that month. The split check does not use them and the read-out stopped before any metric.",
+   "A5: The 10 dashboard looks belong to the September run. The brief does not say which run; September's window has exactly 10 working days.",
+   "A6: No early stop: assignment ended on plan, not because of a look. Both arms passed 2,900 and assignment lasted the planned 14 days.",
+   "A7: Outcomes are final: every subscriber's renewal date had passed when the file was cut. No metric cell is empty, which does not prove it.",
+   "A8: The running p-value replays final outcomes by assignment day. The dashboard's actual readings are not in the file, so the chart approximates what the team saw.",
+   "A9: Re-run sizing uses September's control rate of 49.77% as the baseline and 429 new subscribers a day (6,000 over 14 days)."
+  ],
+  "open": [
+   "Why did the August assignment lose treatment units?",
+   "Is the re-run's ship metric renewed alone, or all four?",
+   "Is a re-run of about 46 or 65 days worth it for a 2.0-point effect?"
+  ]
+ }
+}

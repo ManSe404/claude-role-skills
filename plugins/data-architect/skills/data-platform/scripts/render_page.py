@@ -25,6 +25,7 @@ import argparse
 import base64
 import html
 import json
+import math
 import os
 import re
 import sys
@@ -65,6 +66,7 @@ BLOCK_TYPES = (
     "architecture",
     "model",
     "nested",
+    "chart",
 )
 CONFIDENCE = ("high", "med", "guess")
 RATINGS = ("pass", "weak", "fail")
@@ -87,6 +89,8 @@ FLAGS = ("warn", "bad")
 TABLE_KINDS = ("fact", "dimension", "bridge", "hub", "link", "satellite", "staging", "table")
 COLUMN_KEYS = ("pk", "fk", "bk")
 CARDINALITIES = ("1:1", "1:n", "n:1", "n:n")
+CHART_KINDS = ("bar", "line", "waterfall", "heatmap")
+CHART_MAX_SERIES = 6
 
 
 # ---------------------------------------------------------------------------- validation
@@ -515,10 +519,134 @@ def _validate_facts(facts: Json, errs: list[str]) -> None:
                     errs.append(f"{ipath}.monthly: must be a number")
                 if isinstance(item.get("as_of"), str) and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", item["as_of"]):
                     errs.append(f"{ipath}.as_of: must be a date, YYYY-MM-DD")
-    for key in ("assumptions", "open"):
+                _str(item, "cloud", ipath, errs, required=False)
+                _str(item, "variant", ipath, errs, required=False)
+            if key == "components":
+                _str(item, "region", ipath, errs, required=False)
+    for key in ("assumptions", "open", "specialists"):
         for i, item in enumerate(_list(facts, key, path, errs, required=False)):
             if not isinstance(item, str):
                 errs.append(f"{path}.{key}[{i}]: must be a string")
+    if "budget" in facts:
+        _validate_budget(facts["budget"], f"{path}.budget", errs)
+
+
+def _validate_budget(budget: Json, path: str, errs: list[str]) -> None:
+    """The money a brief allows, in one currency: solution-blueprint compares totals against it."""
+    if not isinstance(budget, dict):
+        errs.append(f"{path}: must be an object")
+        return
+    if not isinstance(budget.get("monthly"), int | float) or isinstance(budget.get("monthly"), bool):
+        errs.append(f"{path}.monthly: must be a number")
+    _str(budget, "currency", path, errs)
+    _str(budget, "source", path, errs)
+
+
+def _number_ok(value: Json) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def _validate_chart(block: Json, path: str, errs: list[str]) -> None:
+    kind = block.get("kind")
+    if kind not in CHART_KINDS:
+        errs.append(f"{path}.kind: must be one of {', '.join(CHART_KINDS)}")
+        return
+    for key in ("x_label", "y_label", "unit", "caption"):
+        _str(block, key, path, errs, required=False)
+    places = block.get("places")
+    if places is not None and (not isinstance(places, int) or isinstance(places, bool) or not 0 <= places <= 6):
+        errs.append(f"{path}.places: must be an integer from 0 to 6")
+    if kind in ("bar", "line"):
+        categories = _list(block, "categories", path, errs)
+        if not categories:
+            errs.append(f"{path}.categories: at least one category")
+        for i, category in enumerate(categories):
+            if not isinstance(category, str):
+                errs.append(f"{path}.categories[{i}]: must be a string")
+        series = _list(block, "series", path, errs)
+        if not 1 <= len(series) <= CHART_MAX_SERIES:
+            errs.append(f"{path}.series: from 1 to {CHART_MAX_SERIES} series")
+        seen: set[str] = set()
+        count = 0
+        for i, item in enumerate(series):
+            spath = f"{path}.series[{i}]"
+            if not isinstance(item, dict):
+                errs.append(f"{spath}: must be an object")
+                continue
+            _str(item, "name", spath, errs)
+            if isinstance(item.get("name"), str):
+                if item["name"] in seen:
+                    errs.append(f"{spath}.name: duplicate series {item['name']!r}")
+                seen.add(item["name"])
+            values = _list(item, "values", spath, errs)
+            if isinstance(categories, list) and len(values) != len(categories):
+                errs.append(f"{spath}.values: must have one value per category ({len(categories)})")
+            for j, value in enumerate(values):
+                if value is not None and not _number_ok(value):
+                    errs.append(f"{spath}.values[{j}]: must be a number or null")
+                elif value is not None:
+                    count += 1
+        if series and count == 0 and not any(e.startswith(f"{path}.series") for e in errs):
+            errs.append(f"{path}.series: no values to draw")
+        if kind == "line" and not isinstance(block.get("zero", True), bool):
+            errs.append(f"{path}.zero: must be true or false")
+    elif kind == "waterfall":
+        items = _list(block, "items", path, errs)
+        if len(items) < 2:
+            errs.append(f"{path}.items: at least two steps")
+        running = 0.0
+        for i, item in enumerate(items):
+            ipath = f"{path}.items[{i}]"
+            if not isinstance(item, dict):
+                errs.append(f"{ipath}: must be an object")
+                continue
+            _str(item, "label", ipath, errs)
+            amount: Json = item.get("value")
+            if not _number_ok(amount):
+                errs.append(f"{ipath}.value: must be a number")
+                continue
+            if not isinstance(item.get("total", False), bool):
+                errs.append(f"{ipath}.total: must be true or false")
+            if item.get("total"):
+                if i > 0 and abs(float(amount) - running) > 0.005:
+                    errs.append(
+                        f"{ipath}.value: a total must equal the running sum of the steps before it ({running:.2f})"
+                    )
+                running = float(amount)
+            else:
+                running += float(amount)
+    else:  # heatmap
+        rows = _list(block, "rows", path, errs)
+        columns = _list(block, "columns", path, errs)
+        for name, labels in (("rows", rows), ("columns", columns)):
+            if not labels:
+                errs.append(f"{path}.{name}: at least one")
+            for i, label in enumerate(labels):
+                if not isinstance(label, str):
+                    errs.append(f"{path}.{name}[{i}]: must be a string")
+        grid = _list(block, "values", path, errs)
+        if len(grid) != len(rows):
+            errs.append(f"{path}.values: must have one list per row ({len(rows)})")
+        any_value = False
+        for r, row in enumerate(grid):
+            rpath = f"{path}.values[{r}]"
+            if not isinstance(row, list) or len(row) != len(columns):
+                errs.append(f"{rpath}: must have one value per column ({len(columns)})")
+                continue
+            for c, value in enumerate(row):
+                if value is not None and not _number_ok(value):
+                    errs.append(f"{rpath}[{c}]: must be a number or null")
+                elif value is not None:
+                    any_value = True
+        if grid and not any_value and not any(e.startswith(f"{path}.values") for e in errs):
+            errs.append(f"{path}.values: nothing to draw")
+        scale = block.get("scale")
+        if scale is not None and (
+            not isinstance(scale, list) or len(scale) != 2 or not all(_number_ok(v) for v in scale)
+        ):
+            errs.append(f"{path}.scale: must be [low, high]")
+        if not isinstance(block.get("show_values", True), bool):
+            errs.append(f"{path}.show_values: must be true or false")
 
 
 def _validate_block(block: Json, path: str, errs: list[str], node_ids: set[str]) -> None:
@@ -624,6 +752,8 @@ def _validate_block(block: Json, path: str, errs: list[str], node_ids: set[str])
         _validate_model(block, path, errs)
     elif kind == "nested":
         _validate_nested(block, path, errs)
+    elif kind == "chart":
+        _validate_chart(block, path, errs)
     _str(block, "title", path, errs, required=False)
 
 
@@ -2052,6 +2182,510 @@ def _model(block: Json) -> str:
 
 # ---------------------------------------------------------------------------- blocks
 
+# ---------------------------------------------------------------------------- chart
+
+CHART_W = 900.0
+CHAR_13 = 7.85  # JetBrains Mono at 13px
+CHART_MAX_THICK = 22  # thin marks: a bar never fills its band
+MINUS = chr(0x2212)
+SERIES_CLASSES = tuple(f"cs{i}" for i in range(CHART_MAX_SERIES))
+HEAT_STEPS = 6  # sequential: one hue, recedes to the surface at the low end, bright at the high end
+
+
+def _chart_places(values: list[float], given: Json) -> int:
+    if isinstance(given, int) and not isinstance(given, bool):
+        return given
+    return 0 if all(float(v).is_integer() for v in values) else 2
+
+
+def _chart_value(value: float, places: int, unit: str = "") -> str:
+    text = f"{abs(value):,.{places}f}"
+    if value < 0:
+        text = MINUS + text
+    if unit == "%":
+        return f"{text}%"
+    return f"{text} {unit}" if unit else text
+
+
+def _tick_text(value: float, top: float) -> str:
+    """Round axis labels: in full under 10,000, compact (10K, 2.5M) on an axis that reaches it."""
+    if value == 0:
+        return "0"
+    size = abs(value)
+    if top >= 1_000_000:
+        text = f"{size / 1_000_000:g}M"
+    elif top >= 10_000:
+        text = f"{size / 1000:g}K"
+    else:
+        text = f"{size:,g}"
+    return (MINUS + text) if value < 0 else text
+
+
+def _nice_ticks(low: float, high: float, count: int = 5) -> tuple[list[float], float, float]:
+    """Round tick values, and the domain (which starts and ends on a tick) that holds low to high."""
+    if low == high:
+        high = low + 1.0
+    raw = (high - low) / max(count - 1, 1)
+    power = 10 ** math.floor(math.log10(raw))
+    step = next(m * power for m in (1, 2, 2.5, 5, 10) if m * power >= raw)
+    start = math.floor(low / step) * step
+    end = math.ceil(high / step) * step
+    total = round((end - start) / step)
+    ticks = [round(start + i * step, 10) for i in range(total + 1)]
+    return ticks, start, end
+
+
+def _end_rounded(x0: float, x1: float, y0: float, y1: float, *, vertical: bool, radius: float = 4) -> str:
+    """A bar path with its value end rounded and its baseline end square."""
+    if vertical:
+        left, right = min(x0, x1), max(x0, x1)
+        base, tip = y0, y1
+        radius = min(radius, abs(tip - base), (right - left) / 2)
+        if tip <= base:  # grows up
+            return (
+                f"M{left:.1f},{base:.1f} V{tip + radius:.1f} Q{left:.1f},{tip:.1f} {left + radius:.1f},{tip:.1f} "
+                f"H{right - radius:.1f} Q{right:.1f},{tip:.1f} {right:.1f},{tip + radius:.1f} V{base:.1f} Z"
+            )
+        return (
+            f"M{left:.1f},{base:.1f} V{tip - radius:.1f} Q{left:.1f},{tip:.1f} {left + radius:.1f},{tip:.1f} "
+            f"H{right - radius:.1f} Q{right:.1f},{tip:.1f} {right:.1f},{tip - radius:.1f} V{base:.1f} Z"
+        )
+    top, bottom = min(y0, y1), max(y0, y1)
+    base, tip = x0, x1
+    radius = min(radius, abs(tip - base), (bottom - top) / 2)
+    if tip >= base:  # grows right
+        return (
+            f"M{base:.1f},{top:.1f} H{tip - radius:.1f} Q{tip:.1f},{top:.1f} {tip:.1f},{top + radius:.1f} "
+            f"V{bottom - radius:.1f} Q{tip:.1f},{bottom:.1f} {tip - radius:.1f},{bottom:.1f} H{base:.1f} Z"
+        )
+    return (
+        f"M{base:.1f},{top:.1f} H{tip + radius:.1f} Q{tip:.1f},{top:.1f} {tip:.1f},{top + radius:.1f} "
+        f"V{bottom - radius:.1f} Q{tip:.1f},{bottom:.1f} {tip + radius:.1f},{bottom:.1f} H{base:.1f} Z"
+    )
+
+
+def _wrap(text: str, width: int, lines: int = 2) -> list[str]:
+    """Split a label at spaces into at most `lines` lines of `width` characters; the last line is clipped."""
+    words, out, current = text.split(), [], ""
+    for word in words:
+        if current and len(current) + 1 + len(word) > width:
+            out.append(current)
+            current = word
+        else:
+            current = f"{current} {word}".strip()
+    out.append(current)
+    if len(out) > lines:
+        out[lines - 1] = _clip(" ".join(out[lines - 1 :]), width)
+    return [_clip(line, width) for line in out[:lines]]
+
+
+def _svg_open(height: float, title: str) -> str:
+    return (
+        f'<svg class="chart-svg" role="img" aria-label="{_esc(title)}" viewBox="0 0 {CHART_W:.0f} {height:.0f}" '
+        f'xmlns="http://www.w3.org/2000/svg">'
+    )
+
+
+def _axis_lines(ticks: list[float], x0: float, x1: float, y_of: Any, top: float) -> list[str]:
+    parts = [
+        f'<line class="grid{" zero" if tick == 0 else ""}" x1="{x0:.1f}" y1="{y_of(tick):.1f}" x2="{x1:.1f}" '
+        f'y2="{y_of(tick):.1f}"/>'
+        f'<text class="tick" x="{x0 - 10:.1f}" y="{y_of(tick) + 4:.1f}" text-anchor="end">'
+        f"{_tick_text(tick, top)}</text>"
+        for tick in ticks
+    ]
+    return parts
+
+
+def _chart_labels(block: Json, height: float, *, x_axis: bool) -> list[str]:
+    """Plain axis names, set in text tokens, so the unit is never carried by the marks alone."""
+    parts: list[str] = []
+    if block.get("y_label") or block.get("unit"):
+        text = block.get("y_label") or block.get("unit")
+        parts.append(f'<text class="axis-title" x="8" y="14">{_esc(_clip(str(text), 60))}</text>')
+    if block.get("x_label") and x_axis:
+        parts.append(
+            f'<text class="axis-title" x="{CHART_W - 8:.0f}" y="{height - 6:.1f}" text-anchor="end">'
+            f"{_esc(_clip(str(block['x_label']), 60))}</text>"
+        )
+    return parts
+
+
+def _chart_series_values(block: Json) -> list[float]:
+    return [float(v) for s in block["series"] for v in s["values"] if v is not None]
+
+
+def _bar_svg(block: Json, title: str) -> tuple[str, list[str]]:
+    categories = block["categories"]
+    series = block["series"]
+    values = _chart_series_values(block)
+    unit = block.get("unit", "")
+    places = _chart_places(values, block.get("places"))
+    labels = [_clip(c, 30) for c in categories]
+    value_w = max((len(_chart_value(v, places, unit)) for v in values), default=4) * CHAR_13 + 12
+    left = max(max((len(t) for t in labels), default=4) * CHAR_13 + 16, 90.0)
+    has_neg = any(v < 0 for v in values)
+    left_edge = left + (value_w if has_neg else 0)
+    right_edge = CHART_W - value_w - 8
+    low, high = min(0.0, *values), max(0.0, *values)
+    span = high - low or 1.0
+    scale = (right_edge - left_edge) / span
+    zero_x = left_edge - low * scale
+    n = len(series)
+    thick = min(CHART_MAX_THICK, 22 if n == 1 else 16 if n <= 3 else 12)
+    gap = 2  # the surface gap between neighbouring bars of one category
+    band = n * thick + (n - 1) * gap + 14
+    top = 26.0
+    y = top
+    bottom_y = top + band * len(categories) - 8
+    parts: list[str] = [
+        f'<line class="axis" x1="{zero_x:.1f}" y1="{top - 6:.1f}" x2="{zero_x:.1f}" y2="{bottom_y:.1f}"/>'
+    ]
+    for c_index, category in enumerate(categories):
+        group_h = n * thick + (n - 1) * gap
+        center = y + group_h / 2
+        parts.append(
+            f'<text class="cat" x="{left - 10:.1f}" y="{center + 4:.1f}" text-anchor="end">'
+            f"{_esc(labels[c_index])}<title>{_esc(category)}</title></text>"
+        )
+        for s_index, item in enumerate(series):
+            value = item["values"][c_index]
+            bar_y = y + s_index * (thick + gap)
+            if value is None:
+                continue
+            tip = zero_x + float(value) * scale
+            text = _chart_value(float(value), places, unit)
+            tooltip = f"{category}: {text}" if n == 1 else f"{category}, {item['name']}: {text}"
+            path = _end_rounded(zero_x, tip, bar_y, bar_y + thick, vertical=False)
+            parts.append(
+                f'<g class="mark"><path class="bar {SERIES_CLASSES[s_index]}" d="{path}">'
+                f"<title>{_esc(tooltip)}</title></path>"
+            )
+            if float(value) >= 0:
+                parts.append(f'<text class="val" x="{tip + 6:.1f}" y="{bar_y + thick / 2 + 4:.1f}">{_esc(text)}</text>')
+            else:
+                parts.append(
+                    f'<text class="val" x="{tip - 6:.1f}" y="{bar_y + thick / 2 + 4:.1f}" text-anchor="end">'
+                    f"{_esc(text)}</text>"
+                )
+            parts.append("</g>")
+        y += band
+    height = y + 10
+    return _svg_open(height, title) + "".join(parts) + "".join(
+        _chart_labels(block, height, x_axis=False)
+    ) + "</svg>", []
+
+
+def _line_svg(block: Json, title: str) -> str:
+    categories = block["categories"]
+    series = block["series"]
+    values = _chart_series_values(block)
+    unit = block.get("unit", "")
+    places = _chart_places(values, block.get("places"))
+    zero = block.get("zero", True)
+    low = min(0.0, *values) if zero else min(values)
+    high = max(0.0, *values) if zero else max(values)
+    ticks, y_low, y_high = _nice_ticks(low, high)
+    left = 62.0
+    end_w = max((len(_chart_value(v, places, unit)) for v in values), default=4) * CHAR_13 + 14
+    right = CHART_W - end_w
+    top = 26.0
+    bottom = 300.0
+    span = y_high - y_low or 1.0
+
+    def y_of(value: float) -> float:
+        return bottom - (float(value) - y_low) * (bottom - top) / span
+
+    n = len(categories)
+
+    def x_of(index: int) -> float:
+        return left + (right - left) / 2 if n == 1 else left + index * (right - left) / (n - 1)
+
+    parts = _axis_lines(ticks, left, right, y_of, y_high)
+    label_every = max(
+        1, math.ceil(max((len(c) for c in categories), default=1) * CHAR_13 * 1.3 / ((right - left) / max(n, 1)))
+    )
+    for i, category in enumerate(categories):
+        if i % label_every == 0 or i == n - 1:
+            parts.append(
+                f'<text class="tick" x="{x_of(i):.1f}" y="{bottom + 22:.1f}" text-anchor="middle">'
+                f"{_esc(_clip(category, 16))}</text>"
+            )
+    ends: list[tuple[float, str]] = []
+    dots = n <= 14
+    for s_index, item in enumerate(series):
+        cls = SERIES_CLASSES[s_index]
+        points = [(i, v) for i, v in enumerate(item["values"]) if v is not None]
+        if not points:
+            continue
+        coords = " ".join(f"{x_of(i):.1f},{y_of(v):.1f}" for i, v in points)
+        parts.append(f'<polyline class="line {cls}" points="{coords}"/>')
+        for i, v in points:
+            text = _chart_value(float(v), places, unit)
+            tooltip = f"{categories[i]}: {text}" if len(series) == 1 else f"{categories[i]}, {item['name']}: {text}"
+            is_end = (i, v) == points[-1]
+            dot = f'<circle class="dot {cls}" cx="{x_of(i):.1f}" cy="{y_of(v):.1f}" r="4"/>' if dots or is_end else ""
+            parts.append(
+                f'<g class="mark">{dot}<circle class="hit" cx="{x_of(i):.1f}" cy="{y_of(v):.1f}" r="12" '
+                f'fill="transparent">'
+                f"<title>{_esc(tooltip)}</title></circle></g>"
+            )
+        ends.append((y_of(points[-1][1]), _chart_value(float(points[-1][1]), places, unit)))
+    ends.sort(key=lambda e: e[0])
+    used: list[float] = []
+    for y, text in ends:
+        if any(abs(y - other) < 16 for other in used):
+            continue
+        used.append(y)
+        parts.append(f'<text class="val" x="{right + 10:.1f}" y="{y + 4:.1f}">{_esc(text)}</text>')
+    height = bottom + 42
+    notice = (
+        []
+        if zero
+        else [
+            f'<text class="axis-title" x="{CHART_W - 8:.0f}" y="14" text-anchor="end">'
+            "axis does not start at zero</text>"
+        ]
+    )
+    return (
+        _svg_open(height, title)
+        + "".join(parts)
+        + "".join(_chart_labels(block, height, x_axis=True))
+        + "".join(notice)
+        + "</svg>"
+    )
+
+
+def _waterfall_svg(block: Json, title: str) -> tuple[str, list[str]]:
+    items = block["items"]
+    unit = block.get("unit", "")
+    values = [float(i["value"]) for i in items]
+    places = _chart_places(values, block.get("places"))
+    running = 0.0
+    bars: list[tuple[float, float, str]] = []  # base, tip, kind
+    levels = [0.0]
+    for item in items:
+        value = float(item["value"])
+        if item.get("total"):
+            bars.append((0.0, value, "total"))
+            running = value
+        else:
+            bars.append((running, running + value, "up" if value >= 0 else "down"))
+            running += value
+        levels.append(running)
+    ticks, y_low, y_high = _nice_ticks(min(levels), max(levels))
+    left = 62.0
+    right = CHART_W - 12
+    top = 30.0
+    bottom = 310.0
+    span = y_high - y_low or 1.0
+
+    def y_of(value: float) -> float:
+        return bottom - (float(value) - y_low) * (bottom - top) / span
+
+    n = len(items)
+    band = (right - left) / n
+    bar_w = min(band * 0.56, 64.0)
+    parts = _axis_lines(ticks, left, right, y_of, y_high)
+    label_chars = max(int(band / CHAR_13) - 1, 6)
+    x_center = [left + band * (i + 0.5) for i in range(n)]
+    for i in range(n - 1):
+        level = bars[i][1]
+        parts.append(
+            f'<line class="connector" x1="{x_center[i] + bar_w / 2:.1f}" y1="{y_of(level):.1f}" '
+            f'x2="{x_center[i + 1] - bar_w / 2:.1f}" y2="{y_of(level):.1f}"/>'
+        )
+    for i, item in enumerate(items):
+        base, tip, kind = bars[i]
+        cx = x_center[i]
+        x0, x1 = cx - bar_w / 2, cx + bar_w / 2
+        value_text = _chart_value(float(item["value"]), places, unit if kind == "total" else "")
+        if kind != "total" and float(item["value"]) > 0:
+            value_text = "+" + value_text
+        tooltip = f"{item['label']}: {_chart_value(float(item['value']), places, unit)}"
+        if kind != "total":
+            tooltip += f" (running total {_chart_value(tip, places, unit)})"
+        path = _end_rounded(x0, x1, y_of(base), y_of(tip), vertical=True)
+        parts.append(f'<g class="mark"><path class="bar wf-{kind}" d="{path}"><title>{_esc(tooltip)}</title></path>')
+        label_y = min(y_of(base), y_of(tip)) - 7
+        if kind == "down":
+            label_y = y_of(tip) + 16
+            if label_y > bottom - 2:
+                label_y = y_of(base) - 7
+        parts.append(
+            f'<text class="val" x="{cx:.1f}" y="{label_y:.1f}" text-anchor="middle">{_esc(value_text)}</text></g>'
+        )
+        for line_no, part in enumerate(_wrap(item["label"], label_chars)):
+            parts.append(
+                f'<text class="cat" x="{cx:.1f}" y="{bottom + 20 + line_no * 16:.1f}" text-anchor="middle">'
+                f"{_esc(part)}</text>"
+            )
+    legend = []
+    for kind, label in (("up", "Increase"), ("down", "Decrease"), ("total", "Total")):
+        if any(k == kind for _, _, k in bars):
+            legend.append(f'<span class="legend-item"><i class="swatch sw-{kind}"></i>{label}</span>')
+    height = bottom + 62
+    return _svg_open(height, title) + "".join(parts) + "".join(
+        _chart_labels(block, height, x_axis=False)
+    ) + "</svg>", legend
+
+
+def _heat_color(value: float, low: float, high: float) -> int:
+    if high <= low:
+        return HEAT_STEPS - 1
+    return min(HEAT_STEPS - 1, int((value - low) / (high - low) * HEAT_STEPS))
+
+
+def _heatmap_svg(block: Json, title: str) -> tuple[str, list[str]]:
+    rows = block["rows"]
+    columns = block["columns"]
+    grid = block["values"]
+    flat = [float(v) for r in grid for v in r if v is not None]
+    unit = block.get("unit", "")
+    places = _chart_places(flat, block.get("places"))
+    scale = block.get("scale")
+    low = float(scale[0]) if scale else (min(flat) if flat else 0.0)
+    high = float(scale[1]) if scale else (max(flat) if flat else 1.0)
+    row_labels = [_clip(r, 26) for r in rows]
+    left = max(max((len(t) for t in row_labels), default=4) * CHAR_13 + 18, 70.0)
+    cell_w = max(36.0, min(84.0, (CHART_W - left - 8) / max(len(columns), 1)))
+    cell_h = 34.0
+    top = 34.0
+    parts: list[str] = []
+    for c, column in enumerate(columns):
+        parts.append(
+            f'<text class="tick" x="{left + c * cell_w + cell_w / 2:.1f}" y="{top - 12:.1f}" text-anchor="middle">'
+            f"{_esc(_clip(column, 10))}<title>{_esc(column)}</title></text>"
+        )
+    show_values = block.get("show_values", len(columns) <= 14) and cell_w >= 44
+    for r, row in enumerate(rows):
+        y = top + r * cell_h
+        parts.append(
+            f'<text class="cat" x="{left - 10:.1f}" y="{y + cell_h / 2 + 4:.1f}" text-anchor="end">'
+            f"{_esc(row_labels[r])}<title>{_esc(row)}</title></text>"
+        )
+        for c, column in enumerate(columns):
+            value = grid[r][c]
+            x = left + c * cell_w
+            if value is None:
+                parts.append(
+                    f'<g class="mark"><rect class="heat-empty" x="{x + 1:.1f}" y="{y + 1:.1f}" '
+                    f'width="{cell_w - 2:.1f}" '
+                    f'height="{cell_h - 2:.1f}" rx="3"><title>{_esc(row)}, {_esc(column)}: no data</title></rect></g>'
+                )
+                continue
+            step = _heat_color(float(value), low, high)
+            text = _chart_value(float(value), places, unit)
+            cell = (
+                f'<g class="mark"><rect class="heat h{step}" x="{x + 1:.1f}" y="{y + 1:.1f}" width="{cell_w - 2:.1f}" '
+                f'height="{cell_h - 2:.1f}" rx="3"><title>{_esc(row)}, {_esc(column)}: {_esc(text)}</title></rect>'
+            )
+            if show_values:
+                cell += (
+                    f'<text class="heat-val{" on-light" if step >= 3 else ""}" x="{x + cell_w / 2:.1f}" '
+                    f'y="{y + cell_h / 2 + 4:.1f}" text-anchor="middle">'
+                    f"{_esc(_chart_value(float(value), places, ''))}</text>"
+                )
+            parts.append(cell + "</g>")
+    grid_bottom = top + len(rows) * cell_h
+    legend_y = grid_bottom + 18
+    swatch_w = 34.0
+    legend_x = left
+    parts.append(
+        f'<text class="tick" x="{legend_x - 6:.1f}" y="{legend_y + 10:.1f}" text-anchor="end">'
+        f"{_esc(_chart_value(low, places, unit))}</text>"
+    )
+    for s in range(HEAT_STEPS):
+        parts.append(
+            f'<rect class="heat h{s}" x="{legend_x + s * swatch_w:.1f}" y="{legend_y:.1f}" width="{swatch_w - 2:.1f}" '
+            'height="12" rx="2"/>'
+        )
+    parts.append(
+        f'<text class="tick" x="{legend_x + HEAT_STEPS * swatch_w + 6:.1f}" y="{legend_y + 10:.1f}">'
+        f"{_esc(_chart_value(high, places, unit))}</text>"
+    )
+    height = legend_y + 28
+    return _svg_open(height, title) + "".join(parts) + "".join(
+        _chart_labels(block, height, x_axis=False)
+    ) + "</svg>", []
+
+
+def _chart_table_html(columns: list[str], rows: list[list[str]]) -> str:
+    """The chart's data, for readers without the drawing, screen readers and print; every cell is plain escaped text."""
+    head = "".join(f'<th class="a-{"left" if i == 0 else "right"}">{_esc(c)}</th>' for i, c in enumerate(columns))
+    body = "".join(
+        "<tr>"
+        + "".join(f'<td class="a-{"left" if i == 0 else "right"}">{_esc(cell)}</td>' for i, cell in enumerate(row))
+        + "</tr>"
+        for row in rows
+    )
+    return (
+        f'<div class="chart-data table-wrap"><table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>'
+    )
+
+
+def _chart_table(block: Json) -> str:
+    kind = block["kind"]
+    unit = block.get("unit", "")
+    if kind == "waterfall":
+        values = [float(i["value"]) for i in block["items"]]
+        places = _chart_places(values, block.get("places"))
+        rows = []
+        running = 0.0
+        for item in block["items"]:
+            value = float(item["value"])
+            if item.get("total"):
+                running = value
+                rows.append([item["label"], "", _chart_value(value, places, unit)])
+            else:
+                running += value
+                rows.append(
+                    [
+                        item["label"],
+                        ("+" if value > 0 else "") + _chart_value(value, places, unit),
+                        _chart_value(running, places, unit),
+                    ]
+                )
+        return _chart_table_html(["Step", "Change", "Running total"], rows)
+    if kind == "heatmap":
+        flat = [float(v) for r in block["values"] for v in r if v is not None]
+        places = _chart_places(flat, block.get("places"))
+        cells = [
+            [row] + ["" if v is None else _chart_value(float(v), places, unit) for v in values]
+            for row, values in zip(block["rows"], block["values"], strict=True)
+        ]
+        return _chart_table_html(["", *block["columns"]], cells)
+    places = _chart_places(_chart_series_values(block), block.get("places"))
+    rows = [
+        [category]
+        + ["" if s["values"][i] is None else _chart_value(float(s["values"][i]), places, unit) for s in block["series"]]
+        for i, category in enumerate(block["categories"])
+    ]
+    return _chart_table_html([block.get("x_label") or "", *[s["name"] for s in block["series"]]], rows)
+
+
+def _chart(block: Json) -> str:
+    kind = block["kind"]
+    title = block.get("title") or kind
+    legend: list[str] = []
+    if kind == "bar":
+        svg, legend = _bar_svg(block, title)
+    elif kind == "line":
+        svg = _line_svg(block, title)
+    elif kind == "waterfall":
+        svg, legend = _waterfall_svg(block, title)
+    else:
+        svg, legend = _heatmap_svg(block, title)
+    if kind in ("bar", "line") and len(block["series"]) >= 2:
+        legend = [
+            f'<span class="legend-item"><i class="swatch sw-{SERIES_CLASSES[i]}"></i>{_esc(s["name"])}</span>'
+            for i, s in enumerate(block["series"])
+        ]
+    legend_html = f'<div class="legend">{"".join(legend)}</div>' if legend else ""
+    caption = f'<p class="chart-caption">{_inline(block["caption"])}</p>' if block.get("caption") else ""
+    return f'<figure class="chart plate">{svg}{legend_html}{caption}</figure>{_chart_table(block)}'
+
+
 TONE_LABEL = {"ok": "ok", "warn": "watch", "bad": "risk", "info": "note"}
 
 
@@ -2161,6 +2795,8 @@ def _block(block: Json) -> str:
         body = _model(block)
     elif kind == "nested":
         body = _nested(block)
+    elif kind == "chart":
+        body = _chart(block)
     else:  # kv
         rows = "".join(f"<dt>{_cell(k)}</dt><dd>{_cell(v)}</dd>" for k, v in block["items"])
         body = f'<dl class="kv">{rows}</dl>'
@@ -2386,6 +3022,40 @@ letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
 section{margin-top:56px}td{font-size:15.5px}dl.kv{grid-template-columns:1fr}dl.kv dt{border-bottom:0;padding-bottom:0}
 .verdict{padding:26px 20px 20px}.finding{padding:18px 18px 16px}.label{left:16px}ol.steps li{padding-left:48px}
 .legend .hint{margin-left:0;width:100%}}
+"""
+
+# Series and heat colours were picked with the dataviz method for the dark plate: each passes its contrast and
+# colour-blindness checks against the plate surface. Marks are thin, axis lines recessive, and text uses text tokens.
+CSS += """
+:root{--cs0:#8a63f2;--cs1:#d9622a;--cs2:#1f9e80;--cs3:#b8860b;--cs4:#cf5a9a;--cs5:#3a8fd6}
+figure.chart{padding:24px 22px 14px;margin-top:14px;overflow-x:auto}
+svg.chart-svg{display:block;width:100%;min-width:640px;max-width:1040px;height:auto;font-family:var(--mono)}
+.chart-svg text{fill:var(--ink-2);font-size:13px}.chart-svg .tick,.chart-svg .axis-title{fill:var(--ink-3)}
+.chart-svg .cat{fill:var(--ink)}.chart-svg .val{fill:var(--ink-2);font-size:13px;font-variant-numeric:tabular-nums}
+.chart-svg .grid{stroke:var(--line-2);stroke-width:1}
+.chart-svg .grid.zero,.chart-svg .axis{stroke:var(--line);stroke-width:1}
+.chart-svg .connector{stroke:var(--ink-3);stroke-width:1}
+.chart-svg .bar.cs0,.chart-svg .dot.cs0{fill:var(--cs0)}.chart-svg .bar.cs1,.chart-svg .dot.cs1{fill:var(--cs1)}
+.chart-svg .bar.cs2,.chart-svg .dot.cs2{fill:var(--cs2)}.chart-svg .bar.cs3,.chart-svg .dot.cs3{fill:var(--cs3)}
+.chart-svg .bar.cs4,.chart-svg .dot.cs4{fill:var(--cs4)}.chart-svg .bar.cs5,.chart-svg .dot.cs5{fill:var(--cs5)}
+.chart-svg .dot{stroke:#160f2d;stroke-width:2;paint-order:stroke}
+.chart-svg .line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart-svg .line.cs0{stroke:var(--cs0)}.chart-svg .line.cs1{stroke:var(--cs1)}.chart-svg .line.cs2{stroke:var(--cs2)}
+.chart-svg .line.cs3{stroke:var(--cs3)}.chart-svg .line.cs4{stroke:var(--cs4)}.chart-svg .line.cs5{stroke:var(--cs5)}
+.chart-svg .hit{fill:transparent}.chart-svg .mark:hover .bar,.chart-svg .mark:hover .dot{filter:brightness(1.25)}
+.chart-svg .wf-up{fill:var(--cs0)}.chart-svg .wf-down{fill:var(--cs1)}.chart-svg .wf-total{fill:rgba(236,231,248,.42)}
+.chart-svg .heat-val{fill:var(--ink);font-size:12.5px;font-variant-numeric:tabular-nums}
+.chart-svg .heat-val.on-light{fill:#120a24}
+.chart-svg .heat-empty{fill:none;stroke:var(--line-2);stroke-dasharray:3 3}
+.h0{fill:#2a2152}.h1{fill:#3e2f7d}.h2{fill:#5a45ad}.h3{fill:#7b5ce0}.h4{fill:#a389f7}.h5{fill:#cdbcff}
+.swatch.sw-cs0{background:var(--cs0);border-color:var(--cs0)}.swatch.sw-cs1{background:var(--cs1);border-color:var(--cs1)}
+.swatch.sw-cs2{background:var(--cs2);border-color:var(--cs2)}.swatch.sw-cs3{background:var(--cs3);border-color:var(--cs3)}
+.swatch.sw-cs4{background:var(--cs4);border-color:var(--cs4)}.swatch.sw-cs5{background:var(--cs5);border-color:var(--cs5)}
+.swatch.sw-up{background:var(--cs0);border-color:var(--cs0)}.swatch.sw-down{background:var(--cs1);border-color:var(--cs1)}
+.swatch.sw-total{background:rgba(236,231,248,.42);border-color:rgba(236,231,248,.42)}
+.chart-caption{margin-top:10px;font-size:16px;color:var(--ink-2)}
+.chart-data{margin-top:14px}.chart-data th{font-size:12px;padding-bottom:8px}
+.chart-data td{font-size:15px;padding-top:8px;padding-bottom:8px}
 """
 
 CSS += """

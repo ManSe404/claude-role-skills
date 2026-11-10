@@ -1,0 +1,445 @@
+{
+  "skill": "number-moved",
+  "title": "Why October net revenue fell",
+  "subtitle": "Net revenue, September against October 2026: reported EUR 96,000.00 to EUR 81,190.00 on the 2 November 06:00 UTC run.",
+  "meta": {
+    "repo": "acme-sales",
+    "commit": "fe28e88",
+    "date": "2026-11-10",
+    "data": "data/orders.csv, 1,807 rows"
+  },
+  "verdict": {
+    "text": "EUR 10,610.00 of the reported EUR 14,810.00 fall is real; the other EUR 4,200.00 (28.4%) is 32 orders from 27 October that reached the warehouse after the run. The real fall is almost all product mix (EUR -11,160.00): premium went from 20.0% to 12.9% of units and value from 40.0% to 46.5%, while units rose by 20 (volume +960.00) and the amount per unit barely moved (rate -410.00).",
+    "tone": "warn"
+  },
+  "stats": [
+    {
+      "label": "Reported change",
+      "value": "EUR -14,810.00",
+      "note": "96,000.00 to 81,190.00, 2 Nov 06:00 UTC run",
+      "tone": "bad"
+    },
+    {
+      "label": "Change after the checks",
+      "value": "EUR -10,610.00",
+      "note": "-11.1%; October is 85,390.00 with the late rows",
+      "tone": "warn"
+    },
+    {
+      "label": "Largest effect",
+      "value": "Mix EUR -11,160.00",
+      "note": "premium -7,488.00, value -3,696.00",
+      "tone": "info"
+    },
+    {
+      "label": "Top 2 drivers' share of the change",
+      "value": "105.4%",
+      "note": "EUR -11,184.00; the other effects give back +574.00",
+      "tone": "info"
+    }
+  ],
+  "sections": [
+    {
+      "id": "the-change",
+      "title": "The change",
+      "blocks": [
+        {
+          "type": "table",
+          "title": "Reported against final",
+          "columns": [
+            "Figure",
+            "September (EUR)",
+            "October (EUR)",
+            "Change (EUR)"
+          ],
+          "align": [
+            "left",
+            "right",
+            "right",
+            "right"
+          ],
+          "rows": [
+            [
+              "As reported, 2 Nov 06:00 UTC run",
+              "96,000.00",
+              "81,190.00",
+              "-14,810.00"
+            ],
+            [
+              "Late rows the run could not see (not a real fall)",
+              "0.00",
+              "+4,200.00",
+              "+4,200.00"
+            ],
+            [
+              "Final, all rows in the file",
+              "96,000.00",
+              "85,390.00",
+              "-10,610.00"
+            ]
+          ]
+        },
+        {
+          "type": "text",
+          "text": "Both reported figures come out to the cent on the finance definition, using only the rows loaded by the time of the run. No gap remains between the report and the data. The late rows fake EUR -4,200.00 of the reported change, 28.4% of it."
+        },
+        {
+          "type": "callout",
+          "tone": "warn",
+          "text": "**The draft October review says the opposite.** `reports/october_review/report.md` has October up 14.5% on September, because its September query stops on 24 September: that window gives EUR 74,607.00, against EUR 96,000.00 for the full month. Its other October figure, EUR 88,600.00, does not match the finance definition either (not traced here). Neither should go to the leadership meeting as it stands."
+        },
+        {
+          "type": "list",
+          "title": "What I assumed",
+          "items": [
+            "The reported figures are the finance definition: `net_amount` of completed orders, by `order_date`. The question calls the source a dashboard run, but the BI dashboard SQL does not give these numbers and the finance definition does.",
+            "The run could see only rows with `loaded_at` at or before 2026-11-02 06:00 UTC.",
+            "Final means this extract, whose last load is 4 November 03:15 UTC.",
+            "Volume is units, because the amount per unit is stable inside each line and the amount per order is not.",
+            "The periods are the calendar months with no adjustment for October's extra day. The checks give the 30-day comparison."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-checks",
+      "title": "The checks",
+      "intro": "Done before any split into effects. The fake part is taken out; everything else came back clean or does not touch the total.",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Check",
+            "What was counted",
+            "Result"
+          ],
+          "align": [
+            "left",
+            "left",
+            "left"
+          ],
+          "rows": [
+            [
+              "Late rows",
+              "Rows loaded after 2 Nov 06:00 UTC: 32 completed rows, all with order date 27 October, all loaded on 4 November at 03:15 UTC. September has none. Every other row loaded within a day of the order [high]. All 32 are in the finance ledger, posted on 27 October [high].",
+              "**Taken out.** EUR 4,200.00 (premium 3,000.00, standard 1,200.00), 28.4% of the reported fall. They are real orders that arrived late."
+            ],
+            [
+              "Missing and thin days",
+              "Days with rows in each period, on the final rows.",
+              "30 of 30 and 31 of 31 days have rows, none thin. At the run, 27 October had only 21 of its 53 rows."
+            ],
+            [
+              "Duplicates",
+              "`order_id` across all 1,807 rows, and rows sharing customer, line, units, amount and status [high].",
+              "None. 0 removed."
+            ],
+            [
+              "Definition",
+              "`git log` on `models/marts/mart_net_revenue.sql` and `reports/dashboards/revenue_dashboard.sql`.",
+              "Finance definition: one commit, 11 August 2026, before both periods, so no change. The BI dashboard SQL changed on 14 October (`b29710c`, leaves out staff orders), but the reported figures do not come from it: it gives EUR 93,702.61 for September and EUR 83,405.43 for October at the run."
+            ],
+            [
+              "Scope and status",
+              "Rows dropped by `status = completed`, and product lines present in only one period.",
+              "37 of 891 rows in September, 38 of 916 in October. Returned value 2,027.83 and 2,292.26, cancelled 414.75 and 423.36. No product line new or gone."
+            ],
+            [
+              "Region labels",
+              "`region` on October and September rows.",
+              "36 completed October rows (30 blank, 6 `unknown`, EUR 3,547.38) have no usable region; September has none. No effect on the total, but a region split shows them as new."
+            ],
+            [
+              "Period length",
+              "30 days against 31, and the same split on 1 to 30 October.",
+              "Not equal. On 1 to 30 October the fall is EUR -13,097.12: volume -2,928.00, mix -9,722.00, rate -447.12. The positive volume effect exists only because October has a 31st day."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bridge",
+      "title": "From last period to this one",
+      "blocks": [
+        {
+          "type": "chart",
+          "kind": "waterfall",
+          "title": "September to October as reported, EUR",
+          "unit": "EUR",
+          "places": 2,
+          "items": [
+            {
+              "label": "September",
+              "value": 96000,
+              "total": true
+            },
+            {
+              "label": "Late rows (not real)",
+              "value": -4200
+            },
+            {
+              "label": "Volume",
+              "value": 960
+            },
+            {
+              "label": "Mix",
+              "value": -11160
+            },
+            {
+              "label": "Rate",
+              "value": -410
+            },
+            {
+              "label": "October as reported",
+              "value": 81190,
+              "total": true
+            }
+          ],
+          "caption": "Effects by product line, on the final rows. Volume, mix and rate add up to the real change of EUR -10,610.00 exactly (`adds_up` true, rounding residual 0.00). With the late rows, October is EUR 85,390.00."
+        }
+      ]
+    },
+    {
+      "id": "drivers",
+      "title": "Drivers",
+      "intro": "Product line is the cut that concentrates the change, so it is the one kept. The other cuts are below it.",
+      "blocks": [
+        {
+          "type": "chart",
+          "kind": "bar",
+          "title": "What moved the real fall of EUR 10,610.00",
+          "unit": "EUR",
+          "places": 2,
+          "x_label": "Effect on net revenue",
+          "categories": [
+            "Mix: premium",
+            "Mix: value",
+            "Volume: all lines",
+            "Rate: standard",
+            "Mix: standard"
+          ],
+          "series": [
+            {
+              "name": "Effect",
+              "values": [
+                -7488,
+                -3696,
+                960,
+                -410,
+                24
+              ]
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "title": "By product line",
+          "columns": [
+            "Line",
+            "Sep net (EUR)",
+            "Oct net (EUR)",
+            "Sep units",
+            "Oct units",
+            "Share of units",
+            "EUR per unit",
+            "Volume",
+            "Mix",
+            "Rate"
+          ],
+          "align": [
+            "left",
+            "right",
+            "right",
+            "right",
+            "right",
+            "right",
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "rows": [
+            [
+              "premium",
+              "40,000.00",
+              "26,000.00",
+              "400",
+              "260",
+              "20.0% to 12.9%",
+              "100.00 to 100.00",
+              "+400.00",
+              "-7,488.00",
+              "0.00"
+            ],
+            [
+              "standard",
+              "40,000.00",
+              "40,590.00",
+              "800",
+              "820",
+              "40.0% to 40.6%",
+              "50.00 to 49.50",
+              "+400.00",
+              "+24.00",
+              "-410.00"
+            ],
+            [
+              "value",
+              "16,000.00",
+              "18,800.00",
+              "800",
+              "940",
+              "40.0% to 46.5%",
+              "20.00 to 20.00",
+              "+160.00",
+              "-3,696.00",
+              "0.00"
+            ],
+            [
+              "Total",
+              "96,000.00",
+              "85,390.00",
+              "2,000",
+              "2,020",
+              "",
+              "",
+              "+960.00",
+              "-11,160.00",
+              "-410.00"
+            ]
+          ]
+        },
+        {
+          "type": "text",
+          "text": "The effects add up across the table, not along a row. A line's mix is measured against September's average of EUR 48.00 per unit, so premium's mix and volume do not equal its own EUR -14,000.00 change."
+        },
+        {
+          "type": "text",
+          "title": "When and how many",
+          "text": "Premium's share of units was 18.6%, 21.2%, 16.6% and 22.7% in the four parts of September (days 1-7, 8-14, 15-21, 22-end), and 11.2%, 14.2%, 11.1% and 14.1% in the same parts of October. Every part of October is below every part of September, so the shift is a step between the two months and not a slide during October. Premium orders went from 170 to 127 and premium buyers from 143 to 112.\n\nThe value line's amount per unit stayed at EUR 20.00. Premium orders relabelled as value would have raised it, so a recoding of the lines is unlikely [med]. The file has no product code to confirm that."
+        },
+        {
+          "type": "table",
+          "title": "Other cuts tried",
+          "columns": [
+            "Cut",
+            "Volume",
+            "Mix",
+            "Rate",
+            "New",
+            "Reading"
+          ],
+          "align": [
+            "left",
+            "right",
+            "right",
+            "right",
+            "right",
+            "left"
+          ],
+          "rows": [
+            [
+              "product_line (kept)",
+              "+960.00",
+              "-11,160.00",
+              "-410.00",
+              "0.00",
+              "Concentrates the change in two mix drivers."
+            ],
+            [
+              "channel",
+              "+960.00",
+              "+115.42",
+              "-11,685.42",
+              "0.00",
+              "Looks like a per-unit fall in web and stores, but that is the product mix inside each channel: within product lines the rate effect is only -410.00."
+            ],
+            [
+              "region",
+              "-2,592.00",
+              "-88.60",
+              "-11,476.78",
+              "+3,547.38",
+              "The same reading, distorted by October rows with no usable region."
+            ],
+            [
+              "store_id",
+              "+960.00",
+              "+1,500.85",
+              "-13,070.85",
+              "0.00",
+              "Scatters. Single stores swing both ways (store 1 from 89 to 278 units, store 6 from 141 to 12). Those swings do not explain the total and were not examined further."
+            ],
+            [
+              "product_line and channel",
+              "+960.00",
+              "-11,169.37",
+              "-400.63",
+              "0.00",
+              "The same split as product line. Premium lost share in both channels: web -5,451.32, stores -2,036.70."
+            ],
+            [
+              "product_line and region",
+              "-2,592.00",
+              "-11,123.67",
+              "-441.71",
+              "+3,547.38",
+              "The same split, with the same region gap."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "unexplained",
+      "title": "What is left unexplained",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "The top two drivers, premium mix (EUR -7,488.00) and value mix (EUR -3,696.00), sum to EUR -11,184.00, which is 105.4% of the EUR -10,610.00 change. That is more than the whole change because the remaining effects offset it by a net EUR +574.00: volume +960.00, standard rate -410.00, standard mix +24.00.\n\nAll the effects together add up to the change exactly, so nothing is left over arithmetically. That says the split is complete, not that the reason the shares moved is known."
+        },
+        {
+          "type": "callout",
+          "tone": "info",
+          "text": "**What the rate effect does not say.** The only rate effect on product line is standard, from EUR 50.00 to EUR 49.50 per unit, EUR -410.00. It says the amount per unit moved, not that a price changed: it can equally be discounts, a different sub-mix inside the line, or a data change. [guess] Two promotion codes first seen in October, `AUTUMN10` and `LOYALTY5`, apply only to standard and come to EUR 300.00 together; comparing `net_amount` with the list amount on those orders would test it."
+        },
+        {
+          "type": "text",
+          "text": "The split depends on volume being units. Counting orders as the volume gives volume +2,697.89, mix -5,855.48 and rate -7,452.41, because units per order moved too: the amount per order fell in premium and standard, while the amount per unit did not."
+        }
+      ]
+    },
+    {
+      "id": "cannot-show",
+      "title": "What the data cannot show",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "**Why premium lost share and value gained.** The file has no price list, stock levels, campaigns or competitor data. The promotions file shows no new code on premium or value in October (`WELCOME5` rows: premium 34 to 24, value 63 to 70) [high]. [guess] A premium supply or range problem, or a push on the value line, starting around the turn of the month would fit the step; check premium stock records and the campaign calendar around 1 October.",
+            "**Why 32 rows arrived a week late.** `loaded_at` shows one load on 4 November at 03:15 UTC and nothing about the reason. The pipeline run logs for 27 and 28 October would show it, and a repeat would distort the next report the same way.",
+            "**Whether premium buyers traded down.** Of the 143 September premium buyers, 30 bought premium again in October, 94 bought only other lines and 19 bought nothing [high]. With two months of data there is no normal repeat rate to compare that with.",
+            "**Whether October is final.** `status` is today's status only, so October orders can still become returns, and September has had a month longer to settle. The last load in this file is 4 November 03:15 UTC. Apart from two manual entries (`MAN-0001`, `MAN-0002`, EUR 150.00), the ledger holds no order this file lacks [high]."
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "October 2026 fall in net revenue at Acme Home Goods, finance definition, orders.csv",
+    "assumptions": [
+      "Reported figures are the finance definition: net_amount of completed orders by order_date.",
+      "The 2 November 06:00 UTC run could see only rows with loaded_at at or before that moment.",
+      "Final means this extract, last load 4 November 03:15 UTC.",
+      "Volume is units.",
+      "Periods are calendar months, with no adjustment for October's extra day."
+    ],
+    "open": [
+      "Why premium's share of units fell and value's rose between September and October.",
+      "Why the 27 October batch of 32 rows loaded on 4 November.",
+      "The draft October review reports October up 14.5% on a 24-day September."
+    ]
+  }
+}

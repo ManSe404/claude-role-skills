@@ -1,0 +1,1 @@
+A new client brief arrived: ./acme-solution/docs/briefs/claims-platform.md. It may cross several areas. Before anyone starts, work out which specialists we need and in what order, and write the calls to run next. Don't ask me questions, assume where you must and say so. Put any page you make under ./pages, and give me the plan in your reply.
