@@ -27,7 +27,7 @@ Default: `HEAD~1..HEAD` in the current repository.
 1. Read [references/review-checks.md](references/review-checks.md): the four dimensions, what to confirm
    for each and the test that proves it.
 2. Facts: `python3 "${CLAUDE_SKILL_DIR}/scripts/diff_facts.py" REPO --range A..B [--description FILE]`
-   (or `--patch FILE`), output to your scratchpad. It lists the commits, every file with its kind and hunks,
+   (or `--patch FILE`), output to your scratchpad, never beside the page. It lists the commits, every file with its kind and hunks,
    the symbols changed, added and removed, the tests touched and the source files no touched test names, the
    migration, dependency, CI and configuration files, the audit rules (`audit_scan.py`, the same copy
    `code-audit` uses) on the added lines, and the claims of the description and the commit messages. A hit
