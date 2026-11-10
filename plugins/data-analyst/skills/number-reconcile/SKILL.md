@@ -2,6 +2,17 @@
 name: number-reconcile
 description: Use when two numbers that should agree do not, from two systems, reports or extracts of the same figure, and the rows behind both are available, to find exactly where they part and account for the whole difference, or say exactly how much remains unexplained.
 argument-hint: "[file or query behind number A] [file or query behind number B] [the window] [the key that joins them]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/number-reconcile/scripts/guard.py" ] && exec python3 "$d/skills/number-reconcile/scripts/guard.py" pre number-reconcile personal; done; true'
+  PostToolUse:
+    - matcher: "Bash|Read"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/number-reconcile/scripts/guard.py" ] && exec python3 "$d/skills/number-reconcile/scripts/guard.py" post number-reconcile personal; done; true'
 ---
 
 # Number reconcile

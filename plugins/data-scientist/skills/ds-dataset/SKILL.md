@@ -2,6 +2,17 @@
 name: ds-dataset
 description: Use before trusting a predictive model built on a training set, when the train and test files (or one file with a split column) and the label are at hand, to audit it for target leakage, time leakage, the same entity on both sides of a split, duplicates across splits, missingness that differs by class, drift between train and test and personal columns. Not for profiling an ordinary table or asking what is in a file.
 argument-hint: "[train file] [test file] [label column] [repository of the modelling code]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/ds-dataset/scripts/guard.py" ] && exec python3 "$d/skills/ds-dataset/scripts/guard.py" pre ds-dataset personal; done; true'
+  PostToolUse:
+    - matcher: "Bash|Read"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/ds-dataset/scripts/guard.py" ] && exec python3 "$d/skills/ds-dataset/scripts/guard.py" post ds-dataset personal; done; true'
 ---
 
 # Audit a training set

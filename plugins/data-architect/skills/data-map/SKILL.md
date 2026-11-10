@@ -2,6 +2,12 @@
 name: data-map
 description: Use when you inherit a data platform or must explain one, from its SQL, dbt, notebooks and pipelines, to map the sources, layers and consumers, the table lineage read from the code, the owners, the tables nobody reads and where personal data travels.
 argument-hint: "[repository of the data platform]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/data-map/scripts/guard.py" ] && exec python3 "$d/skills/data-map/scripts/guard.py" pre data-map; done; true'
 ---
 
 # Data map

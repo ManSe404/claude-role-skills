@@ -186,3 +186,35 @@ It is built last because what needs joining is only known once two specialists p
 
 Example pages have cost about $2.50 per skill run ($6.55 for 5, $10.93 for 4 plus reruns). 16 runs
 across these packs: about $40. Evals are extra and run only when Stefan asks.
+
+## Hooks (2026-11-10)
+
+Stefan asked for hooks after the packs were built. Earlier the answer was no, because a hook cannot tell when the user
+has said yes. Two facts from the hooks documentation changed that. A hook declared in a skill's frontmatter is
+registered when the skill is invoked. Every hook call carries the id of the user's prompt. So `shared/guard.py`
+enforces a skill's checkable Never rules only in the turn that invoked the skill, and steps aside after the user's
+next message, which is where "after the yes" happens.
+
+- Changes and network calls get `ask`, not `deny`. Interactively the user gets a prompt, and a fix the user already
+  approved can never be stuck. In `claude -p` an `ask` is refused, as the probes showed, including with
+  `--permission-mode bypassPermissions`.
+- Raw reads of data files with personal columns get `deny`, because the scripts are the way to read them.
+  E-mail addresses, IBANs and JMBGs are replaced in Bash and Read output with `updatedToolOutput`.
+- `${CLAUDE_PLUGIN_ROOT}` expands in a plugin skill's hook command and `${CLAUDE_SKILL_DIR}` does not. A missing script
+  made python exit 2, which blocked every call. The command therefore looks in the plugin, the project and `~/.claude`,
+  and does nothing if the guard is not there.
+
+Checked live on acme-churn with `ds-explore`, invoked first, as a plugin and as a skill copied into a project, on the
+Expert Group account:
+
+| Attempt | Result |
+|---|---|
+| `head -5` on the data file | refused, naming the personal columns |
+| the Read tool on it | refused |
+| Python printing one e-mail | ran, Claude saw `[e-mail removed]` |
+| Edit README.md | asked, so refused in `-p`, file unchanged |
+| `curl` | asked, so refused |
+
+A first live run proved less than it seemed. Claude ran `head` and the README edit before invoking the skill, and the
+project sat under `/tmp`, which the guard allows. Nothing is guarded before the skill is invoked.
+

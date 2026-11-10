@@ -2,6 +2,17 @@
 name: number-moved
 description: Use when a reported business number changed between two periods, someone asks why, and the rows behind it are in a CSV or JSON Lines file, so the change can be checked against late or missing data and then split into effects that add up exactly. Not for an open question about a trend with no data file to count.
 argument-hint: "[data file] [the number and the two periods] [definition, repo or SQL behind it]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/number-moved/scripts/guard.py" ] && exec python3 "$d/skills/number-moved/scripts/guard.py" pre number-moved personal; done; true'
+  PostToolUse:
+    - matcher: "Bash|Read"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/number-moved/scripts/guard.py" ] && exec python3 "$d/skills/number-moved/scripts/guard.py" post number-moved personal; done; true'
 ---
 
 # Number moved

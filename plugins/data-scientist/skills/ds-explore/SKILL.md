@@ -2,6 +2,17 @@
 name: ds-explore
 description: Use before building a predictive model, when one table and the yes/no column to predict are at hand and nobody has looked at the data yet, to explore what relates to the target - how its rate moves over time, whether recent labels can be known yet, odd codes for unknown values, how strongly each feature relates to it with an interval, segments that differ, redundant features and columns to check for leakage. Not for a general look at a table with no target, and not for auditing an existing train and test split (use ds-dataset).
 argument-hint: "[data file] [column to predict] [time column and how long until the outcome is known]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/ds-explore/scripts/guard.py" ] && exec python3 "$d/skills/ds-explore/scripts/guard.py" pre ds-explore personal; done; true'
+  PostToolUse:
+    - matcher: "Bash|Read"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/ds-explore/scripts/guard.py" ] && exec python3 "$d/skills/ds-explore/scripts/guard.py" post ds-explore personal; done; true'
 ---
 
 # Explore before modelling

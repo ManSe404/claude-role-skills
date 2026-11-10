@@ -2,6 +2,12 @@
 name: bug-hunt
 description: Use when an error, a stack trace, a failing test or a bug report needs its root cause, to go from the symptom to a cause shown with evidence, a failing test that reproduces it, the other places with the same weakness, and fix options - fixing only after the yes.
 argument-hint: "[error text, log file, failing test or issue]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/bug-hunt/scripts/guard.py" ] && exec python3 "$d/skills/bug-hunt/scripts/guard.py" pre bug-hunt; done; true'
 ---
 
 # Bug hunt

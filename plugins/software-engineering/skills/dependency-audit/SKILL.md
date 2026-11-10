@@ -2,6 +2,12 @@
 name: dependency-audit
 description: Use when you inherit a project, before a release, or when a vulnerability alert arrives, to audit its dependencies - which are vulnerable and whether the vulnerable code is reached, which are outdated, unpinned, unused or abandoned, which licences clash - and plan the upgrades in safe waves, without installing anything.
 argument-hint: "[repo or manifest]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/dependency-audit/scripts/guard.py" ] && exec python3 "$d/skills/dependency-audit/scripts/guard.py" pre dependency-audit; done; true'
 ---
 
 # Dependency audit

@@ -2,6 +2,12 @@
 name: cloud-map
 description: Use when you inherit cloud infrastructure or must explain it, from Terraform, Bicep, ARM templates or CloudFormation in a repository with no cloud login, or from a saved read-only export of an account, to draw the accounts, resource groups, networks and resources as clickable nested boxes, trace the request flows, show what the internet can reach, and list what is in code but not deployed and deployed but not in code.
 argument-hint: "[repository] [saved export]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/cloud-map/scripts/guard.py" ] && exec python3 "$d/skills/cloud-map/scripts/guard.py" pre cloud-map; done; true'
 ---
 
 # Cloud map

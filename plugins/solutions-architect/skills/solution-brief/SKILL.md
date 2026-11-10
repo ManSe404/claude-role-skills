@@ -2,6 +2,12 @@
 name: solution-brief
 description: Use when a client brief arrives that may span several areas - AI, data, software, cloud - and before any specialist decides one of them, to frame it once and say which specialists are needed and in which order, why any of them is not needed, and to write the exact skill calls to run next with the shared facts each must use. Not for a question inside one area; for that use ai-pattern, data-platform, arch-style or cloud-design directly.
 argument-hint: "[brief file or text]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/solution-brief/scripts/guard.py" ] && exec python3 "$d/skills/solution-brief/scripts/guard.py" pre solution-brief; done; true'
 ---
 
 # Solution brief

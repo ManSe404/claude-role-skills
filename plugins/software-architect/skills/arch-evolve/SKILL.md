@@ -2,6 +2,12 @@
 name: arch-evolve
 description: Use when a software system must move from its current structure to a target - splitting a monolith, extracting a service, untangling modules, replacing a part - to plan the way in steps that each leave the system working, with what changes, how each step is verified and undone, and what must stay true throughout.
 argument-hint: "[repository] [target, or an arch-style page]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/arch-evolve/scripts/guard.py" ] && exec python3 "$d/skills/arch-evolve/scripts/guard.py" pre arch-evolve; done; true'
 ---
 
 # Architecture evolution

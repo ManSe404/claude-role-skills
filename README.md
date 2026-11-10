@@ -141,6 +141,36 @@ If you also have Anthropic's `engineering` plugin, its `debug`, `testing-strateg
 `architecture` and `system-design` skills cover some of the same ground; the ai-architect skills
 are only for AI and LLM solutions. Call these by name when you want them.
 
+## Hooks
+
+Every skill carries a hook in its frontmatter, so the parts of its "Never" list that a program can check are enforced
+by Claude Code rather than only asked for. Claude Code registers the hook when the skill is invoked. It runs
+`scripts/guard.py`, a copy of [shared/guard.py](shared/guard.py).
+
+During the turn in which the skill was invoked:
+
+- **Changes ask first.** A Write or Edit outside the pages folder, a temp folder or the skill's own page file, and a
+  shell command that changes files, git or the installed packages, bring up a permission prompt.
+- **Going online asks first.** This covers WebFetch, WebSearch, `curl`, `wget`, `git fetch`, `pull` and `clone`,
+  `az`, `aws`, `gcloud`, `terraform init` and `plan`, dependency audits, and any `--online` flag.
+- **Personal data (the 12 skills that read data files).**
+  - Reading a data file whose header names a personal column is refused, through Read or through `cat`, `head`,
+    `awk` and the like. The skill's scripts print counts instead.
+  - E-mail addresses, IBANs and JMBGs are removed from shell and Read output before Claude sees them.
+  - A Write or Edit that would put one on a page is refused.
+
+After your next message the guard steps aside, so what a skill does "after the yes" runs under your normal
+permissions. In `claude -p` nobody can answer a prompt, so "asks first" means no.
+
+What it does not do:
+
+- Nothing is guarded before the skill is invoked, even in the same turn.
+- Code run by an interpreter, such as a Python heredoc that writes a file or opens a socket, is not parsed.
+- Personal values that no pattern recognises, such as names, are kept out only by refusing the raw reads.
+- If your organization locks hooks to plugins (`strictPluginOnlyCustomization`), skills copied into a project run
+  without the guard. Installed as plugins, they keep it.
+- Each guarded tool call starts Python once, about 40 ms, for the rest of the session.
+
 ## How it is built
 
 The format of the skills follows Baraa's

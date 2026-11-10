@@ -2,6 +2,17 @@
 name: data-review
 description: Use before a release, when you take over, or before you hand over a data platform, to review its models and loads in the code against the common failures - mixed grain, joins that multiply rows, loads that cannot be rerun, layers skipped, personal data served unmasked, money as floats, history overwritten, keys without tests - with file:line findings and fixes.
 argument-hint: "[repository of the data platform] [samples folder]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/data-review/scripts/guard.py" ] && exec python3 "$d/skills/data-review/scripts/guard.py" pre data-review personal; done; true'
+  PostToolUse:
+    - matcher: "Bash|Read"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/data-review/scripts/guard.py" ] && exec python3 "$d/skills/data-review/scripts/guard.py" post data-review personal; done; true'
 ---
 
 # Data review

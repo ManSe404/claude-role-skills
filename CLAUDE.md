@@ -9,7 +9,7 @@ four specialist packs), `data-analyst` and `data-scientist` so far. `docs/plans/
 - `plugins/<role>/skills/<skill>/` holds `SKILL.md`, `scripts/` and `references/`. A skill must
   work on its own, because an installed plugin has nothing outside its own folder.
 - `shared/` is the single source of `render_page.py`, `page-format.md`, `fonts/`,
-  `ai_inventory.py`, `data_profile.py`, `sql_inventory.py`, `measure.py`, `model_stats.py`, `code_graph.py`, `containers.py`,
+  `ai_inventory.py`, `data_profile.py`, `sql_inventory.py`, `measure.py`, `model_stats.py`, `guard.py`, `code_graph.py`, `containers.py`,
   `cloud_inventory.py` and `cloud_prices.py`, and of `shared/cloud/`, one file per cloud provider. Edit them
   there, then run `python3 tools/sync_shared.py`; a skill gets a copy when its SKILL.md names the file.
   Never edit the copies under a skill. A cloud provider is `shared/cloud/<provider>.md` and `.json`:
@@ -29,6 +29,10 @@ four specialist packs), `data-analyst` and `data-scientist` so far. `docs/plans/
   description starts with "Use when" or "Use before" and says when, not how. Under 120 lines.
 - Scripts: Python 3.11+, standard library only, read-only, JSON on stdout, referenced as
   `${CLAUDE_SKILL_DIR}/scripts/<name>.py`. Every outbound call has a timeout and is opt-in.
+- Every SKILL.md frontmatter has the `hooks:` block that runs `scripts/guard.py` (a copy of `shared/guard.py`), with
+  `personal` for the skills that ship `data_profile.py`. `tests/test_skill_files.py` holds its exact form. The
+  command looks for the guard in the plugin, the project and `~/.claude`, and exits 0 when it is missing: a script
+  python cannot open exits 2, and exit 2 blocks the call. `${CLAUDE_SKILL_DIR}` does not expand in hook commands.
 - A page is JSON rendered by `render_page.py`; `references/example.json` is the filled example,
   produced by running the skill on the fixture and then checked by hand.
 - Nothing real in fixtures and examples: fictional names, `example.*` addresses, no client data.

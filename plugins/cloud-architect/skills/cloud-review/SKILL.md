@@ -2,6 +2,12 @@
 name: cloud-review
 description: Use before a release, an audit or a take-over of cloud infrastructure, from Terraform, Bicep, ARM templates or CloudFormation in a repository or a saved read-only export, to review it against the provider's Well-Architected pillars, with problems tied to file:line or a resource, marked on a drawing, with what to fix first.
 argument-hint: "[repository] [saved export] [brief or requirements]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/cloud-review/scripts/guard.py" ] && exec python3 "$d/skills/cloud-review/scripts/guard.py" pre cloud-review; done; true'
 ---
 
 # Cloud review

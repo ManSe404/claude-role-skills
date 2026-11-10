@@ -2,6 +2,17 @@
 name: data-model
 description: Use when a subject area of a data platform must be modelled, from source schemas, DDL, dbt or sample files, to choose between one wide table, star schema, 3NF and Data Vault, state the grain of every fact, find the keys from the data, decide the history and mark personal data, ending in a clickable model and DDL drafts.
 argument-hint: "[DDL, dbt project or samples folder] [the questions it must answer]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/data-model/scripts/guard.py" ] && exec python3 "$d/skills/data-model/scripts/guard.py" pre data-model personal; done; true'
+  PostToolUse:
+    - matcher: "Bash|Read"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/data-model/scripts/guard.py" ] && exec python3 "$d/skills/data-model/scripts/guard.py" post data-model personal; done; true'
 ---
 
 # Data model

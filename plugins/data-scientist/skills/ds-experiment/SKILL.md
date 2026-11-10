@@ -2,6 +2,17 @@
 name: ds-experiment
 description: Use when an A/B test or randomised online experiment is being planned or has finished, to size it (sample size, minimum detectable effect) or to read the result from one file with a row per unit, checking for a sample ratio mismatch first and correcting for several metrics, with guardrails, a warning about peeking and a call of ship, do not ship or inconclusive. Not for a general significance question outside an experiment, or a before-and-after comparison.
 argument-hint: "[plan numbers, or experiment file] [variant, unit and metric columns] [expected split, guardrails with margins]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/ds-experiment/scripts/guard.py" ] && exec python3 "$d/skills/ds-experiment/scripts/guard.py" pre ds-experiment personal; done; true'
+  PostToolUse:
+    - matcher: "Bash|Read"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/ds-experiment/scripts/guard.py" ] && exec python3 "$d/skills/ds-experiment/scripts/guard.py" post ds-experiment personal; done; true'
 ---
 
 # Experiment

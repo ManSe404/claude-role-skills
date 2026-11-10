@@ -2,6 +2,12 @@
 name: arch-style
 description: Use before building or restructuring a software system, when a brief arrives or someone proposes microservices, to decide what shape it should have - one deployable, a modular monolith, serverless functions, a few services, services with an event backbone or microservices - by eliminating options against the team and the brief's facts, ending in a decision page with fitness rules and an ADR draft.
 argument-hint: "[brief file or text]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/arch-style/scripts/guard.py" ] && exec python3 "$d/skills/arch-style/scripts/guard.py" pre arch-style; done; true'
 ---
 
 # Architecture style

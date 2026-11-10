@@ -2,6 +2,17 @@
 name: report-review
 description: Use before an analysis or report with its SQL or notebook and its printed numbers goes out, to check the counting behind them against the data - double counting, wrong denominators, filters that silently drop rows, mismatched time windows, partial periods, averages of averages, small samples, a Simpson's reversal, misleading charts. Not for general feedback on an analysis with no code or data behind it.
 argument-hint: "[report folder] [folder of sample data]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/report-review/scripts/guard.py" ] && exec python3 "$d/skills/report-review/scripts/guard.py" pre report-review personal; done; true'
+  PostToolUse:
+    - matcher: "Bash|Read"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/report-review/scripts/guard.py" ] && exec python3 "$d/skills/report-review/scripts/guard.py" post report-review personal; done; true'
 ---
 
 # Report review

@@ -2,6 +2,12 @@
 name: impact
 description: Use before you change, rename or remove a function, class, module, endpoint, setting or database column, or on the current diff, to find everything the change reaches - direct and indirect callers, dynamic uses, public surfaces, stored data and outside consumers - and the safe order to make it.
 argument-hint: "[name and intended change, or the diff]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/impact/scripts/guard.py" ] && exec python3 "$d/skills/impact/scripts/guard.py" pre impact; done; true'
 ---
 
 # Impact

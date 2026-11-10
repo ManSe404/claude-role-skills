@@ -2,6 +2,17 @@
 name: ds-frame
 description: Use before building a predictive model, when someone asks for a model or a prediction and the decision it should change, the exact target, the label and what each error costs are still open, to decide whether a rule, a simple score or a real model is the right thing to build, name the baseline it must beat and write acceptance criteria. Not for an LLM or chatbot solution (use ai-pattern) and not for a general data question.
 argument-hint: "[brief file or text] [folder of history data]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/ds-frame/scripts/guard.py" ] && exec python3 "$d/skills/ds-frame/scripts/guard.py" pre ds-frame personal; done; true'
+  PostToolUse:
+    - matcher: "Bash|Read"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/ds-frame/scripts/guard.py" ] && exec python3 "$d/skills/ds-frame/scripts/guard.py" post ds-frame personal; done; true'
 ---
 
 # Frame a model

@@ -2,6 +2,12 @@
 name: codebase-map
 description: Use when you open a repository you do not know yet, or must explain one to someone, to map it on one page from what the code does - its purpose, entry points, modules and imports, the main flows traced hop by hop, the outside systems, how to run and test it, its health and the open questions.
 argument-hint: "[repo or folder]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/codebase-map/scripts/guard.py" ] && exec python3 "$d/skills/codebase-map/scripts/guard.py" pre codebase-map; done; true'
 ---
 
 # Codebase map

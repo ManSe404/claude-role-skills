@@ -2,6 +2,17 @@
 name: metric-spec
 description: Use when two teams or reports show different numbers for what should be the same business metric, or before a metric goes on a dashboard or into a target, and the SQL, dbt models or report folder that compute it and a sample of its data are at hand, to write the one definition everyone will use.
 argument-hint: "[repository or report folder] [metric name] [folder of sample data]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/metric-spec/scripts/guard.py" ] && exec python3 "$d/skills/metric-spec/scripts/guard.py" pre metric-spec personal; done; true'
+  PostToolUse:
+    - matcher: "Bash|Read"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/metric-spec/scripts/guard.py" ] && exec python3 "$d/skills/metric-spec/scripts/guard.py" post metric-spec personal; done; true'
 ---
 
 # Metric spec

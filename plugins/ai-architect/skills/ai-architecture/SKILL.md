@@ -2,6 +2,12 @@
 name: ai-architecture
 description: Use when an AI or LLM solution must be shown to a client or a team, from a design or from its repository, to draw it as one interactive page - components in zones, clickable details, request flows played step by step, a switch between variants such as RAG and agentic RAG, and the trust boundaries where untrusted text enters and what it can reach.
 argument-hint: "[ai-pattern or ai-stack page JSON, a description, or a repo]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/ai-architecture/scripts/guard.py" ] && exec python3 "$d/skills/ai-architecture/scripts/guard.py" pre ai-architecture; done; true'
 ---
 
 # AI architecture

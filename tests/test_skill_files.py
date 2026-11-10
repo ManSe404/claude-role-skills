@@ -14,9 +14,18 @@ IDS = [f"{p.parent.parent.name}/{p.name}" for p in ALL_SKILLS]
 
 
 def frontmatter(text: str) -> dict[str, str]:
+    """The top-level keys of the frontmatter; a nested block such as `hooks:` comes back as its raw lines."""
     assert text.startswith("---\n")
     block = text.split("---\n", 2)[1]
-    return dict(line.split(": ", 1) for line in block.strip().splitlines())
+    meta: dict[str, str] = {}
+    key = ""
+    for line in block.rstrip("\n").splitlines():
+        if line.startswith((" ", "-")) and key:
+            meta[key] += line + "\n"
+            continue
+        key, _, value = line.partition(":")
+        meta[key] = value.strip()
+    return meta
 
 
 def test_every_pack_has_its_skills() -> None:
@@ -164,3 +173,50 @@ def test_eval_case_files_are_well_formed(case: Path) -> None:
 def test_no_grader_reads_the_whole_trace(grader: Path) -> None:
     """Regression: the trace holds the text of SKILL.md, so a pattern found there proves nothing about what was run."""
     assert "target: trace" not in grader.read_text("utf-8")
+
+
+@pytest.mark.parametrize("skill", ALL_SKILLS, ids=IDS)
+def test_every_skill_is_guarded_by_its_own_hook(skill: Path) -> None:
+    """The hook finds this skill's guard in a plugin, a project or the personal skills folder, and does nothing if
+    there is none: a script that cannot be opened makes python exit 2, which would block every call."""
+    hooks = frontmatter((skill / "SKILL.md").read_text("utf-8"))["hooks"]
+    personal = (skill / "scripts" / "data_profile.py").is_file()
+    flag = " personal" if personal else ""
+    path = f'"$d/skills/{skill.name}/scripts/guard.py"'
+    roots = '"$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"'
+    for mode in ("pre", "post") if personal else ("pre",):
+        command = f"for d in {roots}; do [ -f {path} ] && exec python3 {path} {mode} {skill.name}{flag}; done; true"
+        assert f"command: '{command}'" in hooks
+    assert '"Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"' in hooks
+    assert ("PostToolUse" in hooks) == personal
+    assert (skill / "scripts" / "guard.py").is_file()
+
+
+@pytest.mark.parametrize("where", ["plugin", "project", "personal", "nowhere"])
+def test_the_hook_command_finds_the_guard_or_steps_aside(tmp_path: Path, where: str) -> None:
+    import subprocess
+
+    skill = next(s for s in ALL_SKILLS if s.name == "ds-explore")
+    hooks = frontmatter((skill / "SKILL.md").read_text("utf-8"))["hooks"]
+    command = re.search(r"command: '(.+? pre .+?)'", hooks)
+    assert command
+    roots = {
+        "plugin": tmp_path / "plugin",
+        "project": tmp_path / "project" / ".claude",
+        "personal": tmp_path / "home" / ".claude",
+    }
+    if where != "nowhere":
+        target = roots[where] / "skills" / "ds-explore" / "scripts"
+        target.mkdir(parents=True)
+        (target / "guard.py").write_text("import sys; print('ran', *sys.argv[1:])")
+    env = {
+        "PATH": "/usr/bin:/bin",
+        "HOME": str(tmp_path / "home"),
+        "CLAUDE_PROJECT_DIR": str(tmp_path / "project"),
+        **({"CLAUDE_PLUGIN_ROOT": str(roots["plugin"])} if where == "plugin" else {}),
+    }
+    done = subprocess.run(
+        ["bash", "-c", command.group(1)], capture_output=True, text=True, env=env, check=False, timeout=30
+    )
+    assert done.returncode == 0
+    assert done.stdout.strip() == ("" if where == "nowhere" else "ran pre ds-explore personal")

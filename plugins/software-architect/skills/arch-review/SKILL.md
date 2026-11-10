@@ -2,6 +2,12 @@
 name: arch-review
 description: Use before a major change, when you take over a codebase, or when a system has become hard to change, to review its software structure with measurements - cycles between modules, layer breaks, dumping grounds, files that always change together, hot spots, shared tables, synchronous loops between services, code only one person knows - with file:line findings and what to fix first.
 argument-hint: "[repository] [layers, innermost first]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/arch-review/scripts/guard.py" ] && exec python3 "$d/skills/arch-review/scripts/guard.py" pre arch-review; done; true'
 ---
 
 # Architecture review

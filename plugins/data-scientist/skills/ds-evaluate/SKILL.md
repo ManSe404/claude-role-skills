@@ -2,6 +2,17 @@
 name: ds-evaluate
 description: Use when comparing trained predictive models from a file of predictions (an id, the label and one score column per model), to say which model is really better than the baseline and which difference is inside the noise, with confidence intervals, calibration, a threshold chosen from the cost of each error and the worst slices. Not for evaluating an LLM, retrieval tuning or traces, and not for a general question about a metric.
 argument-hint: "[predictions file(s)] [baseline column] [costs of a false positive and a false negative]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/ds-evaluate/scripts/guard.py" ] && exec python3 "$d/skills/ds-evaluate/scripts/guard.py" pre ds-evaluate personal; done; true'
+  PostToolUse:
+    - matcher: "Bash|Read"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/ds-evaluate/scripts/guard.py" ] && exec python3 "$d/skills/ds-evaluate/scripts/guard.py" post ds-evaluate personal; done; true'
 ---
 
 # Evaluate models

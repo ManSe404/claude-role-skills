@@ -2,6 +2,12 @@
 name: ai-pattern
 description: Use before building an AI or LLM solution, when a brief or a use case arrives, to decide what it should be - no LLM, one model call, the whole corpus in the prompt, RAG, a workflow, agentic RAG, one agent or an orchestrator with subagents - by eliminating options against the brief's facts, naming the constraint that decides, and ending in a decision page with acceptance criteria and an ADR draft.
 argument-hint: "[brief file or text] [documents folder]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/ai-pattern/scripts/guard.py" ] && exec python3 "$d/skills/ai-pattern/scripts/guard.py" pre ai-pattern; done; true'
 ---
 
 # AI pattern

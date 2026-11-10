@@ -2,6 +2,12 @@
 name: solution-blueprint
 description: Use when the specialist pages for one project exist and must become one solution, across AI, data, software and cloud, to join their facts and find where they contradict each other - regions, costs, decisions, technologies, team sizes, what nobody covered - and write one page with the whole solution drawn, every conflict named with the side it recommends, and what to do first. Not for deciding one area; that is ai-pattern, data-platform, arch-style or cloud-design.
 argument-hint: "[pages folder or page JSON files]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/solution-blueprint/scripts/guard.py" ] && exec python3 "$d/skills/solution-blueprint/scripts/guard.py" pre solution-blueprint; done; true'
 ---
 
 # Solution blueprint

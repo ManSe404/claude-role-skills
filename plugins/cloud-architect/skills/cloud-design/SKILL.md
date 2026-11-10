@@ -2,6 +2,12 @@
 name: cloud-design
 description: Use before building or moving a system to the cloud, when a brief arrives or a platform is being picked, to decide what it should run on - a managed app platform, serverless containers, functions, Kubernetes or virtual machines, plus the data, network, region and availability - by eliminating options against the brief, with up to two variants or two clouds compared and costed from each provider's price list, each price with its date and source, and an ADR draft.
 argument-hint: "[brief file or text] [saved price table]"
+hooks:
+  PreToolUse:
+    - matcher: "Skill|Read|Write|Edit|MultiEdit|NotebookEdit|Bash|WebFetch|WebSearch"
+      hooks:
+        - type: command
+          command: 'for d in "$CLAUDE_PLUGIN_ROOT" "$CLAUDE_PROJECT_DIR/.claude" "$HOME/.claude"; do [ -f "$d/skills/cloud-design/scripts/guard.py" ] && exec python3 "$d/skills/cloud-design/scripts/guard.py" pre cloud-design; done; true'
 ---
 
 # Cloud design
