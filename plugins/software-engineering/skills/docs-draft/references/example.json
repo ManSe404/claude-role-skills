@@ -1,0 +1,89 @@
+{
+ "skill": "docs-draft",
+ "title": "acme-orders, runbook for the nightly import",
+ "subtitle": "A runbook for the on-call engineer when the 06:00 import fails, drafted from the code, with where the README has drifted.",
+ "meta": {"repo": "acme-orders", "commit": "f36ec1c", "date": "2026-11-10", "kind": "runbook", "audience": "on-call engineer"},
+ "verdict": {
+  "text": "The runbook can go out once a person fills the three placeholders (where the log and the export live on the server, who finance's contact is, how to deploy a rollback): every command, setting and path in it comes from the code or CI. The README is missing two flags the code has (`--notify`, `--adjustments`) and the example configuration file names a key the README does not.",
+  "tone": "warn"
+ },
+ "stats": [
+  {"label": "Exposed items", "value": 24, "note": "commands, flags, routes, settings, targets", "tone": "info"},
+  {"label": "Documented before", "value": 14, "tone": "info"},
+  {"label": "Documented by the draft", "value": 9, "note": "the import path and its settings", "tone": "ok"},
+  {"label": "Stale lines", "value": 0, "tone": "ok"},
+  {"label": "Guesses left", "value": 3, "note": "placeholders for a person", "tone": "warn"}
+ ],
+ "sections": [
+  {
+   "id": "draft",
+   "title": "The draft",
+   "intro": "Markdown, ready for `docs/runbook-import.md` after the yes. `[guess]` marks what a person must fill.",
+   "blocks": [
+    {
+     "type": "code",
+     "code": "# Runbook: the nightly order import fails\n\n## When to use this\n\nThe 06:00 cron run of `acme-orders import` exited with an error, or finance reports that a day is missing\nfrom the totals. The log line looks like `ERROR cron acme-orders import exited with 1`, followed by a Python\ntraceback.\n\n## What you need\n\n- Shell access to the server that runs the cron job [guess: host name, who grants access]\n- The settings the job runs with, by name: `ACME_DB_PATH` (the SQLite file), `ACME_VAT_RATE`; read from the\n  environment or from `acme.yaml` next to the job (src/acme_orders/config.py:17-29). Never copy a value into\n  a ticket.\n- The day's export: a `;`-separated CSV, named `orders-YYYY-MM-DD.csv` [guess: the folder on the server; the\n  log names /srv/acme-orders/data/]\n\n## Check\n\n1. The log: `grep -n ERROR <log file>` [guess: the log path; the log names /srv/acme-orders]. The traceback's\n   last frame says which function failed; `parse_amount` (importer.py:28) means a value in the export the\n   parser does not accept.\n2. Was anything saved? The import parses the whole file before the first write (importer.py:56-58): a\n   traceback in `read_orders` or `parse_line` means nothing from that file is in the database, and a re-run is\n   safe. A traceback in `save_order` means some orders are in; `INSERT OR REPLACE` (storage.py:27) makes a\n   re-run safe as well.\n3. Price the file without saving: `python -m acme_orders check data/orders-YYYY-MM-DD.csv` prints one line per\n   order with its total and stops at the first bad row with the same traceback.\n\n## Do\n\n1. Find the bad row: the traceback names the function; `check` stops at the row. Compare the value with the\n   previous day's file.\n2. If the row is wrong in the export, ask the shop for a corrected export [guess: the shop contact]. Do not\n   edit the export by hand: finance reads the totals from the database and a hand edit leaves no trace.\n3. If the code is wrong (a format the parser used to accept), roll back to the previous version and re-run:\n   `python -m acme_orders import data/orders-YYYY-MM-DD.csv` [guess: how a rollback is deployed; the log names\n   the running version as `deployed <commit>`].\n4. Re-run the import for every day that failed, oldest first. Each run takes seconds (41 orders in 1 s on\n   30 Sep, log line 3).\n\n## Verify\n\n- The log ends the run with `imported N orders`.\n- `GET /orders/<order_id>` on the running API returns one of the day's orders (docs/api.md:6); `GET /health`\n  returns `{\"status\": \"ok\"}`.\n- The totals for the day: `python -m acme_orders report data/orders-YYYY-MM-DD.csv --day YYYY-MM-DD` prints\n  the HTML report finance sees.\n\n## Undo\n\nA re-run replaces the day's orders in place (storage.py:25-37); there is nothing to undo. A rollback of the\ncode is undone by deploying the current version again [guess: deploy procedure].\n\n## Escalate\n\n- Finance reads `orders.total_cents` every night from a copy of the database (docs/finance-export.md:3);\n  tell them which day is missing. Contact: [guess: finance-ops, see docs/finance-export.md:6]\n- The shop's export format is theirs: [guess: contact]\n\n## Known causes\n\n- 2 October 2026: a decimal comma (`12,50`) in `unit_price` after commit 49bc16d removed the comma handling\n  from `parse_amount`; signature `decimal.InvalidOperation` in `parse_amount`. Fixed by restoring the\n  handling and its test.\n",
+     "where": "docs/runbook-import.md"
+    }
+   ]
+  },
+  {
+   "id": "drift",
+   "title": "Drift",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": ["Item", "In the code", "In the documents", "Status"],
+     "rows": [
+      ["`import --notify` (send receipts)", "src/acme_orders/cli.py:15", "nowhere", "undocumented; the draft names it under *What you need* as not used by cron"],
+      ["`report --adjustments FILE`", "src/acme_orders/cli.py:21", "nowhere", "undocumented; outside the runbook's scope, listed for the README"],
+      ["`mail_api_key` (settings field)", "src/acme_orders/config.py:13", "README names `ACME_MAIL_API_KEY`, not the file key", "undocumented in acme.yaml.example by design: a secret is never in a file example"],
+      ["`db_path`, `mail_api_url`, `vat_rate` in acme.yaml", "acme.yaml.example:1-3", "README says *see acme.yaml.example*", "documented by reference; the draft names `db_path`"],
+      ["Dockerfile `CMD serve --port 8080`", "Dockerfile:7", "README shows `serve --port 8080` as a command, not as the container's default", "undocumented; not in the runbook's scope"],
+      ["`GET /health`, `GET /orders/<id>`", "src/acme_orders/server.py:13-15 (read as `self.path` comparisons, so tagged guessed by the facts and confirmed by reading)", "docs/api.md", "documented; the draft uses both under *Verify*"]
+     ]
+    },
+    {"type": "text", "text": "No stale line: every command, flag and setting the README and docs/api.md name exists in the code. [high]"}
+   ]
+  },
+  {
+   "id": "person",
+   "title": "Left to a person",
+   "blocks": [
+    {
+     "type": "list",
+     "items": [
+      "The server host, the log path and the export folder: the log names `/srv/acme-orders/...` but nothing in the repository deploys it (no compose file, no deploy script). Who: whoever runs the cron job.",
+      "How a rollback is deployed: the log records `deployed <commit>` but the deploy step is not in the repository. Who: the same.",
+      "Contacts: finance-ops (docs/finance-export.md:6 names a mailbox) and the shop. Who: the lead."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sources",
+   "title": "Sources",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": ["The draft says", "Where the code says it"],
+     "rows": [
+      ["the import parses the whole file before the first write", "src/acme_orders/importer.py:56-58: `for order in read_orders(path): storage.save_order(...)`; `read_orders` builds the whole list first"],
+      ["a re-run replaces the day's orders in place", "src/acme_orders/storage.py:27 `INSERT OR REPLACE INTO orders`, :32 `DELETE FROM order_lines WHERE order_id = ?` then insert, inside `with db:`"],
+      ["`check` prices without saving", "src/acme_orders/cli.py:17 help text; :34-36 prints totals, no `storage` call"],
+      ["settings by name and where they are read", "src/acme_orders/config.py:24-29: `os.environ.get(\"ACME_DB_PATH\", values.get(\"db_path\", \"acme.db\"))` and the three others"],
+      ["the API routes", "src/acme_orders/server.py:13 `/health`, :15 `/orders/`; docs/api.md"],
+      ["finance reads the database copy", "docs/finance-export.md:3-4"],
+      ["the 2 October cause", "git 49bc16d; tests/test_importer.py history; logs/acme-orders.log:10-26"]
+     ]
+    }
+   ]
+  }
+ ],
+ "facts": {
+  "version": 1,
+  "scope": "acme-orders, runbook for the nightly import",
+  "assumptions": ["the cron job runs `python -m acme_orders import <file>` without `--notify`, as the log's first line shows"],
+  "open": ["the server host, log path and export folder", "the deploy and rollback procedure", "the finance and shop contacts"]
+ }
+}

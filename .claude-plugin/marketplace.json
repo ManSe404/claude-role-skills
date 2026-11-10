@@ -8,8 +8,8 @@
     {
       "name": "software-engineering",
       "source": "./plugins/software-engineering",
-      "description": "Six skills for software engineers: codebase-map, impact, bug-hunt, test-gap, dependency-audit and code-audit.",
-      "version": "0.3.2"
+      "description": "Ten skills for software engineers: codebase-map, impact, bug-hunt, test-gap, dependency-audit, code-audit, change-review, docs-draft, incident-triage and postmortem.",
+      "version": "0.4.0"
     },
     {
       "name": "ai-architect",

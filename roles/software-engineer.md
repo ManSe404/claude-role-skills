@@ -29,4 +29,7 @@ the software-engineering skills; the project's own facts (stack, commands, stand
 - `test-gap`: which tests to write first, with expected results.
 - `dependency-audit`: vulnerable, outdated, unused and abandoned dependencies, and the upgrade waves.
 - `code-audit`: the bugs in the code as it stands, and the promises in its docs that no code keeps.
-  A diff or a pull request is a change review, not this.
+- `change-review`: a diff, a branch or a PR before it merges, every hunk read, with a verdict.
+- `docs-draft`: a README, runbook, API reference or onboarding guide from the code, with the drift listed.
+- `incident-triage`: while it burns: timeline, severity, what changed, options, the status update draft.
+- `postmortem`: after the fire: a sourced timeline, the cause, factors, action items with checks; roles, not names.

@@ -4,46 +4,37 @@
   {"id": "bug-from-log", "prompt": "The nightly import failed again, the stack trace is in logs/import.log. Find the root cause.", "expect": ["bug-hunt"]},
   {"id": "tests-first", "prompt": "We are about to refactor billing. Which parts of this repo are least tested and which tests should I write first?", "expect": ["test-gap"]},
   {"id": "deps", "prompt": "Check this project's dependencies for vulnerable, outdated or badly licensed packages.", "expect": ["dependency-audit"]},
-
   {"id": "ai-which-pattern", "prompt": "We want an assistant that answers support agents' questions from 3,000 policy PDFs. The brief is in brief.md. Is this RAG, an agent, or something simpler?", "expect": ["ai-pattern"]},
   {"id": "ai-pick-tools", "prompt": "We settled on RAG for the policy assistant. Help us pick the model for each step, the embeddings, the vector store and hosting, with a monthly cost.", "expect": ["ai-stack"]},
   {"id": "ai-draw", "prompt": "Draw the architecture of our RAG assistant with its request flow and where the data goes, for the security team.", "expect": ["ai-architecture"]},
   {"id": "ai-review", "prompt": "Review the LLM feature in this repo for prompt injection, missing evals and cost risks before we ship it.", "expect": ["ai-review"]},
-
   {"id": "data-which-platform", "prompt": "We are a 40-person company with data in Postgres and Salesforce, we need reporting now and maybe ML later. Warehouse or lakehouse, and on what?", "expect": ["data-platform"]},
   {"id": "data-design-model", "prompt": "Design the dimensional model for our orders and returns. What is the grain of each fact and what are the keys?", "expect": ["data-model"]},
   {"id": "data-map", "prompt": "I inherited this dbt project and its notebooks. Map the sources, layers, lineage, who reads what and where personal data travels.", "expect": ["data-map"]},
   {"id": "data-review", "prompt": "Review our data platform repo, the SQL and dbt models, for anti-patterns, broken grain and risky incremental logic.", "expect": ["data-review"]},
-
   {"id": "arch-which-style", "prompt": "New logistics product, two teams of five people. Monolith, modular monolith or microservices? The requirements are in requirements.md.", "expect": ["arch-style"]},
   {"id": "arch-c4", "prompt": "From the code, draw the C4 context and container views of this system: the API, the worker and the web app.", "expect": ["arch-c4"]},
   {"id": "structure-hard-to-change", "prompt": "This codebase keeps getting harder to change. Find the structural problems: cycles, layer breaks, hot spots, coupling.", "expect": ["code-audit"]},
   {"id": "arch-evolve", "prompt": "We need to go from this monolith to a few services without stopping delivery. Plan the steps so that each one leaves the system working.", "expect": ["arch-evolve"]},
-
   {"id": "cloud-map", "prompt": "Here is our Terraform for Azure. Show me what exists: subscriptions, networks, and what is exposed to the internet.", "expect": ["cloud-map"]},
   {"id": "cloud-design", "prompt": "We need to host this API with a database, EU only, about 200 requests a second. Compare options on Azure and AWS with monthly prices.", "expect": ["cloud-design"]},
   {"id": "cloud-review", "prompt": "Review our CloudFormation templates for security, reliability and cost problems.", "expect": ["cloud-review"]},
-
   {"id": "solution-brief", "prompt": "We have a client brief for a claims platform with a model, data pipelines and cloud hosting. Which specialists need to do what, and in what order?", "expect": ["solution-brief"]},
   {"id": "solution-blueprint", "prompt": "We have the finished pages from the data, cloud and AI architects for this project. Join them into one blueprint and find where they conflict.", "expect": ["solution-blueprint"]},
-
   {"id": "metric-definition", "prompt": "Finance and sales report different numbers of active customers. The SQL is in reports/. Write the one definition everyone will use.", "expect": ["metric-spec"]},
   {"id": "number-moved", "prompt": "Revenue dropped 12% from September to October. orders.csv has the rows behind it. Why did it move?", "expect": ["number-moved"]},
   {"id": "number-reconcile", "prompt": "The CRM says 18,204 orders for October and the warehouse says 17,966. Here are both extracts. Account for the difference.", "expect": ["number-reconcile"]},
   {"id": "report-review", "prompt": "Before this quarterly report goes to the board, check the SQL and the numbers in reports/q3 for counting mistakes.", "expect": ["report-review"]},
-
   {"id": "ds-frame", "prompt": "Marketing wants a model that predicts who will cancel. Before anyone builds it, is a model even the right thing, and what would it have to beat?", "expect": ["ds-frame"]},
   {"id": "ds-explore", "prompt": "Here is customers.csv and the column we want to predict is churned. Nobody has looked at it yet. What relates to churn and what should worry us before we model?", "expect": ["ds-explore"]},
   {"id": "ds-dataset", "prompt": "Here are train.csv and test.csv for the churn model, the label is churned. Can we trust this data? Check it for leakage.", "expect": ["ds-dataset"]},
   {"id": "ds-evaluate", "prompt": "predictions.csv has the scores of our baseline and two new models with the labels. Is either really better?", "expect": ["ds-evaluate"]},
   {"id": "ds-experiment", "prompt": "The A/B test of the renewal nudge has finished and results.csv has one row per user. Should we ship it?", "expect": ["ds-experiment"]},
-
   {"id": "draw-repo", "prompt": "Draw the architecture of this repository.", "expect": ["codebase-map", "arch-c4"]},
   {"id": "draw-cloud", "prompt": "Draw our cloud architecture from the Bicep files in infra/.", "expect": ["cloud-map"]},
   {"id": "draw-data", "prompt": "Draw how data flows through our warehouse, from the dbt project.", "expect": ["data-map"]},
   {"id": "draw-chatbot", "prompt": "Draw the architecture of our chatbot: model, retrieval and guardrails.", "expect": ["ai-architecture"]},
   {"id": "draw-containers", "prompt": "Show me which containers make up this system and what talks to what, from the code.", "expect": ["arch-c4"]},
-
   {"id": "review-structure", "prompt": "Review the architecture of this repo.", "expect": ["code-audit", "codebase-map"]},
   {"id": "design-proposal", "prompt": "Our design proposal for parcel booking v2 is in design/proposal.md with its ADRs in design/adr/. Review the design before we approve it.", "expect": ["arch-review"]},
   {"id": "design-before-build", "prompt": "Nothing is built yet. Review this target architecture document for weak spots before the teams start: docs/target-architecture.md.", "expect": ["arch-review"]},
@@ -56,18 +47,15 @@
   {"id": "review-data", "prompt": "Review this data platform.", "expect": ["data-review"]},
   {"id": "review-ai", "prompt": "Review this AI solution.", "expect": ["ai-review"]},
   {"id": "review-report", "prompt": "Review this analysis before I send it: the notebook and its numbers are in analysis/.", "expect": ["report-review"]},
-
   {"id": "choose-vector-db", "prompt": "Which vector database should we use for our RAG system?", "expect": ["ai-stack"]},
   {"id": "choose-warehouse", "prompt": "Should we go with Snowflake or Microsoft Fabric for our data platform?", "expect": ["data-platform"]},
   {"id": "choose-microservices", "prompt": "Should this product be microservices? We have one team of six.", "expect": ["arch-style"]},
   {"id": "choose-compute", "prompt": "AKS or App Service for this API? Traffic is small and steady.", "expect": ["cloud-design"]},
   {"id": "whole-solution", "prompt": "Design a whole solution for insurance claims: documents, an AI step, a data store and cloud hosting. Where do we start?", "expect": ["solution-brief"]},
-
   {"id": "why-churn-rose", "prompt": "Why did churn go up last month? churn.csv has the rows per customer and period.", "expect": ["number-moved"]},
   {"id": "ab-is-it-real", "prompt": "Is the difference in conversion between the two landing pages real? ab.csv has one randomised visitor per row.", "expect": ["ds-experiment"]},
   {"id": "size-ab", "prompt": "How many users do we need for an A/B test to detect a 2 point lift on a 30% renewal rate?", "expect": ["ds-experiment"]},
   {"id": "leak-before-split", "prompt": "We have not split this table yet. Before we train, does any column give away the label? The file is history.csv, the label is defaulted.", "expect": ["ds-explore", "ds-dataset"]},
-
   {"id": "none-pvalue", "prompt": "What is a p-value? Two sentences.", "expect": []},
   {"id": "none-typo", "prompt": "Fix the typo on line 3 of README.md.", "expect": []},
   {"id": "none-sql", "prompt": "Write a SQL query that returns the top 10 customers by revenue from an orders table.", "expect": []},
@@ -80,7 +68,20 @@
   {"id": "none-what-is-rag", "prompt": "Explain what RAG is.", "expect": []},
   {"id": "none-train", "prompt": "Train a random forest on train.csv and save the model.", "expect": []},
   {"id": "none-docker", "prompt": "How do I install Docker on Ubuntu?", "expect": []},
-  {"id": "none-pr-review", "prompt": "Review this pull request before I merge it: the current branch against main.", "expect": []},
-  {"id": "none-staged-review", "prompt": "Look over my staged changes for bugs before I commit.", "expect": []},
-  {"id": "none-write-adr", "prompt": "Write an ADR for choosing Kafka over RabbitMQ for our events.", "expect": []}
+  {"id": "review-pr", "prompt": "Review this pull request before I merge it: the current branch against main.", "expect": ["change-review"]},
+  {"id": "review-staged", "prompt": "Look over my staged changes for bugs before I commit.", "expect": ["change-review"]},
+  {"id": "none-write-adr", "prompt": "Write an ADR for choosing Kafka over RabbitMQ for our events.", "expect": []},
+  {"id": "review-patch", "prompt": "Here is a patch file from a contractor, review it before I apply it: fixes/retry.patch in this repo.", "expect": ["change-review"]},
+  {"id": "review-range", "prompt": "Look at the commits since the last release tag, v1.4.0..HEAD, is it safe to deploy?", "expect": ["change-review"]},
+  {"id": "docs-readme", "prompt": "Write a README for this repository; nobody has documented it yet.", "expect": ["docs-draft"]},
+  {"id": "docs-runbook", "prompt": "We need a runbook for when the nightly import job fails, for whoever is on call.", "expect": ["docs-draft"]},
+  {"id": "docs-api", "prompt": "Document the HTTP API of this service: every endpoint with request and response examples.", "expect": ["docs-draft"]},
+  {"id": "docs-drift", "prompt": "The README is out of date, find what it says that the code no longer does and fix the Run section.", "expect": ["docs-draft"]},
+  {"id": "incident-down", "prompt": "Production is down since 6 this morning, the import job keeps failing, the log is in logs/app.log. How bad is it and what do we do right now?", "expect": ["incident-triage"]},
+  {"id": "incident-alert", "prompt": "PagerDuty fired: error rate on the API above 5% for 10 minutes. Triage it from logs/api/.", "expect": ["incident-triage"]},
+  {"id": "incident-status", "prompt": "Draft the status update for the outage we're in: what we know, what we've done, what's next.", "expect": ["incident-triage"]},
+  {"id": "postmortem-write", "prompt": "The outage from Tuesday is resolved; write the blameless incident review from the triage page, the root-cause page and the logs.", "expect": ["postmortem"]},
+  {"id": "postmortem-actions", "prompt": "What should change so last week's incident doesn't repeat? Give me action items with owners.", "expect": ["postmortem"]},
+  {"id": "none-standup", "prompt": "Summarise what I committed yesterday for the standup, three bullet points.", "expect": []},
+  {"id": "none-rename-function", "prompt": "Rename the function parse_amount to parse_money everywhere.", "expect": []}
 ]

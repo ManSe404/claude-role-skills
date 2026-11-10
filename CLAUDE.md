@@ -10,6 +10,7 @@ four specialist packs), `data-analyst` and `data-scientist` so far. `docs/plans/
   work on its own, because an installed plugin has nothing outside its own folder.
 - `shared/` is the single source of `render_page.py`, `page-format.md`, `fonts/`,
   `ai_inventory.py`, `data_profile.py`, `sql_inventory.py`, `measure.py`, `model_stats.py`, `guard.py`, `code_graph.py`, `containers.py`,
+  `audit_scan.py`, `incident_timeline.py`,
   `cloud_inventory.py` and `cloud_prices.py`, and of `shared/cloud/`, one file per cloud provider. Edit them
   there, then run `python3 tools/sync_shared.py`; a skill gets a copy when its SKILL.md names the file.
   Never edit the copies under a skill. A cloud provider is `shared/cloud/<provider>.md` and `.json`:

@@ -31,4 +31,4 @@ select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
 strict = true
 python_version = "3.11"
 files = ["shared", "tools", "fixtures/build_fixture.py", "plugins/software-engineering/skills", "plugins/ai-architect/skills", "plugins/data-architect/skills", "plugins/software-architect/skills", "plugins/cloud-architect/skills", "plugins/solutions-architect/skills", "plugins/data-analyst/skills", "plugins/data-scientist/skills"]
-exclude = ['plugins/.*/scripts/(render_page|ai_inventory|data_profile|sql_inventory|measure|model_stats|code_graph|containers|cloud_inventory|cloud_prices|guard)\.py$']
+exclude = ['plugins/.*/scripts/(render_page|ai_inventory|data_profile|sql_inventory|measure|model_stats|code_graph|containers|cloud_inventory|cloud_prices|guard|audit_scan|incident_timeline)\.py$']

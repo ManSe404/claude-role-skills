@@ -1,0 +1,129 @@
+{
+ "skill": "postmortem",
+ "title": "acme-orders nightly import, 2-3 October 2026",
+ "subtitle": "Two mornings without the order import after a deploy; what happened, why as far as the evidence goes, and what changes.",
+ "meta": {"repo": "acme-orders", "commit": "f36ec1c", "date": "2026-10-04", "sources": "incident-triage 2026-10-03, bug-hunt 2026-10-03, logs/acme-orders.log, git"},
+ "verdict": {
+  "text": "Commit 49bc16d removed decimal-comma handling from `parse_amount` and the test that covered it; the first export with `12,50` after the 1 October deploy stopped the whole import for two mornings (bug-hunt, reproduced). The change that matters most: the regression test is back and CI runs it, so the same removal cannot ship again unnoticed. [high]",
+  "tone": "warn"
+ },
+ "stats": [
+  {"label": "Minutes to detect", "value": 210, "note": "06:00 first error, 09:30 noticed by finance", "tone": "bad"},
+  {"label": "Minutes to mitigate", "value": 1470, "note": "rollback to d22ee8f on 3 Oct 10:00", "tone": "bad"},
+  {"label": "Minutes to resolve", "value": 2040, "note": "fix deployed 3 Oct 16:00", "tone": "warn"},
+  {"label": "Errors before detection", "value": 1, "note": "the second run failed before the rollback", "tone": "info"},
+  {"label": "Action items", "value": 4, "note": "each with its check", "tone": "ok"}
+ ],
+ "sections": [
+  {
+   "id": "summary",
+   "title": "Summary",
+   "blocks": [
+    {"type": "callout", "tone": "info", "text": "The nightly import of orders-2026-10-02.csv failed on 2 and 3 October with `decimal.InvalidOperation` in `parse_amount`. Finance noticed the missing day at 09:30 on 2 October. The code was rolled back to d22ee8f on 3 October at 10:00 and both files were re-imported; the fix (comma handling and its test restored) was deployed at 16:00. No order was lost: the run fails before its first write. [high]"}
+   ]
+  },
+  {
+   "id": "timeline",
+   "title": "Timeline",
+   "intro": "CEST (+02:00). Every entry names its source; the two entries from the lead are marked as statements.",
+   "blocks": [
+    {
+     "type": "steps",
+     "items": [
+      {"title": "30 Sep 17:42 the change", "text": "Commit 49bc16d `importer: simplify amount parsing`: `parse_amount` stops replacing `,` with `.`; `test_decimal_comma` deleted. [high]", "where": "git 49bc16d"},
+      {"title": "1 Oct 18:05 deploy c376ea1", "text": "Two commits go out together: 49bc16d and c376ea1 (the adjustments file). [high]", "where": "acme-orders.log:7"},
+      {"title": "2 Oct 06:00 first error", "text": "The import exits 1 on orders-2026-10-02.csv; `InvalidOperation` at importer.py:28. Nothing saved. [high]", "where": "acme-orders.log:8-26"},
+      {"title": "2 Oct 09:30 detected", "text": "Finance asks why 2 October is missing from the totals. No alert fired: the cron job has none. (lead's statement)", "where": "incident-triage 2026-10-03, phases"},
+      {"title": "3 Oct 06:00 second failure", "text": "Same file, same trace: cron re-ran the file it was given. [high]", "where": "acme-orders.log:27-45"},
+      {"title": "3 Oct 09:00 triage", "text": "SEV2; rollback proposed; bug-hunt started. [high]", "where": "incident-triage 2026-10-03, verdict"},
+      {"title": "3 Oct 09:40 root cause", "text": "bug-hunt reproduces `Decimal(\"12,50\")` raising, names 49bc16d and finds the same weakness in `read_adjustments`. [high]", "where": "bug-hunt 2026-10-03, root cause"},
+      {"title": "3 Oct 10:00 mitigated", "text": "Rollback to d22ee8f, re-import of 2 and 3 October: 78 orders. (lead's statement; the log in the page set ends 3 Oct 06:00)", "where": "incident-triage 2026-10-03, phases"},
+      {"title": "3 Oct 16:00 resolved", "text": "Fix deployed: comma handling and `test_decimal_comma` restored, `read_adjustments` uses the same parser. (lead's statement)", "where": "given"}
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cause",
+   "title": "Root cause",
+   "blocks": [
+    {"type": "text", "text": "`parse_amount` no longer accepted a decimal comma after commit 49bc16d, and the Croatian store's export uses one; the first such row raised `decimal.InvalidOperation` inside `read_orders`, which ends the run before any order is saved. Evidence: the bug-hunt page reproduced it with `Decimal(\"12,50\")`, the failing frame is importer.py:28, and the deleted test fed exactly that value. [high]"}
+   ]
+  },
+  {
+   "id": "factors",
+   "title": "Contributing factors",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": ["Factor", "Evidence", "Where"],
+     "rows": [
+      ["The test that covered the comma was deleted in the same commit", "the diff of 49bc16d removes `test_decimal_comma`; CI ran green because the test was gone", "git 49bc16d, tests/test_importer.py"],
+      ["No alert on a failed cron run", "210 minutes to detect; finance noticed, not a monitor", "incident-triage, phases; acme-orders.log has no alert line"],
+      ["No check after the deploy", "the deploy at 18:05 was followed by nothing until the 06:00 run", "acme-orders.log:7-8"],
+      ["The export's format was not written down", "README names the separator, not the decimal format; nothing says the store sends commas", "README.md:3; docs/"],
+      ["Cron re-runs the same file after a failure", "3 Oct ran orders-2026-10-02.csv again", "acme-orders.log:28"]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "whys",
+   "title": "Why chain",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": ["Why", "Answer", "Evidence", "Tag"],
+     "rows": [
+      ["did the import fail?", "`Decimal(\"12,50\")` raises", "bug-hunt reproduction; importer.py:28", "[high]"],
+      ["did a comma reach `Decimal`?", "49bc16d removed the `replace(\",\", \".\")`", "git 49bc16d", "[high]"],
+      ["did the removal ship?", "the test that would have failed was deleted in the same commit, so CI stayed green", "tests/test_importer.py history; ci.yml runs unittest", "[high]"],
+      ["was the test deleted?", "the commit message says *simplify*; no review record exists in the repository", "nothing in git beyond the message", "[guess]: the chain stops here; a change review of that commit would have been the evidence"]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "well-poorly",
+   "title": "What went well and poorly",
+   "blocks": [
+    {"type": "list", "title": "Well", "items": ["The run fails before its first write (importer.py:56-58): no partial day, and the re-import duplicated nothing. [high]", "The rollback to d22ee8f worked first time: two files, 78 orders, in minutes (lead's statement).", "The triage named the candidate commit from the log alone; bug-hunt confirmed it within 40 minutes. [high]"]},
+    {"type": "list", "title": "Poorly", "items": ["210 minutes to detect, and a person detected it. [high]", "A full day between detection and mitigation: the second morning failed before anyone acted. [high]", "The format the store sends was in nobody's document, so a reviewer had nothing to check the removal against. [high]"]}
+   ]
+  },
+  {
+   "id": "actions",
+   "title": "Action items",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": ["Action", "Factor", "Role", "Check"],
+     "rows": [
+      ["Restore `test_decimal_comma` and give `read_adjustments` the same parser and a test", "test deleted; same weakness", "fix", "the tests exist in the repository and fail on 49bc16d"],
+      ["An alert when the cron run exits non-zero", "no alert", "lead", "the alert fires on a replay of acme-orders.log:10"],
+      ["Document the export format: `;` separator, decimal comma allowed, in README", "format not written down", "fix", "README names the decimal format; docs-draft's drift table shows it documented"],
+      ["Review every change to `importer.py` with `change-review` before deploy", "the removal shipped unreviewed", "lead", "the next change to importer.py has a review page beside its PR"]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "document",
+   "title": "The document",
+   "blocks": [
+    {
+     "type": "code",
+     "code": "# Postmortem: nightly order import failed, 2-3 October 2026\n\nDate: 2026-10-02 06:00 to 2026-10-03 16:00 (CEST)    Severity: SEV2    Status: draft\nRoles: lead, comms, fix\n\n## Summary\nThe nightly import of orders-2026-10-02.csv failed on 2 and 3 October with decimal.InvalidOperation in\nparse_amount. Finance noticed the missing day at 09:30 on 2 October. The code was rolled back on 3 October\nat 10:00 and both files re-imported; the fix was deployed at 16:00. No order was lost.\n\n## Impact\n- Finance and the admin panel had no orders of 2 October for 28 hours; 3 October's file was imported 4 hours late.\n\n## Timeline (CEST)\n| Time | Event | Source |\n|---|---|---|\n| 30 Sep 17:42 | commit 49bc16d removes decimal-comma handling and its test | git |\n| 1 Oct 18:05 | deploy c376ea1 | log:7 |\n| 2 Oct 06:00 | first failed run, nothing saved | log:8-26 |\n| 2 Oct 09:30 | finance reports the missing day | lead |\n| 3 Oct 06:00 | second failed run, same file | log:27-45 |\n| 3 Oct 09:00 | triage: SEV2 | incident-triage page |\n| 3 Oct 09:40 | root cause reproduced | bug-hunt page |\n| 3 Oct 10:00 | rollback to d22ee8f, re-import of both days | lead |\n| 3 Oct 16:00 | fix deployed | lead |\n\n## Root cause\nparse_amount no longer accepted a decimal comma after 49bc16d; the first such row ended the run before any write.\n\n## Contributing factors\n- The covering test was deleted in the same commit, so CI stayed green.\n- No alert on a failed cron run; no check after the deploy.\n- The export's decimal format was not documented.\n- Cron re-runs the same file after a failure.\n\n## What went well\n- The run fails before its first write: no partial day, a safe re-run.\n- The rollback worked first time.\n\n## What went poorly\n- 210 minutes to detect, by a person; a full day to mitigate.\n\n## Action items\n| Action | Factor | Role | Check | Done when |\n|---|---|---|---|---|\n| restore test_decimal_comma; same parser and a test for read_adjustments | test deleted | fix | tests fail on 49bc16d | merged |\n| alert on a non-zero cron exit | no alert | lead | fires on a replay of log:10 | alert exists |\n| document the export format in README | undocumented format | fix | README names it | merged |\n| change-review before deploying changes to importer.py | unreviewed removal | lead | the next change has a review page | first review |\n\n## Open questions\n- Why the test was deleted: the commit message does not say, and there is no review record.\n",
+     "where": "docs/postmortems/2026-10-02-import.md"
+    }
+   ]
+  }
+ ],
+ "facts": {
+  "version": 1,
+  "scope": "acme-orders nightly import incident, 2-3 October 2026",
+  "decisions": [{"title": "Root cause", "chosen": "decimal-comma handling removed in 49bc16d", "because": "bug-hunt reproduction and the failing frame"}],
+  "assumptions": ["the lead's times for detection, mitigation and resolution are right; the log in the page set ends before them"],
+  "open": ["why the test was deleted"]
+ }
+}

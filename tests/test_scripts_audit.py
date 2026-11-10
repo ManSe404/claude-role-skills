@@ -20,7 +20,7 @@ from typing import Any
 import build_fixture
 import pytest
 from conftest import SKILLS, load, make_repo, run_json
-from test_fixture_acme_index import DECOYS_AT, PARSE, PLANTED_AT, PROMISES, PROMISES_AT, WORKER, where
+from test_fixture_acme_index import DECOYS_AT, PARSE, PLANTED_AT, PROMISES, PROMISES_AT, STORE, WORKER, where
 
 SCAN = SKILLS / "code-audit" / "scripts" / "audit_scan.py"
 audit = load(SCAN)
@@ -118,6 +118,10 @@ def test_these_are_all_the_hits_on_the_fixture(scan: dict[str, Any]) -> None:
         ("delete-then-write", DECOYS_AT["D4"]),
         ("type-ignore", where(PARSE, r"# type: ignore")),
         ("todo", where(PARSE, r"# TODO")),
+        (
+            "unbounded-read",
+            where(STORE, r"SELECT id, doc_id, position, text, vector FROM chunks"),
+        ),  # search reads every chunk
     }
     assert {(h["rule"], at(h)) for h in scan["hits"]} == expected
     assert len(scan["hits"]) == len(expected)

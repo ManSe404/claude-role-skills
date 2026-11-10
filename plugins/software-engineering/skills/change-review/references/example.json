@@ -1,0 +1,167 @@
+{
+ "skill": "change-review",
+ "title": "acme-orders, d22ee8f..f36ec1c reviewed",
+ "subtitle": "Three commits after the last deploy: the amount parsing change, the adjustments file for the report, and a finance note. Every hunk read.",
+ "meta": {"repo": "acme-orders", "commit": "f36ec1c", "range": "d22ee8f..f36ec1c", "date": "2026-11-10"},
+ "verdict": {
+  "text": "Request changes. Commit 49bc16d drops the decimal comma from `parse_amount` and deletes the only test that covered it, so the first export with `12,50` stops the whole import; the new `read_adjustments` repeats the same parsing. Restore the comma handling and its test, and give the adjustments file the same parser and a test, then this can merge. [high]",
+  "tone": "bad"
+ },
+ "stats": [
+  {"label": "Files", "value": 5, "note": "3 source, 1 test, 1 doc", "tone": "info"},
+  {"label": "Hunks read", "value": "8 of 8", "tone": "info"},
+  {"label": "Lines", "value": "+23 / -7", "tone": "info"},
+  {"label": "High findings", "value": 1, "tone": "bad"},
+  {"label": "Tests touched", "value": 1, "note": "test_importer.py, 3 lines removed", "tone": "warn"},
+  {"label": "Tests removed", "value": 1, "note": "test_decimal_comma", "tone": "bad"}
+ ],
+ "sections": [
+  {
+   "id": "findings",
+   "title": "Findings",
+   "intro": "Ordered by what reaches a user or the data once merged. Each was read in the diff and the code around it; the tests named in each fix are written out under *Changed code without a test*.",
+   "blocks": [
+    {
+     "type": "findings",
+     "items": [
+      {
+       "severity": "high",
+       "title": "A decimal comma now stops the whole import",
+       "where": "src/acme_orders/importer.py:28",
+       "evidence": "Before: `Decimal(value.strip().replace(\",\", \".\"))`. After: `Decimal(value.strip())`. The same commit deletes `test_decimal_comma`, which fed `12,50` and expected `12.50`. `read_orders` calls `parse_amount` for every line and nothing catches `InvalidOperation`, so one such row ends `import_file` before the first `save_order` (importer.py:58, storage.py:27). [high]",
+       "fix": "Keep the comma: `Decimal(value.strip().replace(\",\", \".\"))`, or refuse the row with its line number and go on. Restore the test.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "`read_adjustments` has the same parsing",
+       "where": "src/acme_orders/report.py:23",
+       "evidence": "`Decimal(row[\"amount\"].strip())` on a file finance edits by hand, with `;` as the separator, the same convention as the order export. A comma in `amount` raises inside `daily_report` and the report is not written. [high]",
+       "fix": "One `parse_amount` for both files, in `importer.py`, used by `report.py`.",
+       "status": "open"
+      },
+      {
+       "severity": "medium",
+       "title": "A test was deleted with no reason in the diff",
+       "where": "tests/test_importer.py:18",
+       "evidence": "`ParseAmountTest.test_decimal_comma` is removed; the commit message says *simplify*, not *drop decimal commas*. A test deleted without a reason is a behaviour removed without a decision. [high]",
+       "fix": "Restore it; if the comma is meant to go, say so in the commit and in README.",
+       "status": "open"
+      },
+      {
+       "severity": "low",
+       "title": "`read_adjustments` and `--adjustments` have no test",
+       "where": "src/acme_orders/report.py:21, src/acme_orders/cli.py:21",
+       "evidence": "The facts list both source files under *source without test change*; `tests/` has no test of `report.py` at all. [high]",
+       "fix": "The two tests written out below.",
+       "status": "open"
+      },
+      {
+       "severity": "low",
+       "title": "`open(path)` of a path from a parameter",
+       "where": "src/acme_orders/report.py:21",
+       "evidence": "Rule hit `path-from-input`: the path comes from the `--adjustments` argument. It is given by the operator on the command line, not by a request, and the process already reads any file the operator names. [high]",
+       "fix": "None.",
+       "status": "declined",
+       "reason": "An operator's own command-line path is not untrusted input for this program; there is no root to confine it to."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "claims",
+   "title": "Claims against the diff",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": ["Claim", "Where stated", "Kept by", "Status"],
+     "rows": [
+      ["importer: simplify amount parsing", "commit 49bc16d", "importer.py:28 removes `.replace(\",\", \".\")`; the test for commas goes with it", "not kept: a case is removed, not simplified"],
+      ["report: add the manual adjustments file", "commit c376ea1", "report.py:19-24 `read_adjustments`, report.py:35, cli.py:21 `--adjustments`", "kept"],
+      ["docs: how finance reads the totals", "commit f36ec1c", "docs/finance-export.md", "kept"]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "untested",
+   "title": "Changed code without a test",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": ["File", "Symbols", "The test to write"],
+     "rows": [
+      ["src/acme_orders/report.py", "`read_adjustments` (new), `daily_report`", "a file with `12.50` and one with `12,50`; the total, and the report rendering the adjustments line"],
+      ["src/acme_orders/cli.py", "`main` (`--adjustments`)", "`report --adjustments FILE` passes the path through; without the flag the total is 0"],
+      ["tests/test_importer.py", "`ParseAmountTest`", "restore `test_decimal_comma`"]
+     ]
+    },
+    {
+     "type": "code",
+     "title": "tests/test_report.py",
+     "code": "import tempfile\nimport unittest\nfrom decimal import Decimal\n\nfrom acme_orders import report\n\n\nclass AdjustmentsTest(unittest.TestCase):\n    def _file(self, amount):\n        f = tempfile.NamedTemporaryFile(\"w\", suffix=\".csv\", delete=False, encoding=\"utf-8\")\n        f.write(\"note;amount\\nrefund;\" + amount + \"\\n\")\n        f.close()\n        return f.name\n\n    def test_dot(self):\n        self.assertEqual(report.read_adjustments(self._file(\"12.50\")), Decimal(\"12.50\"))\n\n    def test_comma_like_the_order_export(self):\n        self.assertEqual(report.read_adjustments(self._file(\"12,50\")), Decimal(\"12.50\"))\n\n    def test_report_shows_the_adjustments(self):\n        html = report.daily_report([], \"2026-10-01\", self._file(\"3.00\"))\n        self.assertIn(\"Adjustments: 3.00\", html)\n",
+     "where": "tests/test_report.py"
+    },
+    {
+     "type": "code",
+     "title": "tests/test_importer.py, restored",
+     "code": "    def test_decimal_comma(self):\n        self.assertEqual(importer.parse_amount(\"12,50\"), Decimal(\"12.50\"))\n",
+     "where": "tests/test_importer.py:18",
+     "start": 18
+    }
+   ]
+  },
+  {
+   "id": "hunks",
+   "title": "Hunks read",
+   "blocks": [
+    {
+     "type": "table",
+     "columns": ["File", "Hunk", "Lines", "Dimensions", "Note"],
+     "rows": [
+      ["docs/finance-export.md", "1", "+7", "none", "documents `total_cents` and who owns it; matches storage.py:7"],
+      ["src/acme_orders/cli.py", "18", "+1", "maintainability", "`--adjustments` added to the report parser; no test"],
+      ["src/acme_orders/cli.py", "36", "+1 / -1", "correctness", "passes `args.adjustments` through; `None` keeps the old behaviour"],
+      ["src/acme_orders/importer.py", "25", "+1 / -1", "correctness", "the comma handling removed: finding 1"],
+      ["src/acme_orders/report.py", "1", "+1", "none", "`import csv`"],
+      ["src/acme_orders/report.py", "9", "+8 / -1", "correctness, security", "`read_adjustments`: finding 2; the path rule declined"],
+      ["src/acme_orders/report.py", "33", "+4", "correctness", "default `None` keeps every caller working"],
+      ["tests/test_importer.py", "15", "-3", "maintainability", "`test_decimal_comma` deleted: finding 3"]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "good",
+   "title": "What looks good",
+   "blocks": [
+    {
+     "type": "list",
+     "items": [
+      "`daily_report(orders, day, adjustments_path=None, ...)` at report.py:27 keeps the old calls working; the `check` command and the tests need no change. [high]",
+      "docs/finance-export.md:4 names the field finance reads (`total_cents`) and its owner, which storage.py:7 confirms; a reader now knows what must not change. [high]",
+      "`read_adjustments` opens the file with `newline=\"\"` and `encoding=\"utf-8\"` (report.py:21), the same as `read_orders` at importer.py:41. [high]"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "verdict",
+   "title": "Verdict",
+   "blocks": [
+    {
+     "type": "callout",
+     "tone": "bad",
+     "text": "**Request changes.** One high finding and one test removed without a reason. Restore the comma handling and `test_decimal_comma`, share the parser with `read_adjustments`, add `tests/test_report.py`; then approve."
+    }
+   ]
+  }
+ ],
+ "facts": {
+  "version": 1,
+  "scope": "acme-orders, commits d22ee8f..f36ec1c",
+  "decisions": [{"title": "Verdict", "chosen": "request changes", "because": "decimal comma dropped with its test; the same parsing repeated in read_adjustments"}],
+  "open": ["whether the Croatian store's export is meant to keep decimal commas; the diff does not say"]
+ }
+}

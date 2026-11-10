@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: triage-asks-for-logs
+tags: [software-engineering, incident-triage]
+context:
+  scaffold_script: fixture.sh

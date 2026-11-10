@@ -16,6 +16,15 @@ matters has no rule and is found by walking the failure paths.
 | Shared default that leaks between calls | `mutable-default` | is the default ever changed? | `None` and create inside | two calls must not see each other's data |
 | Silenced type error | `type-ignore` | what is the real type, and can the call fail? | fix the type or the interface | usually none; the type checker is the test |
 | Catch-all in another language | `catch-all` | as for a swallowed error | as above | as above |
+| SQL built from values | `sql-concat` | does a value from outside the code reach the string? a table name from a constant is fine | parameters (`?`, `%s`, `:name`); for identifiers, an allow list | a value with `' OR 1=1 --` must come back as data, not change the query |
+| Shell command built from values | `shell-input` | can a value in the command come from a request, a file name or an argument? | a list of arguments without `shell=True`; never a joined string | a file name with `; rm` or a space must be passed through unchanged |
+| Path built from input | `path-from-input` | can the parameter come from a request or a user, and is there a root it must stay under? | resolve, then check `is_relative_to(root)`, or map an id to a path | `../` in the value must be refused |
+| Secret in code | `secret-literal` | is it a real credential, or a test fixture or a placeholder? the line is not shown | settings or a secret store; rotate the one in the history | none; a scan in CI |
+| Objects built from data | `unsafe-load` | does the data come from outside the process? pickle of your own cache file is a smaller risk | `json`, `yaml.safe_load`, a schema | a payload with a constructor tag must be refused, not run |
+| URL from input | `url-from-input` | can a request choose the host? | an allow list of hosts, or a fixed base URL plus a path | a URL to a private address must be refused |
+| Call inside a loop | `call-in-loop` | how large can the loop get, and is each call a round trip? a batch of 10 is fine, a page of 10,000 is not | one query with `IN (...)`, a bulk write, a prefetch | a count of calls that stays constant when the input grows |
+| Whole table read | `unbounded-read` | is the caller a request handler or a batch job, and can the table grow? | `WHERE` plus `LIMIT` and paging | a table ten times larger must not make the request ten times slower |
+| Resource never closed | `unclosed-resource` | which path leaves without closing: the error path usually | `with`, or `try/finally` | after a raised error, the handle count must be back where it was |
 
 ## What the scan cannot see
 

@@ -32,8 +32,27 @@ Python is read with ast. Rules:
   assert-in-code       assert outside the tests (python -O removes it)
   type-ignore          # type: ignore comments
   mutable-default      list, dict or set defaults of a def or lambda
+  sql-concat           execute/executemany/executescript or sqlalchemy text() with SQL built by an f-string, + or %
+                       or .format(): a value in it changes the query
+  shell-input          os.system, os.popen, or subprocess with shell=True, with a command that is not a literal
+  path-from-input      open() of a path built from a function parameter, in a function that never resolves or
+                       checks the path against a root
+  secret-literal       a string that looks like a real key (AWS, OpenAI, GitHub, Slack, JWT) or a literal of 8+
+                       characters under a name like api_key, secret, token or password; the line is not shown
+  unsafe-load          pickle/marshal/shelve/dill/jsonpickle loads, yaml.load without SafeLoader, eval or exec
+                       of something that is not a literal
+  url-from-input       requests, httpx or urlopen whose URL comes from a function parameter (SSRF when a request
+                       can set it)
+  call-in-loop         a database, HTTP or storage call inside a loop: one round trip per element (N+1)
+  unbounded-read       a SELECT with no WHERE and no LIMIT: reads the whole table
+  unclosed-resource    open(), connect(), socket(), Popen() or urlopen() bound to a name outside a with block and
+                       never closed in that function
 C#, TypeScript/JavaScript, Java and Go get shallow regex rules:
   catch-all            an empty catch block, or a catch-all catch without a throw; in Go an empty if err != nil {}
+  sql-concat           query/execute/raw with a template literal holding ${...} or a string joined with +
+  shell-input          exec, execSync, spawn with shell, Process.Start or Runtime.exec with a non-literal command
+  unsafe-load          eval(), new Function(), BinaryFormatter.Deserialize, ObjectInputStream.readObject
+  secret-literal       as in Python, by the value's shape
 Every language:
   todo                 TODO, FIXME and HACK comments
 
@@ -111,6 +130,15 @@ RULES = (
     "assert-in-code",
     "type-ignore",
     "mutable-default",
+    "sql-concat",
+    "shell-input",
+    "path-from-input",
+    "secret-literal",
+    "unsafe-load",
+    "url-from-input",
+    "call-in-loop",
+    "unbounded-read",
+    "unclosed-resource",
     "catch-all",
     "todo",
 )
@@ -170,6 +198,71 @@ LINE_COMMENT = re.compile(r"(//|/\*|^\s*\*)(.*)$")
 CATCH = re.compile(r"\bcatch\b\s*(?:\(([^)]*)\))?\s*(when\s*\(.*?\)\s*)?\{")
 GO_EMPTY_ERROR = re.compile(r"\bif\s+err\s*!=\s*nil\s*\{\s*\}")
 COMMENTS = re.compile(r"//[^\n]*|/\*[\s\S]*?\*/")
+SECRET_NAME = re.compile(
+    r"api_?key|secret|token|passw(?:or)?d|(?:^|_)pwd(?:_|$)|private_?key|client_?secret", re.IGNORECASE
+)
+SECRET_VALUE = re.compile(
+    r"AKIA[0-9A-Z]{16}|sk-(?:proj-|ant-)?[A-Za-z0-9_-]{20,}|ghp_[A-Za-z0-9]{30,}|gh[ous]_[A-Za-z0-9]{30,}"
+    r"|xox[baprs]-[A-Za-z0-9-]{10,}|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+"
+    r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"
+)
+PLACEHOLDER = re.compile(
+    r"^(?:\$\{?\w+\}?|<[^>]*>|\{\{.*\}\}|%\(\w+\)s|change[-_ ]?me|xxx+|\*+|\.\.\.|your[-_ ].*|example.*|dummy.*|test.*"
+    r"|placeholder.*|secret|password|token|none|null|todo|fixme|redacted)$",
+    re.IGNORECASE,
+)
+UNSAFE_LOADS = {
+    "pickle.load",
+    "pickle.loads",
+    "cPickle.load",
+    "cPickle.loads",
+    "marshal.load",
+    "marshal.loads",
+    "shelve.open",
+    "dill.load",
+    "dill.loads",
+    "jsonpickle.decode",
+}
+SAFE_LOADERS = {"SafeLoader", "CSafeLoader", "BaseLoader", "CBaseLoader"}
+SHELL_CALLS = {"run", "call", "check_call", "check_output", "Popen", "getoutput", "getstatusoutput"}
+PATH_SAFETY = {
+    "resolve",
+    "realpath",
+    "abspath",
+    "normpath",
+    "is_relative_to",
+    "relative_to",
+    "commonpath",
+    "secure_filename",
+}
+LOOP_CALLS = {
+    "execute",
+    "executemany",
+    "executescript",
+    "fetchone",
+    "fetchall",
+    "query",
+    "find_one",
+    "get_object",
+    "put_object",
+    "upload_file",
+    "download_file",
+    "urlopen",
+    "create_connection",
+    "commit",
+}
+RESOURCE_CALLS = {"open", "connect", "socket", "urlopen", "Popen", "TemporaryFile", "NamedTemporaryFile", "ZipFile"}
+SQL_SELECT = re.compile(r"^\s*SELECT\b", re.IGNORECASE)
+SHALLOW_SQL_CONCAT = re.compile(
+    r"\.(?:query|execute|raw|exec|ExecuteSql\w*|FromSql\w*|createQuery|prepareStatement)\s*\(\s*(?:`[^`]*\$\{|[\"'][^\"'\n]*[\"']\s*\+|\$\")"
+)
+SHALLOW_SHELL = re.compile(
+    r"\b(?:child_process\.)?(?:exec|execSync|spawn|spawnSync)\s*\(\s*(?![\"'`])\w|\bProcess\.Start\s*\(\s*(?![\"'])\w"
+    r"|Runtime\.getRuntime\(\)\.exec\s*\(\s*(?![\"'])\w"
+)
+SHALLOW_UNSAFE = re.compile(
+    r"\beval\s*\(|new\s+Function\s*\(|BinaryFormatter\b.*\.Deserialize|ObjectInputStream\b.*\.readObject"
+)
 
 
 # ---------------------------------------------------------------------------- files
@@ -813,12 +906,18 @@ def python_hits(source: Source, text: str, tree: ast.Module, written: set[str]) 
             reason = missing_timeout(node)
             if reason:
                 hits.append(source.hit("no-timeout", node.lineno, reason))
+            for extra in (sql_concat(source, node), shell_input(source, node), unsafe_load(source, node)):
+                if extra:
+                    hits.append(extra)
+            hits.extend(secret_hits(source, node))
             if isinstance(node.func, ast.Name) and node.func.id == "hash" and not shadowed_hash:
                 why = (
                     "built-in hash() of str and bytes is salted per process (PYTHONHASHSEED): the value changes "
                     "between runs, so it must not be stored, sent or used as an id"
                 )
                 hits.append(source.hit("builtin-hash", node.lineno, why))
+        elif isinstance(node, (ast.Assign, ast.AnnAssign, ast.Dict)):
+            hits.extend(secret_hits(source, node))
         elif isinstance(node, ast.Assert):
             why = "assert is removed under python -O; a check that guards data or input should raise"
             hits.append(source.hit("assert-in-code", node.lineno, why))
@@ -834,6 +933,7 @@ def python_hits(source: Source, text: str, tree: ast.Module, written: set[str]) 
                     hits.append(source.hit("mutable-default", default.lineno, why))
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             hits.extend(delete_then_write(source, node))
+            hits.extend(function_hits(source, node))
     for key, line in key_reads(tree):
         if key not in written:
             hits.append(source.hit("orphan-key", line, "", key=key))
@@ -843,6 +943,199 @@ def python_hits(source: Source, text: str, tree: ast.Module, written: set[str]) 
         marker = TODO.search(comment)
         if marker:
             hits.append(source.hit("todo", line, f"{marker.group(1)} comment: work the authors knew was left"))
+    return hits
+
+
+# ---------------------------------------------------------------------------- input, secrets, loops, resources
+
+
+def built_text(node: ast.AST) -> str | None:
+    """How a string is built from values, or None when it is a literal or something else."""
+    if isinstance(node, ast.JoinedStr):
+        return "an f-string"
+    if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Mod)):
+        sides = (node.left, node.right)
+        if any(const_str(side) is not None or isinstance(side, ast.JoinedStr) for side in sides):
+            return "+ or %"
+    if isinstance(node, ast.Call) and call_name(node) == "format" and isinstance(node.func, ast.Attribute):
+        receiver = node.func.value
+        if const_str(receiver) is not None or isinstance(receiver, ast.JoinedStr):
+            return ".format()"
+    return None
+
+
+def sql_concat(source: Source, call: ast.Call) -> dict[str, Any] | None:
+    name = call_name(call)
+    full = dotted(call.func) or name
+    if name not in SQL_METHODS and full.rsplit(".", 1)[-1] != "text":
+        return None
+    if not call.args:
+        return None
+    how = built_text(call.args[0])
+    if how is None:
+        return None
+    if name not in SQL_METHODS and not SQL_TEXT.search(literal_text(call.args[0])):
+        return None
+    why = f"SQL built with {how}: a value in it becomes part of the query; pass values as parameters"
+    return source.hit("sql-concat", call.lineno, why)
+
+
+def shell_input(source: Source, call: ast.Call) -> dict[str, Any] | None:
+    full = dotted(call.func) or call_name(call)
+    last = full.rsplit(".", 1)[-1]
+    if not call.args or isinstance(call.args[0], ast.Constant):
+        return None
+    if full in {"os.system", "os.popen"}:
+        return source.hit(
+            "shell-input", call.lineno, f"{full} with a command that is not a literal: a value in it is shell syntax"
+        )
+    shell = any(k.arg == "shell" and isinstance(k.value, ast.Constant) and k.value.value is True for k in call.keywords)
+    if last in SHELL_CALLS and shell:
+        why = f"{last}(..., shell=True) with a command that is not a literal: a value in it is shell syntax"
+        return source.hit("shell-input", call.lineno, why)
+    return None
+
+
+def unsafe_load(source: Source, call: ast.Call) -> dict[str, Any] | None:
+    full = dotted(call.func) or call_name(call)
+    if full in UNSAFE_LOADS:
+        return source.hit(
+            "unsafe-load", call.lineno, f"{full} runs code from the data it reads; never on data from outside"
+        )
+    if full in {"yaml.load", "yaml.load_all"}:
+        loader = next(
+            (k.value for k in call.keywords if k.arg == "Loader"), call.args[1] if len(call.args) > 1 else None
+        )
+        loader_name = dotted(loader).rsplit(".", 1)[-1] if loader is not None else ""
+        if loader_name not in SAFE_LOADERS:
+            why = (
+                f"{full} with {loader_name or 'no'} Loader: Loader and FullLoader build Python objects from tags; "
+                "use safe_load or SafeLoader"
+            )
+            return source.hit("unsafe-load", call.lineno, why)
+    if full in {"eval", "exec"} and call.args and not isinstance(call.args[0], ast.Constant):
+        return source.hit(
+            "unsafe-load", call.lineno, f"{full}() of something that is not a literal runs whatever reaches it"
+        )
+    return None
+
+
+def looks_secret(name: str, value: ast.AST) -> str | None:
+    text = const_str(value)
+    if text is None:
+        return None
+    if SECRET_VALUE.search(text):
+        return "a literal shaped like a real key"
+    if SECRET_NAME.search(name) and len(text) >= 8 and " " not in text and not PLACEHOLDER.match(text):
+        return f"a literal of {len(text)} characters under the name {name}"
+    return None
+
+
+def secret_hits(source: Source, node: ast.AST) -> list[dict[str, Any]]:
+    pairs: list[tuple[str, ast.AST]] = []
+    if isinstance(node, ast.Assign):
+        pairs = [(dotted(target).rsplit(".", 1)[-1], node.value) for target in node.targets]
+    elif isinstance(node, ast.AnnAssign) and node.value is not None:
+        pairs = [(dotted(node.target).rsplit(".", 1)[-1], node.value)]
+    elif isinstance(node, ast.Call):
+        pairs = [(keyword.arg, keyword.value) for keyword in node.keywords if keyword.arg]
+    elif isinstance(node, ast.Dict):
+        pairs = [(name, value) for key, value in zip(node.keys, node.values, strict=True) if (name := const_str(key))]
+    hits = []
+    for name, value in pairs:
+        reason = looks_secret(name or "", value)
+        if reason:
+            hit = source.hit(
+                "secret-literal",
+                getattr(value, "lineno", 0),
+                f"{reason}: a secret in code is in every clone and log of the repository; read it from settings",
+                name=name,
+            )
+            hit["code"] = "(line not shown)"
+            hits.append(hit)
+    return hits
+
+
+def names_in(node: ast.AST) -> set[str]:
+    return {sub.id for sub in ast.walk(node) if isinstance(sub, ast.Name)}
+
+
+def function_hits(source: Source, func: ast.FunctionDef | ast.AsyncFunctionDef) -> list[dict[str, Any]]:
+    """Rules that need the function around a call: its parameters, its loops, its with blocks."""
+    hits: list[dict[str, Any]] = []
+    params = {a.arg for a in [*func.args.posonlyargs, *func.args.args, *func.args.kwonlyargs]} - {"self", "cls"}
+    local = list(local_nodes(func.body))
+    calls = [node for node in local if isinstance(node, ast.Call)]
+    safety = any(call_name(call) in PATH_SAFETY for call in calls)
+    for call in calls:
+        name = call_name(call)
+        full = dotted(call.func) or name
+        base, _, last = full.rpartition(".")
+        if (base in {"requests", "httpx"} and last in HTTP_VERBS) or last == "urlopen":
+            url = call.args[0] if call.args else next((k.value for k in call.keywords if k.arg == "url"), None)
+            used = sorted(names_in(url) & params) if url is not None else []
+            if used:
+                why = (
+                    f"the URL comes from parameter {used[0]}: if a request can set it, this server can be made to "
+                    "call any host (SSRF)"
+                )
+                hits.append(source.hit("url-from-input", call.lineno, why, parameter=used[0]))
+        if name == "open" and call.args and not safety:
+            used = sorted(names_in(call.args[0]) & params)
+            if used:
+                why = (
+                    f"opens a path built from parameter {used[0]} and the function never resolves it against a root: "
+                    "a '../' in that value reaches any file the process can read"
+                )
+                hits.append(source.hit("path-from-input", call.lineno, why, parameter=used[0]))
+        if name in SQL_METHODS and call.args:
+            sql = literal_text(call.args[0])
+            upper = sql.upper()
+            if SQL_SELECT.match(sql) and "WHERE" not in upper and "LIMIT" not in upper:
+                why = "SELECT with no WHERE and no LIMIT reads the whole table: fine for a batch job, not for a request"
+                hits.append(source.hit("unbounded-read", call.lineno, why))
+    for loop in local:
+        if not isinstance(loop, (*LOOPS, ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)):
+            continue
+        body = loop.body if isinstance(loop, LOOPS) else [loop.elt if hasattr(loop, "elt") else loop.value]
+        for node in local_nodes(body):
+            if not isinstance(node, ast.Call):
+                continue
+            full = dotted(node.func) or call_name(node)
+            base, _, last = full.rpartition(".")
+            if last in LOOP_CALLS or (base in {"requests", "httpx"} and last in HTTP_VERBS):
+                why = (
+                    f"{full}() once per pass of the loop at line {loop.lineno}: one round trip per element (N+1); "
+                    "fetch or write in one batch when the count can grow"
+                )
+                hits.append(source.hit("call-in-loop", node.lineno, why, loop_line=loop.lineno))
+    closed = {
+        dotted(call.func.value) for call in calls if isinstance(call.func, ast.Attribute) and call.func.attr == "close"
+    }
+    returned = set()
+    for node in local:
+        if isinstance(node, ast.Return) and node.value is not None:
+            returned |= names_in(node.value)
+    inside_with: set[int] = set()
+    for node in local:
+        if isinstance(node, (ast.With, ast.AsyncWith)):
+            inside_with |= {sub.lineno for sub in ast.walk(node) if hasattr(sub, "lineno")}
+    for node in local:
+        if not (isinstance(node, ast.Assign) and isinstance(node.value, ast.Call) and len(node.targets) == 1):
+            continue
+        target = node.targets[0]
+        if not isinstance(target, ast.Name):
+            continue
+        last = (dotted(node.value.func) or call_name(node.value)).rsplit(".", 1)[-1]
+        if last not in RESOURCE_CALLS or node.lineno in inside_with:
+            continue
+        if target.id in closed or target.id in returned:
+            continue
+        why = (
+            f"{target.id} = {last}() is never closed in this function and is not in a with block: the handle leaks "
+            "on every call and on every error path"
+        )
+        hits.append(source.hit("unclosed-resource", node.lineno, why, name=target.id))
     return hits
 
 
@@ -892,6 +1185,24 @@ def shallow_hits(source: Source, text: str, lang: str) -> list[dict[str, Any]]:
         marker = TODO.search(comment.group(2)) if comment else None
         if marker:
             hits.append(source.hit("todo", number, f"{marker.group(1)} comment: work the authors knew was left"))
+        if SHALLOW_SQL_CONCAT.search(line_text):
+            hits.append(
+                source.hit(
+                    "sql-concat", number, "SQL built from a template or joined strings: pass values as parameters"
+                )
+            )
+        if SHALLOW_SHELL.search(line_text):
+            hits.append(
+                source.hit(
+                    "shell-input", number, "a shell command that is not a literal: a value in it is shell syntax"
+                )
+            )
+        if SHALLOW_UNSAFE.search(line_text):
+            hits.append(source.hit("unsafe-load", number, "runs code or builds objects from the data it reads"))
+        if SECRET_VALUE.search(line_text):
+            hit = source.hit("secret-literal", number, "a literal shaped like a real key: read it from settings")
+            hit["code"] = "(line not shown)"
+            hits.append(hit)
     return hits
 
 
