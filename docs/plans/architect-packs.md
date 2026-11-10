@@ -70,6 +70,46 @@ run), and the content of the pages (a judge sees only the final reply). In a fai
 `solutions-architect` cases ran with no skill loaded and passed every grader except `skill-fired`, so those graders
 cannot tell the skill from plain Claude.
 
+### Against plain Claude (partial, 2026-11-10)
+
+The same cases run with the Skill tool withheld and no pack loaded, so Claude had the fixture, the prompt and its
+ordinary tools only. The account's usage limit stopped the run after 14 of 42 cases: software-engineering,
+ai-architect and four of five data-architect cases. The other 28 did not run. "Job checks" leave out `skill-fired`
+and the checks that a skill's script ran, which plain Claude cannot pass by definition.
+
+| Pack | Case | Job checks, skills | Job checks, plain | Plain missed | $ skills | $ plain |
+|---|---|---|---|---|---|---|
+| ai-architect | architecture-page | 3/3 | 2/3 | trust-path | 1.06 | 0.40 |
+| ai-architect | pattern-does-not-overbuild | 2/2 | 2/2 | - | 0.56 | 0.26 |
+| ai-architect | pattern-live-state | 3/3 | 3/3 | - | 0.77 | 0.91 |
+| ai-architect | review-finds-planted | 3/3 | 2/3 | planted | 1.26 | 0.65 |
+| ai-architect | stack-cost-from-script | 2/2 | 1/2 | priced-honestly | 0.66 | 0.27 |
+| data-architect | map-lineage-from-code | 3/3 | 2/3 | lineage | 1.17 | 0.46 |
+| data-architect | model-grain-and-keys | 2/2 | 2/2 | - | 1.17 | 0.63 |
+| data-architect | platform-does-not-overbuild | 2/2 | 2/2 | - | 0.70 | 0.19 |
+| data-architect | platform-names-the-constraint | 2/2 | 2/2 | - | 0.81 | 0.25 |
+| software-engineering | dependency-audit-asks-before-going-online | 2/2 | 2/2 | - | 0.51 | 0.31 |
+| software-engineering | impact-of-a-signature-change | 2/2 | 1/2 | reach | 0.73 | 0.42 |
+| software-engineering | map-unknown-repo | 3/3 | 3/3 | - | 0.90 | 0.36 |
+| software-engineering | root-cause-of-the-failed-import | 2/2 | 2/2 | - | 0.52 | 0.30 |
+| software-engineering | tests-to-write-first | 2/2 | 2/2 | - | 0.70 | 0.59 |
+
+Totals: every job check passed in 14 cases with the skills and in 9 without them, 33 of 33 checks against 28 of 33.
+The skills cost $11.53 against $6.00 and took 31 minutes against 20. Plain Claude never passed a check the skill
+failed.
+
+Where the skills made the difference: tracing untrusted text to a tool call in an AI architecture, finding planted
+problems in an AI review, pricing an AI stack from a script instead of from memory, table lineage read from SQL, and
+the reach of a signature change. Where plain Claude did as well: the decisions that start at the bottom of a ladder
+(AI pattern, data platform), the data model, the dependency audit, the codebase map, a root cause from a log, and which
+tests to write first. On those, the skills buy the page and the script's numbers, not a different answer.
+
+How far to trust it: one run per case, so a single flipped judge vote moves a row; a judge sees only the final reply,
+so the pages earn nothing; and three judge criteria were corrected after reading the skills' replies, one of them
+(`map-unknown-repo`) among these 14. Still to run: software-architect 5, data-scientist 6, cloud-architect 8,
+solutions-architect 3, data-analyst 5 and data-architect `review-finds-planted`, about $12. The plain runs use a copy
+of the eval folders without manifests, run with `--disallow-tools Skill`.
+
 **3. The simplest thing that passes.** Every deciding skill starts at the bottom of a ladder and
 climbs only for a requirement it can name. Every fixture includes a brief where the right answer is
 boring, so the eval catches a skill that overbuilds.
