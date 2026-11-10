@@ -208,18 +208,20 @@ uv run ruff format --check . && uv run ruff check . && uv run mypy
 python3 tools/sync_shared.py                                  # after editing shared/
 python3 fixtures/build_fixture.py acme-orders /tmp/acme       # the fixture, with its history
 claude plugin validate .
-claude plugin eval plugins/software-engineering --scaffold --allow-tools Bash Write --runs 1
-claude plugin eval plugins/ai-architect --scaffold --allow-tools Bash Write --runs 1
-claude plugin eval plugins/data-architect --scaffold --allow-tools Bash Write --runs 1
-claude plugin eval plugins/data-analyst --scaffold --allow-tools Bash Write --runs 1
-claude plugin eval plugins/data-scientist --scaffold --allow-tools Bash Write --runs 1
-claude plugin eval plugins/software-architect --scaffold --allow-tools Bash Write --runs 1
-claude plugin eval plugins/cloud-architect --scaffold --allow-tools Bash Write --runs 1
-claude plugin eval plugins/solutions-architect --scaffold --allow-tools Bash Write --runs 1
+claude plugin eval plugins/software-engineering --scaffold --allow-tools Bash Write --runs 1 --ablation none
+claude plugin eval plugins/ai-architect --scaffold --allow-tools Bash Write --runs 1 --ablation none
+claude plugin eval plugins/data-architect --scaffold --allow-tools Bash Write --runs 1 --ablation none
+claude plugin eval plugins/data-analyst --scaffold --allow-tools Bash Write --runs 1 --ablation none
+claude plugin eval plugins/data-scientist --scaffold --allow-tools Bash Write --runs 1 --ablation none
+claude plugin eval plugins/software-architect --scaffold --allow-tools Bash Write --runs 1 --ablation none
+claude plugin eval plugins/cloud-architect --scaffold --allow-tools Bash Write --runs 1 --ablation none
+claude plugin eval plugins --eval-dir solutions-architect/evals --scaffold --allow-tools Bash Write --runs 1 --ablation none
 ```
 
-The evals start real Claude sessions and cost money; `--max-cost-usd` caps a run. By default each case also runs
-without the plugin, for comparison, which about doubles the cost; add `--ablation none` to skip that.
+The evals start real Claude sessions and cost money, about 80 cents a case; `--max-cost-usd` caps a run. Without
+`--ablation none` each case also runs without the plugin, for comparison, which about doubles the cost. The
+`solutions-architect` command differs because its cases must load the four specialist packs, and the eval tool only
+loads plugins from inside the folder it is pointed at.
 
 Those evals load one pack at a time, so they cannot show whether Claude picks the right skill among all of them.
 `uv run python tools/selection_check.py` does: it loads every pack and makes one model call per prompt, about 15 cents

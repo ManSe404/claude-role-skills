@@ -1,5 +1,5 @@
 ---
 type: file_exists
-path: "pages/**/*.html"
+path: "pages/**/*.json"
 exists: true
 ---

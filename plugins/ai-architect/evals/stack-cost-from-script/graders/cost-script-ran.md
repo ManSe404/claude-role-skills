@@ -1,5 +1,6 @@
 ---
-type: regex
-pattern: "cost_model\\.py"
-target: trace
+type: tool_used
+tool: Bash
+input_match: "cost_model\\.py"
+min: 1
 ---

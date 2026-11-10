@@ -1,5 +1,6 @@
 ---
-type: regex
-pattern: "reconcile\\.py"
-target: trace
+type: tool_used
+tool: Bash
+input_match: "reconcile\\.py"
+min: 1
 ---

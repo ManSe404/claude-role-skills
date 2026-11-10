@@ -53,6 +53,23 @@ folder) and a direct answer (`AKS or App Service`). The two false fires came fro
 description was changed. The two passes cost $16.85 in all. The prompts were written by the author of the descriptions, so
 this is a floor for confusion between skills, not a measure on strangers' wording.
 
+Evals run 2026-11-10 on Opus 5.5, one run per case, without the no-plugin comparison: 42 of 42 cases passed and the
+right skill fired in all 42, for $46.49 including the reruns. Getting there changed the evals and not the skills:
+
+- 45 graders read the whole trace, which holds the text of SKILL.md, so they proved nothing. They now check the shell
+  commands actually run.
+- `page-made` checks the JSON, because shell commands cannot write files in the eval sandbox. Rendering is covered by
+  the repository's tests, not by the evals.
+- Three `llm` graders were changed after reading the replies. `evaluate-calls-noise-noise` marked down a reply that
+  called the gain real and also warned that leakage inflates it. `map-unknown-repo` asked the judge to verify code it
+  cannot see. `aws-map-from-code` required details in the chat reply that belong on the page, so it is now looser.
+- The three `solutions-architect` cases had malformed files and needed the specialist packs loaded.
+
+What this does not show: variance between runs (one run each), what the skills add over plain Claude (no comparison
+run), and the content of the pages (a judge sees only the final reply). In a failed setup the three
+`solutions-architect` cases ran with no skill loaded and passed every grader except `skill-fired`, so those graders
+cannot tell the skill from plain Claude.
+
 **3. The simplest thing that passes.** Every deciding skill starts at the bottom of a ladder and
 climbs only for a requirement it can name. Every fixture includes a brief where the right answer is
 boring, so the eval catches a skill that overbuilds.

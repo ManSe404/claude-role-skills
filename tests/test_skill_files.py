@@ -134,3 +134,33 @@ def test_no_client_names_or_real_addresses_in_examples() -> None:
             text = path.read_text(encoding="utf-8", errors="replace")
             emails = re.findall(r"[\w.+-]+@([\w-]+\.[\w.]+)", text)
             assert all(d.lower().startswith("example.") for d in emails), (path, emails)
+
+
+EVALS = sorted(p.parent for p in ROOT.glob("plugins/*/evals/*/case.yaml"))
+EVAL_IDS = [f"{p.parent.parent.name}/{p.name}" for p in EVALS]
+GRADERS = sorted(ROOT.glob("plugins/*/evals/*/graders/*.md"))
+
+
+def test_every_skill_has_an_eval() -> None:
+    tagged = {tag for case in EVALS for tag in re.findall(r"[\w-]+", (case / "case.yaml").read_text("utf-8"))}
+    missing = sorted(p.name for p in ALL_SKILLS if p.name not in tagged)
+    assert not missing, f"no eval for {missing}"
+
+
+@pytest.mark.parametrize("case", EVALS, ids=EVAL_IDS)
+def test_eval_case_files_are_well_formed(case: Path) -> None:
+    """Regression: a case.yaml holding a second YAML document fails to load, and `plugin validate` does not catch it."""
+    head = (case / "case.yaml").read_text("utf-8")
+    assert "---" not in head, "the case's settings belong in prompt.md"
+    assert head.startswith('schema_version: "1.1"')
+    assert f"name: {case.name}\n" in head
+    prompt = (case / "prompt.md").read_text("utf-8")
+    assert prompt.startswith("---\n"), "prompt.md starts with its settings"
+    assert re.search(r"^runs: 1$", prompt, re.M)
+    assert (case / "graders" / "skill-fired.md").is_file()
+
+
+@pytest.mark.parametrize("grader", GRADERS, ids=[f"{g.parent.parent.name}/{g.stem}" for g in GRADERS])
+def test_no_grader_reads_the_whole_trace(grader: Path) -> None:
+    """Regression: the trace holds the text of SKILL.md, so a pattern found there proves nothing about what was run."""
+    assert "target: trace" not in grader.read_text("utf-8")

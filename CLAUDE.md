@@ -19,6 +19,9 @@ four specialist packs), `data-analyst` and `data-scientist` so far. `docs/plans/
 - `fixtures/<name>/` is a made-up project: `files/` (state after the last commit, `.fixture`
   suffix dropped on build), `history.py` (the commits) and `extras/` (logs and data, not committed).
 - `plugins/<role>/evals/` holds the eval cases for `claude plugin eval`.
+  In that sandbox shell commands cannot write files, so `page-made` checks the page's JSON, not its HTML. A grader
+  never reads `target: trace`: the trace holds the text of SKILL.md, so a pattern found there proves nothing. Use
+  `tool_used` on `Bash` with `input_match`. An `llm` grader sees only the final reply and not the code or the page.
 
 ## Rules for a skill
 

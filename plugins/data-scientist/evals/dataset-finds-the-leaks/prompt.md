@@ -5,4 +5,4 @@ timeout_seconds: 1200
 allowed_tools: [Read, Glob, Grep, Skill, Bash, Write]
 ---
 
-We want to trust the churn model before we use it. The training and test sets are ./acme-churn/data/train.csv and ./acme-churn/data/test.csv, the modelling code is in ./acme-churn/model. Please audit the data and tell us what is wrong. Do not change anything in the repository. Put any page you make under ./pages and list the problems with their numbers in your reply.
+We want to trust the churn model before we use it. The training and test sets are ./acme-churn/data/train.csv and ./acme-churn/data/test.csv, the modelling code is in ./acme-churn/model. Please audit the data and tell us what is wrong. Do not change anything in the repository. Put any page you make under ./pages and list the problems with their numbers in your reply. Shell commands cannot write files in this run, so write the page's JSON under ./pages with the Write tool, check it with render_page.py --check, and do not save the HTML or mention that it is missing.

@@ -1,6 +1,7 @@
 ---
-type: regex
-pattern: '\baws (sts|ec2|s3|rds|cloudformation|configure|login|resourcegroupstaggingapi|configservice)\b'
-match: not_contains
-target: trace
+type: tool_used
+tool: Bash
+input_match: '\baws (sts|ec2|s3|rds|cloudformation|configure|login|resourcegroupstaggingapi|configservice)\b'
+min: 0
+max: 0
 ---

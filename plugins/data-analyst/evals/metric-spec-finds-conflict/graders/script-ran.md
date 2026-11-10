@@ -1,5 +1,6 @@
 ---
-type: regex
-pattern: "metric_compare\\.py"
-target: trace
+type: tool_used
+tool: Bash
+input_match: "metric_compare\\.py"
+min: 1
 ---

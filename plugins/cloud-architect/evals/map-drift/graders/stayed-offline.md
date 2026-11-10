@@ -1,6 +1,7 @@
 ---
-type: regex
-pattern: 'az (account|resource|graph|login)\b'
-match: not_contains
-target: trace
+type: tool_used
+tool: Bash
+input_match: 'az (account|resource|graph|login)\b'
+min: 0
+max: 0
 ---

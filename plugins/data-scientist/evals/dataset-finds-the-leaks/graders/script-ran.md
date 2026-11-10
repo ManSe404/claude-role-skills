@@ -1,5 +1,6 @@
 ---
-type: regex
-pattern: "dataset_audit\\.py"
-target: trace
+type: tool_used
+tool: Bash
+input_match: "dataset_audit\\.py"
+min: 1
 ---

@@ -1,5 +1,6 @@
 ---
-type: regex
-pattern: "decompose\\.py"
-target: trace
+type: tool_used
+tool: Bash
+input_match: "decompose\\.py"
+min: 1
 ---

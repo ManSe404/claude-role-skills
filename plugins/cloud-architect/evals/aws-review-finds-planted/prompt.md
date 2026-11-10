@@ -5,4 +5,4 @@ timeout_seconds: 1200
 allowed_tools: [Read, Glob, Grep, Skill, Bash, Write]
 ---
 
-Review the cloud infrastructure in ./acme-cloud-aws before we take it over. The festival platform that will run on it must survive the loss of one availability zone (./acme-cloud-aws/docs/briefs/festival-platform.md). Do not change anything. Do not log in to anything. Do not ask me questions, assume where you must and say so. Put any page you make under ./pages, and list the findings in your reply.
+Review the cloud infrastructure in ./acme-cloud-aws before we take it over. The festival platform that will run on it must survive the loss of one availability zone (./acme-cloud-aws/docs/briefs/festival-platform.md). Do not change anything. Do not log in to anything. Do not ask me questions, assume where you must and say so. Put any page you make under ./pages, and list the findings in your reply. Shell commands cannot write files in this run, so write the page's JSON under ./pages with the Write tool, check it with render_page.py --check, and do not save the HTML or mention that it is missing.

@@ -5,4 +5,4 @@ timeout_seconds: 1200
 allowed_tools: [Read, Glob, Grep, Skill, Bash, Write]
 ---
 
-A sister company sent a request: ./acme-logistics/docs/briefs/quick-booking.md. What shape should this system have? Don't ask me questions, assume where you must and say so. Put any page you make under ./pages, and give me the decision in your reply.
+A sister company sent a request: ./acme-logistics/docs/briefs/quick-booking.md. What shape should this system have? Don't ask me questions, assume where you must and say so. Put any page you make under ./pages, and give me the decision in your reply. Shell commands cannot write files in this run, so write the page's JSON under ./pages with the Write tool, check it with render_page.py --check, and do not save the HTML or mention that it is missing.
