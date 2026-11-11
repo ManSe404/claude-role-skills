@@ -46,7 +46,8 @@ One page. Read [references/page-format.md](references/page-format.md) for the fo
 
 Sections in this order: The gap (table: today, target, why it matters, with the numbers), What stays
 true (list), The way there (an `architecture` block with one variant per stage, Today first and Target
-last), The steps (a `steps` block, then a table: step, move, verify, undo, size), Where to stop (text),
+last), The steps (a `flowchart`: each step, the check after it, and where a failed check leads back; then a
+`steps` block, then a table: step, move, verify, undo, size), Where to stop (text),
 What to leave alone (list), ADR drafts (code), Open questions. Stats on top: steps, cycles to remove,
 tables with two writers, the step where the main pain ends. The verdict says in two sentences whether
 to do this and how far to go.

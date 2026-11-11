@@ -11,8 +11,10 @@ Usage:
     python3 render_page.py PAGE.json -o PAGE.html   # write the page
     python3 render_page.py PAGE.json --check        # validate only
     python3 render_page.py --site SITE.json         # write every page of a set, with a header linking them
+    python3 render_page.py --index FOLDER           # write FOLDER/index.html, listing every page under it
+    python3 render_page.py PAGE.json --md -o PAGE.md  # the same page as a Markdown note; drawings become tables
 
-The fonts (IBM Plex Sans and IBM Plex Mono, SIL OFL 1.1) are read from ../assets/fonts and
+The fonts (Bricolage Grotesque and JetBrains Mono, SIL OFL 1.1) are read from ../assets/fonts and
 inlined, so the page is one file; without them it falls back to system fonts.
 
 Single source: shared/render_page.py in claude-role-skills. The copies under each skill's
@@ -23,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import datetime
 import html
 import json
 import math
@@ -52,6 +55,7 @@ GROUPS = {
     "safe": "safe",
     "unknown": "not checked",
 }
+FLOW_KINDS = {"start": "start", "step": "step", "decision": "decision", "end": "end"}
 BLOCK_TYPES = (
     "text",
     "list",
@@ -59,6 +63,7 @@ BLOCK_TYPES = (
     "findings",
     "code",
     "graph",
+    "flowchart",
     "steps",
     "kv",
     "callout",
@@ -649,6 +654,37 @@ def _validate_chart(block: Json, path: str, errs: list[str]) -> None:
             errs.append(f"{path}.show_values: must be true or false")
 
 
+def _validate_nodes(
+    block: Json, path: str, errs: list[str], node_ids: set[str], *, field: str, allowed: dict[str, str], default: str
+) -> None:
+    """Nodes with ids and labels, edges between them: a graph (by group) or a flowchart (by kind)."""
+    ids: set[str] = set()
+    for i, node in enumerate(_list(block, "nodes", path, errs)):
+        npath = f"{path}.nodes[{i}]"
+        if not isinstance(node, dict):
+            errs.append(f"{npath}: must be an object")
+            continue
+        _str(node, "id", npath, errs)
+        _str(node, "label", npath, errs)
+        _str(node, "note", npath, errs, required=False)
+        if node.get(field, default) not in allowed:
+            errs.append(f"{npath}.{field}: must be one of {', '.join(allowed)}")
+        if isinstance(node.get("id"), str):
+            if node["id"] in ids:
+                errs.append(f"{npath}.id: duplicate id {node['id']!r}")
+            ids.add(node["id"])
+    for i, edge in enumerate(_list(block, "edges", path, errs)):
+        epath = f"{path}.edges[{i}]"
+        if not isinstance(edge, dict):
+            errs.append(f"{epath}: must be an object")
+            continue
+        for key in ("from", "to"):
+            if edge.get(key) not in ids:
+                errs.append(f"{epath}.{key}: unknown node id {edge.get(key)!r}")
+        _str(edge, "label", epath, errs, required=False)
+    node_ids.update(ids)
+
+
 def _validate_block(block: Json, path: str, errs: list[str], node_ids: set[str]) -> None:
     if not isinstance(block, dict):
         errs.append(f"{path}: must be an object")
@@ -706,31 +742,9 @@ def _validate_block(block: Json, path: str, errs: list[str], node_ids: set[str])
         if not isinstance(marks, list) or not all(isinstance(m, int) and not isinstance(m, bool) for m in marks):
             errs.append(f"{path}.highlight: must be a list of line numbers")
     elif kind == "graph":
-        ids: set[str] = set()
-        for i, node in enumerate(_list(block, "nodes", path, errs)):
-            npath = f"{path}.nodes[{i}]"
-            if not isinstance(node, dict):
-                errs.append(f"{npath}: must be an object")
-                continue
-            _str(node, "id", npath, errs)
-            _str(node, "label", npath, errs)
-            _str(node, "note", npath, errs, required=False)
-            if node.get("group", "module") not in GROUPS:
-                errs.append(f"{npath}.group: must be one of {', '.join(GROUPS)}")
-            if isinstance(node.get("id"), str):
-                if node["id"] in ids:
-                    errs.append(f"{npath}.id: duplicate id {node['id']!r}")
-                ids.add(node["id"])
-        for i, edge in enumerate(_list(block, "edges", path, errs)):
-            epath = f"{path}.edges[{i}]"
-            if not isinstance(edge, dict):
-                errs.append(f"{epath}: must be an object")
-                continue
-            for key in ("from", "to"):
-                if edge.get(key) not in ids:
-                    errs.append(f"{epath}.{key}: unknown node id {edge.get(key)!r}")
-            _str(edge, "label", epath, errs, required=False)
-        node_ids.update(ids)
+        _validate_nodes(block, path, errs, node_ids, field="group", allowed=GROUPS, default="module")
+    elif kind == "flowchart":
+        _validate_nodes(block, path, errs, node_ids, field="kind", allowed=FLOW_KINDS, default="step")
     elif kind == "steps":
         for i, item in enumerate(_list(block, "items", path, errs)):
             ipath = f"{path}.items[{i}]"
@@ -856,7 +870,7 @@ _INLINE = re.compile(
     r"|\[(?P<tag>high|med|guess)\]"
     r"|\[(?P<label>[^\]]+)\]\((?P<url>[^)\s]+)\)"
 )
-_SAFE_URL = re.compile(r"^(https?://|#|\./|\.\./|/)|^[\w.~-]+(/[\w.~%-]*)*(#[\w-]*)?$")
+_SAFE_URL = re.compile(r"^(https?://|#|\./|\.\./|/)|^[\w.~%-]+(/[\w.~%-]*)*(#[\w-]*)?$")
 
 
 def _inline(text: str) -> str:
@@ -892,8 +906,8 @@ def _paragraphs(text: str) -> str:
 
 NODE_H = 40
 NOTE_H = 17
-CHAR_W = 8.45  # IBM Plex Mono at 14px (600 units to the em), with a small margin
-NOTE_CHAR_W = 7.25  # IBM Plex Mono at 12px
+CHAR_W = 8.45  # JetBrains Mono at 14px (600 units to the em), with a small margin
+NOTE_CHAR_W = 7.25  # JetBrains Mono at 12px
 COL_GAP = 84
 ROW_GAP = 16
 PAD = 24
@@ -906,11 +920,49 @@ def _clip(text: str, limit: int = MAX_LABEL) -> str:
     return text if len(text) <= limit else text[: limit - 1] + "…"
 
 
-def _node_box(node: Json) -> tuple[float, float]:
+def _hex_plate(x: float, y: float, w: float, h: float, cut: float | None = None) -> str:
+    """A box as a cell of the comb: a stretched hexagon, pointed at both ends. data-* keep the box it stands in."""
+    c = min(16.0, h / 3) if cut is None else cut
+    return (
+        f'<path class="plate" data-x="{x:.1f}" data-y="{y:.1f}" data-w="{w:.1f}" data-h="{h:.1f}" '
+        f'd="M{x + c:.1f},{y:.1f}H{x + w - c:.1f}L{x + w:.1f},{y + h / 2:.1f}L{x + w - c:.1f},{y + h:.1f}'
+        f'H{x + c:.1f}L{x:.1f},{y + h / 2:.1f}Z"/>'
+    )
+
+
+def _hex_cut(h: float) -> float:
+    """How far the points of a hexagon plate reach in: where a flag or a label must stop."""
+    return min(16.0, h / 3)
+
+
+def _capsule_plate(x: float, y: float, w: float, h: float) -> str:
+    """A box with round ends, for where a flow starts and ends."""
+    r = h / 2
+    return (
+        f'<path class="plate" data-x="{x:.1f}" data-y="{y:.1f}" data-w="{w:.1f}" data-h="{h:.1f}" '
+        f'd="M{x + r:.1f},{y:.1f}H{x + w - r:.1f}A{r:.1f},{r:.1f} 0 0 1 {x + w - r:.1f},{y + h:.1f}'
+        f'H{x + r:.1f}A{r:.1f},{r:.1f} 0 0 1 {x + r:.1f},{y:.1f}Z"/>'
+    )
+
+
+def _flow_plate(kind: str, x: float, y: float, w: float, h: float) -> str:
+    """Start and end are capsules, a decision a cell with deep points, a step an ordinary cell."""
+    if kind in ("start", "end"):
+        return _capsule_plate(x, y, w, h)
+    if kind == "decision":
+        return _hex_plate(x, y, w, h, cut=h / 2)
+    return _hex_plate(x, y, w, h)
+
+
+def _node_box(node: Json, flow: bool = False) -> tuple[float, float]:
     label = _clip(node["label"])
     note = _clip(node.get("note", ""), 44)
-    width = max(120.0, min(380.0, 34 + max(CHAR_W * len(label), NOTE_CHAR_W * len(note))))
-    return width, NODE_H + (NOTE_H if note else 0)
+    width = max(128.0, min(392.0, 46 + max(CHAR_W * len(label), NOTE_CHAR_W * len(note))))
+    height = NODE_H + (NOTE_H if note else 0)
+    if flow:  # deeper points and round ends need room beside the text
+        kind = node.get("kind", "step")
+        width += height - 32 if kind == "decision" else (8 if kind in ("start", "end") else 0)
+    return width, height
 
 
 def _layers(ids: list[str], edges: list[Json]) -> tuple[dict[str, int], set[int]]:
@@ -990,10 +1042,11 @@ def _edge_class(edge: Json, groups: dict[str, str]) -> str:
     return "dim"
 
 
-def _graph_svg(block: Json, title: str) -> str:
+def _graph_svg(block: Json, title: str, flow: bool = False) -> str:
     nodes = {n["id"]: n for n in block["nodes"]}
     ids = list(nodes)
     groups = {i: nodes[i].get("group", "module") for i in ids}
+    kinds = {i: nodes[i].get("kind", "step") for i in ids}
     edges = [e for e in block.get("edges", []) if e["from"] in nodes and e["to"] in nodes]
     if not ids:
         return '<p class="muted">The graph is empty.</p>'
@@ -1003,7 +1056,7 @@ def _graph_svg(block: Json, title: str) -> str:
         columns[layer[node_id]].append(node_id)
     _order(columns, edges, back)
 
-    size = {i: _node_box(nodes[i]) for i in ids}
+    size = {i: _node_box(nodes[i], flow) for i in ids}
     col_heights = [sum(size[n][1] for n in col) + ROW_GAP * (len(col) - 1) for col in columns]
     height = max(col_heights)
     pos: dict[str, tuple[float, float]] = {}
@@ -1038,7 +1091,7 @@ def _graph_svg(block: Json, title: str) -> str:
     order = sorted(range(len(edges)), key=lambda k: _edge_class(edges[k], groups) != "dim")
     for k in order:
         edge = edges[k]
-        kind = _edge_class(edge, groups)
+        kind = "dim" if flow else _edge_class(edge, groups)
         (sx, sy), (sw, sh) = pos[edge["from"]], size[edge["from"]]
         (tx, ty), (tw, th) = pos[edge["to"]], size[edge["to"]]
         if k in back:
@@ -1069,14 +1122,12 @@ def _graph_svg(block: Json, title: str) -> str:
         (x0, y0), (w, h) = pos[node_id], size[node_id]
         label = _clip(node["label"])
         note = _clip(node.get("note", ""), 44)
+        css = f"f-{kinds[node_id]}" if flow else f"g-{groups[node_id]}"
         parts.append(
-            f'<g class="node g-{groups[node_id]}" data-k="{_esc(node_id)}" data-label="{_esc(node["label"])}" '
+            f'<g class="node {css}" data-k="{_esc(node_id)}" data-label="{_esc(node["label"])}" '
             f'tabindex="0" role="button" aria-pressed="false"><title>{_esc(node["label"])}</title>'
         )
-        parts.append(f'<rect class="plate" x="{x0:.1f}" y="{y0:.1f}" width="{w:.1f}" height="{h:.1f}" rx="7"/>')
-        parts.append(
-            f'<rect class="bar" x="{x0 + 1:.1f}" y="{y0 + 6:.1f}" width="3.5" height="{h - 12:.1f}" rx="1.5"/>'
-        )
+        parts.append(_flow_plate(kinds[node_id], x0, y0, w, h) if flow else _hex_plate(x0, y0, w, h))
         label_y = y0 + (24 if note else h / 2 + 5)
         parts.append(f'<text class="node-label" x="{x0 + 18:.1f}" y="{label_y:.1f}">{_esc(label)}</text>')
         if note:
@@ -1087,24 +1138,43 @@ def _graph_svg(block: Json, title: str) -> str:
     return "".join(parts)
 
 
-def _graph(block: Json) -> str:
-    title = block.get("title", "Graph")
-    groups = [g for g in GROUPS if any(n.get("group", "module") == g for n in block["nodes"])]
-    legend = "".join(f'<span class="legend-item"><i class="swatch g-{g}"></i>{_esc(GROUPS[g])}</span>' for g in groups)
+def _edge_list(block: Json, caption: str) -> str:
+    """The edges as a table, for readers without the drawing and for print."""
     names = {n["id"]: n["label"] for n in block["nodes"]}
     rows = "".join(
         f"<tr><td><code>{_esc(names[e['from']])}</code></td><td><code>{_esc(names[e['to']])}</code></td>"
         f"<td>{_inline(e.get('label', ''))}</td></tr>"
         for e in block.get("edges", [])
     )
-    listing = (
-        f'<details class="graph-list"><summary>The graph as a list · {len(block.get("edges", []))} links</summary>'
+    if not rows:
+        return ""
+    return (
+        f'<details class="graph-list"><summary>{caption} · {len(block.get("edges", []))} links</summary>'
         f'<div class="table-wrap"><table><thead><tr><th>From</th><th>To</th><th>How</th></tr></thead>'
         f"<tbody>{rows}</tbody></table></div></details>"
-        if rows
-        else ""
     )
+
+
+def _graph(block: Json) -> str:
+    title = block.get("title", "Graph")
+    groups = [g for g in GROUPS if any(n.get("group", "module") == g for n in block["nodes"])]
+    legend = "".join(f'<span class="legend-item"><i class="swatch g-{g}"></i>{_esc(GROUPS[g])}</span>' for g in groups)
+    listing = _edge_list(block, "The graph as a list")
     return f'<div class="graph-wrap">{_graph_svg(block, title)}</div><div class="legend">{legend}</div>{listing}'
+
+
+def _flowchart(block: Json) -> str:
+    """A process with branches, drawn and traced like a graph; the shapes say what each node is."""
+    title = block.get("title", "Flowchart")
+    kinds = [k for k in FLOW_KINDS if any(n.get("kind", "step") == k for n in block["nodes"])]
+    legend = "".join(
+        f'<span class="legend-item"><i class="swatch f-{k}"></i>{_esc(FLOW_KINDS[k])}</span>' for k in kinds
+    )
+    listing = _edge_list(block, "The flowchart as a list")
+    return (
+        f'<div class="graph-wrap">{_graph_svg(block, title, flow=True)}</div>'
+        f'<div class="legend">{legend}</div>{listing}'
+    )
 
 
 # ---------------------------------------------------------------------------- decision
@@ -1254,7 +1324,7 @@ def _arch_svg(
     # Past six zones the boxes and gaps narrow, so the diagram still fits a laptop screen; labels clip sooner.
     wide = len(zones) > 6
     box_w, zpad, zgap = (156, 10, 42) if wide else (ARCH_W, ARCH_ZPAD, ARCH_ZGAP)
-    fits = {"label": (box_w - 24) // 8, "line": (box_w - 24) // 7, "zone": (box_w + 2 * zpad - 20) // 9}
+    fits = {"label": (box_w - 32) // 8, "line": (box_w - 32) // 7, "zone": (box_w + 2 * zpad - 20) // 9}
     _order(columns, links, set())
 
     def box_h(comp: Json) -> int:
@@ -1378,16 +1448,15 @@ def _arch_svg(
             f'<g class="{" ".join(classes)}" data-k="{_esc(k)}" data-label="{_esc(comp["label"])}" '
             f'data-v="{v}" data-taint="{v if k in touched else ""}" data-risk="{v if k in risk else ""}"{marks} '
             f'tabindex="0" role="button" aria-pressed="false"><title>{_esc(comp["label"])}</title>'
-            f'<rect class="plate" x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="8"/>'
-            f'<rect class="bar" x="{x + 1:.1f}" y="{y + 7:.1f}" width="3.5" height="{h - 14:.1f}" rx="1.5"/>'
-            f'<text class="ck" x="{x + 16:.1f}" y="{y + 17:.1f}">{_esc(_clip(caption.upper(), fits["line"]))}</text>'
+            + _hex_plate(x, y, w, h)
+            + f'<text class="ck" x="{x + 16:.1f}" y="{y + 17:.1f}">{_esc(_clip(caption.upper(), fits["line"]))}</text>'
             f'<text class="cl" x="{x + 16:.1f}" y="{y + 36:.1f}">{_esc(_clip(comp["label"], fits["label"]))}</text>'
         )
         line = comp.get("tech") or comp.get("note")
         if line:
             parts.append(f'<text class="ct" x="{x + 16:.1f}" y="{y + 53:.1f}">{_esc(_clip(line, fits["line"]))}</text>')
         if comp.get("flag"):
-            parts.append(f'<circle class="flag" cx="{x + w - 13:.1f}" cy="{y + 13:.1f}" r="4.5"/>')
+            parts.append(f'<circle class="flag" cx="{x + w - _hex_cut(h) - 5:.1f}" cy="{y + 13:.1f}" r="4.5"/>')
         parts.append("</g>")
     parts.extend(labels)
     parts.append("</svg>")
@@ -1891,7 +1960,10 @@ def _nest_svg(
         comp = comps[key]
         x, y, w, h = pos[key]
         parts.append(opening(key, comp, ["open-box"]))
-        parts.append(f'<rect class="plate" x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="12"/>')
+        parts.append(
+            f'<rect class="plate" data-x="{x:.1f}" data-y="{y:.1f}" data-w="{w:.1f}" data-h="{h:.1f}" x="{x:.1f}" '
+            f'y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="12"/>'
+        )
         caption = KINDS[comp.get("kind", "service")].upper()
         parts.append(f'<text class="ck" x="{x + 14:.1f}" y="{y + 18:.1f}">{_esc(caption)}</text>')
         title = _clip(comp["label"], int((w - 28) // 8))
@@ -1950,16 +2022,15 @@ def _nest_svg(
         caption = KINDS[comp.get("kind", "service")] + (" · acts" if comp.get("side_effect") else "")
         parts.append(opening(key, comp, []))
         parts.append(
-            f'<rect class="plate" x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="8"/>'
-            f'<rect class="bar" x="{x + 1:.1f}" y="{y + 7:.1f}" width="3.5" height="{h - 14:.1f}" rx="1.5"/>'
-            f'<text class="ck" x="{x + 16:.1f}" y="{y + 17:.1f}">{_esc(_clip(caption.upper(), 22))}</text>'
-            f'<text class="cl" x="{x + 16:.1f}" y="{y + 36:.1f}">{_esc(_clip(comp["label"], 21))}</text>'
+            _hex_plate(x, y, w, h)
+            + f'<text class="ck" x="{x + 16:.1f}" y="{y + 17:.1f}">{_esc(_clip(caption.upper(), 21))}</text>'
+            + f'<text class="cl" x="{x + 16:.1f}" y="{y + 36:.1f}">{_esc(_clip(comp["label"], 20))}</text>'
         )
         line = comp.get("tech") or comp.get("note")
         if line:
-            parts.append(f'<text class="ct" x="{x + 16:.1f}" y="{y + 53:.1f}">{_esc(_clip(line, 24))}</text>')
+            parts.append(f'<text class="ct" x="{x + 16:.1f}" y="{y + 53:.1f}">{_esc(_clip(line, 23))}</text>')
         if comp.get("flag"):
-            parts.append(f'<circle class="flag" cx="{x + w - 13:.1f}" cy="{y + 13:.1f}" r="4.5"/>')
+            parts.append(f'<circle class="flag" cx="{x + w - _hex_cut(h) - 5:.1f}" cy="{y + 13:.1f}" r="4.5"/>')
         parts.append("</g>")
     parts.extend(labels)
     parts.append("</svg>")
@@ -2086,9 +2157,8 @@ def _model_svg(block: Json) -> str:
             f'<g class="{" ".join(classes)}" data-k="{_esc(key)}" data-label="{_esc(table["label"])}" '
             f'data-area="{_esc(table.get("area", ""))}" tabindex="0" role="button" aria-pressed="false">'
             f"<title>{_esc(table['label'])}</title>"
-            f'<rect class="plate" x="{x:.1f}" y="{y:.1f}" width="{MODEL_W}" height="{h:.1f}" rx="8"/>'
-            f'<rect class="bar" x="{x + 1:.1f}" y="{y + 7:.1f}" width="3.5" height="{h - 14:.1f}" rx="1.5"/>'
-            f'<text class="ck" x="{x + 16:.1f}" y="{y + 17:.1f}">{_esc(kind.upper())}</text>'
+            + _hex_plate(x, y, MODEL_W, h)
+            + f'<text class="ck" x="{x + 16:.1f}" y="{y + 17:.1f}">{_esc(kind.upper())}</text>'
             f'<text class="cl" x="{x + 16:.1f}" y="{y + 36:.1f}">{_esc(_clip(table["label"], 25))}</text>'
         )
         for n, name in enumerate(keys[:MODEL_KEYS]):
@@ -2102,7 +2172,7 @@ def _model_svg(block: Json) -> str:
             more += f" · {personal} personal"
         parts.append(f'<text class="cm" x="{x + 16:.1f}" y="{y + h - 10:.1f}">{_esc(more)}</text>')
         if table.get("flag"):
-            parts.append(f'<circle class="flag" cx="{x + MODEL_W - 13:.1f}" cy="{y + 13:.1f}" r="4.5"/>')
+            parts.append(f'<circle class="flag" cx="{x + MODEL_W - _hex_cut(h) - 5:.1f}" cy="{y + 13:.1f}" r="4.5"/>')
         parts.append("</g>")
     parts.extend(labels)
     parts.append("</svg>")
@@ -2185,7 +2255,7 @@ def _model(block: Json) -> str:
 # ---------------------------------------------------------------------------- chart
 
 CHART_W = 900.0
-CHAR_13 = 7.85  # IBM Plex Mono at 13px
+CHAR_13 = 7.85  # JetBrains Mono at 13px
 CHART_MAX_THICK = 22  # thin marks: a bar never fills its band
 MINUS = chr(0x2212)
 SERIES_CLASSES = tuple(f"cs{i}" for i in range(CHART_MAX_SERIES))
@@ -2625,6 +2695,11 @@ def _chart_table_html(columns: list[str], rows: list[list[str]]) -> str:
 
 
 def _chart_table(block: Json) -> str:
+    return _chart_table_html(*_chart_rows(block))
+
+
+def _chart_rows(block: Json) -> tuple[list[str], list[list[str]]]:
+    """The chart's numbers as columns and rows of text."""
     kind = block["kind"]
     unit = block.get("unit", "")
     if kind == "waterfall":
@@ -2646,7 +2721,7 @@ def _chart_table(block: Json) -> str:
                         _chart_value(running, places, unit),
                     ]
                 )
-        return _chart_table_html(["Step", "Change", "Running total"], rows)
+        return ["Step", "Change", "Running total"], rows
     if kind == "heatmap":
         flat = [float(v) for r in block["values"] for v in r if v is not None]
         places = _chart_places(flat, block.get("places"))
@@ -2654,14 +2729,14 @@ def _chart_table(block: Json) -> str:
             [row] + ["" if v is None else _chart_value(float(v), places, unit) for v in values]
             for row, values in zip(block["rows"], block["values"], strict=True)
         ]
-        return _chart_table_html(["", *block["columns"]], cells)
+        return ["", *block["columns"]], cells
     places = _chart_places(_chart_series_values(block), block.get("places"))
     rows = [
         [category]
         + ["" if s["values"][i] is None else _chart_value(float(s["values"][i]), places, unit) for s in block["series"]]
         for i, category in enumerate(block["categories"])
     ]
-    return _chart_table_html([block.get("x_label") or "", *[s["name"] for s in block["series"]]], rows)
+    return [block.get("x_label") or "", *[s["name"] for s in block["series"]]], rows
 
 
 def _chart(block: Json) -> str:
@@ -2785,6 +2860,8 @@ def _block(block: Json) -> str:
         body = _code(block)
     elif kind == "graph":
         body = _graph(block)
+    elif kind == "flowchart":
+        body = _flowchart(block)
     elif kind == "steps":
         body = _steps(block)
     elif kind == "decision":
@@ -2805,29 +2882,24 @@ def _block(block: Json) -> str:
 
 # ---------------------------------------------------------------------------- page
 
-# The page design, written for this repository: a dark neutral ground, flat panels with a thin border, one blue
-# accent, IBM Plex Sans for text and IBM Plex Mono for labels, blue for what leads to a change and orange for what
-# it reaches. Dark only. Every text colour clears 4.5:1 on the panel surface.
+# The page design, written for this repository: a hive. Dark only; every text colour clears 4.5:1 on the panel
+# surface. The tokens, the honeycomb and the hexagons are in CSS below; the boxes of the diagrams are drawn by
+# _hex_plate.
 
-LATIN1 = (
-    "U+0000, U+000D, U+0020-007E, U+00A0-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2013-2014, "
-    "U+2018-201A, U+201C-201E, U+2020-2022, U+2026, U+2030, U+2039-203A, U+2044, U+20AC, U+2122, U+2212, U+FB01-FB02"
+LATIN = (
+    "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, "
+    "U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
 )
-LATIN2 = (
-    "U+0100-0101, U+0104-0130, U+0132-0151, U+0154-017F, U+018F, U+0192, U+01A0-01A1, U+01AF-01B0, U+01FA-01FF, "
-    "U+0218-021B, U+0237, U+0259, U+1E80-1E85, U+1E9E, U+20A1, U+20A4, U+20A6, U+20A8-20AA, U+20AD-20AE, "
-    "U+20B1-20B2, U+20B4-20B5, U+20B8-20BA, U+20BD, U+20BF"
+LATIN_EXT = (
+    "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, "
+    "U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF"
 )
-# IBM's own split files of IBM Plex, Latin 1 and Latin 2 (which holds š, đ, č, ć, ž), regular and semibold.
+# Variable fonts, the Latin and Latin Extended subsets (the second holds š, đ, č, ć, ž).
 FONTS = (
-    ("IBM Plex Sans", "400", "ibm-plex-sans-regular-latin1.woff2", LATIN1),
-    ("IBM Plex Sans", "400", "ibm-plex-sans-regular-latin2.woff2", LATIN2),
-    ("IBM Plex Sans", "600", "ibm-plex-sans-semibold-latin1.woff2", LATIN1),
-    ("IBM Plex Sans", "600", "ibm-plex-sans-semibold-latin2.woff2", LATIN2),
-    ("IBM Plex Mono", "400", "ibm-plex-mono-regular-latin1.woff2", LATIN1),
-    ("IBM Plex Mono", "400", "ibm-plex-mono-regular-latin2.woff2", LATIN2),
-    ("IBM Plex Mono", "600", "ibm-plex-mono-semibold-latin1.woff2", LATIN1),
-    ("IBM Plex Mono", "600", "ibm-plex-mono-semibold-latin2.woff2", LATIN2),
+    ("Bricolage Grotesque", "200 800", "bricolage-grotesque-latin.woff2", LATIN),
+    ("Bricolage Grotesque", "200 800", "bricolage-grotesque-latin-ext.woff2", LATIN_EXT),
+    ("JetBrains Mono", "400 800", "jetbrains-mono-latin.woff2", LATIN),
+    ("JetBrains Mono", "400 800", "jetbrains-mono-latin-ext.woff2", LATIN_EXT),
 )
 
 
@@ -2837,6 +2909,30 @@ def _font_dir() -> Path | None:
         if candidate.is_dir():
             return candidate
     return None
+
+
+def _honeycomb() -> str:
+    """The background tile: flat-top hexagons with a 28px side, one whole cell and the corners of four more."""
+    side, height = 28.0, 28.0 * math.sqrt(3)
+
+    def cell(cx: float, cy: float) -> str:
+        points = (
+            (cx + side, cy),
+            (cx + side / 2, cy + height / 2),
+            (cx - side / 2, cy + height / 2),
+            (cx - side, cy),
+            (cx - side / 2, cy - height / 2),
+            (cx + side / 2, cy - height / 2),
+        )
+        return "M" + "L".join(f"{x:.1f} {y:.1f}" for x, y in points) + "Z"
+
+    centres = ((0, 0), (1.5 * side, height / 2), (3 * side, 0), (0, height), (3 * side, height))
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{3 * side:.0f}" height="{height:.1f}" '
+        f'viewBox="0 0 {3 * side:.0f} {height:.1f}"><path d="{"".join(cell(x, y) for x, y in centres)}" '
+        'fill="none" stroke="#f2b632" stroke-opacity=".11"/></svg>'
+    )
+    return "data:image/svg+xml," + quote(svg, safe="")
 
 
 def font_css() -> str:
@@ -2855,178 +2951,204 @@ def font_css() -> str:
     return "\n".join(rules)
 
 
+# The page design: a hive. A dark amber ground with a faint honeycomb and a warm glow at the top, honey as the one
+# accent, panels with a honey edge, Bricolage Grotesque for text and JetBrains Mono for labels. Counters, tags and
+# the boxes of every diagram are hexagons: the cells of the comb. In graphs, honey marks what leads to a change
+# and sky blue what it reaches.
 CSS = """
-:root{--ground:#111419;--surface:#171b22;--surface-2:#1e232c;--surface-3:#262c37;--ink:#e6e9ee;--ink-2:#b3bac6;
---ink-3:#8b94a3;--line:#2c333e;--line-2:#222831;--accent:#3987e5;--accent-2:#82b3f5;--accent-bg:rgba(57,135,229,.16);
---accent-bg-2:rgba(57,135,229,.3);--down:#ec8a4f;--down-bg:rgba(236,138,79,.14);--amber:#e3b341;
---amber-bg:rgba(227,179,65,.12);--red:#f07070;--red-bg:rgba(240,112,112,.14);--green:#4cc38a;
---green-bg:rgba(76,195,138,.12);--aqua:#2fb894;--aqua-bg:rgba(47,184,148,.1);--magenta:#de7fa9;--user:#9db4d1;
---node:#1e232c;--node-line:#3a4352;--node-bar:#4a5464;--edge:rgba(179,186,198,.38);
---sans:'IBM Plex Sans',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
---mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color-scheme:dark}
+:root{--ground:#120e08;--bg:#1a140b;--surface:#1d160c;--surface-2:#261d10;--surface-3:#312617;--ink:#f7f0e3;
+--ink-2:rgba(247,240,227,.7);--ink-3:rgba(247,240,227,.5);--line:rgba(242,182,50,.2);--line-2:rgba(242,182,50,.1);
+--accent:#f2b632;--accent-2:#ffd166;--accent-bg:rgba(242,182,50,.13);--accent-bg-2:rgba(242,182,50,.26);
+--down:#6cb4ff;--down-bg:rgba(108,180,255,.14);--amber:#ff8f45;--amber-bg:rgba(255,143,69,.14);--red:#ff7b6e;
+--red-bg:rgba(255,123,110,.14);--green:#8ae0a3;--green-bg:rgba(138,224,163,.12);--aqua:#3fc8ad;
+--aqua-bg:rgba(63,200,173,.12);--magenta:#e88fbe;--user:#cdbd9f;--node:#221a0f;--node-line:#5e4a22;
+--edge:rgba(247,240,227,.3);--plate:linear-gradient(160deg,#281e10 0%,#1b150c 100%);--plate-border:rgba(242,182,50,.24);
+--hex:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);
+--cell:polygon(8px 0,calc(100% - 8px) 0,100% 50%,calc(100% - 8px) 100%,8px 100%,0 50%);
+--sans:'Bricolage Grotesque',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
+--mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color-scheme:dark}
 *{margin:0;padding:0;box-sizing:border-box}
 html{background:var(--ground)}
-body{min-height:100%;background:var(--ground);color:var(--ink);font:400 16px/1.6 var(--sans);
+body{position:relative;min-height:100%;background:var(--ground);color:var(--ink);font:400 17px/1.55 var(--sans);
 -webkit-font-smoothing:antialiased}
-main{max-width:1360px;margin:0 auto;padding:48px 40px 88px}
-a{color:var(--accent-2);text-decoration-color:rgba(130,179,245,.45);text-underline-offset:3px}
+body::before{content:'';position:absolute;left:0;right:0;top:0;height:min(1500px,100%);z-index:0;pointer-events:none;
+background:radial-gradient(1500px 820px at 50% 380px,#2e210b 0%,#1b1409 55%,rgba(18,14,8,0) 100%)}
+body::after{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;background-size:84px 48.5px;
+background-image:url("HONEYCOMB")}
+main{position:relative;z-index:1;max-width:1360px;margin:0 auto;padding:60px 48px 96px}
+a{color:var(--accent-2);text-decoration-color:rgba(255,209,102,.45);text-underline-offset:3px}
 a:hover{text-decoration-color:currentColor}
 code,pre{font-family:var(--mono);font-variant-ligatures:none}
-code{font-size:.9em;color:var(--accent-2)}
-strong{font-weight:600;color:var(--ink)}
-p{max-width:1080px;text-wrap:pretty}
+code{font-size:.88em;color:var(--accent-2)}
+strong{font-weight:700;color:var(--ink)}
+p{max-width:1100px;text-wrap:pretty}
 .muted{color:var(--ink-3)}
-.status{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;font:400 12.5px/1.5 var(--mono);color:var(--ink-3)}
-.status .skill{display:inline-flex;align-items:center;gap:8px;padding:2px 9px;border:1px solid var(--line);
-border-radius:4px;color:var(--ink);font-weight:600}
-.status .skill i{width:7px;height:7px;border-radius:2px;background:var(--accent)}
-.status b{font-weight:600;color:var(--ink-2)}
-h1{margin-top:16px;font-size:clamp(28px,3.6vw,40px);font-weight:600;letter-spacing:-.012em;line-height:1.15;
-text-wrap:balance;max-width:1100px}
-h1 code{font-size:.85em}
-.lead{margin-top:12px;font-size:18px;line-height:1.5;color:var(--ink-2);max-width:1000px}
-.plate{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:8px}
-.label{display:block;margin-bottom:8px;font:600 11.5px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;
-color:var(--ink-3)}
-.verdict{margin-top:32px;padding:20px 24px;border-left:3px solid var(--accent);font-size:17.5px;line-height:1.55}
-.verdict p+p{margin-top:8px}
-.v-bad,.c-bad{border-left-color:var(--red)}.v-warn,.c-warn{border-left-color:var(--amber)}
-.v-ok,.c-ok{border-left-color:var(--green)}.v-info,.c-info{border-left-color:var(--accent)}
-.v-bad .label,.c-bad .label{color:var(--red)}.v-warn .label,.c-warn .label{color:var(--amber)}
-.v-ok .label,.c-ok .label{color:var(--green)}.v-info .label,.c-info .label{color:var(--accent-2)}
-.facts{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:12px;margin-top:28px}
-.fact{padding:14px 16px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
-.fact .l{font:600 11.5px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
-.fact .v{margin-top:6px;font-size:26px;font-weight:600;letter-spacing:-.01em;line-height:1.15;
-font-variant-numeric:tabular-nums;text-wrap:balance}
-.fact .n{margin-top:4px;font-size:14px;line-height:1.45;color:var(--ink-2)}
+.status{display:flex;flex-wrap:wrap;align-items:center;gap:8px 22px;font:600 13px/1.4 var(--mono);letter-spacing:.14em;
+text-transform:uppercase;color:var(--ink-3)}
+.status .skill{display:inline-flex;align-items:center;gap:10px;color:var(--accent-2)}
+.status .skill i{width:12px;height:13px;background:var(--accent);clip-path:var(--hex)}
+.status b{font-weight:600;color:var(--ink-2);text-transform:none;letter-spacing:.04em}
+h1{margin-top:18px;font-size:clamp(34px,4.6vw,58px);font-weight:800;letter-spacing:-.022em;line-height:1.05;
+text-wrap:balance;max-width:1200px}
+h1 code{font-size:.82em;font-weight:600}
+.lead{margin-top:16px;font-size:clamp(18px,1.8vw,22px);line-height:1.45;color:var(--ink-2);max-width:1100px}
+.plate{position:relative;background:var(--plate);border:1px solid var(--plate-border);border-radius:12px}
+.label{position:absolute;left:24px;top:-13px;padding:6px 18px;background:var(--accent);color:var(--ground);
+clip-path:var(--cell);font:700 11.5px/1.3 var(--mono);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;
+max-width:calc(100% - 48px);overflow:hidden;text-overflow:ellipsis}
+.verdict{margin-top:44px;padding:30px 32px 26px;font-size:clamp(18px,1.6vw,21px);line-height:1.5}
+.verdict p+p{margin-top:10px}
+.v-bad,.c-bad{border-color:rgba(255,123,110,.45)}.v-warn,.c-warn{border-color:rgba(255,143,69,.45)}
+.v-ok,.c-ok{border-color:rgba(138,224,163,.4)}
+.v-bad .label,.c-bad .label{background:var(--red)}.v-warn .label,.c-warn .label{background:var(--amber)}
+.v-ok .label,.c-ok .label{background:var(--green)}.v-info .label,.c-info .label{background:var(--accent)}
+.facts{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));margin-top:40px;
+border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.fact{padding:22px 26px 22px 0;border-bottom:1px solid var(--line)}
+.fact.mid{border-left:1px solid var(--line);padding-left:26px}.fact.last{border-bottom:0}
+.fact .l{font:600 12.5px/1.35 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.fact .v{margin-top:8px;font-size:clamp(28px,3vw,38px);font-weight:800;letter-spacing:-.015em;line-height:1.1;
+font-variant-numeric:tabular-nums;text-wrap:balance;color:var(--accent-2)}
+.fact .n{margin-top:6px;font-size:15px;line-height:1.4;color:var(--ink-2)}
 .t-bad .v{color:var(--red)}.t-warn .v{color:var(--amber)}.t-ok .v{color:var(--green)}
-nav.toc{display:flex;flex-wrap:wrap;gap:6px 8px;margin-top:24px}
-nav.toc a{padding:4px 10px;border:1px solid var(--line);border-radius:4px;font:400 13px/1.4 var(--mono);
-color:var(--ink-2);text-decoration:none}
-nav.toc a span{color:var(--ink-3);margin-right:6px}nav.toc a:hover{color:var(--ink);border-color:var(--ink-3)}
-section{margin-top:56px;scroll-margin-top:24px}
-section>header{display:flex;align-items:baseline;gap:12px;padding-bottom:10px;border-bottom:1px solid var(--line);
-margin-bottom:20px}
-section>header .n{font:600 14px var(--mono);color:var(--accent-2)}
-section>header h2{font-size:clamp(21px,2.4vw,26px);font-weight:600;letter-spacing:-.008em;line-height:1.25;
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:30px}
+nav.toc a{padding:7px 20px;background:var(--surface-2);clip-path:var(--cell);font:600 12px/1.4 var(--mono);
+letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);text-decoration:none}
+nav.toc a span{color:var(--accent-2);margin-right:8px}nav.toc a:hover{background:var(--accent-bg-2);color:var(--ink)}
+section{margin-top:76px;scroll-margin-top:24px}
+section>header{display:flex;align-items:center;gap:16px;padding-bottom:14px;border-bottom:1px solid var(--line);
+margin-bottom:24px}
+section>header .n{flex:none;display:inline-grid;place-items:center;width:38px;height:34px;background:var(--accent);
+color:var(--ground);clip-path:var(--hex);font:800 13px var(--mono)}
+section>header h2{font-size:clamp(26px,2.8vw,36px);font-weight:700;letter-spacing:-.015em;line-height:1.1;
 text-wrap:balance}
 .intro{color:var(--ink-2)}
-.block{margin-top:24px}.block:first-of-type{margin-top:0}.intro+.block{margin-top:16px}
-.block>h3{font:600 12px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);
-margin-bottom:12px}
-.block p+p{margin-top:10px}
-.block>h3+.plate.labelled{margin-top:12px}
-.tag{display:inline-block;font:600 10.5px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:3px 6px;
-border-radius:3px;vertical-align:2px;margin-left:3px}
+.block{margin-top:28px}.block:first-of-type{margin-top:0}.intro+.block{margin-top:20px}
+.block>h3{font:600 12.5px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);
+margin-bottom:14px}
+.block p+p{margin-top:12px}
+.block>h3+.plate.labelled{margin-top:28px}
+.tag{display:inline-block;font:700 10.5px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;
+clip-path:polygon(6px 0,calc(100% - 6px) 0,100% 50%,calc(100% - 6px) 100%,6px 100%,0 50%);vertical-align:2px;
+margin-left:3px}
 .tag-high{color:var(--green);background:var(--green-bg)}.tag-med{color:var(--amber);background:var(--amber-bg)}
 .tag-guess{color:var(--red);background:var(--red-bg)}
-ul.bul,ol.bul{list-style:none;display:grid;gap:8px;max-width:1080px}
-ul.bul li,ol.bul li{position:relative;padding-left:22px}
-ul.bul li::before{content:'';position:absolute;left:4px;top:.7em;width:6px;height:6px;border-radius:50%;
-background:var(--ink-3)}
+ul.bul,ol.bul{list-style:none;display:grid;gap:10px;max-width:1100px}
+ul.bul li,ol.bul li{position:relative;padding-left:26px}
+ul.bul li::before{content:'';position:absolute;left:2px;top:.52em;width:9px;height:10px;background:var(--accent);
+clip-path:var(--hex)}
 ol.bul{counter-reset:b}ol.bul li{counter-increment:b}
-ol.bul li::before{content:counter(b) '.';position:absolute;left:0;font:600 .85em/1.85 var(--mono);color:var(--ink-3)}
+ol.bul li::before{content:counter(b);position:absolute;left:0;font:700 .78em/1.95 var(--mono);color:var(--accent-2)}
 .table-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
-th{font:600 11.5px/1.4 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);text-align:left;
-padding:8px 16px 8px 0;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:bottom}
-td{padding:9px 16px 9px 0;border-bottom:1px solid var(--line-2);vertical-align:baseline;font-size:15px;line-height:1.5}
+th{font:600 12px/1.4 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);text-align:left;
+padding:0 20px 10px 0;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:bottom}
+td{padding:11px 20px 11px 0;border-bottom:1px solid var(--line-2);vertical-align:baseline;font-size:16px;
+line-height:1.5}
 tr:last-child td{border-bottom:0}
 td.a-right,th.a-right{text-align:right}
-td.a-right{font-family:var(--mono);font-size:14px;font-variant-numeric:tabular-nums}
+td.a-right{font-family:var(--mono);font-size:14.5px;font-variant-numeric:tabular-nums}
 td.a-center,th.a-center{text-align:center}
 td:first-child{color:var(--ink)}td{color:var(--ink-2)}
-.findings{display:grid;gap:12px}
-.finding{position:relative;padding:16px 20px;background:var(--surface);border:1px solid var(--line);
-border-left:3px solid var(--ink-3);border-radius:8px}
-.finding.f-high{border-left-color:var(--red)}.finding.f-medium{border-left-color:var(--amber)}
-.finding.f-low{border-left-color:var(--green)}
-.finding header{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-.finding h4{font-size:17.5px;font-weight:600;line-height:1.35}
+.findings{display:grid;gap:14px}
+.finding{position:relative;padding:22px 26px 20px;background:var(--plate);border:1px solid var(--plate-border);
+border-radius:12px;box-shadow:inset 4px 0 0 var(--ink-3)}
+.finding.f-high{box-shadow:inset 4px 0 0 var(--red)}.finding.f-medium{box-shadow:inset 4px 0 0 var(--amber)}
+.finding.f-low{box-shadow:inset 4px 0 0 var(--green)}
+.finding header{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.finding h4{font-size:21px;font-weight:700;line-height:1.3;letter-spacing:-.005em}
 .finding.s-declined h4,.finding.s-fixed h4{color:var(--ink-2)}
-.chip{font:600 10.5px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:4px 7px;border-radius:3px;
+.chip{font:700 10.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;padding:5px 12px;clip-path:var(--cell);
 color:var(--ink-2);background:var(--surface-3)}
 .chip.sev-high{color:var(--red);background:var(--red-bg)}.chip.sev-medium{color:var(--amber);background:var(--amber-bg)}
-.chip.sev-low{color:var(--green);background:var(--green-bg)}.chip.sev-info{color:var(--accent-2);background:var(--accent-bg)}
-.where{font:400 13.5px/1.5 var(--mono);color:var(--accent-2);margin-top:4px;word-break:break-word}
-.evidence{margin-top:8px;color:var(--ink-2);font-size:15.5px}
-.fix{margin-top:12px;padding:10px 14px;border-radius:6px;background:var(--surface-2);font-size:15.5px}
-.fix-label{display:block;font:600 11px/1.6 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
-figure.code{padding:14px 0 12px}figure.code.labelled{margin-top:12px;padding-top:12px}
-figure.code .label{padding:0 18px}
-figure.code pre{overflow-x:auto;font-size:13.5px;line-height:1.6}
-.ln{display:block;padding:0 18px 0 0;white-space:pre;color:var(--ink)}
+.chip.sev-low{color:var(--green);background:var(--green-bg)}.chip.sev-info{color:var(--accent-2);
+background:var(--accent-bg)}
+.where{font:500 14px/1.5 var(--mono);color:var(--accent-2);margin-top:5px;word-break:break-word}
+.evidence{margin-top:10px;color:var(--ink-2);font-size:16.5px}
+.fix{margin-top:14px;padding:12px 16px;border-radius:8px;background:rgba(18,14,8,.5);border:1px solid var(--line-2);
+font-size:16.5px}
+.fix-label{display:block;font:600 11.5px/1.6 var(--mono);letter-spacing:.14em;text-transform:uppercase;
+color:var(--ink-3)}
+figure.code{padding:16px 0 14px}figure.code.labelled{margin-top:26px;padding-top:26px}
+figure.code pre{overflow-x:auto;font-size:14px;line-height:1.6}
+.ln{display:block;padding:0 20px 0 0;white-space:pre;color:var(--ink)}
 .ln .no{display:inline-block;width:3.6em;padding-right:1.1em;text-align:right;color:var(--ink-3);user-select:none}
-.ln.hl{background:var(--down-bg);box-shadow:inset 3px 0 0 var(--down)}
-.callout{margin-top:12px;padding:16px 20px;border-left:3px solid var(--accent)}
-ol.steps{list-style:none;counter-reset:s;max-width:1080px}
-ol.steps li{position:relative;counter-increment:s;padding:0 0 20px 48px}
-ol.steps li::before{content:counter(s);position:absolute;left:0;top:1px;width:26px;height:26px;
-border:1px solid var(--line);border-radius:50%;text-align:center;font:600 13px/24px var(--mono);color:var(--accent-2);
-background:var(--surface)}
-ol.steps li::after{content:'';position:absolute;left:13px;top:30px;bottom:4px;width:1px;background:var(--line)}
+.ln.hl{background:var(--accent-bg);box-shadow:inset 3px 0 0 var(--accent)}
+.callout{margin-top:26px;padding:26px 24px 20px}
+ol.steps{list-style:none;counter-reset:s;max-width:1100px}
+ol.steps li{position:relative;counter-increment:s;padding:0 0 22px 50px}
+ol.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:30px;height:32px;display:grid;
+place-items:center;background:var(--accent);color:var(--ground);clip-path:var(--hex);font:800 12.5px var(--mono)}
+ol.steps li::after{content:'';position:absolute;left:14.5px;top:36px;bottom:4px;width:1px;background:var(--line)}
 ol.steps li:last-child{padding-bottom:0}ol.steps li:last-child::after{display:none}
-ol.steps h4{font-size:17px;font-weight:600;line-height:1.4}
-ol.steps p{color:var(--ink-2);margin-top:4px;font-size:15.5px}
-dl.kv{display:grid;grid-template-columns:minmax(140px,240px) 1fr;max-width:1080px}
-dl.kv dt,dl.kv dd{padding:9px 0;border-bottom:1px solid var(--line-2)}
-dl.kv dt{font:600 11.5px/1.7 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);
+ol.steps h4{font-size:18px;font-weight:700;line-height:1.4}
+ol.steps p{color:var(--ink-2);margin-top:4px;font-size:16px}
+dl.kv{display:grid;grid-template-columns:minmax(140px,240px) 1fr;max-width:1100px}
+dl.kv dt,dl.kv dd{padding:10px 0;border-bottom:1px solid var(--line-2)}
+dl.kv dt{font:600 12px/1.7 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
 padding-right:16px}
-dl.kv dd{font-size:15.5px;color:var(--ink)}
-.graph-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+dl.kv dd{font-size:16px;color:var(--ink)}
+.graph-wrap{overflow-x:auto;border:1px solid var(--plate-border);border-radius:12px;background:var(--plate)}
 svg.graph{display:block;height:auto;font-family:var(--mono)}
-.node .plate{fill:var(--node);stroke:var(--node-line);stroke-width:1}
-.node .bar{fill:var(--node-bar)}
-.node-label{font-size:14px;font-weight:400;fill:var(--ink)}.node-note{font-size:12px;fill:var(--ink-3)}
-.g-entry .plate{stroke:var(--accent);stroke-width:1.5}.g-entry .bar{fill:var(--accent)}
-.g-boundary .plate{fill:var(--accent-bg);stroke:var(--accent)}.g-boundary .bar{fill:var(--accent-2)}
-.g-changed .plate{fill:var(--accent-bg-2);stroke:var(--accent-2);stroke-width:2}
-.g-changed .bar{fill:var(--accent-2)}.g-changed .node-label{font-weight:600}
-.g-affected .plate{fill:var(--down-bg);stroke:var(--down);stroke-width:1.6}.g-affected .bar{fill:var(--down)}
-.g-data .plate{fill:var(--aqua-bg);stroke:var(--aqua)}.g-data .bar{fill:var(--aqua)}
-.g-external .plate{fill:none;stroke:var(--ink-3);stroke-dasharray:5 4}.g-external .bar{fill:var(--ink-3)}
-.g-test .plate{fill:none;stroke:var(--line)}.g-test .node-label{fill:var(--ink-2)}.g-test .bar{fill:var(--line)}
-.g-safe .plate{fill:var(--green-bg);stroke:var(--green)}.g-safe .bar{fill:var(--green)}
+.node .plate{fill:var(--node);stroke:var(--node-line);stroke-width:1.1}
+.node-label{font-size:14px;font-weight:500;fill:var(--ink)}.node-note{font-size:12px;fill:var(--ink-3)}
+.g-entry .plate{stroke:var(--accent);stroke-width:1.6}
+.g-boundary .plate{fill:var(--accent-bg);stroke:var(--accent)}
+.g-changed .plate{fill:var(--accent-bg-2);stroke:var(--accent-2);stroke-width:2}.g-changed .node-label{font-weight:700}
+.g-affected .plate{fill:var(--down-bg);stroke:var(--down);stroke-width:1.6}
+.g-data .plate{fill:var(--aqua-bg);stroke:var(--aqua)}
+.g-external .plate{fill:none;stroke:var(--ink-3);stroke-dasharray:5 4}
+.g-test .plate{fill:none;stroke:var(--line)}.g-test .node-label{fill:var(--ink-2)}
+.g-safe .plate{fill:var(--green-bg);stroke:var(--green)}
 .g-unknown{opacity:.55}.g-unknown .plate{fill:none;stroke-dasharray:2 4}
+.f-start .plate{fill:var(--accent-bg);stroke:var(--accent);stroke-width:1.6}
+.f-end .plate{fill:var(--green-bg);stroke:var(--green);stroke-width:1.6}
+.f-decision .plate{fill:var(--amber-bg);stroke:var(--amber);stroke-width:1.6}.f-decision .node-label{font-weight:600}
 .edge{fill:none;stroke-width:1.3}.edge.dim{stroke:var(--edge)}
 .edge.up{stroke:var(--accent);stroke-width:2}.edge.down{stroke:var(--down);stroke-width:2}
-.edge.warm{stroke:rgba(236,138,79,.45)}.edge.back{stroke-dasharray:6 5}
-.head-dim{fill:rgba(179,186,198,.5)}.head-up{fill:var(--accent)}.head-down{fill:var(--down)}
-.head-warm{fill:rgba(236,138,79,.65)}
-.edge-label{font-size:11.5px;fill:var(--ink-2);paint-order:stroke;stroke:#171b22;stroke-width:5px;stroke-linejoin:round}
+.edge.warm{stroke:rgba(108,180,255,.45)}.edge.back{stroke-dasharray:6 5}
+.head-dim{fill:rgba(247,240,227,.45)}.head-up{fill:var(--accent)}.head-down{fill:var(--down)}
+.head-warm{fill:rgba(108,180,255,.65)}
+.edge-label{font-size:11.5px;fill:var(--ink-2);paint-order:stroke;stroke:#1d160c;stroke-width:5px;stroke-linejoin:round}
 .edge-label.up{fill:var(--accent-2)}.edge-label.down,.edge-label.warm{fill:var(--down)}
-.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:12px;font:400 12px/1.4 var(--mono);color:var(--ink-3)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:14px;font:400 12px/1.4 var(--mono);color:var(--ink-3)}
 .legend-item{display:inline-flex;align-items:center;gap:7px}
-.swatch{display:inline-block;width:14px;height:10px;border-radius:2px;border:1.5px solid var(--node-line);
-background:var(--node)}
-.swatch.g-entry{border-color:var(--accent)}.swatch.g-boundary{background:var(--accent-bg);border-color:var(--accent)}
-.swatch.g-changed{background:var(--accent-bg-2);border-color:var(--accent-2)}
-.swatch.g-affected{background:var(--down-bg);border-color:var(--down)}
-.swatch.g-data{background:var(--aqua-bg);border-color:var(--aqua)}
-.swatch.g-external{border-style:dashed;border-color:var(--ink-3);background:none}
-.swatch.g-test{background:none;border-color:var(--line)}
-.swatch.g-safe{background:var(--green-bg);border-color:var(--green)}
-.swatch.g-unknown{border-style:dotted;opacity:.6}
-details.graph-list{margin-top:12px}
-details.graph-list summary{cursor:pointer;font:600 11.5px/1.4 var(--mono);letter-spacing:.06em;
+.swatch{display:inline-block;width:16px;height:11px;clip-path:var(--hex);background:var(--node-line)}
+.swatch::after{content:'';display:block;width:12px;height:7px;margin:2px;clip-path:var(--hex);background:var(--node)}
+.swatch.g-entry{background:var(--accent)}.swatch.g-boundary{background:var(--accent)}
+.swatch.g-boundary::after{background:#3f3416}
+.swatch.g-changed{background:var(--accent-2)}.swatch.g-changed::after{background:#574419}
+.swatch.g-affected{background:var(--down)}.swatch.g-affected::after{background:#243447}
+.swatch.g-data{background:var(--aqua)}.swatch.g-data::after{background:#1f352e}
+.swatch.g-external{background:var(--ink-3)}
+.swatch.g-test{background:var(--line)}
+.swatch.g-safe{background:var(--green)}.swatch.g-safe::after{background:#28392b}
+.swatch.g-unknown{opacity:.6}
+.swatch.f-start{background:var(--accent)}.swatch.f-start::after{background:#3f3416}
+.swatch.f-end{background:var(--green)}.swatch.f-end::after{background:#28392b}
+.swatch.f-decision{background:var(--amber)}.swatch.f-decision::after{background:#4a2e14}
+.swatch.f-step{background:var(--node-line)}
+details.graph-list{margin-top:14px}
+details.graph-list summary{cursor:pointer;font:600 12px/1.4 var(--mono);letter-spacing:.1em;
 text-transform:uppercase;color:var(--ink-3)}
 details.graph-list .table-wrap{margin-top:12px}
-footer{margin-top:72px;padding-top:14px;border-top:1px solid var(--line);font:400 12px/1.7 var(--mono);
+footer{margin-top:80px;padding-top:16px;border-top:1px solid var(--line);font:400 12px/1.7 var(--mono);
 color:var(--ink-3)}
-@media (max-width:760px){main{padding:28px 16px 56px}body{font-size:15px}
-.facts{grid-template-columns:1fr 1fr}
-section{margin-top:44px}td{font-size:14px}dl.kv{grid-template-columns:1fr}dl.kv dt{border-bottom:0;padding-bottom:0}
-.verdict{padding:16px}.finding{padding:14px}ol.steps li{padding-left:40px}
+@media (max-width:760px){main{padding:32px 16px 56px}body{font-size:16px}
+.facts{grid-template-columns:1fr 1fr}.fact{padding:16px 16px 16px 0}.fact.mid{padding-left:16px}
+section{margin-top:48px}td{font-size:15px}dl.kv{grid-template-columns:1fr}dl.kv dt{border-bottom:0;padding-bottom:0}
+.verdict{padding:24px 18px 18px}.finding{padding:18px 16px 16px}ol.steps li{padding-left:42px}
 .legend .hint{margin-left:0;width:100%}}
 """
+CSS = CSS.replace("HONEYCOMB", _honeycomb())
 
 # Series and heat colours follow the dataviz method for the dark panel: the six series pass its lightness, chroma,
-# colour-blindness and 3:1 contrast checks against #171b22, the heat steps are one blue from dark to light, and the
-# cell text clears 4.5:1 on every step. Marks are thin, axis lines recessive, and text uses text tokens.
+# colour-blindness and 3:1 contrast checks against #1a140b (honey first, then blue, teal, coral, violet, olive), the
+# heat steps are one honey from dark to light, and the cell text clears 4.5:1 on every step. Marks are thin, axis
+# lines recessive, and text uses text tokens.
 CSS += """
-:root{--cs0:#3987e5;--cs1:#d95926;--cs2:#199e70;--cs3:#c98500;--cs4:#d55181;--cs5:#008300}
-figure.chart{padding:16px 16px 10px;margin-top:12px;overflow-x:auto}
+:root{--cs0:#bf8714;--cs1:#3f8ae0;--cs2:#1fa087;--cs3:#e35f55;--cs4:#9270e6;--cs5:#76a526}
+figure.chart{padding:18px 18px 12px;margin-top:14px;overflow-x:auto}
 svg.chart-svg{display:block;width:100%;min-width:640px;max-width:1040px;height:auto;font-family:var(--mono)}
 .chart-svg text{fill:var(--ink-2);font-size:12.5px}.chart-svg .tick,.chart-svg .axis-title{fill:var(--ink-3)}
 .chart-svg .cat{fill:var(--ink)}.chart-svg .val{fill:var(--ink-2);font-size:12.5px;font-variant-numeric:tabular-nums}
@@ -3036,24 +3158,24 @@ svg.chart-svg{display:block;width:100%;min-width:640px;max-width:1040px;height:a
 .chart-svg .bar.cs0,.chart-svg .dot.cs0{fill:var(--cs0)}.chart-svg .bar.cs1,.chart-svg .dot.cs1{fill:var(--cs1)}
 .chart-svg .bar.cs2,.chart-svg .dot.cs2{fill:var(--cs2)}.chart-svg .bar.cs3,.chart-svg .dot.cs3{fill:var(--cs3)}
 .chart-svg .bar.cs4,.chart-svg .dot.cs4{fill:var(--cs4)}.chart-svg .bar.cs5,.chart-svg .dot.cs5{fill:var(--cs5)}
-.chart-svg .dot{stroke:#171b22;stroke-width:2;paint-order:stroke}
+.chart-svg .dot{stroke:#1b150c;stroke-width:2;paint-order:stroke}
 .chart-svg .line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 .chart-svg .line.cs0{stroke:var(--cs0)}.chart-svg .line.cs1{stroke:var(--cs1)}.chart-svg .line.cs2{stroke:var(--cs2)}
 .chart-svg .line.cs3{stroke:var(--cs3)}.chart-svg .line.cs4{stroke:var(--cs4)}.chart-svg .line.cs5{stroke:var(--cs5)}
 .chart-svg .hit{fill:transparent}.chart-svg .mark:hover .bar,.chart-svg .mark:hover .dot{filter:brightness(1.2)}
-.chart-svg .wf-up{fill:var(--cs0)}.chart-svg .wf-down{fill:var(--cs1)}.chart-svg .wf-total{fill:#6b7484}
+.chart-svg .wf-up{fill:var(--cs0)}.chart-svg .wf-down{fill:var(--cs1)}.chart-svg .wf-total{fill:#7a6a4e}
 .chart-svg .heat-val{fill:var(--ink);font-size:12px;font-variant-numeric:tabular-nums}
-.chart-svg .heat-val.on-light{fill:#111419}
+.chart-svg .heat-val.on-light{fill:#120e08}
 .chart-svg .heat-empty{fill:none;stroke:var(--line-2);stroke-dasharray:3 3}
-.h0{fill:#104281}.h1{fill:#1a559f}.h2{fill:#2161b3}.h3{fill:#4a8ce0}.h4{fill:#86b6ef}.h5{fill:#b7d3f6}
-.swatch.sw-cs0{background:var(--cs0);border-color:var(--cs0)}.swatch.sw-cs1{background:var(--cs1);border-color:var(--cs1)}
-.swatch.sw-cs2{background:var(--cs2);border-color:var(--cs2)}.swatch.sw-cs3{background:var(--cs3);border-color:var(--cs3)}
-.swatch.sw-cs4{background:var(--cs4);border-color:var(--cs4)}.swatch.sw-cs5{background:var(--cs5);border-color:var(--cs5)}
-.swatch.sw-up{background:var(--cs0);border-color:var(--cs0)}.swatch.sw-down{background:var(--cs1);border-color:var(--cs1)}
-.swatch.sw-total{background:#6b7484;border-color:#6b7484}
-.chart-caption{margin-top:8px;font-size:14.5px;color:var(--ink-2)}
+.h0{fill:#4a3306}.h1{fill:#6b4a08}.h2{fill:#8f640c}.h3{fill:#b8841a}.h4{fill:#dba82e}.h5{fill:#f5cf6a}
+.swatch.sw-cs0,.swatch.sw-cs0::after{background:var(--cs0)}.swatch.sw-cs1,.swatch.sw-cs1::after{background:var(--cs1)}
+.swatch.sw-cs2,.swatch.sw-cs2::after{background:var(--cs2)}.swatch.sw-cs3,.swatch.sw-cs3::after{background:var(--cs3)}
+.swatch.sw-cs4,.swatch.sw-cs4::after{background:var(--cs4)}.swatch.sw-cs5,.swatch.sw-cs5::after{background:var(--cs5)}
+.swatch.sw-up,.swatch.sw-up::after{background:var(--cs0)}.swatch.sw-down,.swatch.sw-down::after{background:var(--cs1)}
+.swatch.sw-total,.swatch.sw-total::after{background:#7a6a4e}
+.chart-caption{margin-top:10px;font-size:15px;color:var(--ink-2)}
 .chart-data{margin-top:12px}.chart-data th{font-size:11px;padding-bottom:6px}
-.chart-data td{font-size:14px;padding-top:6px;padding-bottom:6px}
+.chart-data td{font-size:14.5px;padding-top:6px;padding-bottom:6px}
 """
 
 CSS += """
@@ -3064,23 +3186,21 @@ CSS += """
 .graph.tracing .edge.on-down{stroke:var(--down);stroke-width:2.2;opacity:1}
 .graph.tracing .edge-label.on-up{fill:var(--accent-2)}.graph.tracing .edge-label.on-down{fill:var(--down)}
 .graph.tracing .node.on-up .plate{stroke:var(--accent);stroke-width:1.8;fill:var(--accent-bg)}
-.graph.tracing .node.on-up .bar{fill:var(--accent)}
 .graph.tracing .node.on-down .plate{stroke:var(--down);stroke-width:1.8;fill:var(--down-bg)}
-.graph.tracing .node.on-down .bar{fill:var(--down)}
 .graph.tracing .node.sel .plate{fill:var(--accent-bg-2);stroke:var(--accent-2);stroke-width:2.4}
-.graph.tracing .node.sel .bar{fill:var(--accent-2)}.graph.tracing .node.sel .node-label{font-weight:600}
+.graph.tracing .node.sel .node-label{font-weight:700}
 .legend .hint{margin-left:auto;color:var(--ink-3)}
 .filter{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-bottom:12px}
-.filter input{width:min(360px,100%);padding:7px 11px;background:var(--surface-2);border:1px solid var(--line);
-border-radius:6px;color:var(--ink);font:400 14px var(--mono)}
+.filter input{width:min(360px,100%);padding:8px 12px;background:var(--surface-2);border:1px solid var(--line);
+border-radius:8px;color:var(--ink);font:400 14px var(--mono)}
 .filter input::placeholder{color:var(--ink-3)}.filter input:focus{outline:none;border-color:var(--accent)}
 .filter .count{font:400 12px var(--mono);color:var(--ink-3)}
 figure.code .copy{position:absolute;right:12px;top:10px;background:var(--surface-2);border:1px solid var(--line);
-border-radius:5px;padding:3px 10px;font:600 11px/1.4 var(--mono);letter-spacing:.06em;text-transform:uppercase;
+border-radius:6px;padding:4px 10px;font:700 10.5px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;
 color:var(--ink-3);cursor:pointer}
-figure.code .copy:hover{color:var(--ink);border-color:var(--ink-3)}
+figure.code .copy:hover{color:var(--ink);border-color:var(--accent)}
 figure.code .copy.done{color:var(--green);border-color:var(--green)}
-figure.code:not(.labelled){margin-top:12px;padding-top:40px}
+figure.code:not(.labelled){margin-top:14px;padding-top:40px}
 """
 
 # The decision table and the architecture block. Without the script the architecture still reads: every
@@ -3089,13 +3209,14 @@ figure.code:not(.labelled){margin-top:12px;padding-top:40px}
 CSS += """
 .dec-wrap{overflow-x:auto}
 table.dec th[scope=row]{font:inherit;letter-spacing:0;text-transform:none;white-space:normal;color:var(--ink);
-padding:11px 16px 11px 12px;border-bottom:1px solid var(--line-2);vertical-align:top;min-width:200px}
+padding:12px 16px 12px 12px;border-bottom:1px solid var(--line-2);vertical-align:top;min-width:200px}
 table.dec thead th:first-child{padding-left:12px}
-table.dec td{vertical-align:top;font-size:14.5px;line-height:1.5;min-width:118px}
-.dec .opt{font-size:16px;font-weight:600}
-.dec .why{margin-top:4px;font-size:14px;line-height:1.45;color:var(--ink-2)}
-.dec .mark{display:inline-block;margin-right:6px;padding:3px 5px;border-radius:3px;font:600 10px/1 var(--mono);
-letter-spacing:.06em;text-transform:uppercase;vertical-align:1px}
+table.dec td{vertical-align:top;font-size:15px;line-height:1.5;min-width:118px}
+.dec .opt{font-size:17px;font-weight:700}
+.dec .why{margin-top:4px;font-size:14.5px;line-height:1.45;color:var(--ink-2)}
+.dec .mark{display:inline-block;margin-right:6px;padding:3px 7px;clip-path:polygon(5px 0,calc(100% - 5px) 0,100% 50%,
+calc(100% - 5px) 100%,5px 100%,0 50%);font:700 10px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;
+vertical-align:1px}
 .dec .r-pass .mark{color:var(--green);background:var(--green-bg)}
 .dec .r-weak .mark{color:var(--amber);background:var(--amber-bg)}
 .dec .r-fail .mark{color:var(--red);background:var(--red-bg)}
@@ -3104,51 +3225,49 @@ letter-spacing:.06em;text-transform:uppercase;vertical-align:1px}
 .dec tr.o-eliminated td:not(.st),.dec tr.o-eliminated .opt{opacity:.5}
 .dec td.st{white-space:nowrap}
 .dec .by{margin-top:6px;font:400 12.5px/1.4 var(--mono);color:var(--red);white-space:normal}
-.chip.st-chosen{color:var(--accent-2);background:var(--accent-bg-2)}
+.chip.st-chosen{color:var(--ground);background:var(--accent)}
 .chip.st-viable{color:var(--green);background:var(--green-bg)}
 .chip.st-eliminated{color:var(--red);background:var(--red-bg)}
 .arch-controls{display:none;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-bottom:12px}
 .js .arch-controls{display:flex}
-.arch-controls button{background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);border-radius:6px;
-padding:7px 11px;font:600 11.5px/1 var(--mono);letter-spacing:.04em;text-transform:uppercase;cursor:pointer}
-.arch-controls button:hover{color:var(--ink);border-color:var(--ink-3)}
+.arch-controls button{background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);border-radius:7px;
+padding:8px 12px;font:700 11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.arch-controls button:hover{color:var(--ink);border-color:var(--accent)}
 .arch-controls button:disabled{opacity:.35;cursor:default}
 .arch-controls .seg{display:inline-flex;flex-wrap:wrap}
 .arch-controls .seg button{border-radius:0;margin-left:-1px}
-.arch-controls .seg button:first-child{border-radius:6px 0 0 6px;margin-left:0}
-.arch-controls .seg button:last-child{border-radius:0 6px 6px 0}
-.arch-controls .seg button:only-child{border-radius:6px}
+.arch-controls .seg button:first-child{border-radius:7px 0 0 7px;margin-left:0}
+.arch-controls .seg button:last-child{border-radius:0 7px 7px 0}
+.arch-controls .seg button:only-child{border-radius:7px}
 .arch-controls .seg button[hidden]{display:none}
-.arch-controls button[aria-pressed=true]{background:var(--accent-bg-2);color:var(--ink);border-color:var(--accent)}
-.arch-controls .arch-trust[aria-pressed=true]{background:var(--red-bg);color:var(--red);border-color:var(--red)}
+.arch-controls button[aria-pressed=true]{background:var(--accent);color:var(--ground);border-color:var(--accent)}
+.arch-controls .arch-trust[aria-pressed=true]{background:var(--red);color:var(--ground);border-color:var(--red)}
 .stepper{display:inline-flex;align-items:center;gap:6px}
 .stepper .count{margin-left:6px;font:400 12px var(--mono);color:var(--ink-3)}
-.arch-vlabel{padding:12px 16px 0;font:600 11.5px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;
+.arch-vlabel{padding:14px 18px 0;font:600 12px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;
 color:var(--accent-2)}
 .js .arch-vlabel,.js svg.arch-svg:not(.on){display:none}
 .arch-stage{width:min(1820px,calc(100vw - 48px));margin-left:calc(50% - min(910px,50vw - 24px));overflow-x:auto;
-border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+border:1px solid var(--plate-border);border-radius:12px;background:var(--plate)}
 svg.arch-svg{display:block;height:auto;font-family:var(--mono)}
 svg.arch-svg.nested{margin:0 auto}
-.zone-bg{fill:rgba(255,255,255,.018);stroke:var(--line);stroke-width:1}
-.zone-label{font-size:11px;font-weight:600;letter-spacing:.08em;fill:var(--ink-3)}
+.zone-bg{fill:rgba(242,182,50,.03);stroke:var(--line);stroke-width:1}
+.zone-label{font-size:11px;font-weight:600;letter-spacing:.1em;fill:var(--ink-3)}
 .comp{cursor:pointer;outline:none;transition:opacity .18s}
 .comp .plate{fill:var(--node);stroke:var(--node-line);stroke-width:1.1}
-.comp .bar{fill:var(--node-bar)}
-.comp .ck{font-size:10px;font-weight:600;letter-spacing:.08em;fill:var(--ink-3)}
-.comp .cl{font-family:var(--sans);font-size:15px;font-weight:600;fill:var(--ink)}
+.comp .ck{font-size:10px;font-weight:600;letter-spacing:.1em;fill:var(--ink-3)}
+.comp .cl{font-family:var(--sans);font-size:15.5px;font-weight:700;fill:var(--ink)}
 .comp .ct{font-size:11.5px;fill:var(--accent-2)}
 .comp:focus-visible .plate{stroke:var(--ink);stroke-width:2.2}
-.k-user .plate,.k-channel .plate{stroke:var(--user)}.k-user .bar,.k-channel .bar{fill:var(--user)}
-.k-model .plate{fill:var(--accent-bg);stroke:var(--accent)}.k-model .bar{fill:var(--accent)}
+.k-user .plate,.k-channel .plate{stroke:var(--user)}
+.k-model .plate{fill:var(--accent-bg);stroke:var(--accent)}
 .k-retrieval .plate,.k-store .plate{fill:var(--aqua-bg);stroke:var(--aqua)}
-.k-retrieval .bar,.k-store .bar{fill:var(--aqua)}
-.k-tool .plate{stroke:var(--magenta)}.k-tool .bar{fill:var(--magenta)}
-.k-system .plate{fill:none;stroke:var(--ink-3);stroke-dasharray:5 4}.k-system .bar{fill:var(--ink-3)}
-.k-human .plate{fill:var(--green-bg);stroke:var(--green)}.k-human .bar{fill:var(--green)}
-.k-guard .plate{stroke:var(--green)}.k-guard .bar{fill:var(--green)}
-.k-ops .plate{fill:none;stroke:var(--line)}.k-ops .cl{fill:var(--ink-2)}.k-ops .bar{fill:var(--ink-3)}
-.comp.open-box .plate{fill:rgba(255,255,255,.015);stroke:var(--node-line);stroke-width:1.1;stroke-dasharray:7 5}
+.k-tool .plate{stroke:var(--magenta)}
+.k-system .plate{fill:none;stroke:var(--ink-3);stroke-dasharray:5 4}
+.k-human .plate{fill:var(--green-bg);stroke:var(--green)}
+.k-guard .plate{stroke:var(--green)}
+.k-ops .plate{fill:none;stroke:var(--line)}.k-ops .cl{fill:var(--ink-2)}
+.comp.open-box .plate{fill:rgba(242,182,50,.025);stroke:var(--node-line);stroke-width:1.1;stroke-dasharray:7 5}
 .comp.se .plate{stroke:var(--down);stroke-width:1.8}
 .comp.vonly .plate{stroke-dasharray:4 3}
 .comp.f-warn .plate{stroke:var(--amber);stroke-width:2.2}.comp.f-bad .plate{stroke:var(--red);stroke-width:2.3}
@@ -3156,9 +3275,9 @@ svg.arch-svg.nested{margin:0 auto}
 .link{fill:none;stroke:var(--edge);stroke-width:1.4;marker-end:url(#arch-arrow-base);transition:opacity .18s}
 .link.untrusted{stroke:var(--red);stroke-dasharray:6 5;marker-end:url(#arch-arrow-red)}
 .link.f-warn{stroke:var(--amber)}.link.f-bad{stroke:var(--red)}
-.ah-base{fill:rgba(179,186,198,.6)}.ah-red{fill:var(--red)}.ah-in{fill:var(--accent)}.ah-out{fill:var(--down)}
-.ah-hot{fill:var(--amber)}
-.link-label{font-size:11px;fill:var(--ink-2);paint-order:stroke;stroke:#171b22;stroke-width:5px;stroke-linejoin:round;
+.ah-base{fill:rgba(247,240,227,.55)}.ah-red{fill:var(--red)}.ah-in{fill:var(--accent)}.ah-out{fill:var(--down)}
+.ah-hot{fill:var(--accent-2)}
+.link-label{font-size:11px;fill:var(--ink-2);paint-order:stroke;stroke:#1d160c;stroke-width:5px;stroke-linejoin:round;
 transition:opacity .18s}
 .link-label.untrusted{fill:var(--red)}
 .arch .comp.gone{opacity:.07;pointer-events:none}.arch .link.gone,.arch .link-label.gone{display:none}
@@ -3168,107 +3287,108 @@ transition:opacity .18s}
 .comp.sel .plate{fill:var(--accent-bg-2);stroke:var(--accent-2);stroke-width:2.3}
 .link.in{stroke:var(--accent);stroke-width:2.2;marker-end:url(#arch-arrow-in)}
 .link.out{stroke:var(--down);stroke-width:2.2;marker-end:url(#arch-arrow-out)}
-.link-label.in{fill:var(--accent-2)}.link-label.out{fill:var(--down)}.link-label.hot{fill:var(--amber)}
-.link.hot{stroke:var(--amber);stroke-width:2.8;stroke-dasharray:8 6;marker-end:url(#arch-arrow-hot);
+.link-label.in{fill:var(--accent-2)}.link-label.out{fill:var(--down)}.link-label.hot{fill:var(--accent-2)}
+.link.hot{stroke:var(--accent-2);stroke-width:2.8;stroke-dasharray:8 6;marker-end:url(#arch-arrow-hot);
 animation:arch-dash 1s linear infinite}
-.link.done{stroke:rgba(227,179,65,.45);stroke-width:2;stroke-dasharray:none}
-.comp.hot .plate{fill:var(--amber-bg);stroke:var(--amber);stroke-width:2.3}
+.link.done{stroke:rgba(255,209,102,.45);stroke-width:2;stroke-dasharray:none}
+.comp.hot .plate{fill:var(--accent-bg-2);stroke:var(--accent-2);stroke-width:2.3}
 @keyframes arch-dash{to{stroke-dashoffset:-28}}
 @media (prefers-reduced-motion:reduce){.link.hot{animation:none}}
 .arch.trust .comp:not(.taint):not(.gone){opacity:.32}
-.arch.trust .comp.taint .plate{stroke:rgba(240,112,112,.75)}
+.arch.trust .comp.taint .plate{stroke:rgba(255,123,110,.75)}
 .arch.trust .comp.risk .plate{fill:var(--red-bg);stroke:var(--red);stroke-width:2.6}
 .arch.trust .link:not(.path):not(.untrusted),.arch.trust .link-label:not(.untrusted){opacity:.14}
 .arch.trust .link.path{stroke:var(--red);stroke-width:2.3;opacity:1;marker-end:url(#arch-arrow-red)}
-.arch-controls .arch-reach[aria-pressed=true]{background:var(--down-bg);color:var(--down);border-color:var(--down)}
+.arch-controls .arch-reach[aria-pressed=true]{background:var(--down);color:var(--ground);border-color:var(--down)}
 .arch.reach .comp:not(.rch):not(.gone){opacity:.32}
-.arch.reach .comp.rch .plate{stroke:rgba(236,138,79,.75)}
+.arch.reach .comp.rch .plate{stroke:rgba(108,180,255,.75)}
 .arch.reach .comp.rhit .plate{fill:var(--down-bg);stroke:var(--down);stroke-width:2.6}
 .arch.reach .link:not(.rpath),.arch.reach .link-label:not(.rpath){opacity:.14}
 .arch.reach .link.rpath{stroke:var(--down);stroke-width:2.3;opacity:1;marker-end:url(#arch-arrow-out)}
 svg.model-svg{display:block;height:auto;margin:0 auto;font-family:var(--mono)}
 .tbl{cursor:pointer;outline:none;transition:opacity .18s}
 .tbl .plate{fill:var(--node);stroke:var(--node-line);stroke-width:1.1}
-.tbl .bar{fill:var(--node-bar)}
-.tbl .ck{font-size:10px;font-weight:600;letter-spacing:.08em;fill:var(--ink-3)}
-.tbl .cl{font-family:var(--sans);font-size:15px;font-weight:600;fill:var(--ink)}
+.tbl .ck{font-size:10px;font-weight:600;letter-spacing:.1em;fill:var(--ink-3)}
+.tbl .cl{font-family:var(--sans);font-size:15.5px;font-weight:700;fill:var(--ink)}
 .tbl .cr{font-size:11.5px;fill:var(--accent-2)}.tbl .cr.none{fill:var(--red)}
 .tbl .cm{font-size:11px;fill:var(--ink-3)}
 .tbl:focus-visible .plate{stroke:var(--ink);stroke-width:2.2}
-.m-fact .plate,.m-hub .plate{fill:var(--accent-bg);stroke:var(--accent)}.m-fact .bar,.m-hub .bar{fill:var(--accent)}
+.m-fact .plate,.m-hub .plate{fill:var(--accent-bg);stroke:var(--accent)}
 .m-dimension .plate,.m-satellite .plate{fill:var(--aqua-bg);stroke:var(--aqua)}
-.m-dimension .bar,.m-satellite .bar{fill:var(--aqua)}
-.m-bridge .plate,.m-link .plate{stroke:var(--magenta)}.m-bridge .bar,.m-link .bar{fill:var(--magenta)}
-.m-staging .plate{fill:none;stroke:var(--line);stroke-dasharray:5 4}.m-staging .bar{fill:var(--ink-3)}
+.m-bridge .plate,.m-link .plate{stroke:var(--magenta)}
+.m-staging .plate{fill:none;stroke:var(--line);stroke-dasharray:5 4}
 .tbl.f-warn .plate{stroke:var(--amber);stroke-width:2.2}.tbl.f-bad .plate{stroke:var(--red);stroke-width:2.3}
 .tbl.f-warn .flag{fill:var(--amber)}.tbl.f-bad .flag{fill:var(--red)}
 .rel{fill:none;stroke:var(--edge);stroke-width:1.4;marker-end:url(#model-arrow-base);transition:opacity .18s}
 .rel.many{stroke:var(--red);stroke-dasharray:6 5}
-.rel-label{font-size:11px;fill:var(--ink-2);paint-order:stroke;stroke:#171b22;stroke-width:5px;stroke-linejoin:round;
+.rel-label{font-size:11px;fill:var(--ink-2);paint-order:stroke;stroke:#1d160c;stroke-width:5px;stroke-linejoin:round;
 transition:opacity .18s}
 .rel-label.many{fill:var(--red)}
-.mh-base{fill:rgba(179,186,198,.6)}.mh-on{fill:var(--down)}
+.mh-base{fill:rgba(247,240,227,.55)}.mh-on{fill:var(--down)}
 .model.focus .tbl:not(.sel):not(.near){opacity:.3}
 .model.focus .rel:not(.on),.model.focus .rel-label:not(.on){opacity:.1}
 .tbl.sel .plate{fill:var(--accent-bg-2);stroke:var(--accent-2);stroke-width:2.3}
 .tbl.near .plate{stroke:var(--down);stroke-width:2}
 .rel.on{stroke:var(--down);stroke-width:2.2;marker-end:url(#model-arrow-on)}.rel-label.on{fill:var(--down)}
 .tbl.out{opacity:.12}.model .rel.fade,.model .rel-label.fade{opacity:.08}
-.swatch.m-fact,.swatch.m-hub{background:var(--accent-bg);border-color:var(--accent)}
-.swatch.m-dimension,.swatch.m-satellite{background:var(--aqua-bg);border-color:var(--aqua)}
-.swatch.m-bridge,.swatch.m-link{border-color:var(--magenta)}
-.swatch.m-staging{background:none;border-style:dashed;border-color:var(--line)}
-.model-card .grain{margin-top:6px;font-size:15px;color:var(--ink-2)}
+.swatch.m-fact,.swatch.m-hub{background:var(--accent)}.swatch.m-fact::after,.swatch.m-hub::after{background:#3f3416}
+.swatch.m-dimension,.swatch.m-satellite{background:var(--aqua)}
+.swatch.m-dimension::after,.swatch.m-satellite::after{background:#1f352e}
+.swatch.m-bridge,.swatch.m-link{background:var(--magenta)}
+.swatch.m-staging{background:var(--line)}
+.model-card .grain{margin-top:6px;font-size:15.5px;color:var(--ink-2)}
 .model-card .table-wrap{margin-top:12px}
 .model-card td.mono{font:400 13.5px/1.5 var(--mono)}
-.arch-caption{display:none;margin-top:10px;padding:10px 14px;border:1px solid rgba(227,179,65,.45);border-radius:6px;
-background:var(--amber-bg);font-size:15px;color:var(--ink)}
+.arch-caption{display:none;margin-top:12px;padding:12px 16px;border:1px solid rgba(255,209,102,.45);border-radius:8px;
+background:var(--accent-bg);font-size:15.5px;color:var(--ink)}
 .js .arch-caption.on{display:block}
-.swatch.k-model{background:var(--accent-bg);border-color:var(--accent)}
-.swatch.k-user,.swatch.k-channel{border-color:var(--user)}
-.swatch.k-retrieval,.swatch.k-store{background:var(--aqua-bg);border-color:var(--aqua)}
-.swatch.k-tool{border-color:var(--magenta)}
-.swatch.k-system{border-style:dashed;border-color:var(--ink-3);background:none}
-.swatch.k-human,.swatch.k-guard{border-color:var(--green)}
-.swatch.k-ops{background:none;border-color:var(--line)}
-.swatch.se{border-color:var(--down);border-width:2px}
-.swatch.vonly{border-style:dashed}
-.swatch.untrusted{height:0;border-width:0;border-top:2px dashed var(--red);border-radius:0;background:none}
-.arch-vnotes{margin-top:12px;display:grid;gap:6px;color:var(--ink-2);font-size:15px}
+.swatch.k-model{background:var(--accent)}.swatch.k-model::after{background:#3f3416}
+.swatch.k-user,.swatch.k-channel{background:var(--user)}
+.swatch.k-retrieval,.swatch.k-store{background:var(--aqua)}
+.swatch.k-retrieval::after,.swatch.k-store::after{background:#1f352e}
+.swatch.k-tool{background:var(--magenta)}
+.swatch.k-system{background:var(--ink-3)}
+.swatch.k-human,.swatch.k-guard{background:var(--green)}.swatch.k-human::after{background:#28392b}
+.swatch.k-ops{background:var(--line)}
+.swatch.se{background:var(--down)}
+.swatch.vonly{opacity:.7}
+.swatch.untrusted{height:0;width:16px;clip-path:none;border-top:2px dashed var(--red);background:none}
+.swatch.untrusted::after{display:none}
+.arch-vnotes{margin-top:14px;display:grid;gap:6px;color:var(--ink-2);font-size:15.5px}
 .js .arch-vnote{display:none}.js .arch-vnote.open{display:block}
-.arch-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;margin-top:20px}
+.arch-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin-top:22px}
 .js .arch-cards{display:block}
-.arch-card{padding:16px 20px}
+.arch-card{padding:18px 22px}
 .js .arch-card{display:none}.js .arch-card.open{display:block}
-.arch-card header{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-.arch-card h4{font-size:17.5px;font-weight:600;line-height:1.35}
+.arch-card header{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.arch-card h4{font-size:19px;font-weight:700;line-height:1.3}
 .arch-card dl.kv{margin-top:10px;grid-template-columns:minmax(110px,200px) 1fr}
-.arch-card dl.kv dd{font-size:15px}
+.arch-card dl.kv dd{font-size:15.5px}
 .arch-card .io{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px 24px;margin-top:12px}
-.arch-card .io ul{list-style:none;display:grid;gap:4px;font-size:14.5px;color:var(--ink-2)}
+.arch-card .io ul{list-style:none;display:grid;gap:4px;font-size:15px;color:var(--ink-2)}
 .arch-card .only,.arch-flow .only,.arch-card .io .only{font:400 12.5px/1.5 var(--mono);color:var(--ink-3)}
 .arch-card .only{margin-top:10px}
 .chip.se{color:var(--down);background:var(--down-bg)}
-.chip.untrusted{color:var(--red);background:var(--red-bg);font-size:9.5px;padding:3px 5px}
+.chip.untrusted{color:var(--red);background:var(--red-bg);font-size:9.5px;padding:4px 9px}
 .arch-hint{display:none;font:400 12px/1.6 var(--mono);color:var(--ink-3)}
 .js .arch-hint{display:block}.js .arch-hint.off{display:none}
 .arch-flows{margin-top:22px;display:grid;gap:18px}
 .js .arch-flows{display:block}
-.arch-flow h4{font:600 12px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);
+.arch-flow h4{font:600 12px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);
 margin-bottom:10px}
 .js .arch-flow{display:none}.js .arch-flow.open{display:block}
-ol.flow-steps{list-style:none;counter-reset:fs;display:grid;gap:4px;max-width:1080px}
-ol.flow-steps li{counter-increment:fs;position:relative;padding:8px 12px 8px 46px;border:1px solid transparent;
-border-radius:6px;color:var(--ink-2);font-size:15px;line-height:1.5}
-ol.flow-steps li::before{content:counter(fs);position:absolute;left:14px;top:9px;font:600 13px var(--mono);
+ol.flow-steps{list-style:none;counter-reset:fs;display:grid;gap:4px;max-width:1100px}
+ol.flow-steps li{counter-increment:fs;position:relative;padding:9px 12px 9px 48px;border:1px solid transparent;
+border-radius:8px;color:var(--ink-2);font-size:15.5px;line-height:1.5}
+ol.flow-steps li::before{content:counter(fs);position:absolute;left:14px;top:10px;font:700 13px var(--mono);
 color:var(--accent-2)}
 ol.flow-steps .who{display:block;font:600 12px/1.5 var(--mono);color:var(--accent-2)}
 .js ol.flow-steps li{cursor:pointer}
-ol.flow-steps li.now{border-color:rgba(227,179,65,.5);background:var(--amber-bg);color:var(--ink)}
-ol.flow-steps li.now .who{color:var(--amber)}
+ol.flow-steps li.now{border-color:rgba(255,209,102,.5);background:var(--accent-bg);color:var(--ink)}
+ol.flow-steps li.now .who{color:var(--accent)}
 ol.flow-steps li.past{opacity:.6}
 .arch-trustlist{margin-top:24px}
-.arch-trustlist>h3{font:600 12px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);
+.arch-trustlist>h3{font:600 12px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);
 margin-bottom:12px}
 @media print{.arch-controls,.arch-hint,.arch-caption{display:none!important}
 .js .arch-vlabel,.js svg.arch-svg{display:block!important}
@@ -3712,7 +3832,7 @@ def _facts(stats: list[Json]) -> str:
 
 # Only a page rendered through --site carries these, so a lone page stays exactly as it was.
 SITE_CSS = """
-header.site{position:sticky;top:0;z-index:30;background:rgba(17,20,25,.92);backdrop-filter:blur(10px);
+header.site{position:sticky;top:0;z-index:30;background:rgba(18,14,8,.9);backdrop-filter:blur(10px);
 border-bottom:1px solid var(--line)}
 header.site .in{display:flex;align-items:center;gap:28px;max-width:1360px;height:56px;margin:0 auto;padding:0 48px}
 header.site .home{flex:none;max-width:280px;overflow:hidden;font-size:16px;font-weight:600;letter-spacing:-.01em;
@@ -3798,10 +3918,272 @@ def render(page: Json, bar: str = "") -> str:
         + _facts(page.get("stats", []))
         + toc_html
         + "".join(sections)
-        + f"<footer>Written by the {_esc(skill)} skill{date} · numbers from the skill's scripts · "
-        "claims tagged high (checked), med (likely), guess (not checked)</footer>"
-        f"</main><script>{SCRIPT}{SITE_SCRIPT if bar else ''}</script></body></html>\n"
+        + (
+            f"<footer>Written by render_page.py --index · {_esc(meta.get('written', ''))}</footer>"
+            if skill == "index"
+            else f"<footer>Written by the {_esc(skill)} skill{date} · numbers from the skill's scripts · "
+            "claims tagged high (checked), med (likely), guess (not checked)</footer>"
+        )
+        + f"</main><script>{SCRIPT}{SITE_SCRIPT if bar else ''}</script></body></html>\n"
     )
+
+
+# ---------------------------------------------------------------------------- markdown
+
+
+def _plain(value: Json) -> str:
+    """A cell as text, numbers formatted the way the page shows them."""
+    if isinstance(value, float):
+        return f"{value:,.2f}".rstrip("0").rstrip(".")
+    if isinstance(value, int):
+        return f"{value:,}"
+    return value if isinstance(value, str) else ""
+
+
+def _md_cell(value: Json) -> str:
+    return _plain(value).replace("|", "\\|").replace("\n", " ")
+
+
+def _md_table(columns: list[Json], rows: list[list[Json]]) -> str:
+    head = "| " + " | ".join(_md_cell(c) for c in columns) + " |"
+    rule = "|" + "|".join("---" for _ in columns) + "|"
+    body = ["| " + " | ".join(_md_cell(v) for v in row) + " |" for row in rows]
+    return "\n".join([head, rule, *body])
+
+
+def _md_quote(text: str) -> str:
+    return "\n".join(f"> {line}" for line in text.split("\n"))
+
+
+def _md_block(block: Json) -> str:
+    """One block as Markdown. A drawing becomes its table; the page keeps the drawing."""
+    kind = block["type"]
+    out: list[str] = []
+    if block.get("title"):
+        out.append(f"### {block['title']}")
+    if kind == "text":
+        out.append(block["text"])
+    elif kind == "callout":
+        out.append(_md_quote(f"**{TONE_LABEL[block.get('tone', 'info')]}:** {block['text']}"))
+    elif kind == "list":
+        ordered = block.get("ordered", False)
+        out.append("\n".join((f"{i}. " if ordered else "- ") + item for i, item in enumerate(block["items"], 1)))
+    elif kind == "table":
+        out.append(_md_table(block["columns"], block["rows"]))
+    elif kind == "kv":
+        out.append("\n".join(f"- **{_plain(k)}:** {_plain(v)}" for k, v in block["items"]))
+    elif kind == "code":
+        where = f"`{block['where']}`\n\n" if block.get("where") else ""
+        out.append(where + "```\n" + block["code"].rstrip("\n") + "\n```")
+    elif kind == "steps":
+        lines = []
+        for i, item in enumerate(block["items"], 1):
+            line = f"{i}. **{item['title']}**" + (f" — `{item['where']}`" if item.get("where") else "")
+            if item.get("text"):
+                line += "\n   " + item["text"].replace("\n", "\n   ")
+            lines.append(line)
+        out.append("\n".join(lines))
+    elif kind == "findings":
+        order = {s: i for i, s in enumerate(SEVERITIES)}
+        for item in sorted(block["items"], key=lambda f: order[f["severity"]]):
+            status = item.get("status", "open")
+            head = (
+                f"**{item['severity'].upper()}" + (f" · {status}" if status != "open" else "") + f" · {item['title']}**"
+            )
+            if item.get("where"):
+                head += f" — `{item['where']}`"
+            parts = [head]
+            if item.get("evidence"):
+                parts.append(item["evidence"])
+            if item.get("fix"):
+                parts.append(f"*Fix:* {item['fix']}")
+            if item.get("reason"):
+                parts.append(f"*Declined because:* {item['reason']}")
+            out.append("\n\n".join(parts))
+    elif kind in ("graph", "flowchart"):
+        names = {n["id"]: n["label"] for n in block["nodes"]}
+        out.append(f"*{len(block['nodes'])} nodes, {len(block.get('edges', []))} links; the drawing is on the page.*")
+        out.append(
+            _md_table(
+                ["From", "To", "How"],
+                [[names[e["from"]], names[e["to"]], e.get("label", "")] for e in block.get("edges", [])],
+            )
+        )
+    elif kind == "decision":
+        rows = []
+        for opt in block["options"]:
+            status = opt.get("status", "viable")
+            if status == "eliminated" and opt.get("eliminated_by"):
+                status += f" by {opt['eliminated_by']}"
+            label = f"**{opt['label']}**" + (f" {opt['why']}" if opt.get("why") else "")
+            rows.append([label, *[f"{c['rating']}: {c.get('text', '')}" for c in opt["cells"]], status])
+        out.append(_md_table(["Option", *block["factors"], "Status"], rows))
+    elif kind in ("architecture", "nested"):
+        comps = block.get("components") or block.get("boxes") or []
+        zones = {z["id"]: z["label"] for z in block.get("zones", [])}
+        names = {c["id"]: c["label"] for c in comps}
+        rows = [
+            [
+                c["label"],
+                zones.get(c.get("zone", ""), names.get(c.get("parent", ""), "")),
+                KINDS[c.get("kind", "service")],
+                c.get("tech", ""),
+                c.get("note", ""),
+            ]
+            for c in comps
+        ]
+        out.append(f"*The drawing is on the page; {len(comps)} parts, {len(block.get('links', []))} links.*")
+        out.append(_md_table(["Part", "In", "Kind", "Technology", "Note"], rows))
+        for flow in block.get("flows", []):
+            steps = "\n".join(
+                f"{i}. {names.get(s['from'], s['from'])} → {names.get(s['to'], s['to'])}: {s.get('text', '')}"
+                for i, s in enumerate(flow["steps"], 1)
+            )
+            out.append(f"**Flow: {flow['title']}**\n\n{steps}")
+    elif kind == "model":
+        rows = [
+            [
+                t["label"],
+                t.get("kind", "table"),
+                t.get("grain", ""),
+                ", ".join(c["name"] for c in t.get("columns", []) if c.get("key") == "pk"),
+                str(len(t.get("columns", []))),
+                str(sum(1 for c in t.get("columns", []) if c.get("personal"))),
+            ]
+            for t in block["tables"]
+        ]
+        out.append(_md_table(["Table", "Kind", "Grain", "Primary key", "Columns", "Personal"], rows))
+        names = {t["id"]: t["label"] for t in block["tables"]}
+        relations = [
+            [names[r["from"]], names[r["to"]], r.get("on", ""), r.get("cardinality", "n:1")]
+            for r in block.get("relations", [])
+        ]
+        if relations:
+            out.append(_md_table(["From", "To", "On", "Cardinality"], relations))
+    elif kind == "chart":
+        columns, rows = _chart_rows(block)
+        out.append(f"*{block['kind']} chart; the drawing is on the page.*")
+        out.append(_md_table(columns, rows))
+        if block.get("caption"):
+            out.append(block["caption"])
+    return "\n\n".join(out)
+
+
+def render_markdown(page: Json) -> str:
+    """The same page as a Markdown note, for a vault, a wiki or a pull request. Drawings become their tables."""
+    meta = page.get("meta", {})
+    out = [f"# {page['title']}"]
+    if page.get("subtitle"):
+        out.append(page["subtitle"])
+    out.append(" · ".join([f"`{page['skill']}`", *[f"{k} {_plain(v)}" for k, v in meta.items()]]))
+    verdict = page.get("verdict")
+    if verdict:
+        out.append(_md_quote(f"**Verdict ({TONE_LABEL[verdict.get('tone', 'info')]}):** {verdict['text']}"))
+    if page.get("stats"):
+        out.append(
+            _md_table(["", "Value", "Note"], [[s["label"], s["value"], s.get("note", "")] for s in page["stats"]])
+        )
+    for number, section in enumerate(page["sections"], 1):
+        out.append(f"## {number}. {section['title']}")
+        if section.get("intro"):
+            out.append(section["intro"])
+        out.extend(_md_block(b) for b in section.get("blocks", []))
+    date = f" · {meta['date']}" if isinstance(meta.get("date"), str) else ""
+    out.append(
+        f"*Written by the {page['skill']} skill{date} · numbers from the skill's scripts · "
+        "claims tagged high (checked), med (likely), guess (not checked)*"
+    )
+    return "\n\n".join(out) + "\n"
+
+
+# ---------------------------------------------------------------------------- index
+
+
+def index_page(root: Path) -> tuple[Json, list[str]]:
+    """Every page JSON under root as one page: a table per folder, newest first. Also what was left out."""
+    folders: dict[str, list[tuple[str, list[Json]]]] = {}
+    problems: list[str] = []
+    skills: set[str] = set()
+    for source in sorted(root.rglob("*.json")):
+        relative = source.relative_to(root)
+        if source.name == "site.json" or any(part.startswith(".") for part in relative.parts):
+            continue
+        try:
+            data = json.loads(source.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not (isinstance(data, dict) and isinstance(data.get("skill"), str) and "sections" in data):
+            continue
+        errors = validate(data)
+        if errors:
+            problems.append(f"{source}: {len(errors)} problem(s), left out of the index")
+            continue
+        meta = data.get("meta", {})
+        date = (
+            meta["date"]
+            if isinstance(meta.get("date"), str)
+            else datetime.date.fromtimestamp(source.stat().st_mtime).isoformat()
+        )
+        folder = relative.parent.as_posix()
+        folder = "" if folder == "." else folder
+        href = quote(relative.with_suffix(".html").as_posix())
+        title = data["title"].replace("[", "(").replace("]", ")")
+        verdict = data.get("verdict")
+        summary = ""
+        if verdict:
+            text = re.sub(r"[`*]", "", verdict["text"]).replace("\n", " ")
+            summary = f"**{TONE_LABEL[verdict.get('tone', 'info')]}** " + (
+                text[:177] + "…" if len(text) > 180 else text
+            )
+        folders.setdefault(folder, []).append((date, [date, data["skill"], f"[{title}]({href})", summary]))
+        skills.add(data["skill"])
+    sections = []
+    for folder, entries in sorted(folders.items(), key=lambda kv: max(e[0] for e in kv[1]), reverse=True):
+        rows = [row for _, row in sorted(entries, key=lambda e: e[0], reverse=True)]
+        sections.append(
+            {
+                "id": _slug(folder or "root"),
+                "title": folder or "(the folder itself)",
+                "blocks": [{"type": "table", "columns": ["Date", "Skill", "Page", "Verdict"], "rows": rows}],
+            }
+        )
+    count = sum(len(v) for v in folders.values())
+    newest = max((e[0] for v in folders.values() for e in v), default="")
+    page: Json = {
+        "skill": "index",
+        "title": root.name or "Pages",
+        "subtitle": f"Every page under `{root}`, by folder, newest first. Refresh with `render_page.py --index`.",
+        "meta": {"written": datetime.date.today().isoformat()},
+        "stats": [
+            {"label": "Pages", "value": count},
+            {"label": "Folders", "value": len(folders)},
+            {"label": "Skills", "value": len(skills)},
+            {"label": "Newest", "value": newest or "none"},
+        ],
+        "sections": sections or [{"title": "No pages yet", "blocks": [{"type": "text", "text": "Nothing to list."}]}],
+    }
+    return page, problems
+
+
+def render_index(root: Path, *, check: bool = False) -> int:
+    """Write root/index.html, the list of every page under root."""
+    if not root.is_dir():
+        print(f"{root}: not a folder", file=sys.stderr)
+        return 2
+    page, problems = index_page(root.resolve())
+    for problem in problems:
+        print(problem, file=sys.stderr)
+    errors = validate(page)
+    if errors:
+        _print_problems(root, errors)
+        return 1
+    if check:
+        print(f"{root}: {page['stats'][0]['value']} pages")
+        return 0
+    target = root / "index.html"
+    target.write_text(render(page), encoding="utf-8")
+    print(target.resolve())
+    return 0
 
 
 def _print_problems(source: Path, errors: list[str]) -> None:
@@ -3854,16 +4236,20 @@ def render_site(site_path: Path, *, check: bool = False) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Render a skill page from its JSON.")
     parser.add_argument("page", type=Path, nargs="?", help="the page JSON")
-    parser.add_argument("-o", "--output", type=Path, help="where to write the HTML")
+    parser.add_argument("-o", "--output", type=Path, help="where to write the HTML (or the Markdown, with --md)")
+    parser.add_argument("--md", action="store_true", help="write the page as a Markdown note; drawings become tables")
     parser.add_argument("--site", type=Path, help="a site JSON: write all its pages, with a header linking them")
+    parser.add_argument("--index", type=Path, help="a folder of pages: write index.html there, listing every page")
     parser.add_argument("--check", action="store_true", help="validate only, write nothing")
     args = parser.parse_args(argv)
-    if (args.page is None) == (args.site is None):
-        parser.error("give either a page JSON or --site SITE.json")
-    if args.site is not None:
-        if args.output is not None:
-            parser.error("--output is for one page; --site writes each page beside its JSON")
-        return render_site(args.site, check=args.check)
+    if sum(x is not None for x in (args.page, args.site, args.index)) != 1:
+        parser.error("give one of: a page JSON, --site SITE.json, --index FOLDER")
+    if args.site is not None or args.index is not None:
+        if args.output is not None or args.md:
+            parser.error("--output and --md are for one page; --site and --index write where the pages are")
+        if args.site is not None:
+            return render_site(args.site, check=args.check)
+        return render_index(args.index, check=args.check)
     try:
         page = json.loads(args.page.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -3876,9 +4262,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.check:
         print(f"{args.page}: valid")
         return 0
-    output = args.output or args.page.with_suffix(".html")
+    output = args.output or args.page.with_suffix(".md" if args.md else ".html")
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(render(page), encoding="utf-8")
+    output.write_text(render_markdown(page) if args.md else render(page), encoding="utf-8")
     print(output.resolve())
     return 0
 

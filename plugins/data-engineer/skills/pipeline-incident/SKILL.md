@@ -70,7 +70,8 @@ later runs), Root cause (a `findings` block: the cause high, then each contribut
 file:line and the evidence counted), What it was not (table: suspect, why it looked guilty, why it is
 not, numbers), Impact (table: table or job, last good, missed since, consumers), The same weakness
 elsewhere (table: file:line, expression, status), Workaround and two fixes (a `decision` block: the
-workaround and the two fixes against effort, risk, closes the weakness, needs the source), Drafts
+workaround and the two fixes against effort, risk, closes the weakness, needs the source; then a `flowchart` of
+the rerun: the workaround, the check that it took, and where a failed check goes), Drafts
 (the two e-mails and the incident-log entry as `code` blocks), What this trace did not check (list).
 Stats on top: failed runs, rows held back, tables late, days late, places with the same weakness. The
 verdict says in two sentences what broke and why, and what to do first.

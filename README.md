@@ -3,7 +3,7 @@
 Claude Code skills by role. Each skill does one job that keeps coming back, counts with its own
 scripts instead of estimating, and ends in one self-contained web page you can read and share.
 
-Eight packs so far: software engineers, AI solutions architects, data architects, software architects, cloud architects, solutions architects, who join the specialists' work, data analysts and data scientists. The plan for
+Nine packs so far: software engineers, AI solutions architects, data architects, data engineers, software architects, cloud architects, solutions architects, who join the specialists' work, data analysts and data scientists. The plan for
 the next ones is in [docs/plans/architect-packs.md](docs/plans/architect-packs.md).
 
 ## Software engineering
@@ -98,10 +98,10 @@ of the Anthropic `data` plugin stay where they are.
 | [arch-style](plugins/software-architect/skills/arch-style/SKILL.md) | a brief arrives or someone proposes microservices | what shape the system should have (one deployable, modular monolith, serverless, a few services, an event backbone, microservices), decided by elimination, with fitness rules and an ADR draft |
 | [arch-c4](plugins/software-architect/skills/arch-c4/SKILL.md) | a system must be drawn and explained | context, containers and components as boxes inside boxes, with zoom between levels and requests traced hop by hop |
 | [arch-review](plugins/software-architect/skills/arch-review/SKILL.md) | a design document, proposal or set of ADRs must be reviewed before it is approved or built | waiting chains checked against their latency goals, data written by two parts, promises with no mechanism, goals without numbers, dependencies with no failure plan, documents that contradict each other, open decisions; each shown from the documents, with what to decide first |
+| [arch-evolve](plugins/software-architect/skills/arch-evolve/SKILL.md) | a system must move to a new structure | steps that each leave the system working, with how each is verified and undone, and where to stop |
 
 `arch-review` reads documents, not code. The structure of code that exists (cycles, layer breaks, hidden coupling) is
 part of `code-audit`.
-| [arch-evolve](plugins/software-architect/skills/arch-evolve/SKILL.md) | a system must move to a new structure | steps that each leave the system working, with how each is verified and undone, and where to stop |
 
 ## Cloud architect
 
@@ -215,8 +215,11 @@ Each skill does one repeated job, in a fixed set of sections, and ends in a page
   `architecture` block adds a panel per component, flows that play step by step, variants and a
   trust view, with links such as `#flow=order&step=3`; the `decision` block shows options against
   factors with the reason each one fell; the `model` block draws tables with their keys and opens
-  each one's columns, a `reach` view shows how far personal data travels, and the `nested` block
-  draws boxes inside boxes with zoom between levels.
+  each one's columns, a `reach` view shows how far personal data travels, the `nested` block
+  draws boxes inside boxes with zoom between levels, and the `flowchart` block draws a process with
+  branches: start, steps, decisions with their answers, end. `render_page.py --index FOLDER` writes an
+  index of every page under a folder, and `--md` writes the same JSON as a Markdown note for a vault, a
+  wiki or a pull request, each drawing replaced by its table.
 - **Scripts do the counting.** Inventory, import graph, references, stack-trace mapping, coverage
   ranking, dependency lookups, corpus size, the hard rules of the AI pattern and data platform
   ladders, cost at volume, the AI inventory of a repository, data profiles, table lineage from
@@ -227,7 +230,7 @@ Each skill does one repeated job, in a fixed set of sections, and ends in a page
   Cyrillic, with PDFs and a duplicate) and eight planted design flaws. `fixtures/acme-data` is a
   made-up data platform with two briefs, sample data and eight planted problems, and
   `fixtures/acme-logistics` a made-up .NET, TypeScript and Python system with eight structural ones,
-  and `fixtures/acme-cloud` a made-up Azure estate in Terraform and Bicep with eight planted problems and drift, and `fixtures/acme-cloud-aws` a made-up AWS estate in Terraform and CloudFormation with the same, `fixtures/acme-solution` a client brief with the specialist pages written about it and ten planted conflicts between them, and `fixtures/acme-sales` a made-up sales analytics project with planted metric problems, a late day and two systems that disagree. The scripts are tested
+  and `fixtures/acme-cloud` a made-up Azure estate in Terraform and Bicep with eight planted problems and drift, and `fixtures/acme-cloud-aws` a made-up AWS estate in Terraform and CloudFormation with the same, `fixtures/acme-solution` a client brief with the specialist pages written about it and ten planted conflicts between them, and `fixtures/acme-sales` a made-up sales analytics project with planted metric problems, a late day and two systems that disagree, `fixtures/acme-churn` a made-up churn model with its training and scoring data, `fixtures/acme-design` a set of design documents with eight planted flaws and three decoys, `fixtures/acme-index` a made-up indexing service with seven planted bugs and four decoys, and `fixtures/acme-pipeline` a made-up food distributor's data platform with planted problems and decoys for every data-engineer skill. The scripts are tested
   against them, the example pages come from running the skills on them, and each pack's `evals/`
   checks the skills' behaviour.
 
@@ -251,10 +254,12 @@ tests/                              pytest for the scripts, the renderer, the fi
 
 ## The page design
 
-Dark, with neutral grays, one blue accent and flat panels, IBM Plex Sans for text and IBM Plex Mono for labels. In
-graphs, blue marks what leads to a change and orange what it reaches. The CSS lives in `shared/render_page.py`, so
-every skill's page changes with it. The fonts are inlined, include Latin 2 for Serbian, and are under the SIL Open
-Font License ([THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)).
+A hive: a dark amber ground with a faint honeycomb and a warm glow at the top, honey as the one accent, panels with
+a honey edge. Counters, tags and the boxes of every diagram are hexagons, the cells of the comb; a flowchart draws
+its start and end as capsules. Bricolage Grotesque for text and JetBrains Mono for labels, both inlined with Latin
+Extended for Serbian, under the SIL Open Font License ([THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)). In graphs,
+honey marks what leads to a change and sky blue what it reaches; the chart colours pass the dataviz checks against
+the panel. The CSS and the shapes live in `shared/render_page.py`, so every skill's page changes with it.
 
 ## Development
 

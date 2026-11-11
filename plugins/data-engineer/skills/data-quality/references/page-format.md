@@ -14,6 +14,26 @@ prints each problem with its JSON path, so fix the JSON and run it again. Never 
 Outside the repo: `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo name>/<skill>-<YYYY-MM-DD>.json`
 and the `.html` beside it. Keep the JSON: a later run can compare against it. Say the HTML path at the end.
 
+Then refresh the index of that folder, so every page can be found from one place:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" --index "${CLAUDE_PAGES_DIR:-$HOME/claude-pages}"
+```
+
+It writes `index.html` there: every page under the folder, by folder, newest first, with its verdict.
+
+## A note instead of a page
+
+When the result goes into a vault, a wiki or a pull request, render the same JSON as Markdown as well:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --md -o PAGE.md
+```
+
+Text, tables, lists, findings, code and steps come out as Markdown. A graph, flowchart, architecture, model or
+chart comes out as its table, so a page with a drawing still needs the HTML. Write the JSON once; the page and
+the note are two drawings of it.
+
 ## Several pages, one header
 
 When a run writes more than one page (several repositories, several skills on one repo), link them so the
@@ -82,6 +102,7 @@ Each block may have a `title`.
 | `steps` | `items`: [{`title`, `text`, `where`}] for a flow or a timeline |
 | `findings` | `items`: [{`severity`: high, medium, low, info; `title`; `where`; `evidence`; `fix`; `status`: open, accepted, declined, fixed; `reason`}] |
 | `graph` | `nodes`: [{`id`, `label`, `note`, `group`}], `edges`: [{`from`, `to`, `label`}] |
+| `flowchart` | `nodes`: [{`id`, `label`, `note`, `kind`: start, step, decision, end}], `edges`: [{`from`, `to`, `label`}] |
 | `decision` | `factors`: [string], `options`: [{`label`, `status`: chosen, viable, eliminated; `eliminated_by`; `why`; `cells`: [{`rating`: pass, weak, fail; `text`}]}] |
 | `architecture` | `zones`, `components`, `links`, `flows`, `variants`, `reach`, see below |
 | `model` | `areas`, `tables`, `relations`, see below |
@@ -96,6 +117,11 @@ published API, message), `data` (database, file, queue), `external` (outside the
 `changed` (the change itself), `affected` (needs a change), `safe`, `unknown` (not checked).
 The graph is drawn left to right; edges that close a cycle are dashed. Keep it under ~40 nodes:
 group modules rather than draw every function. The page also lists the edges as a table.
+
+A `flowchart` is a process with branches: `start` and `end` are drawn as capsules, a `decision` as a wide
+cell, a `step` (the default) as a plain one. Label the edges out of a decision with the answers (`yes`, `no`,
+`retry`); an edge that goes back to an earlier step is dashed. It is laid out and traced like a graph, and the
+page lists its edges as a table.
 
 ## Decision
 

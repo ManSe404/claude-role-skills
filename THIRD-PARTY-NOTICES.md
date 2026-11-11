@@ -2,10 +2,10 @@
 
 ## Fonts
 
-`shared/fonts/` and every skill's `assets/fonts/` hold IBM Plex Sans and IBM Plex Mono, regular and semibold, in the
-Latin 1 and Latin 2 files that IBM publishes in the `@ibm/plex-sans` 1.1.0 and `@ibm/plex-mono` 2.5.0 packages,
-unchanged. Copyright © 2017 IBM Corp. with Reserved Font Name "Plex", under the SIL Open Font License 1.1. The full
-licence is in `shared/fonts/OFL.txt`.
+`shared/fonts/` and every skill's `assets/fonts/` hold Bricolage Grotesque (Copyright 2022 The Bricolage Grotesque
+Project Authors, https://github.com/ateliertriay/bricolage) and JetBrains Mono (Copyright 2020 The JetBrains Mono
+Project Authors, https://github.com/JetBrains/JetBrainsMono), as variable fonts in their Latin and Latin Extended
+subsets, unchanged, under the SIL Open Font License 1.1. The full licence is in `shared/fonts/OFL.txt`.
 
 ## Ideas behind the ai-architect pack
 

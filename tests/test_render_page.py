@@ -130,10 +130,10 @@ def test_the_page_fetches_nothing() -> None:
 def test_the_design_is_dark_and_the_fonts_are_inlined() -> None:
     css = render.CSS
     assert css.count("{") == css.count("}")
-    assert "color-scheme:dark" in css and "--ground:#111419" in css
+    assert "color-scheme:dark" in css and "--ground:#120e08" in css
     html = render.render(page())
-    assert html.count("src:url(data:font/woff2;base64,") == 8
-    assert "unicode-range:U+0100-0101, U+0104-0130" in html  # Latin 2: č ć đ, and š ž further on
+    assert html.count("src:url(data:font/woff2;base64,") == 4
+    assert "unicode-range:U+0100-02BA" in html  # Latin Extended: č ć đ š ž
 
 
 @pytest.mark.parametrize("skill", ALL_SKILLS, ids=lambda p: p.name)
@@ -402,7 +402,9 @@ def test_model_shows_keys_on_the_box_and_everything_on_the_card() -> None:
     for page_html in (html, flipped):
         xs = {
             m["k"]: float(m["x"])
-            for m in re.finditer(r'data-k="(?P<k>fct|cust)"[^>]*>.*?<rect class="plate" x="(?P<x>[\d.]+)"', page_html)
+            for m in re.finditer(
+                r'data-k="(?P<k>fct|cust)"[^>]*>.*?<path class="plate" data-x="(?P<x>[\d.]+)"', page_html
+            )
         }
         assert xs["fct"] < xs["cust"]
 
@@ -608,8 +610,8 @@ def test_children_sit_inside_their_open_box() -> None:
     rect = {
         m["k"]: tuple(float(m[f]) for f in ("x", "y", "w", "h"))
         for m in re.finditer(
-            r'data-k="(?P<k>[^"]+)"[^>]*><title>[^<]*</title><rect class="plate" x="(?P<x>[\d.]+)" y="(?P<y>[\d.]+)" '
-            r'width="(?P<w>[\d.]+)" height="(?P<h>[\d.]+)"',
+            r'data-k="(?P<k>[^"]+)"[^>]*><title>[^<]*</title><(?:rect|path) class="plate" data-x="(?P<x>[\d.]+)" '
+            r'data-y="(?P<y>[\d.]+)" data-w="(?P<w>[\d.]+)" data-h="(?P<h>[\d.]+)"',
             inside,
         )
     }
@@ -623,7 +625,9 @@ def test_a_store_stands_under_its_writer_not_in_a_column_of_its_own() -> None:
     block = nested_block()
     block["levels"] = [{"id": "containers", "label": "C", "open": ["sys"]}]
     html = render.render(with_blocks(block))
-    rect = dict(re.findall(r'data-k="(api|db)"[^>]*>(?:<title>[^<]*</title>)<rect class="plate" x="([\d.]+)"', html))
+    rect = dict(
+        re.findall(r'data-k="(api|db)"[^>]*>(?:<title>[^<]*</title>)<path class="plate" data-x="([\d.]+)"', html)
+    )
     assert rect["api"] == rect["db"]
 
 

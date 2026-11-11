@@ -60,7 +60,8 @@ known from the report alone and what the logs would add.
 One page. Read [references/page-format.md](references/page-format.md) for the format and
 [references/example.json](references/example.json) for a filled page.
 
-Sections in this order: Timeline (a `steps` block), Severity (table: criterion, fact, level it sets),
+Sections in this order: Timeline (a `steps` block), What to do now (a `flowchart`: the checks in order, each
+decision with its answers, ending in mitigate, roll back or escalate), Severity (table: criterion, fact, level it sets),
 Impact (callout), What changed before the first error (table: when, what, where, read), Error signatures
 (table: signature, count, first, last, component), Mitigation options (table: option, evidence, cost, what
 it does not fix), Status update (code block), Roles and next steps (list). Stats on top: first error,
