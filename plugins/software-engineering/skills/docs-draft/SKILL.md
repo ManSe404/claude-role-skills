@@ -1,6 +1,6 @@
 ---
 name: docs-draft
-description: Drafts a README, runbook, API reference, onboarding guide or architecture document from what the code exposes, every command and name from a fact and the rest tagged, and lists where the existing documents drifted.
+description: Drafts a README, runbook, API reference, onboarding guide, architecture document or a whole docs/ set in one layout, every name from the code and the rest tagged, and lists where existing documents drifted.
 when_to_use: Use when a technical document must be written or brought back in line with the code. Not for mapping an unknown repository (codebase-map) or reviewing a design (arch-review).
 argument-hint: "[repository or folder] [kind of document] [who reads it]"
 hooks:
@@ -19,14 +19,15 @@ the code. It writes the draft into the repository only after the yes. A map of a
 goes to `codebase-map`; a design that is not built yet to `arch-review`; a drawing to `arch-c4`.
 
 Input: a repository or a folder in it, the kind of document (README, runbook, API reference, onboarding,
-architecture) and the audience. Default: the current repository; ask for the kind and the audience when they
+architecture, or the docs set: the whole layout) and the audience. Default: the current repository; ask for the kind and the audience when they
 are missing, because a runbook for the on-call engineer and a README for a new contributor start from
 different sentences.
 
 ## Steps
 
 1. Read [references/doc-kinds.md](references/doc-kinds.md): what each kind of document must answer, in what
-   order, and what it must leave to a person.
+   order, and what it must leave to a person. Read [references/repo-layout.md](references/repo-layout.md): the
+   layout every document has a place in, what each folder answers, and what never goes into a repository.
 2. Facts: `python3 "${CLAUDE_SKILL_DIR}/scripts/docs_facts.py" REPO [--path FOLDER] [--docs FILE ...]`, output
    to your scratchpad. It lists what the code exposes (entry points, commands and flags with their help text,
    routes, configuration names, Makefile and CI targets, scheduled jobs with their schedule and steps from job
@@ -45,7 +46,9 @@ different sentences.
 6. Drift: every item the facts call `undocumented` that the document should cover, and every `stale` line in
    the existing documents, each with where the code says otherwise. The draft fixes the drift it covers.
 7. Write the page JSON, render it, and say where to open it. Offer to write the draft into the repository at
-   the path the user names; write it only after the yes, as one file, and say what it replaced.
+   its place in the layout (or the path the user names); write it only after the yes, and say what it
+   replaced. For a docs set, the draft is one `code` block per file, and existing documents are moved into
+   the layout with `git mv`, their links fixed.
 
 ## Output
 
@@ -72,7 +75,7 @@ the language of the request; Serbian in Latin script.
 ## Writes
 
 - the page and its JSON, outside the repo
-- after the yes: the one document file, at the path the user named
+- after the yes: the agreed files, at their place in the layout or the path the user named
 
 ## Never
 
@@ -80,5 +83,5 @@ the language of the request; Serbian in Latin script.
 - Never documents a secret value, and never opens a `.env` file; a setting is named, with where it is read.
 - Never writes a path that exists only on this machine (`/home/<user>`, `/tmp`, the owner's folder layout): a file
   is relative to the repository root, a place that differs per machine is a placeholder, a setting is named.
-- Never writes into the repository before the yes, and never more than the one file agreed.
+- Never writes into the repository before the yes, and never more files than agreed.
 - Never rewrites a document the user did not ask for; drift in another document is listed, not fixed.

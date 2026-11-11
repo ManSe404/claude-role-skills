@@ -59,6 +59,16 @@ code does not show is tagged [guess] or left to a person.
 5. Qualities: the goals with a number where a document gives one; without a number, left to a person.
 6. Open questions: what the code and the documents cannot answer.
 
+## Docs set: the whole layout of a repository
+
+1. Inventory what exists: every Markdown file, what kind it is, and where it belongs in
+   [repo-layout.md](repo-layout.md); dated status and results are listed for the owner's notes, not moved in.
+2. The index first: `docs/README.md` with the reading order and each document's status and last checked date.
+3. Then only what applies to the repository's size, each part in the order its own kind gives:
+   `product/vision.md`, `architecture/overview.md` with `diagrams/`, `reference/codebase.md`, `guides/setup.md`
+   and `guides/development.md`, `roadmap.md` when plans exist, `adr/` when decisions exist.
+4. The README shrinks to what it is, how to run it, and the link to `docs/README.md`.
+
 ## What every kind leaves to a person
 
 Owners and contacts, policy and its reasons, service levels nobody wrote down, the history of a decision,
