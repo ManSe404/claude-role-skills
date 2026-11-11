@@ -50,7 +50,7 @@ Default: `HEAD~1..HEAD` in the current repository.
 
 ## Output
 
-One page. Read [references/page-format.md](references/page-format.md) for the format and
+One note, with the page beside it. Read [references/page-format.md](references/page-format.md) for the format and
 [references/example.json](references/example.json) for a filled page.
 
 Sections in this order: Findings (a `findings` block, high first), Claims against the diff (table: claim,
@@ -60,8 +60,9 @@ that apply, note), What looks good (list), Verdict (callout). Stats on top: file
 added and removed, high findings, tests touched, tests removed. The verdict says in two sentences whether it
 can be merged and what must change first.
 
-Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both files in
-`${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/change-review-<YYYY-MM-DD>.*`. Write the page in the language
+Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --md -o PAGE.md` for the note, then
+the same command with `-o PAGE.html` for the page, all three files in
+`${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/change-review-<YYYY-MM-DD>.*`. Write the note and the page in the language
 of the request; Serbian pages in Latin script.
 
 ## Reads

@@ -59,7 +59,7 @@ give; without a bug-hunt page, stop at the cause and write out the call to run i
 
 ## Output
 
-One page. Read [references/page-format.md](references/page-format.md) for the format and
+One note, with the page beside it. Read [references/page-format.md](references/page-format.md) for the format and
 [references/example.json](references/example.json) for a filled page.
 
 Sections in this order: Summary (callout), Timeline (a `steps` block, each with its source), Root cause,
@@ -68,7 +68,8 @@ went well and poorly (two lists), Action items (table: action, factor, role, che
 block in Markdown). Stats on top: minutes to detect, to mitigate, to resolve, errors before detection,
 action items. The verdict names the cause in one sentence and the one change that matters most.
 
-Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both files in
+Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --md -o PAGE.md` for the note, then
+the same command with `-o PAGE.html` for the page, all three files in
 `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo or service>/postmortem-<YYYY-MM-DD>.*`. Write the page in the
 language of the request; Serbian pages in Latin script.
 

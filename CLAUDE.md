@@ -39,7 +39,8 @@ four specialist packs), `data-analyst` and `data-scientist` so far. `docs/plans/
   command looks for the guard in the plugin, the project and `~/.claude`, and exits 0 when it is missing: a script
   python cannot open exits 2, and exit 2 blocks the call. `${CLAUDE_SKILL_DIR}` does not expand in hook commands.
 - A page is JSON rendered by `render_page.py`; `references/example.json` is the filled example,
-  produced by running the skill on the fixture and then checked by hand.
+  produced by running the skill on the fixture and then checked by hand. A text-only skill renders the note
+  (`--md`) first and the page beside it; `shared/page-format.md` lists those skills.
 - Nothing real in fixtures and examples: fictional names, `example.*` addresses, no client data.
 
 ## Checks

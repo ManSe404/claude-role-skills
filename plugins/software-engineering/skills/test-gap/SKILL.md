@@ -48,7 +48,7 @@ Input: a repository or a folder in it. Optional: a coverage report.
 
 ## Output
 
-One page. Read [references/page-format.md](references/page-format.md) for the format and
+One note, with the page beside it. Read [references/page-format.md](references/page-format.md) for the format and
 [references/example.json](references/example.json) for a filled page before you write.
 
 Sections in this order: Coverage (what was measured and how), Ranking (table: file, score,
@@ -57,8 +57,9 @@ file (tables: case, input, expected result), First tests (steps). Stats on top: 
 untested files, tests, tests without an assertion, skipped tests. The verdict names the file to
 test first and why.
 
-Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
-files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/test-gap-<YYYY-MM-DD>.*`.
+Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --md -o PAGE.md` for the note, then
+the same command with `-o PAGE.html` for the page, all three files in
+`${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/test-gap-<YYYY-MM-DD>.*`.
 
 ## Reads
 

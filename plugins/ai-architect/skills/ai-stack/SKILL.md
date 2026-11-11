@@ -49,7 +49,7 @@ in the pages folder of this project, if there is one.
 
 ## Output
 
-One page. Read [references/page-format.md](references/page-format.md) for the format and
+One note, with the page beside it. Read [references/page-format.md](references/page-format.md) for the format and
 [references/example.json](references/example.json) for a filled page before you write.
 
 Sections in this order: Constraints (list), Stack (table: layer, chosen, alternatives, why, gives
@@ -59,8 +59,9 @@ number, value, source). Stats on top: monthly total per variant, cost per reques
 path, the date of the price table. The verdict names the recommended variant and whether it fits
 the budget and the latency.
 
-Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
-files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/ai-stack-<YYYY-MM-DD>.*`. Write the
+Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --md -o PAGE.md` for the note, then
+the same command with `-o PAGE.html` for the page, all three files in
+`${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/ai-stack-<YYYY-MM-DD>.*`. Write the note and the
 page in the language of the request; Serbian pages in Latin script.
 
 ## Reads

@@ -62,7 +62,7 @@ latest failing job. Optional: what the users see ("finance has no sales since Mo
 
 ## Output
 
-One page. Read [references/page-format.md](references/page-format.md) for the format and
+One note, with the page beside it. Read [references/page-format.md](references/page-format.md) for the format and
 [references/example.json](references/example.json) for a filled page.
 
 Sections in this order: What happened (a `steps` block: the run task by task with times, then the
@@ -78,8 +78,9 @@ verdict says in two sentences what broke and why, and what to do first.
 
 Fill `facts`: scope, assumptions, and the open questions.
 
-Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
-files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/pipeline-incident-<YYYY-MM-DD>.*`. Write the
+Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --md -o PAGE.md` for the note, then
+the same command with `-o PAGE.html` for the page, all three files in
+`${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/pipeline-incident-<YYYY-MM-DD>.*`. Write the note and the
 page in the language of the request; Serbian pages in Latin script.
 
 ## Reads

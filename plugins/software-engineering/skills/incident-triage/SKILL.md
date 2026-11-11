@@ -57,7 +57,7 @@ known from the report alone and what the logs would add.
 
 ## Output
 
-One page. Read [references/page-format.md](references/page-format.md) for the format and
+One note, with the page beside it. Read [references/page-format.md](references/page-format.md) for the format and
 [references/example.json](references/example.json) for a filled page.
 
 Sections in this order: Timeline (a `steps` block), What to do now (a `flowchart`: the checks in order, each
@@ -68,7 +68,8 @@ it does not fix), Status update (code block), Roles and next steps (list). Stats
 failed runs or error count, minutes since the first error, ids affected (a count), severity. The verdict
 names the severity and the one thing to do first, in two sentences.
 
-Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both files in
+Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --md -o PAGE.md` for the note, then
+the same command with `-o PAGE.html` for the page, all three files in
 `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo or service>/incident-triage-<YYYY-MM-DD>.*`. Write the page
 in the language of the request; Serbian pages in Latin script.
 

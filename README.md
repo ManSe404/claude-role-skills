@@ -1,10 +1,12 @@
 # claude-role-skills
 
 Claude Code skills by role. Each skill does one job that keeps coming back, counts with its own
-scripts instead of estimating, and ends in one self-contained web page you can read and share.
+scripts instead of estimating, and ends in one self-contained web page you can read and share, or, when the
+result is text, in a Markdown note with the page beside it.
 
 Nine packs so far: software engineers, AI solutions architects, data architects, data engineers, software architects, cloud architects, solutions architects, who join the specialists' work, data analysts and data scientists. The plan for
-the next ones is in [docs/plans/architect-packs.md](docs/plans/architect-packs.md).
+the next ones is in [docs/plans/architect-packs.md](docs/plans/architect-packs.md); the step after that, process
+workflows that chain the skills, is planned in [docs/plans/workflows.md](docs/plans/workflows.md).
 
 ## Software engineering
 
@@ -219,7 +221,8 @@ Each skill does one repeated job, in a fixed set of sections, and ends in a page
   draws boxes inside boxes with zoom between levels, and the `flowchart` block draws a process with
   branches: start, steps, decisions with their answers, end. `render_page.py --index FOLDER` writes an
   index of every page under a folder, and `--md` writes the same JSON as a Markdown note for a vault, a
-  wiki or a pull request, each drawing replaced by its table.
+  wiki or a pull request, each drawing replaced by its table; the eleven text-only skills write the note by
+  default.
 - **Scripts do the counting.** Inventory, import graph, references, stack-trace mapping, coverage
   ranking, dependency lookups, corpus size, the hard rules of the AI pattern and data platform
   ladders, cost at volume, the AI inventory of a repository, data profiles, table lineage from

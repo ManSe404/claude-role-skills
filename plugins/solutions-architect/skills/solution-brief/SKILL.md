@@ -42,7 +42,7 @@ Input: a brief (a file or text). Default: ask for the brief.
 
 ## Output
 
-One page. Read [references/page-format.md](references/page-format.md) for the format, including `facts` and its
+One note, with the page beside it. Read [references/page-format.md](references/page-format.md) for the format, including `facts` and its
 optional `budget` and `specialists`, and [references/example.json](references/example.json) for a filled page.
 
 Sections in this order: The brief (kv, with sources), Not negotiable (list), Who runs, in order (table: order,
@@ -51,7 +51,8 @@ facts (list), Next calls (code block, the exact calls in order), Unknown (list: 
 can answer it). Stats on top: specialists needed, specialists not needed, budget, regions. The verdict says who
 runs and why, in two sentences.
 
-Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both files in
+Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --md -o PAGE.md` for the note, then
+the same command with `-o PAGE.html` for the page, all three files in
 `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/solution-brief-<YYYY-MM-DD>.*`, outside the repository. Write
 the page in the language of the request; Serbian pages in Latin script.
 

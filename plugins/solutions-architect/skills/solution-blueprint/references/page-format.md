@@ -24,15 +24,18 @@ It writes `index.html` there: every page under the folder, by folder, newest fir
 
 ## A note instead of a page
 
-When the result goes into a vault, a wiki or a pull request, render the same JSON as Markdown as well:
+Eleven skills end in a note: `bug-hunt`, `change-review`, `dependency-audit`, `docs-draft`, `incident-triage`,
+`postmortem`, `test-gap`, `ai-stack`, `solution-brief`, `source-profile` and `pipeline-incident`. Their result is
+text, tables and findings, which belongs in a vault, a wiki or a pull request as Markdown. They write the same JSON,
+render the note first and the page beside it, and say the note's path at the end:
 
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --md -o PAGE.md
 ```
 
-Text, tables, lists, findings, code and steps come out as Markdown. A graph, flowchart, architecture, model or
-chart comes out as its table, so a page with a drawing still needs the HTML. Write the JSON once; the page and
-the note are two drawings of it.
+Any other skill may add a note the same way when the request asks for one. Text, tables, lists, findings, code and
+steps come out as Markdown; a graph, flowchart, architecture, model or chart comes out as its table, so a page with
+a drawing is still the page. Write the JSON once; the page and the note are two drawings of it.
 
 ## Several pages, one header
 

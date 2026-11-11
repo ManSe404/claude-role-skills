@@ -168,6 +168,7 @@ def test_the_index_lists_every_page_under_the_folder(tmp_path: Path) -> None:
         verdict={"text": "Fine `so` far", "tone": "ok"},
     )
     write_page(tmp_path / "b dir" / "y.json", "Beta page")
+    (tmp_path / "b dir" / "y.md").write_text("# Beta page\n", encoding="utf-8")  # a note, no page beside it
     (tmp_path / "b dir" / "site.json").write_text(
         '{"title": "B", "pages": [{"label": "Y", "page": "y.json"}]}', encoding="utf-8"
     )
@@ -178,7 +179,7 @@ def test_the_index_lists_every_page_under_the_folder(tmp_path: Path) -> None:
     assert render.main(["--index", str(tmp_path)]) == 0
     html = (tmp_path / "index.html").read_text(encoding="utf-8")
     assert '<a href="a/x.html">Alpha page</a>' in html
-    assert '<a href="b%20dir/y.html">Beta page</a>' in html
+    assert '<a href="b%20dir/y.md">Beta page</a>' in html  # the note, since there is no page
     assert "<strong>ok</strong> Fine so far" in html
     assert "other" not in html and "Broken page" not in html
     assert html.index("Beta page") < html.index("Alpha page")  # the undated page is newer: today

@@ -48,7 +48,7 @@ when it started if they are missing.
 
 ## Output
 
-One page. Read [references/page-format.md](references/page-format.md) for the format and
+One note, with the page beside it. Read [references/page-format.md](references/page-format.md) for the format and
 [references/example.json](references/example.json) for a filled page before you write.
 
 Sections in this order: Symptom, Reproduction, The trace (code blocks with the failing line
@@ -57,8 +57,9 @@ hypothesis, for, against, check, result), Root cause, Regression test (code), Sa
 elsewhere (findings), Fix options. Stats on top: first failure, failed runs, the commit that
 caused it, places with the same weakness. The verdict names the root cause in one sentence.
 
-Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
-files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/bug-hunt-<YYYY-MM-DD>.*`.
+Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --md -o PAGE.md` for the note, then
+the same command with `-o PAGE.html` for the page, all three files in
+`${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/bug-hunt-<YYYY-MM-DD>.*`.
 
 ## Reads
 

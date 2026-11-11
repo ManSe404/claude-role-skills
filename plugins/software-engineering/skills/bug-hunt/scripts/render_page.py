@@ -4126,7 +4126,8 @@ def index_page(root: Path) -> tuple[Json, list[str]]:
         )
         folder = relative.parent.as_posix()
         folder = "" if folder == "." else folder
-        href = quote(relative.with_suffix(".html").as_posix())
+        suffix = ".md" if not source.with_suffix(".html").exists() and source.with_suffix(".md").exists() else ".html"
+        href = quote(relative.with_suffix(suffix).as_posix())
         title = data["title"].replace("[", "(").replace("]", ")")
         verdict = data.get("verdict")
         summary = ""
