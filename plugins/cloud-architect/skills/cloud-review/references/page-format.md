@@ -90,6 +90,16 @@ Every text field accepts `` `code` ``, `**bold**`, `[label](https://…)` and th
 `[high]` (checked, can show it), `[med]` (likely) and `[guess]` (not checked). Blank lines split
 paragraphs. Tag every claim the scripts did not count.
 
+## Paths
+
+A page and its note read the same on any machine, so no field holds a path that exists only on the machine
+that ran the skill: no `/home/<user>/…`, `/Users/…`, `C:\Users\…`, `/tmp/…` or scratch folder, and no folder
+layout of the person who ran it. A file in the repository is written relative to its root
+(`src/orders/api.py:42`); a place that differs per machine is a placeholder explained once (`<repo>`,
+`<data-dir>`); a setting is named, not given its local value. A location a tool defines the same way
+everywhere may stay, with `~` or a variable (`~/.claude/`). `meta.repo` is the repository's name, not its
+path. The path of the rendered page is said in the reply, not written into the page.
+
 ## Blocks
 
 Each block may have a `title`.

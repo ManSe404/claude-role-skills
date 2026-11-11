@@ -1,7 +1,7 @@
 {
   "name": "data-architect",
   "description": "Four skills for data architects: data-platform, data-model, data-map and data-review. They decide what a data platform should be and size it, design the model with its grain and keys, map what exists from the code, and review it. Each counts with its own scripts and ends in one self-contained web page.",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "author": {
     "name": "Stefan Seman"
   },

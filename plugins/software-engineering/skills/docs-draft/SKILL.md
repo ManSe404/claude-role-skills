@@ -78,5 +78,7 @@ the language of the request; Serbian in Latin script.
 
 - Never invents a command, a flag, a route, a setting, a default or a number; what the code does not show is [guess].
 - Never documents a secret value, and never opens a `.env` file; a setting is named, with where it is read.
+- Never writes a path that exists only on this machine (`/home/<user>`, `/tmp`, the owner's folder layout): a file
+  is relative to the repository root, a place that differs per machine is a placeholder, a setting is named.
 - Never writes into the repository before the yes, and never more than the one file agreed.
 - Never rewrites a document the user did not ask for; drift in another document is listed, not fixed.
