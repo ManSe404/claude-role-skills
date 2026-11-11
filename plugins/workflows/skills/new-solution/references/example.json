@@ -1,0 +1,213 @@
+{
+  "skill": "new-solution",
+  "title": "acme-solution: new solution",
+  "subtitle": "The new solution chain on acme-solution: each step's page, what it found, what is still open, and whether the chain is done.",
+  "meta": {
+    "project": "acme-solution",
+    "date": "2026-11-11",
+    "pages": "claude-pages/acme-solution"
+  },
+  "verdict": {
+    "text": "The solution does not hold together yet: two parts sit outside the EU and the cost is over budget. Both are decisions for the client, then one rerun of the blueprint and the AI review.",
+    "tone": "bad"
+  },
+  "stats": [
+    {
+      "label": "Steps run",
+      "value": 7,
+      "note": "four specialist areas",
+      "tone": "info"
+    },
+    {
+      "label": "High findings",
+      "value": 3,
+      "note": "all in the blueprint",
+      "tone": "info"
+    },
+    {
+      "label": "Open items",
+      "value": 3,
+      "note": "",
+      "tone": "info"
+    },
+    {
+      "label": "Done",
+      "value": "no",
+      "note": "open high conflicts",
+      "tone": "warn"
+    }
+  ],
+  "sections": [
+    {
+      "id": "the-chain",
+      "title": "The chain",
+      "intro": "Every step ran today; none was reused from an earlier day.",
+      "blocks": [
+        {
+          "type": "steps",
+          "items": [
+            {
+              "title": "solution-brief · 2026-11-11 · ok",
+              "where": "solution-brief-2026-11-11.json",
+              "text": "Four specialists needed: AI, data, software, cloud; budget EUR 6,000 a month; EU only."
+            },
+            {
+              "title": "ai-pattern, ai-stack, ai-architecture · 2026-11-11 · ok",
+              "where": "ai-pattern-2026-11-11.json",
+              "text": "A routed workflow with two models; the stack priced from the table; the architecture with the trust view."
+            },
+            {
+              "title": "data-platform, data-model · 2026-11-11 · ok",
+              "where": "data-platform-2026-11-11.json",
+              "text": "A warehouse on the managed service; the claims star with one fact."
+            },
+            {
+              "title": "arch-style, arch-c4 · 2026-11-11 · ok",
+              "where": "arch-style-2026-11-11.json",
+              "text": "A modular monolith; three levels drawn."
+            },
+            {
+              "title": "cloud-design · 2026-11-11 · watch",
+              "where": "cloud-design-2026-11-11.json",
+              "text": "Containers on the app platform in West Europe; the backup store landed in West US 2."
+            },
+            {
+              "title": "solution-blueprint · 2026-11-11 · risk",
+              "where": "solution-blueprint-2026-11-11.json",
+              "text": "Nine conflicts, seven real: two region breaches, one database named twice, the cost over budget by EUR 1,360."
+            },
+            {
+              "title": "ai-review, data-review, arch-review, cloud-review · 2026-11-11 · watch",
+              "where": "ai-review-2026-11-11.json",
+              "text": "Two review findings: no retention for AI drafts, no single sign-on in any page."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "what-was-found",
+      "title": "What was found",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Step",
+            "Verdict",
+            "High",
+            "Medium",
+            "Low",
+            "Open"
+          ],
+          "rows": [
+            [
+              "solution-brief",
+              "ok",
+              0,
+              0,
+              0,
+              2
+            ],
+            [
+              "ai-pattern, ai-stack, ai-architecture",
+              "ok",
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              "data-platform, data-model",
+              "ok",
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              "arch-style, arch-c4",
+              "ok",
+              0,
+              0,
+              0,
+              1
+            ],
+            [
+              "cloud-design",
+              "watch",
+              0,
+              1,
+              0,
+              0
+            ],
+            [
+              "solution-blueprint",
+              "risk",
+              3,
+              4,
+              0,
+              2
+            ],
+            [
+              "ai-review, data-review, arch-review, cloud-review",
+              "watch",
+              0,
+              2,
+              0,
+              0
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "title": "What is still open",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "solution-blueprint: the backup store in West US 2 and the model endpoint in East US break the EU-only rule (high)",
+            "solution-blueprint: the total of EUR 7,360 is over the EUR 6,000 budget (high)",
+            "ai-review: seven-year retention of AI drafts is in the brief and on no page"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "done",
+      "title": "Done?",
+      "blocks": [
+        {
+          "type": "callout",
+          "tone": "warn",
+          "text": "**Rule:** The chain is done when the blueprint has no open high conflict and no review verdict is bad. **Answer:** no, open high conflicts."
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "title": "Next",
+      "blocks": [
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "Move the backup store and the model endpoint to an EU region, then rerun solution-blueprint.",
+            "Decide what drops to fit the budget: the second node pool or the second model.",
+            "Add retention and single sign-on to the architecture and rerun ai-review."
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "the claims platform brief of Acme Insurance",
+    "open": [
+      "solution-blueprint: the backup store in West US 2 and the model endpoint in East US break the EU-only rule (high)",
+      "solution-blueprint: the total of EUR 7,360 is over the EUR 6,000 budget (high)",
+      "ai-review: seven-year retention of AI drafts is in the brief and on no page"
+    ]
+  }
+}

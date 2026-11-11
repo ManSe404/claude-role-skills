@@ -58,6 +58,12 @@
       "source": "./plugins/data-scientist",
       "description": "Five skills for data scientists: ds-frame, ds-explore, ds-dataset, ds-evaluate and ds-experiment.",
       "version": "0.2.4"
+    },
+    {
+      "name": "workflows",
+      "source": "./plugins/workflows",
+      "description": "Seven process workflows that chain the other packs' skills: take-over, ship-change, incident-run, data-incident, new-solution, platform-month and model-build.",
+      "version": "0.1.0"
     }
   ]
 }

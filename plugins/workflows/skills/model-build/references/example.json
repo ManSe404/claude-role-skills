@@ -1,0 +1,184 @@
+{
+  "skill": "model-build",
+  "title": "acme-churn: model build",
+  "subtitle": "The model build chain on acme-churn: each step's page, what it found, what is still open, and whether the chain is done.",
+  "meta": {
+    "project": "acme-churn",
+    "date": "2026-11-11",
+    "pages": "claude-pages/acme-churn"
+  },
+  "verdict": {
+    "text": "Inconclusive for now: the model beats the baseline on a clean split, but the experiment that decides shipping has not started. Start it as sized and come back in six weeks.",
+    "tone": "warn"
+  },
+  "stats": [
+    {
+      "label": "Steps run",
+      "value": 5,
+      "note": "",
+      "tone": "info"
+    },
+    {
+      "label": "High findings",
+      "value": 2,
+      "note": "leakage, both fixed",
+      "tone": "info"
+    },
+    {
+      "label": "Open items",
+      "value": 2,
+      "note": "",
+      "tone": "info"
+    },
+    {
+      "label": "Done",
+      "value": "yes",
+      "note": "ds-experiment answered inconclusive",
+      "tone": "ok"
+    }
+  ],
+  "sections": [
+    {
+      "id": "the-chain",
+      "title": "The chain",
+      "intro": "Every step ran today; none was reused from an earlier day.",
+      "blocks": [
+        {
+          "type": "steps",
+          "items": [
+            {
+              "title": "ds-frame · 2026-11-11 · ok",
+              "where": "ds-frame-2026-11-11.json",
+              "text": "A model is justified; the baseline is the current score; the acceptance criterion is 20 percent more churners caught at the same list size."
+            },
+            {
+              "title": "ds-explore · 2026-11-11 · watch",
+              "where": "ds-explore-2026-11-11.json",
+              "text": "Churn rate drifts from 4 to 7 percent over the year; two columns look like leakage."
+            },
+            {
+              "title": "ds-dataset · 2026-11-11 · risk",
+              "where": "ds-dataset-2026-11-11.json",
+              "text": "One column is the cancellation date in disguise; 312 customers sit on both sides of the split."
+            },
+            {
+              "title": "ds-evaluate · 2026-11-11 · ok",
+              "where": "ds-evaluate-2026-11-11.json",
+              "text": "After the fix, gbt_v7 beats the baseline by 24 percent at the chosen threshold; the interval clears zero."
+            },
+            {
+              "title": "ds-experiment · 2026-11-11 · ok",
+              "where": "ds-experiment-2026-11-11.json",
+              "text": "The A/B test is sized at 18,000 customers per arm for six weeks; not started."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "what-was-found",
+      "title": "What was found",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Step",
+            "Verdict",
+            "High",
+            "Medium",
+            "Low",
+            "Open"
+          ],
+          "rows": [
+            [
+              "ds-frame",
+              "ok",
+              0,
+              0,
+              0,
+              1
+            ],
+            [
+              "ds-explore",
+              "watch",
+              0,
+              2,
+              0,
+              0
+            ],
+            [
+              "ds-dataset",
+              "risk",
+              2,
+              1,
+              0,
+              0
+            ],
+            [
+              "ds-evaluate",
+              "ok",
+              0,
+              1,
+              0,
+              0
+            ],
+            [
+              "ds-experiment",
+              "ok",
+              0,
+              0,
+              0,
+              1
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "title": "What is still open",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "ds-dataset: the two leakage columns must stay out of the scoring pipeline, not only the training set",
+            "ds-experiment: the test has not started; the decision waits six weeks after it does"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "done",
+      "title": "Done?",
+      "blocks": [
+        {
+          "type": "callout",
+          "tone": "ok",
+          "text": "**Rule:** The chain is done when ds-experiment says ship, do not ship or inconclusive. **Answer:** yes, ds-experiment answered inconclusive."
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "title": "Next",
+      "blocks": [
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "Remove the two leakage columns from the scoring pipeline (ds-dataset).",
+            "Start the A/B test as sized; read it with ds-experiment when it ends."
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "the retention list model of Acme Stream",
+    "open": [
+      "ds-dataset: the two leakage columns must stay out of the scoring pipeline, not only the training set",
+      "ds-experiment: the test has not started; the decision waits six weeks after it does"
+    ]
+  }
+}

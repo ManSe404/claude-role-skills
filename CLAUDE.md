@@ -2,7 +2,8 @@
 
 Claude Code skills by role, one marketplace with one plugin per role: `software-engineering`,
 `ai-architect`, `data-architect`, `data-engineer`, `software-architect`, `cloud-architect`, `solutions-architect` (on top of the
-four specialist packs), `data-analyst` and `data-scientist` so far. `docs/plans/` holds the plans.
+four specialist packs), `data-analyst`, `data-scientist` and `workflows` (process chains over all the others) so far.
+`docs/plans/` holds the plans.
 
 ## Layout
 
@@ -10,7 +11,7 @@ four specialist packs), `data-analyst` and `data-scientist` so far. `docs/plans/
   work on its own, because an installed plugin has nothing outside its own folder.
 - `shared/` is the single source of `render_page.py`, `page-format.md`, `fonts/`,
   `ai_inventory.py`, `data_profile.py`, `sql_inventory.py`, `measure.py`, `model_stats.py`, `guard.py`, `code_graph.py`, `containers.py`,
-  `audit_scan.py`, `incident_timeline.py`,
+  `audit_scan.py`, `incident_timeline.py`, `chain_status.py`,
   `cloud_inventory.py` and `cloud_prices.py`, and of `shared/cloud/`, one file per cloud provider. Edit them
   there, then run `python3 tools/sync_shared.py`; a skill gets a copy when its SKILL.md names the file.
   Never edit the copies under a skill. A cloud provider is `shared/cloud/<provider>.md` and `.json`:

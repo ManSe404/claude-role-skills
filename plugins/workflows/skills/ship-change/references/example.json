@@ -1,0 +1,171 @@
+{
+  "skill": "ship-change",
+  "title": "acme-orders: ship a change",
+  "subtitle": "The ship a change chain on acme-orders: each step's page, what it found, what is still open, and whether the chain is done.",
+  "meta": {
+    "project": "acme-orders",
+    "date": "2026-11-11",
+    "pages": "claude-pages/acme-orders"
+  },
+  "verdict": {
+    "text": "Not mergeable yet: the branch is correct inside the API, but the finance export would sum mixed currencies. One fix and one rerun of change-review stand between this and the merge.",
+    "tone": "warn"
+  },
+  "stats": [
+    {
+      "label": "Steps run",
+      "value": 4,
+      "note": "bug-hunt ran because a test failed",
+      "tone": "info"
+    },
+    {
+      "label": "High findings",
+      "value": 2,
+      "note": "one open, one fixed",
+      "tone": "info"
+    },
+    {
+      "label": "Open items",
+      "value": 2,
+      "note": "",
+      "tone": "info"
+    },
+    {
+      "label": "Done",
+      "value": "no",
+      "note": "change-review is not ok",
+      "tone": "warn"
+    }
+  ],
+  "sections": [
+    {
+      "id": "the-chain",
+      "title": "The chain",
+      "intro": "Every step ran today; none was reused from an earlier day.",
+      "blocks": [
+        {
+          "type": "steps",
+          "items": [
+            {
+              "title": "impact · 2026-11-11 · watch",
+              "where": "impact-2026-11-11.json",
+              "text": "calculate_total gains a currency; nine callers, two public surfaces, the finance export reads the column it changes."
+            },
+            {
+              "title": "change-review · 2026-11-11 · risk",
+              "where": "change-review-2026-11-11.json",
+              "text": "One high finding: the finance export still sums total_cents as EUR; one test fails on a rounding case."
+            },
+            {
+              "title": "bug-hunt · 2026-11-11 · ok",
+              "where": "bug-hunt-2026-11-11.json",
+              "text": "The failing test is a real bug: HALF_UP applied before the currency conversion. Regression test written."
+            },
+            {
+              "title": "docs-draft · 2026-11-11 · ok",
+              "where": "docs-draft-2026-11-11.json",
+              "text": "Changelog entry and docs/finance-export.md updated for the currency column."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "what-was-found",
+      "title": "What was found",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Step",
+            "Verdict",
+            "High",
+            "Medium",
+            "Low",
+            "Open"
+          ],
+          "rows": [
+            [
+              "impact",
+              "watch",
+              0,
+              2,
+              0,
+              0
+            ],
+            [
+              "change-review",
+              "risk",
+              1,
+              1,
+              1,
+              0
+            ],
+            [
+              "bug-hunt",
+              "ok",
+              1,
+              0,
+              0,
+              0
+            ],
+            [
+              "docs-draft",
+              "ok",
+              0,
+              0,
+              0,
+              1
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "title": "What is still open",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "change-review: the finance export sums total_cents as EUR for every row (high, open until the export reads the currency)",
+            "docs-draft: the finance team has not confirmed the new export column"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "done",
+      "title": "Done?",
+      "blocks": [
+        {
+          "type": "callout",
+          "tone": "warn",
+          "text": "**Rule:** The chain is done when change-review's verdict is ok, or every high finding is fixed or declined with a reason, and docs-draft wrote the changelog. **Answer:** no, change-review is not ok."
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "title": "Next",
+      "blocks": [
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "Fix the finance export or exclude non-EUR rows, then rerun change-review on the branch.",
+            "Send the changelog entry to finance before the merge."
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "the branch feat/currency on acme-orders",
+    "open": [
+      "change-review: the finance export sums total_cents as EUR for every row (high, open until the export reads the currency)",
+      "docs-draft: the finance team has not confirmed the new export column"
+    ]
+  }
+}

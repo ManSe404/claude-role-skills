@@ -1,0 +1,26 @@
+{
+  "name": "workflows",
+  "description": "Seven process workflows that chain the skills of the other packs, each step reading the previous step's page: take-over, ship-change, incident-run, data-incident, new-solution, platform-month and model-build. Each ends in one page that says what was found and whether the chain is done. Installing this pack installs every other pack.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Stefan Seman"
+  },
+  "license": "MIT",
+  "keywords": [
+    "workflows",
+    "process",
+    "chain",
+    "skills"
+  ],
+  "dependencies": [
+    "software-engineering",
+    "ai-architect",
+    "data-architect",
+    "data-engineer",
+    "software-architect",
+    "cloud-architect",
+    "solutions-architect",
+    "data-analyst",
+    "data-scientist"
+  ]
+}

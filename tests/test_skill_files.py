@@ -73,6 +73,13 @@ def test_every_pack_has_its_skills() -> None:
         "software-engineering/test-gap",
         "solutions-architect/solution-blueprint",
         "solutions-architect/solution-brief",
+        "workflows/data-incident",
+        "workflows/incident-run",
+        "workflows/model-build",
+        "workflows/new-solution",
+        "workflows/platform-month",
+        "workflows/ship-change",
+        "workflows/take-over",
     ]
 
 

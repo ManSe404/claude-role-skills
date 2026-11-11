@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: platform-month-runs-the-chain
+tags: [workflows, platform-month]
+plugins:
+  - ../..
+  - ../../../data-engineer
+context:
+  scaffold_script: fixture.sh

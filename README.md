@@ -5,8 +5,8 @@ scripts instead of estimating, and ends in one self-contained web page you can r
 result is text, in a Markdown note with the page beside it.
 
 Nine packs so far: software engineers, AI solutions architects, data architects, data engineers, software architects, cloud architects, solutions architects, who join the specialists' work, data analysts and data scientists. The plan for
-the next ones is in [docs/plans/architect-packs.md](docs/plans/architect-packs.md); the step after that, process
-workflows that chain the skills, is planned in [docs/plans/workflows.md](docs/plans/workflows.md).
+the next ones is in [docs/plans/architect-packs.md](docs/plans/architect-packs.md). The `workflows` pack chains the
+skills into processes; its plan is [docs/plans/workflows.md](docs/plans/workflows.md).
 
 ## Software engineering
 
@@ -150,6 +150,7 @@ As a plugin, inside Claude Code:
 /plugin install software-architect@claude-role-skills
 /plugin install cloud-architect@claude-role-skills
 /plugin install solutions-architect@claude-role-skills
+/plugin install workflows@claude-role-skills
 ```
 
 `solutions-architect` also installs `ai-architect`, `data-architect`, `software-architect` and `cloud-architect`, so on its own it brings the four specialists. It only loads with them present: with `--plugin-dir` you must pass all five folders, or Claude Code reports the dependency as unsatisfied and drops the pack.
@@ -204,6 +205,25 @@ What it does not do:
   without the guard. Installed as plugins, they keep it.
 - Each guarded tool call starts Python once, about 40 ms, for the rest of the session.
 
+## Workflows
+
+| Workflow | Use it when | It runs, in order |
+|---|---|---|
+| [take-over](plugins/workflows/skills/take-over/SKILL.md) | a repository arrives that the team must own | codebase-map, code-audit, dependency-audit, test-gap, docs-draft |
+| [ship-change](plugins/workflows/skills/ship-change/SKILL.md) | a branch is ready to be checked, fixed and documented | impact, change-review, bug-hunt when a test fails, docs-draft |
+| [incident-run](plugins/workflows/skills/incident-run/SKILL.md) | an alert fires and the team wants triage, cause, fix and write-up | incident-triage, bug-hunt, change-review, postmortem |
+| [data-incident](plugins/workflows/skills/data-incident/SKILL.md) | a scheduled load failed | pipeline-incident, source-contract when the source changed, data-quality after the rerun |
+| [new-solution](plugins/workflows/skills/new-solution/SKILL.md) | a brief spans several areas and must end in one reviewed solution | solution-brief, the specialists it names, solution-blueprint, the reviews |
+| [platform-month](plugins/workflows/skills/platform-month/SKILL.md) | a month closes on a data platform | data-quality, data-cost, data-product |
+| [model-build](plugins/workflows/skills/model-build/SKILL.md) | someone asks for a prediction | ds-frame, ds-explore, ds-dataset, ds-evaluate, ds-experiment |
+
+A workflow is a recipe, not a new kind of skill: each step is one of the skills above, run with the Skill tool, and
+the next step reads the previous step's page JSON, never its prose. `chain_status.py` says which steps already have
+a page from today, so a chain resumes where it stopped, and the chain ends in one page and note: each step's
+verdict, what was found, what is still open, and whether the chain is done by the rule written in the skill.
+Installing the pack installs every other pack. The plan behind it, with two other ways to run the same chains, is in
+[docs/plans/workflows.md](docs/plans/workflows.md).
+
 ## How it is built
 
 Each skill does one repeated job, in a fixed set of sections, and ends in a page you open in a browser.
@@ -248,6 +268,7 @@ plugins/data-scientist/             a pack: plugin.json, skills/, evals/
 plugins/software-architect/         a pack: plugin.json, skills/, evals/
 plugins/cloud-architect/            a pack: plugin.json, skills/, evals/
 plugins/solutions-architect/        a pack: plugin.json, skills/, evals/, on top of the four above
+plugins/workflows/                  a pack: plugin.json, skills/, evals/, process chains over all the others
 shared/                             render_page.py, page-format.md, fonts and the shared scripts, copied into the skills
 tools/sync_shared.py                writes those copies, or checks them with --check
 fixtures/                           the acme-* fixtures and their builder

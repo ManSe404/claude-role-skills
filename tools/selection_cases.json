@@ -90,5 +90,12 @@
   {"id": "postmortem-write", "prompt": "The outage from Tuesday is resolved; write the blameless incident review from the triage page, the root-cause page and the logs.", "expect": ["postmortem"]},
   {"id": "postmortem-actions", "prompt": "What should change so last week's incident doesn't repeat? Give me action items with owners.", "expect": ["postmortem"]},
   {"id": "none-standup", "prompt": "Summarise what I committed yesterday for the standup, three bullet points.", "expect": []},
-  {"id": "none-rename-function", "prompt": "Rename the function parse_amount to parse_money everywhere.", "expect": []}
+  {"id": "none-rename-function", "prompt": "Rename the function parse_amount to parse_money everywhere.", "expect": []},
+  {"id": "take-over-whole-repo", "prompt": "We just took over this repository from a contractor and have to own it from now on: map it, audit it, check the dependencies, decide the first tests and write the onboarding guide, all of it.", "expect": ["take-over"]},
+  {"id": "ship-change-chain", "prompt": "Branch feat/currency is ready. Check what it reaches, review it, fix whatever fails and write the changelog, then tell me whether it can merge.", "expect": ["ship-change"]},
+  {"id": "incident-whole-run", "prompt": "The production import has been down since 06:00. Run the whole incident: triage it, find the root cause, review the fix and write the incident report with its actions.", "expect": ["incident-run"]},
+  {"id": "data-incident-chain", "prompt": "The nightly load failed last night. Trace it, check the contract with the supplier if they changed the file, and verify the tables after the rerun.", "expect": ["data-incident"]},
+  {"id": "new-solution-chain", "prompt": "Here is the client brief for a claims platform. Take it all the way: frame it, run every specialist it needs across AI, data, software and cloud, join their work and review it.", "expect": ["new-solution"]},
+  {"id": "platform-month-chain", "prompt": "October has closed on our data platform. Do the monthly review: the checks, the spend and the served tables that got new consumers, and tell me what to stop and who decides.", "expect": ["platform-month"]},
+  {"id": "model-build-chain", "prompt": "Marketing wants a churn model. Frame it, explore and check the data, evaluate the candidates against the baseline and read the A/B test, then tell me ship or not.", "expect": ["model-build"]}
 ]

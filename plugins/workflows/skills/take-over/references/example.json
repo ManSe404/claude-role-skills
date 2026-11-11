@@ -1,0 +1,189 @@
+{
+  "skill": "take-over",
+  "title": "acme-orders: take-over",
+  "subtitle": "The take-over chain on acme-orders: each step's page, what it found, what is still open, and whether the chain is done.",
+  "meta": {
+    "project": "acme-orders",
+    "date": "2026-11-11",
+    "pages": "claude-pages/acme-orders"
+  },
+  "verdict": {
+    "text": "The chain ran all five steps and the repository is mapped, audited and documented, but it is not safe to own yet: the daily import has been failing for five weeks on a parsing change nobody noticed. Fix that first, with the test test-gap named.",
+    "tone": "bad"
+  },
+  "stats": [
+    {
+      "label": "Steps run",
+      "value": 5,
+      "note": "none reused",
+      "tone": "info"
+    },
+    {
+      "label": "High findings",
+      "value": 5,
+      "note": "code-audit 4, dependency-audit 1",
+      "tone": "info"
+    },
+    {
+      "label": "Open items",
+      "value": 4,
+      "note": "one per step but test-gap",
+      "tone": "info"
+    },
+    {
+      "label": "Done",
+      "value": "yes",
+      "note": "five pages, all valid",
+      "tone": "ok"
+    }
+  ],
+  "sections": [
+    {
+      "id": "the-chain",
+      "title": "The chain",
+      "intro": "Every step ran today; none was reused from an earlier day.",
+      "blocks": [
+        {
+          "type": "steps",
+          "items": [
+            {
+              "title": "codebase-map · 2026-11-11 · risk",
+              "where": "codebase-map-2026-11-11.json",
+              "text": "A small Python CLI; the daily import has failed since 2026-10-02 because decimal-comma parsing was removed."
+            },
+            {
+              "title": "code-audit · 2026-11-11 · risk",
+              "where": "code-audit-2026-11-11.json",
+              "text": "Four high findings, three in the import path; the pricing rounds twice."
+            },
+            {
+              "title": "dependency-audit · 2026-11-11 · watch",
+              "where": "dependency-audit-2026-11-11.json",
+              "text": "One reachable vulnerability in the mail client; two pins older than a year."
+            },
+            {
+              "title": "test-gap · 2026-11-11 · watch",
+              "where": "test-gap-2026-11-11.json",
+              "text": "Importer and pricing untested; two tests assert nothing."
+            },
+            {
+              "title": "docs-draft · 2026-11-11 · ok",
+              "where": "docs-draft-2026-11-11.json",
+              "text": "Onboarding guide written from the four pages; the cron job outside the repo is marked as a guess."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "what-was-found",
+      "title": "What was found",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Step",
+            "Verdict",
+            "High",
+            "Medium",
+            "Low",
+            "Open"
+          ],
+          "rows": [
+            [
+              "codebase-map",
+              "risk",
+              1,
+              2,
+              0,
+              1
+            ],
+            [
+              "code-audit",
+              "risk",
+              4,
+              3,
+              2,
+              0
+            ],
+            [
+              "dependency-audit",
+              "watch",
+              1,
+              2,
+              1,
+              0
+            ],
+            [
+              "test-gap",
+              "watch",
+              0,
+              2,
+              3,
+              0
+            ],
+            [
+              "docs-draft",
+              "ok",
+              0,
+              0,
+              0,
+              2
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "title": "What is still open",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "codebase-map: the host cron job that runs the import is outside the repository and seen only in the log",
+            "code-audit: decimal-comma prices are parsed as thousands since 49bc16d, and the import exits with an error (high)",
+            "dependency-audit: the mail client pin reaches CVE-2026-1234 through notify.py",
+            "docs-draft: who owns the finance month-end copy of the database is not in any document"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "done",
+      "title": "Done?",
+      "blocks": [
+        {
+          "type": "callout",
+          "tone": "ok",
+          "text": "**Rule:** The chain is done when all five pages exist from this run and validate. **Answer:** yes, five pages, all valid."
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "title": "Next",
+      "blocks": [
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "Fix the decimal-comma parsing and add the regression test test-gap wrote first (code-audit finding 1).",
+            "Upgrade the mail client in dependency-audit's first wave.",
+            "Ask finance who owns the nightly database copy, then close docs-draft's open item."
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "the take-over of acme-orders",
+    "open": [
+      "codebase-map: the host cron job that runs the import is outside the repository and seen only in the log",
+      "code-audit: decimal-comma prices are parsed as thousands since 49bc16d, and the import exits with an error (high)",
+      "dependency-audit: the mail client pin reaches CVE-2026-1234 through notify.py",
+      "docs-draft: who owns the finance month-end copy of the database is not in any document"
+    ]
+  }
+}

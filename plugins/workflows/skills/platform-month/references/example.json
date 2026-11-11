@@ -1,0 +1,159 @@
+{
+  "skill": "platform-month",
+  "title": "acme-pipeline: platform month",
+  "subtitle": "The platform month chain on acme-pipeline: each step's page, what it found, what is still open, and whether the chain is done.",
+  "meta": {
+    "project": "acme-pipeline",
+    "date": "2026-11-11",
+    "pages": "claude-pages/acme-pipeline"
+  },
+  "verdict": {
+    "text": "October closes with one table missing its freshness target and EUR 210 a month spent on tables nobody reads. Both wait on a decision by the owners named on the page.",
+    "tone": "warn"
+  },
+  "stats": [
+    {
+      "label": "Steps run",
+      "value": 3,
+      "note": "",
+      "tone": "info"
+    },
+    {
+      "label": "High findings",
+      "value": 1,
+      "note": "a failed freshness target",
+      "tone": "info"
+    },
+    {
+      "label": "Open items",
+      "value": 2,
+      "note": "both with a decider",
+      "tone": "info"
+    },
+    {
+      "label": "Done",
+      "value": "yes",
+      "note": "three pages this month",
+      "tone": "ok"
+    }
+  ],
+  "sections": [
+    {
+      "id": "the-chain",
+      "title": "The chain",
+      "intro": "Every step ran today; none was reused from an earlier day.",
+      "blocks": [
+        {
+          "type": "steps",
+          "items": [
+            {
+              "title": "data-quality · 2026-11-11 · watch",
+              "where": "data-quality-2026-11-11.json",
+              "text": "Twelve tables safe, two warned, one failed on freshness; three checks prove nothing."
+            },
+            {
+              "title": "data-cost · 2026-11-11 · watch",
+              "where": "data-cost-2026-11-11.json",
+              "text": "Four tables nobody read in 90 days; one nightly full reload of a table read weekly; one cluster idle 60 percent."
+            },
+            {
+              "title": "data-product · 2026-11-11 · ok",
+              "where": "data-product-2026-11-11.json",
+              "text": "Two tables gained consumers; one guide said daily where the data is weekly."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "what-was-found",
+      "title": "What was found",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Step",
+            "Verdict",
+            "High",
+            "Medium",
+            "Low",
+            "Open"
+          ],
+          "rows": [
+            [
+              "data-quality",
+              "watch",
+              1,
+              2,
+              3,
+              0
+            ],
+            [
+              "data-cost",
+              "watch",
+              0,
+              3,
+              1,
+              0
+            ],
+            [
+              "data-product",
+              "ok",
+              0,
+              1,
+              0,
+              0
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "title": "What is still open",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "data-quality: fct_returns failed freshness on 9 of 31 days; the owner decides whether the SLA or the schedule changes",
+            "data-cost: four unread tables, EUR 210 a month; the analytics lead decides what to drop"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "done",
+      "title": "Done?",
+      "blocks": [
+        {
+          "type": "callout",
+          "tone": "ok",
+          "text": "**Rule:** The chain is done when the three pages are dated this month and every open item names who decides.. **Answer:** yes, three pages this month."
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "title": "Next",
+      "blocks": [
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "Fix the three checks that prove nothing (data-quality).",
+            "Move the nightly full reload of dim_customer to weekly, incremental (data-cost).",
+            "Correct the freshness line in the fct_sales guide (data-product)."
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "October 2026 on acme-pipeline",
+    "open": [
+      "data-quality: fct_returns failed freshness on 9 of 31 days; the owner decides whether the SLA or the schedule changes",
+      "data-cost: four unread tables, EUR 210 a month; the analytics lead decides what to drop"
+    ]
+  }
+}

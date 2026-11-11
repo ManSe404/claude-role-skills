@@ -1,0 +1,169 @@
+{
+  "skill": "incident-run",
+  "title": "acme-orders: incident run",
+  "subtitle": "The incident run chain on acme-orders: each step's page, what it found, what is still open, and whether the chain is done.",
+  "meta": {
+    "project": "acme-orders",
+    "date": "2026-11-11",
+    "pages": "claude-pages/acme-orders"
+  },
+  "verdict": {
+    "text": "The incident is found, fixed and written up, but not closed: one action in the postmortem has no owner. The cause was a parser removed with its test in 49bc16d.",
+    "tone": "warn"
+  },
+  "stats": [
+    {
+      "label": "Steps run",
+      "value": 4,
+      "note": "",
+      "tone": "info"
+    },
+    {
+      "label": "High findings",
+      "value": 2,
+      "note": "both fixed",
+      "tone": "info"
+    },
+    {
+      "label": "Open items",
+      "value": 1,
+      "note": "an action without an owner",
+      "tone": "info"
+    },
+    {
+      "label": "Done",
+      "value": "no",
+      "note": "owner missing",
+      "tone": "warn"
+    }
+  ],
+  "sections": [
+    {
+      "id": "the-chain",
+      "title": "The chain",
+      "intro": "Every step ran today; none was reused from an earlier day.",
+      "blocks": [
+        {
+          "type": "steps",
+          "items": [
+            {
+              "title": "incident-triage · 2026-11-11 · risk",
+              "where": "incident-triage-2026-11-11.json",
+              "text": "Severity 2: the daily import has exited with an error since 06:00; 1,340 orders not imported; the last change before it is 49bc16d."
+            },
+            {
+              "title": "bug-hunt · 2026-11-11 · ok",
+              "where": "bug-hunt-2026-11-11.json",
+              "text": "Root cause: 49bc16d removed decimal-comma parsing and its test; prices like 12,50 raise. Regression test written."
+            },
+            {
+              "title": "change-review · 2026-11-11 · ok",
+              "where": "change-review-2026-11-11.json",
+              "text": "The fix restores the parser and the test; one medium finding on logging."
+            },
+            {
+              "title": "postmortem · 2026-11-11 · watch",
+              "where": "postmortem-2026-11-11.json",
+              "text": "Timeline with sources; four actions, one without an owner."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "what-was-found",
+      "title": "What was found",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Step",
+            "Verdict",
+            "High",
+            "Medium",
+            "Low",
+            "Open"
+          ],
+          "rows": [
+            [
+              "incident-triage",
+              "risk",
+              1,
+              0,
+              0,
+              0
+            ],
+            [
+              "bug-hunt",
+              "ok",
+              1,
+              0,
+              0,
+              0
+            ],
+            [
+              "change-review",
+              "ok",
+              0,
+              1,
+              0,
+              0
+            ],
+            [
+              "postmortem",
+              "watch",
+              0,
+              0,
+              0,
+              1
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "title": "What is still open",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "postmortem: action \"alert on the import exit code\" has no owner"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "done",
+      "title": "Done?",
+      "blocks": [
+        {
+          "type": "callout",
+          "tone": "warn",
+          "text": "**Rule:** The chain is done when the postmortem exists, validates, and every action on it has an owner and a date; an action without one is an open item.. **Answer:** no, owner missing."
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "title": "Next",
+      "blocks": [
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "Give the alerting action an owner and a date, then the postmortem is complete.",
+            "Re-import the 1,340 orders from the kept export files, as triage's mitigation said."
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "the import outage of 2026-11-10 on acme-orders",
+    "open": [
+      "postmortem: action \"alert on the import exit code\" has no owner"
+    ]
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "skill": "data-incident",
+  "title": "acme-pipeline: data incident",
+  "subtitle": "The data incident chain on acme-pipeline: each step's page, what it found, what is still open, and whether the chain is done.",
+  "meta": {
+    "project": "acme-pipeline",
+    "date": "2026-11-11",
+    "pages": "claude-pages/acme-pipeline"
+  },
+  "verdict": {
+    "text": "The three held-back tables are safe after the rerun. The cause was a column added by the supplier and read by position; the contract draft and two sibling jobs are still open.",
+    "tone": "ok"
+  },
+  "stats": [
+    {
+      "label": "Steps run",
+      "value": 3,
+      "note": "source-contract ran because the source changed",
+      "tone": "info"
+    },
+    {
+      "label": "High findings",
+      "value": 1,
+      "note": "fixed by the rerun",
+      "tone": "info"
+    },
+    {
+      "label": "Open items",
+      "value": 2,
+      "note": "",
+      "tone": "info"
+    },
+    {
+      "label": "Done",
+      "value": "yes",
+      "note": "every held-back table is safe",
+      "tone": "ok"
+    }
+  ],
+  "sections": [
+    {
+      "id": "the-chain",
+      "title": "The chain",
+      "intro": "Every step ran today; none was reused from an earlier day.",
+      "blocks": [
+        {
+          "type": "steps",
+          "items": [
+            {
+              "title": "pipeline-incident · 2026-11-11 · risk",
+              "where": "pipeline-incident-2026-11-11.json",
+              "text": "The supplier file gained a column and the loader read prices from the wrong one; three tables held back; the same expression in two other jobs."
+            },
+            {
+              "title": "source-contract · 2026-11-11 · watch",
+              "where": "source-contract-2026-11-11.json",
+              "text": "The contract fixes the column order and the supplier changed it without notice; two clauses to add."
+            },
+            {
+              "title": "data-quality · 2026-11-11 · ok",
+              "where": "data-quality-2026-11-11.json",
+              "text": "After the rerun all three tables pass; one check proves nothing and is listed."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "what-was-found",
+      "title": "What was found",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Step",
+            "Verdict",
+            "High",
+            "Medium",
+            "Low",
+            "Open"
+          ],
+          "rows": [
+            [
+              "pipeline-incident",
+              "risk",
+              1,
+              2,
+              0,
+              1
+            ],
+            [
+              "source-contract",
+              "watch",
+              0,
+              2,
+              0,
+              1
+            ],
+            [
+              "data-quality",
+              "ok",
+              0,
+              1,
+              0,
+              0
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "title": "What is still open",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "pipeline-incident: the same positional read in load_returns.py and load_promotions.py",
+            "source-contract: the supplier has not confirmed the new column order in writing"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "done",
+      "title": "Done?",
+      "blocks": [
+        {
+          "type": "callout",
+          "tone": "ok",
+          "text": "**Rule:** The chain is done when data-quality says every held-back table is safe; a table still unsafe is the first open item.. **Answer:** yes, every held-back table is safe."
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "title": "Next",
+      "blocks": [
+        {
+          "type": "list",
+          "ordered": true,
+          "items": [
+            "Change the two other jobs to read columns by name (pipeline-incident, same weakness elsewhere).",
+            "Send the contract draft with the two new clauses to the supplier."
+          ]
+        }
+      ]
+    }
+  ],
+  "facts": {
+    "version": 1,
+    "scope": "the failed nightly load of 2026-11-10 on acme-pipeline",
+    "open": [
+      "pipeline-incident: the same positional read in load_returns.py and load_promotions.py",
+      "source-contract: the supplier has not confirmed the new column order in writing"
+    ]
+  }
+}

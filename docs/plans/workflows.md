@@ -1,8 +1,9 @@
 # Plan: process workflows on top of the skills
 
-Status: proposed on 2026-11-11, Stefan's idea for the next step. Nothing is built; this page says what a
-workflow is here, which ones are worth having first, three ways to run them, and what the skills need before
-any of it.
+Status: Stefan's idea for the step after the packs; built on 2026-11-11 as the `workflows` pack, the first of the
+three ways below (one workflow skill per process, with `chain_status.py` as the hand-over and resume mechanism).
+The seven processes in the table are the seven skills. Ways 2 and 3 and the list under "What the skills need"
+stay open.
 
 ## What a workflow is
 

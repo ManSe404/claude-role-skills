@@ -30,6 +30,7 @@ SHARED = {
     "measure.py": {"shared/measure.py": "scripts/measure.py"},
     "model_stats.py": {"shared/model_stats.py": "scripts/model_stats.py"},
     "guard.py": {"shared/guard.py": "scripts/guard.py"},
+    "chain_status.py": {"shared/chain_status.py": "scripts/chain_status.py"},
     "audit_scan.py": {"shared/audit_scan.py": "scripts/audit_scan.py"},
     "incident_timeline.py": {"shared/incident_timeline.py": "scripts/incident_timeline.py"},
     "code_graph.py": {"shared/code_graph.py": "scripts/code_graph.py"},
