@@ -3,7 +3,7 @@
 Claude Code skills by role, one marketplace with one plugin per role: `software-engineering`,
 `ai-architect`, `data-architect`, `data-engineer`, `software-architect`, `cloud-architect`, `solutions-architect` (on top of the
 four specialist packs), `data-analyst`, `data-scientist` and `workflows` (process chains over all the others) so far.
-`docs/plans/` holds the plans.
+`docs/README.md` is the index of the documentation; the plans are in `docs/roadmap/`.
 
 ## Layout
 
@@ -21,6 +21,9 @@ four specialist packs), `data-analyst`, `data-scientist` and `workflows` (proces
   `render_page.py` also writes a folder index (`--index`) and a Markdown note of a page (`--md`).
 - `fixtures/<name>/` is a made-up project: `files/` (state after the last commit, `.fixture`
   suffix dropped on build), `history.py` (the commits) and `extras/` (logs and data, not committed).
+- A change updates the documents it makes wrong in the same commit: the pack's page in `docs/product/features/`,
+  `docs/architecture/` and `docs/diagrams/`, and `docs/reference/skills.md`, which is generated: regenerate it
+  with the command at its end after a skill or a manifest changes.
 - `plugins/<role>/evals/` holds the eval cases for `claude plugin eval`.
   In that sandbox shell commands cannot write files, so `page-made` checks the page's JSON, not its HTML. A grader
   never reads `target: trace`: the trace holds the text of SKILL.md, so a pattern found there proves nothing. Use

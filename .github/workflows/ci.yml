@@ -1,4 +1,4 @@
-# Runs the same checks the README asks for before a push: format, lint, types, tests and the
+# Runs the checks docs/guides/development.md asks for before a push: format, lint, types, tests and the
 # shared-file sync. `claude plugin validate` and the evals stay out: they need the Claude CLI and money.
 name: CI
 
