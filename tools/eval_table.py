@@ -12,6 +12,7 @@ Usage: python3 tools/eval_table.py [--root .] [-o docs/evals.md]
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -101,10 +102,8 @@ def load(path: Path) -> Run | None:
     pack = path.parents[3].name  # plugins/<pack>/evals/results/<stamp>/aggregate-result.json
     version = next((str(p.get("version")) for p in plugins if p.get("name") == pack), "?")
     started = str(data.get("startedAt", ""))
-    try:
+    with contextlib.suppress(ValueError):
         started = datetime.fromisoformat(started.replace("Z", "+00:00")).strftime("%Y-%m-%d %H:%M")
-    except ValueError:
-        pass
     cases: list[Case] = []
     for case in data.get("cases") or []:
         if not isinstance(case, dict):
@@ -135,7 +134,8 @@ def render(runs: list[Run]) -> str:
         "Written by `python3 tools/eval_table.py` from `plugins/<pack>/evals/results/*/aggregate-result.json`.",
         "A case passes a grader or not; **outcome** graders judge what was produced, **process** graders only",
         "whether the skill fired (plain Claude cannot pass those, so they are not compared). Runs that ended in an",
-        'error are left out. "with skill" is the plugin loaded; "plain" is the ablation arm without it, when a run had one.',
+        'error are left out. "with skill" is the plugin loaded; "plain" is the ablation arm without it, '
+        "when a run had one.",
         "One run per case is a hint, not a result; the evals cost money and are run by hand.",
         "",
     ]
@@ -157,7 +157,8 @@ def render(runs: list[Run]) -> str:
         fired = f"{with_arm.process_passed} / {with_arm.process_total}" if with_arm.process_total else "—"
         note = "" if not run.case_filter else f" (filter: `{run.case_filter}`)"
         out.append(
-            f"| {pack} | {run.version} | {run.started}{note} | {len(run.cases)} | {pct(with_arm)} | {pct(plain)} | {fired} | ${run.cost:.2f} |"
+            f"| {pack} | {run.version} | {run.started}{note} | {len(run.cases)} | {pct(with_arm)} | {pct(plain)} "
+            f"| {fired} | ${run.cost:.2f} |"
         )
     out.append("")
     for pack, run in sorted(latest.items()):
@@ -184,7 +185,8 @@ def render(runs: list[Run]) -> str:
     ]
     for run in sorted(runs, key=lambda r: (r.pack, r.started)):
         out.append(
-            f"| {run.pack} | {run.started} | {run.version} | {run.ablation} | {run.case_filter or '—'} | {len(run.cases)} | {pct(run.arm('with'))} | ${run.cost:.2f} |"
+            f"| {run.pack} | {run.started} | {run.version} | {run.ablation} | {run.case_filter or '—'} "
+            f"| {len(run.cases)} | {pct(run.arm('with'))} | ${run.cost:.2f} |"
         )
     out.append("")
     return "\n".join(out)
