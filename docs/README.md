@@ -5,7 +5,7 @@ ending in one self-contained page. Read in this order:
 
 | # | Document | What it answers | Status | Last checked |
 |---|---|---|---|---|
-| 1 | [product/vision.md](product/vision.md) | why the skills exist, for whom, what they are not | current | 2026-11-11 |
+| 1 | [product/vision.md](product/vision.md) | the problem the skills solve and how, why this way, for whom, what they are not, how we know they work | current | 2026-11-12 |
 | 2 | [product/features/software-engineering.md](product/features/software-engineering.md) | what each software-engineering skill is for and writes | current | 2026-11-11 |
 | 3 | [product/features/ai-architect.md](product/features/ai-architect.md) | the same for the ai-architect pack | current | 2026-11-11 |
 | 4 | [product/features/data-architect.md](product/features/data-architect.md) | the same for the data-architect pack | current | 2026-11-11 |

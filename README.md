@@ -2,9 +2,12 @@
 
 [![CI](https://github.com/ManSe404/claude-role-skills/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ManSe404/claude-role-skills/actions/workflows/ci.yml)
 
-Claude Code skills by role. Each skill does one job that keeps coming back, counts with its own
-scripts instead of estimating, and ends in one self-contained web page you can read and share, or, when the
-result is text, in a Markdown note with the page beside it.
+When you ask Claude Code for work that keeps coming back, such as mapping a repository, reviewing a design or
+explaining why a number moved, the facts rest on its reading: numbers are estimated, two runs can give two answers,
+and the result is chat text that is hard to check or pass on. These are Claude Code skills by role in which scripts
+do the counting, Claude tags every claim it did not count, and each run ends in one self-contained web page you can
+read and share (or a Markdown note with the page beside it). Why and how:
+[docs/product/vision.md](docs/product/vision.md).
 
 | Pack | For | Skills |
 |---|---|---|
