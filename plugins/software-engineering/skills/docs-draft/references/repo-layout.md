@@ -41,11 +41,11 @@ docs/
 
 - No numbers in folder or file names: links, ADR registers and tools point at these paths, and renumbering
   breaks them. Reading order is the numbered list in `docs/README.md`.
-- Only what applies: a script or small tool has a README alone, whose first lines say the problem and how
-  the tool solves it; every other repository has README, `docs/README.md`, `product/vision.md`, `roadmap.md`
-  while work on it continues, `architecture/` and `adr/` once a decision exists; a service or product has the
-  full set.
-- `product/vision.md` is the introduction to the project, first in the reading order, and the README's first
+- Only what applies: a script or small tool has a README alone; a small app, a template or a personal site
+  has README, `docs/README.md`, `roadmap.md` while work on it continues, `architecture/` and `adr/` once a
+  decision exists; a larger project (a product, a service, a library others build on, client work) has the
+  full set, with `product/vision.md` as its introduction.
+- In a larger project, `product/vision.md` is the introduction, first in the reading order, and the README's first
   paragraph links to it. Its sections, in order: the problem or opportunity (what is wrong or missing, for
   whom, how we know), how we solve it, why this way (the options that lost, linking to `adr/`), for whom, what
   it is not, how we know it works (the measure; its current value stays out of the repository). Unknowns are
