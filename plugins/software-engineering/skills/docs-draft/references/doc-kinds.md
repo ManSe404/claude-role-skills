@@ -66,8 +66,14 @@ code does not show is tagged [guess] or left to a person.
 2. The index first: `docs/README.md` with the reading order and each document's status and last checked date.
 3. Then only what applies to the repository's size, each part in the order its own kind gives:
    `product/vision.md`, `architecture/overview.md` with `diagrams/`, `reference/codebase.md`, `guides/setup.md`
-   and `guides/development.md`, `roadmap.md` when plans exist, `adr/` when decisions exist.
-4. The README shrinks to what it is, how to run it, and the link to `docs/README.md`.
+   and `guides/development.md`, `roadmap.md` while work continues, `adr/` when decisions exist.
+4. `product/vision.md` is the introduction and comes first in the reading order, with these sections in order:
+   the problem or opportunity (what is wrong or missing today, for whom, and the case, number or source that
+   shows it), how we solve it (the idea and what the user does differently after), why this way (the options
+   that lost, linked to `adr/`), for whom, what it is not, how we know it works (the measure, never a dated
+   value). A section the code and the documents cannot answer is left open for the owner, not filled in.
+5. The README shrinks to the problem and the solution in one sentence each with a link to
+   `product/vision.md`, how to run it, and the link to `docs/README.md`.
 
 ## What every kind leaves to a person
 
