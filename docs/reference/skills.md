@@ -9,7 +9,7 @@ regenerate it (see [How to regenerate](#how-to-regenerate)). What each skill wri
 
 | Pack | Version | Skills | Installs with it |
 |---|---|--:|---|
-| [software-engineering](#software-engineering) | 0.4.6 | 10 | nothing |
+| [software-engineering](#software-engineering) | 0.4.7 | 10 | nothing |
 | [ai-architect](#ai-architect) | 0.2.5 | 4 | nothing |
 | [data-architect](#data-architect) | 0.2.5 | 4 | nothing |
 | [data-engineer](#data-engineer) | 0.1.3 | 7 | nothing |

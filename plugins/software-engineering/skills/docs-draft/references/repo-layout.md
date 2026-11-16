@@ -10,7 +10,8 @@ README.md              what it is and who it is for, run in five minutes, link t
 CLAUDE.md / AGENTS.md  rules for agents working in the repository
 docs/
   README.md            the index: reading order (numbered), each document with status and last checked date
-  product/             WHY and WHAT: vision.md, users-and-problems.md, features/<feature>.md, glossary.md
+  product/             WHY and WHAT: vision.md, users-and-problems.md, glossary.md,
+                       features/README.md (the feature catalogue), features/<feature>.md
   roadmap.md           goals and phases with status, linking to product/features
   design/              product and UX design only: screens, flows, design system, mock-ups (visuals/);
                        never software architecture
@@ -33,6 +34,7 @@ docs/
 | README | `README.md` |
 | Runbook | `docs/operations/<symptom-or-job>.md` |
 | API reference | `docs/reference/api.md` |
+| Feature catalogue | `docs/product/features/README.md` |
 | Onboarding | `docs/guides/onboarding.md` |
 | Architecture document | `docs/architecture/overview.md`, its diagrams in `docs/diagrams/` |
 | Docs set | the whole layout, as far as it applies |
@@ -50,6 +52,14 @@ docs/
   whom, how we know), how we solve it, why this way (the options that lost, linking to `adr/`), for whom, what
   it is not, how we know it works (the measure; its current value stays out of the repository). Unknowns are
   marked as open.
+- Every repository with a `docs/` folder has a feature catalogue, `product/features/README.md`, linked from
+  `README.md` and `docs/README.md`: one line on what it covers, a table *Feature | What you can do | Status |
+  Where in code | Doc*, then a short paragraph per group. Status is shipped, partial (with the limit named),
+  planned or broken, and every row is checked against an entry point (a page, a route, a command, a worker,
+  a public function) and its tests. A template lists what a service gets by starting from it, a library
+  its public capabilities. Larger features keep their own `features/<feature>.md`, linked from the table.
+- A project that is finished or frozen has no `roadmap.md`; its status is one line in `README.md` and
+  `docs/README.md`.
 - `roadmap.md` holds the project's next items in priority order, each with status, what it touches and what is
   still open.
 - Visuals sit with their topic: UX images in `design/visuals/`, architecture in `diagrams/`. A diagram is
