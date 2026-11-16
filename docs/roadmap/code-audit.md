@@ -1,5 +1,10 @@
 # code-audit, and arch-review as a design review
 
+Status: built on 2026-11-10; the decision is [ADR 0005](../adr/0005-code-audit-reviews-code-arch-review-reviews-designs.md).
+Since then `change-review`, from the [second software-engineering round](engineering-pack-v2.md), takes a diff, staged
+changes or a pull request, and `tools/selection_cases.json` expects it for those prompts. The table below, which sends
+them to other plugins, describes the state before it.
+
 ## Why
 
 A run on a real repository asked `arch-review` to review code. The bugs that mattered there, such as a value read

@@ -1,8 +1,9 @@
 # Architecture overview
 
 How the packs, the skills, the shared files, the page renderer, the guard hooks and the evals fit together. The
-drawings are in [diagrams/](../diagrams/): [container view](../diagrams/container.md),
-[a skill run](../diagrams/skill-run.md) and [a workflow chain](../diagrams/workflow-chain.md).
+drawings are in [diagrams/](../diagrams/): [context view](../diagrams/context.md),
+[container view](../diagrams/container.md), [a skill run](../diagrams/skill-run.md) and
+[a workflow chain](../diagrams/workflow-chain.md). The decisions behind the design are in [adr/](../adr/).
 
 ## Context
 
@@ -89,7 +90,9 @@ Pages go outside the repository, to `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/REP
 
 `facts`, at the top level of the JSON, is not drawn. It holds what a page decided or found in one shape (scope,
 regions, data classes, components, dated costs, decisions, assumptions, open items), so a later skill can join pages:
-`solution-blueprint` reads the specialists' `facts`, and a workflow step reads the previous step's.
+`solution-blueprint` reads the specialists' `facts`, and a workflow step reads the previous step's
+([ADR 0003](../adr/0003-a-facts-section-on-every-page.md)). `codebase-map`, `impact`, `bug-hunt`, `test-gap`,
+`dependency-audit`, `code-audit` and `ai-review` write no `facts` yet.
 
 ## Workflows
 
@@ -97,7 +100,8 @@ A workflow is a skill whose steps call other skills with the Skill tool, in orde
 [the workflow chain diagram](../diagrams/workflow-chain.md). `chain_status.py` lists which steps already have a valid
 page from today, so a chain resumes where it stopped; each step reads the previous step's page JSON, never its prose;
 the chain ends in one note and page with each step's verdict, what was found, what is still open, and whether the
-chain is done by the rule written in the skill. The `workflows` pack depends on every other pack, so installing it
+chain is done by the rule written in the skill. A step's open items come from its page's `facts.open` only, so a step
+whose skill writes no `facts` adds its open high findings but none of its open questions. The `workflows` pack depends on every other pack, so installing it
 installs them.
 
 ## How it is checked
@@ -116,6 +120,8 @@ How to run each is in [guides/testing.md](../guides/testing.md).
 
 ## Open
 
+- `chain_status.py` reads open items only from `facts.open`, and six skills a workflow runs write no `facts`
+  ([roadmap.md](../roadmap.md#next-in-priority-order), item 2).
 - `pyproject.toml` lists every pack's `skills` folder for mypy except `plugins/workflows/skills`. The workflow skills
   have no scripts of their own, only shared copies, so nothing goes unchecked as long as that holds.
 - The `plugin.json` description of `cloud-architect` ends in "Azure first", while AWS is built too.

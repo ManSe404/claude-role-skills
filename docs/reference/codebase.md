@@ -16,9 +16,10 @@ parts work together is in [architecture/overview.md](../architecture/overview.md
 | `fixtures/` | made-up projects the tests, the example pages and the evals run on |
 | `roles/` | a CLAUDE.md starter per role |
 | `tests/` | pytest |
-| `docs/` | these documents; [README.md](../README.md) is the index |
+| `docs/` | these documents; [README.md](../README.md) is the index, [product/features/README.md](../product/features/README.md) the feature catalogue, [adr/](../adr/) the decisions |
 | `.github/workflows/ci.yml` | CI on every push to `main` and every pull request |
 | `pyproject.toml`, `uv.lock` | the dev tooling only (pytest, ruff, mypy) and its settings; the skills need nothing installed |
+| `.gitignore` | Python caches, `.venv/` and `plugins/*/evals/results/` |
 | `LICENSE`, `THIRD-PARTY-NOTICES.md` | MIT; the notices for the page design and the fonts |
 
 ## A pack: `plugins/PACK/`

@@ -57,14 +57,16 @@ python3 shared/render_page.py plugins/ai-architect/skills/ai-architecture/refere
 4. Produce `references/example.json` by running the skill on a fixture, check it by hand, and render it.
 5. Add an eval case under `plugins/PACK/evals/` (a test checks every skill has one).
 6. Update the documents the change makes wrong, in the same commit:
-   - the pack's page in [product/features/](../product/features/) (what the skill writes, in words);
+   - the pack's page in [product/features/](../product/features/) (what the skill writes, in words), and the
+     [feature catalogue](../product/features/README.md) when the pack's skills or status change;
    - [reference/skills.md](../reference/skills.md), regenerated: from the repository root,
      `` awk '/^```$/{f=0} f; /^```python$/{f=1}' docs/reference/skills.md | python3 - ``;
    - [architecture/](../architecture/) and [diagrams/](../diagrams/) when the way the parts fit together changes;
    - [roadmap.md](../roadmap.md) when a planned step is built.
 
 A new pack also needs its entry in `.claude-plugin/marketplace.json`, its `skills` folder in the mypy `files` of
-`pyproject.toml`, a feature page, a row in the roadmap and, when the role is new, a starter in `roles/`.
+`pyproject.toml`, a feature page, a row in the feature catalogue and in the roadmap and, when the role is new, a
+starter in `roles/`.
 
 ## Adding a cloud provider
 

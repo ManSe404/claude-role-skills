@@ -3,7 +3,8 @@
 Claude Code skills by role, one marketplace with one plugin per role: `software-engineering`,
 `ai-architect`, `data-architect`, `data-engineer`, `software-architect`, `cloud-architect`, `solutions-architect` (on top of the
 four specialist packs), `data-analyst`, `data-scientist` and `workflows` (process chains over all the others) so far.
-`docs/README.md` is the index of the documentation; the plans are in `docs/roadmap/`.
+`docs/README.md` is the index of the documentation; what comes next is `docs/roadmap.md`, the plan behind each pack is
+in `docs/roadmap/` and the decisions are in `docs/adr/`.
 
 ## Layout
 
@@ -21,7 +22,8 @@ four specialist packs), `data-analyst`, `data-scientist` and `workflows` (proces
   `render_page.py` also writes a folder index (`--index`) and a Markdown note of a page (`--md`).
 - `fixtures/<name>/` is a made-up project: `files/` (state after the last commit, `.fixture`
   suffix dropped on build), `history.py` (the commits) and `extras/` (logs and data, not committed).
-- A change updates the documents it makes wrong in the same commit: the pack's page in `docs/product/features/`,
+- A change updates the documents it makes wrong in the same commit: the pack's page in `docs/product/features/` and
+  the catalogue there (`README.md`),
   `docs/architecture/` and `docs/diagrams/`, and `docs/reference/skills.md`, which is generated: regenerate it
   with the command at its end after a skill or a manifest changes.
 - `plugins/<role>/evals/` holds the eval cases for `claude plugin eval`.
@@ -50,4 +52,5 @@ four specialist packs), `data-analyst`, `data-scientist` and `workflows` (proces
 ## Checks
 
 `uv run pytest`, `uv run ruff format --check .`, `uv run ruff check .`, `uv run mypy`,
-`claude plugin validate .`. Evals cost money: run them only when asked.
+`python3 tools/sync_shared.py --check`, `claude plugin validate .`. CI runs all but the last. Evals cost money: run
+them only when asked, and keep their results out of the repository.
