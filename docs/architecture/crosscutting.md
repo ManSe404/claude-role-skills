@@ -25,6 +25,9 @@ permissions. In `claude -p` nobody can answer a prompt, so "asks first" means no
 What it does not do:
 
 - Nothing is guarded before the skill is invoked, even in the same turn.
+- `gh` is not on its list of commands that go online, so `gh pr diff` runs without a prompt, although
+  `change-review` says the guard asks before it fetches a pull request
+  ([roadmap.md](../roadmap.md#next-in-priority-order), item 1).
 - Code run by an interpreter, such as a Python heredoc that writes a file or opens a socket, is not parsed.
 - Personal values that no pattern recognises, such as names, are kept out only by refusing the raw reads.
 - If your organization locks hooks to plugins (`strictPluginOnlyCustomization`), skills copied into a project run

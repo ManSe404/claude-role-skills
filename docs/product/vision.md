@@ -72,20 +72,20 @@ them, resumes where it stopped and ends in one page.
 
 ## Why this way
 
-There is no `docs/adr/` in this repository. The choices below and the options that lost are recorded in the plans
-in [roadmap/](../roadmap/); turning them into ADRs is open.
+The choices below and the options that lost are recorded in the plans in [roadmap/](../roadmap/); the ones whose
+reason the plans record are also decision records in [adr/](../adr/).
 
 | Chosen | What lost, and why | Where it is recorded |
 |---|---|---|
-| Scripts count, Claude reads and tags | Templates and checklists Claude fills from memory, as in the `engineering` plugin: they leave the facts to Claude's reading. The rule taken from that comparison: take the jobs and the lists, not the method. | [engineering-pack-v2.md](../roadmap/engineering-pack-v2.md#what-the-comparison-showed) |
+| Scripts count, Claude reads and tags | Templates and checklists Claude fills from memory, as in the `engineering` plugin: they leave the facts to Claude's reading. The rule taken from that comparison: take the jobs and the lists, not the method. | [ADR 0001](../adr/0001-scripts-count-claude-reads-and-tags.md), [engineering-pack-v2.md](../roadmap/engineering-pack-v2.md#what-the-comparison-showed) |
 | Read files and the repository on the user's machine | Connectors (source control, tracker, monitoring, chat) bringing the facts in: deferred to a phase 3 plan, reading first and posting last, and not before phases 1 and 2 are used. | [engineering-pack-v2.md](../roadmap/engineering-pack-v2.md#phase-3-connectors) |
-| One cloud pack with a pair of files per provider, starting from infrastructure code with no login | The vendor skills, one cloud each and deploying: they cannot compare one brief across clouds with real prices. | [architect-packs.md](../roadmap/architect-packs.md#3-cloud-architect), [cloud-architect.md](../roadmap/cloud-architect.md) |
-| Deciding skills start at the simplest option of a ladder; their rule script only rules options out and never chooses, and Claude weighs what is left | Climbing to a bigger option without a requirement the skill can name. Each architect fixture holds a brief where the right answer is boring, so an eval catches a skill that overbuilds. | [architect-packs.md](../roadmap/architect-packs.md#settled-early-because-they-are-expensive-to-change-later), [ai-architect.md](../roadmap/ai-architect.md) |
-| A `facts` section in every architect page's JSON, decided at the first step of the architect series | Joining pages from text written for people: `solutions-architect` could not, and every pack would have been reworked at the end. | [architect-packs.md](../roadmap/architect-packs.md#settled-early-because-they-are-expensive-to-change-later) |
-| Descriptions that name their subject, checked by a selection check with every pack loaded | Trusting `claude plugin eval`, which loads one pack at a time and cannot show which skill Claude picks among all of them. | [architect-packs.md](../roadmap/architect-packs.md#settled-early-because-they-are-expensive-to-change-later), [guides/testing.md](../guides/testing.md#selection-check) |
-| Separate skills for reviewing code (`code-audit`) and reviewing a design (`arch-review`) | One review skill for both: a real run sent code to `arch-review`, which was not written for it. | [code-audit.md](../roadmap/code-audit.md) |
-| Never rules enforced by a hook that asks (`ask`) for changes and network calls, and refuses (`deny`) raw reads of personal data | Never rules as text only. Hooks were first turned down because a hook cannot tell when the user has said yes; a skill's hook registers when the skill is invoked and every hook call carries the prompt's id, so the guard steps aside after the user's next message. `ask` rather than `deny` for changes, so a fix the user approved can never be stuck. | [architect-packs.md](../roadmap/architect-packs.md#hooks-2026-11-10) |
-| Shared files copied into every skill that names them, with a check in CI | Importing shared code from outside the skill: an installed plugin has nothing outside its own folder. | [architecture/overview.md](../architecture/overview.md#how-a-shared-file-reaches-a-skill) |
+| One cloud pack with a pair of files per provider, starting from infrastructure code with no login | The vendor skills, one cloud each and deploying: they cannot compare one brief across clouds with real prices. | [ADR 0006](../adr/0006-one-cloud-pack-with-a-pair-of-files-per-provider.md), [architect-packs.md](../roadmap/architect-packs.md#3-cloud-architect), [cloud-architect.md](../roadmap/cloud-architect.md) |
+| Deciding skills start at the simplest option of a ladder; their rule script only rules options out and never chooses, and Claude weighs what is left | Climbing to a bigger option without a requirement the skill can name. Each architect fixture holds a brief where the right answer is boring, so an eval catches a skill that overbuilds. | [ADR 0007](../adr/0007-deciding-skills-rule-options-out-and-never-choose.md), [architect-packs.md](../roadmap/architect-packs.md#settled-early-because-they-are-expensive-to-change-later), [ai-architect.md](../roadmap/ai-architect.md) |
+| A `facts` section in every architect page's JSON, decided at the first step of the architect series | Joining pages from text written for people: `solutions-architect` could not, and every pack would have been reworked at the end. | [ADR 0003](../adr/0003-a-facts-section-on-every-page.md), [architect-packs.md](../roadmap/architect-packs.md#settled-early-because-they-are-expensive-to-change-later) |
+| Descriptions that name their subject, checked by a selection check with every pack loaded | Trusting `claude plugin eval`, which loads one pack at a time and cannot show which skill Claude picks among all of them. | [ADR 0008](../adr/0008-descriptions-name-their-subject.md), [architect-packs.md](../roadmap/architect-packs.md#settled-early-because-they-are-expensive-to-change-later), [guides/testing.md](../guides/testing.md#selection-check) |
+| Separate skills for reviewing code (`code-audit`) and reviewing a design (`arch-review`) | One review skill for both: a real run sent code to `arch-review`, which was not written for it. | [ADR 0005](../adr/0005-code-audit-reviews-code-arch-review-reviews-designs.md), [code-audit.md](../roadmap/code-audit.md) |
+| Never rules enforced by a hook that asks (`ask`) for changes and network calls, and refuses (`deny`) raw reads of personal data | Never rules as text only. Hooks were first turned down because a hook cannot tell when the user has said yes; a skill's hook registers when the skill is invoked and every hook call carries the prompt's id, so the guard steps aside after the user's next message. `ask` rather than `deny` for changes, so a fix the user approved can never be stuck. | [ADR 0004](../adr/0004-a-guard-hook-enforces-the-never-rules.md), [architect-packs.md](../roadmap/architect-packs.md#hooks-2026-11-10) |
+| Shared files copied into every skill that names them, with a check in CI | Importing shared code from outside the skill: an installed plugin has nothing outside its own folder. | [ADR 0002](../adr/0002-shared-files-are-copied-into-each-skill.md), [architecture/overview.md](../architecture/overview.md#how-a-shared-file-reaches-a-skill) |
 | Workflows as one workflow skill per process | The plan weighed three ways: one skill per process (cheapest, works wherever a skill works, but one context and nothing in parallel), Claude Code `Workflow` scripts, and Mission Control missions. It recommended the second and third; the first was built, the other two are still plans. A fourth runner was ruled out: the pages' `facts`, the naming rule and the folder index already give the hand-over. | [workflows.md](../roadmap/workflows.md#three-ways-to-run-them) |
 
 Open: the reason the first workflow way was built before the two the plan recommended is not recorded. Open: why
@@ -129,7 +129,7 @@ Open: who in a team decides to adopt a pack, and on what evidence, is not writte
   machine ([architecture/overview.md](../architecture/overview.md#context)).
 - Not a deployer. The cloud skills do not deploy and do not write production infrastructure code.
 - Not a messenger. Nothing is posted and no tracker, chat or monitoring tool is connected; connectors are a phase 3
-  plan ([roadmap.md](../roadmap.md#planned-not-built)).
+  plan ([roadmap.md](../roadmap.md#next-in-priority-order)).
 - Not a replacement for Anthropic's `engineering` plugin. If you also have it, its `debug`, `testing-strategy`,
   `architecture` and `system-design` skills cover some of the same ground; the ai-architect skills are only for AI
   and LLM solutions. Call these by name when you want them.
@@ -158,7 +158,9 @@ Results are not kept in this file. Each check below says where and how it is mea
 
 Open:
 
-- Where eval results are kept is an open decision ([docs/README.md](../README.md#open-decisions)).
+- Eval and selection-check results are not kept in the repository; `tools/eval_table.py` prints its summary or
+  writes it to a file you name. The selection check's default output folder is still inside the working tree
+  ([guides/testing.md](../guides/testing.md#open)).
 - What counts as "beats plain Claude" (which run, how many runs per case, what difference is enough) is not defined.
 - Whether two runs of a skill on the same input give the same page is not measured: the tests pin the scripts, not
   Claude's reading and writing.

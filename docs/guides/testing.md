@@ -48,10 +48,11 @@ grader sees only the final reply, not the code or the page.
 
 `claude plugin eval` writes its results to `plugins/PACK/evals/results/`, which git ignores. `tools/eval_table.py`
 sums them into one Markdown page, pack by pack and case by case: outcome graders (what was produced) separately from
-"the skill fired", with the cost.
+"the skill fired", with the cost. It prints to stdout, or writes to the file given with `-o`. Results are kept outside
+the repository: pass a path outside it.
 
 ```bash
-python3 tools/eval_table.py -o docs/evals.md
+python3 tools/eval_table.py -o "$(mktemp -d)/evals.md"
 ```
 
 ## Selection check
@@ -75,6 +76,7 @@ the runs per case and how many run at once. Pass `--out` with a folder outside t
   run from the repository root without `--out` writes `selection-results/` into the working tree.
 - There is no documented command for the `workflows` evals. Their cases load other packs through `plugins:` in
   `case.yaml`, as the `solutions-architect` cases do, so the same form
-  (`claude plugin eval plugins --eval-dir workflows/evals ...`) is likely needed; it has not been checked.
-- `tools/eval_table.py` writes its page to `docs/evals.md`, which holds eval results inside the repository. Where those
-  results should live is an open decision; see [docs/README.md](../README.md#open-decisions).
+  (`claude plugin eval plugins --eval-dir workflows/evals ...`) is likely needed; it has not been checked. Each case
+  also loads only the packs its chain uses (`take-over` loads software-engineering alone), while `workflows` depends on
+  all nine, and [setup.md](setup.md) says Claude Code drops a pack whose dependencies are missing under
+  `--plugin-dir`. Whether the cases load the pack at all is unverified.

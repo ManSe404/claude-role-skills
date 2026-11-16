@@ -183,7 +183,7 @@ note is listed under the diagram.
 
 ## What the reader can do
 
-A click on a node traces it: what leads to it turns blue, what it reaches orange, the rest
+A click on a node traces it: what leads to it turns honey, what it reaches sky blue, the rest
 fades; Esc clears. A link ending in `#node=<id or label>` opens the page traced, so give stable,
 readable node ids (`importer`, `order_total`) and name them when you point the user at a page.
 Tables with 8 or more rows get a filter box, and code blocks a copy button.

@@ -40,8 +40,3 @@ Render an `example.json` from a skill's `references/` and look at it; headless C
 `architecture` page of `ai-architecture` is the one with the most to try: click a component, press Play on a flow,
 switch between the routed workflow and agentic RAG, turn on the trust view.
 
-## Open
-
-- `shared/page-format.md` ("What the reader can do") says a traced node turns what leads to it blue and what it
-  reaches orange; the renderer's CSS draws upstream edges in honey (`--accent`) and downstream ones in sky blue
-  (`--down`), as described above.

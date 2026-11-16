@@ -6,7 +6,7 @@ Only the graders that judge what was produced count ("outcome"); graders that ch
 in an error says nothing and is left out. Runs made with a case filter cover part of a pack and are marked.
 Standard library only; read-only.
 
-Usage: python3 tools/eval_table.py [--root .] [-o docs/evals.md]
+Usage: python3 tools/eval_table.py [--root .] [-o FILE]   # FILE outside the repository; results are not kept in it
 """
 
 from __future__ import annotations

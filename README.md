@@ -22,6 +22,9 @@ read and share (or a Markdown note with the page beside it). Why and how:
 | [data-scientist](docs/product/features/data-scientist.md) | data scientists | ds-frame, ds-explore, ds-dataset, ds-evaluate, ds-experiment |
 | [workflows](docs/product/features/workflows.md) | teams running a process over the skills above | take-over, ship-change, incident-run, data-incident, new-solution, platform-month, model-build |
 
+Every pack and tool with its status, and where each lives in the code: the
+[feature catalogue](docs/product/features/README.md). What comes next: [docs/roadmap.md](docs/roadmap.md).
+
 ## Try it
 
 You need Claude Code, `git` and Python 3.11 or newer. The scripts use the standard library only. Inside Claude Code:
@@ -48,9 +51,9 @@ Every pack, and copying the skills into one project: [docs/guides/setup.md](docs
 
 ## Documentation
 
-Start at [docs/README.md](docs/README.md): the vision, what each pack does, the roadmap, how it is built (packs,
-shared files, the page renderer, the guard hooks, the evals), the list of every skill, and the guides for
-development and testing. Rules for agents working here are in [CLAUDE.md](CLAUDE.md).
+Start at [docs/README.md](docs/README.md): the vision, the [feature catalogue](docs/product/features/README.md) and
+what each pack does, the roadmap, how it is built (packs, shared files, the page renderer, the guard hooks, the evals),
+the decisions behind it, the list of every skill, and the guides for development and testing. Rules for agents working here are in [CLAUDE.md](CLAUDE.md).
 
 ## License
 
