@@ -10,7 +10,7 @@ in `docs/roadmap/` and the decisions are in `docs/adr/`.
 
 - `plugins/<role>/skills/<skill>/` holds `SKILL.md`, `scripts/` and `references/`. A skill must
   work on its own, because an installed plugin has nothing outside its own folder.
-- `shared/` is the single source of `render_page.py`, `page-format.md`, `fonts/`,
+- `shared/` is the single source of `render_page.py`, `page-format.md`, `page-schema.json`, `page-archetypes.json`, `fonts/`,
   `ai_inventory.py`, `data_profile.py`, `sql_inventory.py`, `measure.py`, `model_stats.py`, `guard.py`, `code_graph.py`, `containers.py`,
   `audit_scan.py`, `incident_timeline.py`, `chain_status.py`,
   `cloud_inventory.py` and `cloud_prices.py`, and of `shared/cloud/`, one file per cloud provider. Edit them
@@ -44,6 +44,8 @@ in `docs/roadmap/` and the decisions are in `docs/adr/`.
   `personal` for the skills that ship `data_profile.py`. `tests/test_skill_files.py` holds its exact form. The
   command looks for the guard in the plugin, the project and `~/.claude`, and exits 0 when it is missing: a script
   python cannot open exits 2, and exit 2 blocks the call. `${CLAUDE_SKILL_DIR}` does not expand in hook commands.
+- A page declares its `archetype` (ADR 0009); SKILL.md names it and runs `render_page.py PAGE.json --check` before
+  the page is done. A new block type or field goes into `render_page.py`, `page-format.md` and `page-schema.json`.
 - A page is JSON rendered by `render_page.py`; `references/example.json` is the filled example,
   produced by running the skill on the fixture and then checked by hand. A text-only skill renders the note
   (`--md`) first and the page beside it; `shared/page-format.md` lists those skills.

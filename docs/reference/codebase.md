@@ -29,7 +29,7 @@ parts work together is in [architecture/overview.md](../architecture/overview.md
 | `.claude-plugin/plugin.json` | name, description (must name every skill of the pack), version, author, licence, keywords, and `dependencies` for a pack that builds on others |
 | `skills/SKILL/SKILL.md` | the skill: frontmatter, then the job, input, Steps, Output, Reads, Writes, Never |
 | `skills/SKILL/scripts/` | the skill's own scripts and its copies of shared scripts (`render_page.py` and `guard.py` in every skill) |
-| `skills/SKILL/references/` | `example.json` (a filled page), `page-format.md` (a copy), the rules and tables the steps read, and `cloud/` for the cloud skills |
+| `skills/SKILL/references/` | `example.json` (a filled page), `page-format.md`, `page-schema.json` and `page-archetypes.json` (copies), the rules and tables the steps read, and `cloud/` for the cloud skills |
 | `skills/SKILL/assets/fonts/` | copies of the fonts, inlined into every page |
 | `evals/CASE/` | one eval case: `case.yaml`, `prompt.md`, `fixture.sh` (builds the fixture), `graders/` |
 | `evals/results/` | what `claude plugin eval` writes; ignored by git |
@@ -42,6 +42,8 @@ Edit these here, then run `python3 tools/sync_shared.py`. Never edit a copy unde
 |---|---|
 | `render_page.py` | renders a skill's page JSON into one self-contained HTML file; also `--md`, `--site`, `--index`, `--check` |
 | `page-format.md` | the page JSON format every skill writes |
+| `page-schema.json` | the page JSON as a JSON Schema (Draft 2020-12): every field, unknown fields refused |
+| `page-archetypes.json` | the six archetypes and what a page of each must and should hold |
 | `fonts/` | Bricolage Grotesque and JetBrains Mono (Latin and Latin Extended) and their licence |
 | `guard.py` | enforces a skill's Never rules while the skill is working; Claude Code runs it as a hook |
 | `chain_status.py` | where a chain of skills stands in one pages folder: each step's newest page, date, verdict, findings and open items |

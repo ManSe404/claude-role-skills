@@ -1,0 +1,110 @@
+{
+ "version": 1,
+ "description": "What each kind of page must hold, so pages of one kind have the same structure whichever agent wrote them. required: problems that fail render_page.py --check; recommended: warnings.",
+ "rules": {
+  "verdict": "the page has a verdict",
+  "blocks_all": "every block type listed appears in some section",
+  "blocks_any": "at least one of the block types listed appears",
+  "facts": "facts holds each key listed (an empty list is allowed)",
+  "facts_nonempty": "facts holds each key listed with at least one item"
+ },
+ "archetypes": {
+  "decision": {
+   "summary": "Rules options out and names what is chosen, with what it rests on.",
+   "required": {
+    "verdict": true,
+    "facts_nonempty": [
+     "decisions"
+    ]
+   },
+   "recommended": {
+    "blocks_any": [
+     "decision"
+    ],
+    "facts": [
+     "assumptions",
+     "open"
+    ]
+   }
+  },
+  "map": {
+   "summary": "Draws what exists and how it connects, so a reader can find their way.",
+   "required": {
+    "verdict": true,
+    "blocks_any": [
+     "graph",
+     "flowchart",
+     "architecture",
+     "model",
+     "nested"
+    ]
+   },
+   "recommended": {
+    "facts": [
+     "components"
+    ]
+   }
+  },
+  "review": {
+   "summary": "Holds something against rules and lists what is wrong, worst first, each with a fix.",
+   "required": {
+    "verdict": true,
+    "blocks_all": [
+     "findings"
+    ]
+   },
+   "recommended": {
+    "facts": [
+     "open"
+    ]
+   }
+  },
+  "incident": {
+   "summary": "One timeline of what happened, the cause and what to do now.",
+   "required": {
+    "verdict": true,
+    "blocks_all": [
+     "steps"
+    ]
+   },
+   "recommended": {
+    "facts": [
+     "open"
+    ]
+   }
+  },
+  "chain": {
+   "summary": "A workflow's closing page: each step, its verdict and whether the chain is done.",
+   "required": {
+    "verdict": true,
+    "blocks_all": [
+     "steps",
+     "table"
+    ],
+    "facts": [
+     "open"
+    ]
+   },
+   "recommended": {
+    "facts": [
+     "scope"
+    ]
+   }
+  },
+  "report": {
+   "summary": "A result explained in tables, numbers and text, without a choice, a drawing, findings or a timeline at its centre.",
+   "required": {
+    "verdict": true,
+    "blocks_any": [
+     "table",
+     "chart"
+    ]
+   },
+   "recommended": {
+    "facts": [
+     "assumptions"
+    ]
+   }
+  }
+ }
+}

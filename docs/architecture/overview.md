@@ -35,9 +35,9 @@ repository or the data the person points at, and print JSON. Claude writes the p
 | Skill | `plugins/PACK/skills/SKILL/SKILL.md` | frontmatter (`name`, `description`, `when_to_use`, `argument-hint`, `hooks`), then the job, input, Steps, Output, Reads, Writes, Never |
 | Skill scripts | `plugins/PACK/skills/SKILL/scripts/` | the skill's own counting scripts and its copies of the shared ones |
 | Skill references | `plugins/PACK/skills/SKILL/references/` | `example.json` (a filled page from a run on a fixture), `page-format.md`, and the rules or tables the skill reads in its steps |
-| Shared files | `shared/` | the single source of `render_page.py`, `page-format.md`, `fonts/`, `guard.py`, `chain_status.py`, the scripts several skills use, and `cloud/` (one `.md` and `.json` per cloud provider) |
+| Shared files | `shared/` | the single source of `render_page.py`, `page-format.md`, `page-schema.json`, `page-archetypes.json`, `fonts/`, `guard.py`, `chain_status.py`, the scripts several skills use, and `cloud/` (one `.md` and `.json` per cloud provider) |
 | Sync | `tools/sync_shared.py` | copies each shared file into every skill whose `SKILL.md` names it; `--check` fails when a copy is missing or differs |
-| Renderer | `shared/render_page.py` | validates a page JSON and draws it as HTML (`-o`), as a Markdown note (`--md`), as a set of pages with one header (`--site`), or as an index of a folder (`--index`); `--check` validates only |
+| Renderer | `shared/render_page.py` | validates a page JSON and draws it as HTML (`-o`), as a Markdown note (`--md`), as a set of pages with one header (`--site`), or as an index of a folder (`--index`); `--check` validates only, against the schema and the page's archetype |
 | Guard | `shared/guard.py` | the hook behind every skill's Never rules, see [crosscutting.md](crosscutting.md) |
 | Chain status | `shared/chain_status.py` | for a workflow: each step's newest page in a pages folder, with its date, verdict, findings and open items |
 | Fixtures | `fixtures/acme-*/`, `fixtures/build_fixture.py` | made-up projects with planted problems, built with their git history into an empty folder |
@@ -73,7 +73,8 @@ See [the skill run diagram](../diagrams/skill-run.md).
    Claude's scratchpad, never in the repository. The numbers on the page come from the scripts.
 3. Claude reads what the scripts point at, tags every claim it did not count (`[high]`, `[med]`, `[guess]`) and
    writes the page as JSON in the pages folder.
-4. `render_page.py` validates the JSON, prints each problem with its JSON path, and draws the page. A text-only skill
+4. `render_page.py` validates the JSON against the page format, the schema and the page's archetype, prints each
+   problem with its JSON path, and draws the page. A text-only skill
    renders the Markdown note first and the page beside it. Then `--index` refreshes the folder's index.
 5. During that turn the guard runs on every tool call. After the person's next message it steps aside, so what a
    skill does "after the yes" runs under the person's normal permissions.
@@ -84,6 +85,12 @@ A page is JSON: `skill`, `title`, `sections` of typed blocks, and on top a `verd
 block type and the rule that a page never holds a path from the machine that made it are in
 [shared/page-format.md](../../shared/page-format.md). The look and the interactions are in
 [design/page-design.md](../design/page-design.md).
+
+Each page declares its `archetype` (`decision`, `map`, `review`, `incident`, `chain` or `report`), and
+`render_page.py --check` holds it to `shared/page-schema.json` (a JSON Schema of every field, unknown fields
+refused) and to that archetype's rules in `shared/page-archetypes.json`. So pages of one kind have the same
+structure whoever wrote them; a page without an archetype is checked as before and only warned about
+([ADR 0009](../adr/0009-pages-declare-an-archetype-checked-against-a-schema.md)).
 
 Pages go outside the repository, to `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/REPO/SKILL-DATE.json`, with the `.html`
 (and the `.md` note) beside it. The JSON is kept so a later run can compare.
