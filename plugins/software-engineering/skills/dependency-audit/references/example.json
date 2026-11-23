@@ -1,5 +1,6 @@
 {
   "skill": "dependency-audit",
+  "archetype": "review",
   "title": "acme-orders: dependency audit",
   "subtitle": "What each dependency costs to keep as it is, and the order to upgrade them.",
   "meta": {"repo": "acme-orders", "commit": "f36ec1c", "date": "2026-11-06"},

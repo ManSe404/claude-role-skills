@@ -1,5 +1,6 @@
 {
   "skill": "take-over",
+  "archetype": "chain",
   "title": "acme-orders: take-over",
   "subtitle": "The take-over chain on acme-orders: each step's page, what it found, what is still open, and whether the chain is done.",
   "meta": {

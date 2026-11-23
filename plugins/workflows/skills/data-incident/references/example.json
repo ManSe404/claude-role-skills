@@ -1,5 +1,6 @@
 {
   "skill": "data-incident",
+  "archetype": "chain",
   "title": "acme-pipeline: data incident",
   "subtitle": "The data incident chain on acme-pipeline: each step's page, what it found, what is still open, and whether the chain is done.",
   "meta": {

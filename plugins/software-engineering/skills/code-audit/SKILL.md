@@ -64,6 +64,9 @@ leave alone (list), What this audit did not cover (list). Stats on top: files re
 broken, high findings, scan hits confirmed of all hits. The verdict says in two sentences whether the
 code is safe to build on, and what to fix first.
 
+Page archetype: `review`. Write `"archetype": "review"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
 files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/code-audit-<YYYY-MM-DD>.*`. Write the page
 in the language of the request; Serbian pages in Latin script.

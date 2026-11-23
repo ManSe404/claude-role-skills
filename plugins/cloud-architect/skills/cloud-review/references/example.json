@@ -1,5 +1,6 @@
 {
  "skill": "cloud-review",
+ "archetype": "review",
  "title": "acme-cloud, reviewed for the festival platform",
  "subtitle": "The repository at a509e4e and the Azure export of 2026-11-08, judged against the festival platform brief. Nothing was changed and no cloud command was run.",
  "meta": {

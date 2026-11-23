@@ -70,6 +70,9 @@ What the data cannot show (list). Stats on top: the reported change, the change 
 checks, the largest effect, the share of the change the top drivers explain. The verdict says how
 much of the move is real and what it is mostly made of, in two sentences with numbers.
 
+Page archetype: `report`. Write `"archetype": "report"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
 files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/number-moved-<YYYY-MM-DD>.*`. Write the
 page in the language of the request; Serbian pages in Latin script.

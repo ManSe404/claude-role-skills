@@ -60,6 +60,9 @@ that apply, note), What looks good (list), Verdict (callout). Stats on top: file
 added and removed, high findings, tests touched, tests removed. The verdict says in two sentences whether it
 can be merged and what must change first.
 
+Page archetype: `review`. Write `"archetype": "review"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --md -o PAGE.md` for the note, then
 the same command with `-o PAGE.html` for the page, all three files in
 `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/change-review-<YYYY-MM-DD>.*`. Write the note and the page in the language

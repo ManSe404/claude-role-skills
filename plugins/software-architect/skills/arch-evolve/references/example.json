@@ -1,5 +1,6 @@
 {
   "skill": "arch-evolve",
+  "archetype": "decision",
   "title": "acme-logistics: making Billing separately releasable",
   "subtitle": "How to get Billing into its own release without stopping the system, in steps that each leave it working and can be undone.",
   "meta": {"repo": "acme-logistics", "commit": "432aa50", "date": "2026-11-10"},

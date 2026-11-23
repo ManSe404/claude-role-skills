@@ -1,5 +1,6 @@
 {
   "skill": "data-migration",
+  "archetype": "decision",
   "title": "acme-pipeline: moving the old cron estate onto the platform",
   "subtitle": "Which of the 17 cron jobs in legacy/ to keep, rebuild or retire, and how to move them in waves that can be checked and rolled back.",
   "meta": {"repo": "acme-pipeline", "commit": "703a806", "date": "2026-11-10", "inventory as of": "2026-11-04 06:00 (legacy/README.md)"},

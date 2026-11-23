@@ -59,6 +59,9 @@ each part owns in its card), What would change it (list), Fitness rules (table),
 Open questions. Stats on top: teams, business areas, options left after the hard rules, the chosen
 option. The verdict says the shape and the binding constraint in two sentences.
 
+Page archetype: `decision`. Write `"archetype": "decision"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
 files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/arch-style-<YYYY-MM-DD>.*`. Write the
 page in the language of the request; Serbian pages in Latin script.

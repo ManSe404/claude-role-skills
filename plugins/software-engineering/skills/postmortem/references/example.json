@@ -1,5 +1,6 @@
 {
  "skill": "postmortem",
+ "archetype": "incident",
  "title": "acme-orders nightly import, 2-3 October 2026",
  "subtitle": "Two mornings without the order import after a deploy; what happened, why as far as the evidence goes, and what changes.",
  "meta": {"repo": "acme-orders", "commit": "f36ec1c", "date": "2026-10-04", "sources": "incident-triage 2026-10-03, bug-hunt 2026-10-03, logs/acme-orders.log, git"},

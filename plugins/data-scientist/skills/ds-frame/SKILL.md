@@ -70,6 +70,9 @@ would change the answer (list), Assumptions and open facts. Stats on top: the ru
 the break-even probability, the ceiling a perfect model could save per year. The verdict says what to
 build, in one or two sentences, or says to use `ai-pattern`, or says that no model is needed at all.
 
+Page archetype: `decision`. Write `"archetype": "decision"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both files
 in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/ds-frame-<YYYY-MM-DD>.*`. Write the page in the
 language of the request; Serbian pages in Latin script.

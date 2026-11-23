@@ -75,6 +75,9 @@ check to fix first.
 
 Fill `facts`: scope, assumptions, and the open questions.
 
+Page archetype: `review`. Write `"archetype": "review"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
 files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/data-quality-<YYYY-MM-DD>.*`. Write the page
 in the language of the request; Serbian pages in Latin script.

@@ -56,6 +56,9 @@ should change and the side recommended; `declined` with a reason when it turned 
 (list), Open questions, What to do first (ordered list). Stats on top: pages joined, conflicts real, conflicts not
 real, currencies. The verdict says whether the pages can be built together as they stand, in two sentences.
 
+Page archetype: `map`. Write `"archetype": "map"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both files in
 `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/solution-blueprint-<YYYY-MM-DD>.*`, outside the repository. Write
 the page in the language of the request; Serbian pages in Latin script.

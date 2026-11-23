@@ -42,6 +42,9 @@ open high finding, each with its step), Done? (callout: the rule, the answer and
 Stats on top: steps run, high findings, open items, done. The verdict says whether the chain is done and the one thing to
 do first, in two sentences. Fill `facts`: `scope` and `open`.
 
+Page archetype: `chain`. Write `"archetype": "chain"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --md -o PAGE.md` for the note, then
 the same command with `-o PAGE.html` for the page, all three files in
 `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/take-over-<YYYY-MM-DD>.*`, then `--index` on the pages folder. Write

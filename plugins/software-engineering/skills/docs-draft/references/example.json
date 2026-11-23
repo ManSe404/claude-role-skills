@@ -1,5 +1,6 @@
 {
  "skill": "docs-draft",
+ "archetype": "report",
  "title": "acme-orders, runbook for the nightly import",
  "subtitle": "A runbook for the on-call engineer when the 06:00 import fails, drafted from the code, with where the README has drifted.",
  "meta": {"repo": "acme-orders", "commit": "f36ec1c", "date": "2026-11-10", "kind": "runbook", "audience": "on-call engineer"},

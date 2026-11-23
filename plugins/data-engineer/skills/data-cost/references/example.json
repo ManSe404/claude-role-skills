@@ -1,5 +1,6 @@
 {
  "skill": "data-cost",
+ "archetype": "review",
  "title": "acme-pipeline: where the money goes",
  "subtitle": "The data platform's bill for 5 October to 4 November 2026, split per cluster, job, pipeline and table, and what can be cut with no use lost.",
  "meta": {

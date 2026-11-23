@@ -57,6 +57,9 @@ or logged), Open questions. Stats on top: components, flows, untrusted entry poi
 reachable from untrusted text. The verdict says in two sentences what the solution is and the one
 risk a reviewer should look at first.
 
+Page archetype: `map`. Write `"archetype": "map"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
 files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/ai-architecture-<YYYY-MM-DD>.*`. Write
 the page in the language of the request; Serbian pages in Latin script.

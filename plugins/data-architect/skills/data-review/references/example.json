@@ -1,5 +1,6 @@
 {
   "skill": "data-review",
+  "archetype": "review",
   "title": "acme-data, reviewed before hand-over",
   "subtitle": "Can the numbers from this warehouse be trusted, what is wrong, and what to fix first.",
   "meta": {"repo": "acme-data", "commit": "0734a04", "date": "2026-11-09", "samples": "6 CSV files, 5,098 rows"},

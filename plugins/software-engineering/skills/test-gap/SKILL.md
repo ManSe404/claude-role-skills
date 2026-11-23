@@ -57,6 +57,9 @@ file (tables: case, input, expected result), First tests (steps). Stats on top: 
 untested files, tests, tests without an assertion, skipped tests. The verdict names the file to
 test first and why.
 
+Page archetype: `review`. Write `"archetype": "review"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --md -o PAGE.md` for the note, then
 the same command with `-o PAGE.html` for the page, all three files in
 `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/test-gap-<YYYY-MM-DD>.*`.

@@ -1,5 +1,6 @@
 {
   "skill": "pipeline-incident",
+  "archetype": "incident",
   "title": "load_erp_orders: no sales since Monday 2 November",
   "subtitle": "Why gold.sales_daily stopped at the build of 2 November 07:35, what else is wrong in it, and what to do.",
   "meta": {

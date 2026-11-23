@@ -62,6 +62,9 @@ stratum), What was checked (table: claim, file:line, how it was checked, result)
 not check (list). Stats on top: findings by severity, claims checked, claims that changed. The
 verdict says whether the report can go out as it is, in one sentence with the worst number.
 
+Page archetype: `review`. Write `"archetype": "review"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
 files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/report-review-<YYYY-MM-DD>.*`. Write the
 page in the language of the request; Serbian pages in Latin script.

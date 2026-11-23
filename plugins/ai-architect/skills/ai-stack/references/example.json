@@ -1,5 +1,6 @@
 {
   "skill": "ai-stack",
+  "archetype": "decision",
   "title": "Acme support assistant v2: the stack",
   "subtitle": "The tools for the routed workflow, an Azure variant against an open-weight variant, with every price taken from an example table.",
   "meta": {

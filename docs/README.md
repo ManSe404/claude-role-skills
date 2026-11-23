@@ -6,7 +6,7 @@ ending in one self-contained page. Read in this order:
 | # | Document | What it answers | Status | Last checked |
 |---|---|---|---|---|
 | 1 | [product/vision.md](product/vision.md) | the problem the skills solve and how, why this way, for whom, what they are not, how we know they work | current | 2026-11-16 |
-| 2 | [product/features/README.md](product/features/README.md) | the feature catalogue: every pack, what every skill shares, the tools, with status and where each lives in the code | current | 2026-11-16 |
+| 2 | [product/features/README.md](product/features/README.md) | the feature catalogue: every pack, what every skill shares, the tools, with status and where each lives in the code | current | 2026-11-23 |
 | 3 | [product/features/software-engineering.md](product/features/software-engineering.md) | what each software-engineering skill is for and writes | current | 2026-11-16 |
 | 4 | [product/features/ai-architect.md](product/features/ai-architect.md) | the same for the ai-architect pack | current | 2026-11-16 |
 | 5 | [product/features/data-architect.md](product/features/data-architect.md) | the same for the data-architect pack | current | 2026-11-16 |
@@ -18,16 +18,16 @@ ending in one self-contained page. Read in this order:
 | 11 | [product/features/solutions-architect.md](product/features/solutions-architect.md) | the same for the solutions-architect pack | current | 2026-11-16 |
 | 12 | [product/features/workflows.md](product/features/workflows.md) | the process chains and the skills each one runs | current | 2026-11-16 |
 | 13 | [guides/setup.md](guides/setup.md) | how to install the packs or copy the skills, and where pages go | current | 2026-11-16 |
-| 14 | [roadmap.md](roadmap.md) | the status of each pack, what comes next in priority order, the open decisions | current | 2026-11-16 |
-| 15 | [architecture/overview.md](architecture/overview.md) | how packs, skills, shared files, the renderer, the guard and the evals fit together | current | 2026-11-16 |
+| 14 | [roadmap.md](roadmap.md) | the status of each pack, what comes next in priority order, the open decisions | current | 2026-11-23 |
+| 15 | [architecture/overview.md](architecture/overview.md) | how packs, skills, shared files, the renderer, the guard and the evals fit together | current | 2026-11-23 |
 | 16 | [diagrams/context.md](diagrams/context.md) | who uses the skills, what they run in and what they reach | current | 2026-11-16 |
 | 17 | [diagrams/container.md](diagrams/container.md) | the parts of the repository and how they connect | current | 2026-11-16 |
 | 18 | [diagrams/skill-run.md](diagrams/skill-run.md) | a skill run from the request to the page | current | 2026-11-16 |
 | 19 | [diagrams/workflow-chain.md](diagrams/workflow-chain.md) | how a workflow runs its steps | current | 2026-11-16 |
 | 20 | [architecture/crosscutting.md](architecture/crosscutting.md) | the guard hook, paths, errors, untrusted text | current | 2026-11-16 |
 | 21 | [design/page-design.md](design/page-design.md) | the look of every page and what the reader can do on it | current | 2026-11-16 |
-| 22 | [reference/codebase.md](reference/codebase.md) | what is where in the repository | current | 2026-11-16 |
-| 23 | [reference/skills.md](reference/skills.md) | every pack and skill, generated from the manifests and the SKILL.md files | current, regenerated | 2026-11-16 |
+| 22 | [reference/codebase.md](reference/codebase.md) | what is where in the repository | current | 2026-11-23 |
+| 23 | [reference/skills.md](reference/skills.md) | every pack and skill, generated from the manifests and the SKILL.md files | current, regenerated | 2026-11-23 |
 | 24 | [guides/development.md](guides/development.md) | the checks, shared files, adding a skill, a provider or a fixture | current | 2026-11-16 |
 | 25 | [guides/testing.md](guides/testing.md) | unit tests, evals and the selection check | current | 2026-11-16 |
 

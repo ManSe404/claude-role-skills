@@ -65,6 +65,9 @@ Check for leakage next (table of columns and reasons), What to try (list, tagged
 only), What was not checked (list). Stats on top: rows, target rate, features with signal, high findings.
 The verdict says whether the table is ready to split and names the first thing to fix.
 
+Page archetype: `review`. Write `"archetype": "review"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both files
 in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/ds-explore-<YYYY-MM-DD>.*`. Write the page in the
 language of the request; Serbian pages in Latin script.

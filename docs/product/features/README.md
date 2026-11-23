@@ -55,7 +55,9 @@ findings but none of their open questions. Adding `facts` to those skills is on 
 
 The renderer, the page format, the fonts and the guard are copied into every skill, because an installed plugin has
 nothing outside its own folder. A page is JSON that `render_page.py` validates and draws, so every page has the same
-layout and fetches nothing. The guard runs as a hook only while the skill's turn lasts and steps aside after the
+layout and fetches nothing. Every skill names its page's archetype in SKILL.md (17 review, 11 decision, 8 map,
+7 chain, 4 report, 3 incident; the list is in [reference/skills.md](../../reference/skills.md)) and runs
+`render_page.py --check` before the page is done, so pages of one kind have the same structure. The guard runs as a hook only while the skill's turn lasts and steps aside after the
 person's next message. `facts` is the part of a page meant for other skills rather than for people; `ai-review` is
 the seventh skill without it.
 

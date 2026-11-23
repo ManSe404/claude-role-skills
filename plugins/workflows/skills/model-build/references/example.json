@@ -1,5 +1,6 @@
 {
   "skill": "model-build",
+  "archetype": "chain",
   "title": "acme-churn: model build",
   "subtitle": "The model build chain on acme-churn: each step's page, what it found, what is still open, and whether the chain is done.",
   "meta": {

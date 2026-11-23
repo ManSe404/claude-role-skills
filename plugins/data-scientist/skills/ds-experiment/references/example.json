@@ -1,5 +1,6 @@
 {
  "skill": "ds-experiment",
+ "archetype": "decision",
  "title": "Renewal-nudge experiment: read-out",
  "subtitle": "Should we ship the in-app reminder sent 14 days before renewal? Two runs: August (broken) and September (clean).",
  "meta": {

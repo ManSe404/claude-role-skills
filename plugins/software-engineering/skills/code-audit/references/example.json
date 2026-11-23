@@ -1,5 +1,6 @@
 {
  "skill": "code-audit",
+ "archetype": "review",
  "title": "acme-index, audited",
  "subtitle": "The bugs in the code as it stands at acd5c88, each tied to the scenario that triggers it, and what to fix first.",
  "meta": {

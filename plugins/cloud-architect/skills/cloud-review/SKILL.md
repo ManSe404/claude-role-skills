@@ -51,6 +51,9 @@ fixes (list), What to leave alone (list), What this review did not cover (list),
 by severity, hits confirmed of hits read, pillars affected, public resources. The verdict says in two sentences whether
 this estate can go to production and what it most needs.
 
+Page archetype: `review`. Write `"archetype": "review"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both files in
 `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/cloud-review-<YYYY-MM-DD>.*`. Write the page in the language of the
 request; Serbian pages in Latin script.

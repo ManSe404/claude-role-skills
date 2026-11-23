@@ -1,5 +1,6 @@
 {
   "skill": "platform-month",
+  "archetype": "chain",
   "title": "acme-pipeline: platform month",
   "subtitle": "The platform month chain on acme-pipeline: each step's page, what it found, what is still open, and whether the chain is done.",
   "meta": {

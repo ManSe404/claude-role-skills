@@ -67,6 +67,9 @@ the choice, the reason), Open questions (list with who should answer). Stats on 
 found, the largest gap and its share of the number, rows in the sample. The verdict says the
 metric's definition in one sentence and how much of today's numbers it changes.
 
+Page archetype: `decision`. Write `"archetype": "decision"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
 files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/metric-spec-<YYYY-MM-DD>.*`. Write the
 page in the language of the request; Serbian pages in Latin script.

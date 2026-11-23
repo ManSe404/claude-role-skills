@@ -64,6 +64,9 @@ with the bands in the caption), Personal columns (names and kinds only), What wa
 Stats on top: rows in train and test, positive rate, number of high findings, verdict. The verdict
 says whether a model built on this can be trusted and names the worst problem.
 
+Page archetype: `review`. Write `"archetype": "review"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both files
 in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/ds-dataset-<YYYY-MM-DD>.*`. Write the page in the
 language of the request; Serbian pages in Latin script.

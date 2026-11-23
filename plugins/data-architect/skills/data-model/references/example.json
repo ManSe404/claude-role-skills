@@ -1,5 +1,6 @@
 {
  "skill": "data-model",
+ "archetype": "map",
  "title": "Acme Foods sales, modelled",
  "subtitle": "A star schema that answers revenue per store and per product per month, and repeat customers.",
  "meta": {
