@@ -22,6 +22,8 @@ SHARED = {
     "render_page.py": {
         "shared/render_page.py": "scripts/render_page.py",
         "shared/page-format.md": "references/page-format.md",
+        "shared/page-schema.json": "references/page-schema.json",
+        "shared/page-archetypes.json": "references/page-archetypes.json",
         **{f"shared/fonts/{f.name}": f"assets/fonts/{f.name}" for f in sorted((ROOT / "shared" / "fonts").iterdir())},
     },
     "ai_inventory.py": {"shared/ai_inventory.py": "scripts/ai_inventory.py"},

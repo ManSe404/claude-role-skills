@@ -9,6 +9,12 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html
 You decide the content; the script decides the look. It escapes every value, checks the shape and
 prints each problem with its JSON path, so fix the JSON and run it again. Never hand-edit the HTML.
 
+Before you call the page done, check it as the kind of page it is (see "Archetype" below), and fix every problem:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check
+```
+
 ## Where the page goes
 
 Outside the repo: `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo name>/<skill>-<YYYY-MM-DD>.json`
@@ -72,6 +78,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" --site SITE.json
 ```json
 {
   "skill": "codebase-map",
+  "archetype": "map",
   "title": "acme-orders, mapped",
   "subtitle": "One sentence: what this page answers.",
   "meta": {"repo": "acme-orders", "commit": "3f2c1aa", "date": "2026-11-06"},
@@ -81,8 +88,34 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" --site SITE.json
 }
 ```
 
-`skill`, `title` and `sections` are required. `verdict` and `stats` go on top: the reader gets the
-answer before the detail. Keep stats to the 3–6 numbers that matter. `facts` is optional, see below.
+`skill`, `title` and `sections` are required. `archetype` names the kind of page, see below. `verdict` and `stats`
+go on top: the reader gets the answer before the detail. Keep stats to the 3–6 numbers that matter. `facts` is
+optional, see below.
+
+## Archetype
+
+Pages of one kind have the same structure whichever agent wrote them, because a tool checks it. Each skill names its
+archetype in its SKILL.md; write it into the page as `"archetype"`. `page-archetypes.json` beside this file holds the
+rules, `page-schema.json` the shape of every field (a JSON Schema, Draft 2020-12).
+
+| archetype | what the page is | must have | should have |
+|---|---|---|---|
+| `decision` | rules options out and names what is chosen | a verdict; `facts.decisions` with at least one item | a `decision` block; `facts.assumptions`, `facts.open` |
+| `map` | draws what exists and how it connects | a verdict; a `graph`, `flowchart`, `architecture`, `model` or `nested` block | `facts.components` |
+| `review` | holds something against rules, worst first, each with a fix | a verdict; a `findings` block | `facts.open` |
+| `incident` | one timeline, the cause, what to do now | a verdict; a `steps` block | `facts.open` |
+| `chain` | a workflow's closing page: each step, its verdict, done or not | a verdict; `steps` and `table` blocks; `facts.open` | `facts.scope` |
+| `report` | a result explained in tables, numbers and text | a verdict; a `table` or `chart` block | `facts.assumptions` |
+
+`--check` prints every problem with its JSON path and exits 1 when there is one:
+
+- a page that declares an archetype must match the schema (a misspelt field such as `sevrity` is an error, not
+  silently dropped) and that archetype's "must have";
+- a "should have" that is missing is a warning;
+- a page without `archetype` is checked as before, and the missing archetype and any schema problem are warnings, so
+  an older page still renders.
+
+Rendering runs the same checks, so a page that declares an archetype and breaks it is not drawn.
 
 ## Text
 

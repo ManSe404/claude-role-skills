@@ -824,6 +824,195 @@ def validate(page: Json) -> list[str]:
     return errs
 
 
+# ---------------------------------------------------------------------------- schema and archetype
+
+SCHEMA_FILE = "page-schema.json"
+ARCHETYPES_FILE = "page-archetypes.json"
+_JSON_TYPES: dict[str, Any] = {
+    "object": dict,
+    "array": list,
+    "string": str,
+    "boolean": bool,
+    "null": type(None),
+}
+
+
+def _reference(name: str) -> Json | None:
+    """A JSON file shipped beside the page format: shared/ in the repository, references/ in a skill."""
+    here = Path(__file__).resolve().parent
+    for candidate in (here / name, here.parent / "references" / name):
+        if candidate.is_file():
+            loaded: Json = json.loads(candidate.read_text(encoding="utf-8"))
+            return loaded
+    return None
+
+
+def _type_ok(value: Json, kind: str) -> bool:
+    if kind == "number":
+        return _number_ok(value)
+    if kind == "integer":
+        return isinstance(value, int) and not isinstance(value, bool)
+    expected = _JSON_TYPES.get(kind)
+    return expected is not None and isinstance(value, expected) and not (kind != "boolean" and isinstance(value, bool))
+
+
+def _resolve(schema: Json, root: Json) -> Json:
+    while "$ref" in schema:
+        schema = root["$defs"][str(schema["$ref"]).removeprefix("#/$defs/")]
+    return schema
+
+
+def _pins(branch: Json, key: str, root: Json) -> set[str] | None:
+    """The values a branch allows for key, through nested anyOf; None when it does not pin them."""
+    branch = _resolve(branch, root)
+    if "anyOf" in branch:
+        sets = [_pins(b, key, root) for b in branch["anyOf"]]
+        return None if any(s is None for s in sets) else set().union(*[s for s in sets if s is not None])
+    pin = branch.get("properties", {}).get(key, {})
+    if "const" in pin:
+        return {json.dumps(pin["const"])}
+    if "enum" in pin:
+        return {json.dumps(v) for v in pin["enum"]}
+    return None
+
+
+def _discriminator(branches: list[Json], value: Json, root: Json) -> tuple[str, list[set[str]]] | None:
+    """The property that tells the branches apart (a block's `type`, a chart's `kind`), and each branch's values."""
+    if not isinstance(value, dict) or not branches:
+        return None
+    for key in ("type", "kind"):
+        pins = [_pins(b, key, root) for b in branches]
+        sets = [p for p in pins if p is not None]
+        if len(sets) == len(pins) and sum(len(s) for s in sets) == len(set().union(*sets)):
+            return key, sets
+    return None
+
+
+def schema_problems(value: Json, schema: Json, path: str = "page", root: Json = None) -> list[str]:
+    """Check value against the subset of JSON Schema that page-schema.json uses; every problem with its path.
+
+    Supported: $ref to #/$defs, type, const, enum, required, properties, additionalProperties, items,
+    minItems, maxItems, minimum, maximum, pattern and anyOf (picked by the `type` or `kind` the branches pin).
+    """
+    root = schema if root is None else root
+    schema = _resolve(schema, root)
+    if "anyOf" in schema:
+        branches = schema["anyOf"]
+        found = _discriminator(branches, value, root)
+        if found is None:
+            results = [schema_problems(value, b, path, root) for b in branches]
+            return [] if any(not r for r in results) else min(results, key=len)
+        key, sets = found
+        for branch, allowed in zip(branches, sets, strict=True):
+            if json.dumps(value.get(key)) in allowed:
+                return schema_problems(value, branch, path, root)
+        names = sorted(json.loads(v) for s in sets for v in s)
+        return [f"{path}.{key}: must be one of {', '.join(str(n) for n in names)}"]
+    errs: list[str] = []
+    kinds = schema.get("type")
+    if kinds is not None:
+        kinds = [kinds] if isinstance(kinds, str) else kinds
+        if not any(_type_ok(value, k) for k in kinds):
+            return [f"{path}: must be {' or '.join(kinds)}"]
+    if "const" in schema and value != schema["const"]:
+        errs.append(f"{path}: must be {json.dumps(schema['const'])}")
+    if "enum" in schema and value not in schema["enum"]:
+        errs.append(f"{path}: must be one of {', '.join(str(v) for v in schema['enum'])}")
+    if isinstance(value, dict):
+        props: dict[str, Json] = schema.get("properties", {})
+        for key in schema.get("required", []):
+            if key not in value:
+                errs.append(f"{path}.{key}: missing")
+        extra = schema.get("additionalProperties", True)
+        for key, item in value.items():
+            if key in props:
+                errs += schema_problems(item, props[key], f"{path}.{key}", root)
+            elif extra is False:
+                known = ", ".join(sorted(props))
+                errs.append(f"{path}.{key}: unknown field (known: {known})")
+            elif isinstance(extra, dict):
+                errs += schema_problems(item, extra, f"{path}.{key}", root)
+    if isinstance(value, list):
+        if "minItems" in schema and len(value) < schema["minItems"]:
+            errs.append(f"{path}: at least {schema['minItems']} item(s)")
+        if "maxItems" in schema and len(value) > schema["maxItems"]:
+            errs.append(f"{path}: at most {schema['maxItems']} item(s)")
+        if "items" in schema:
+            for i, item in enumerate(value):
+                errs += schema_problems(item, schema["items"], f"{path}[{i}]", root)
+    if _number_ok(value):
+        if "minimum" in schema and value < schema["minimum"]:
+            errs.append(f"{path}: must be at least {schema['minimum']}")
+        if "maximum" in schema and value > schema["maximum"]:
+            errs.append(f"{path}: must be at most {schema['maximum']}")
+    if isinstance(value, str) and "pattern" in schema and not re.search(schema["pattern"], value):
+        errs.append(f"{path}: must match {schema['pattern']}")
+    return errs
+
+
+def _block_types(page: Json) -> set[str]:
+    return {
+        str(block.get("type"))
+        for section in page.get("sections", [])
+        if isinstance(section, dict)
+        for block in section.get("blocks", [])
+        if isinstance(block, dict)
+    }
+
+
+def _rule_problems(page: Json, rules: Json, archetype: str) -> list[str]:
+    """What a page of this archetype lacks, one line per missing piece."""
+    errs: list[str] = []
+    types = _block_types(page)
+    facts = page.get("facts") if isinstance(page.get("facts"), dict) else {}
+    if rules.get("verdict") and not page.get("verdict"):
+        errs.append(f"page.verdict: a {archetype} page has a verdict")
+    for kind in rules.get("blocks_all", []):
+        if kind not in types:
+            errs.append(f"page.sections: a {archetype} page has a `{kind}` block")
+    wanted = rules.get("blocks_any", [])
+    if wanted and not types & set(wanted):
+        errs.append(f"page.sections: a {archetype} page has one of these blocks: {', '.join(wanted)}")
+    for key in rules.get("facts", []):
+        if key not in facts:
+            errs.append(f"page.facts.{key}: a {archetype} page fills it (an empty list is allowed)")
+    for key in rules.get("facts_nonempty", []):
+        if not facts.get(key):
+            errs.append(f"page.facts.{key}: a {archetype} page fills it with at least one item")
+    return errs
+
+
+def check_page(page: Json) -> tuple[list[str], list[str]]:
+    """(errors, warnings) for a page: its shape, its schema and, when it declares one, its archetype.
+
+    A page without an archetype is held only to validate(), as before archetypes existed: schema problems
+    and the missing archetype are warnings, so an old page still renders. A page that declares an
+    archetype is held to all three.
+    """
+    errors = validate(page)
+    if errors:
+        return errors, []
+    warnings: list[str] = []
+    schema, archetypes = _reference(SCHEMA_FILE), _reference(ARCHETYPES_FILE)
+    declared = page.get("archetype")
+    if schema is None or archetypes is None:
+        missing = SCHEMA_FILE if schema is None else ARCHETYPES_FILE
+        problem = f"page: {missing} is missing beside the page format, so schema and archetype are not checked"
+        return ([problem], []) if declared is not None else ([], [problem])
+    shape = schema_problems(page, schema)
+    if declared is None:
+        names = ", ".join(archetypes["archetypes"])
+        warnings.append(f"page.archetype: none declared; set one of {names} to have the page checked as that kind")
+        return [], warnings + shape
+    errors += shape
+    spec = archetypes["archetypes"].get(declared)
+    if spec is None:
+        return errors, warnings  # the schema's enum already named the problem
+    errors += _rule_problems(page, spec.get("required", {}), declared)
+    warnings += [f"{p} (recommended)" for p in _rule_problems(page, spec.get("recommended", {}), declared)]
+    return errors, warnings
+
+
 def validate_site(site: Json) -> list[str]:
     """Return every problem with a site file; each page it lists is checked by validate()."""
     errs: list[str] = []
@@ -4256,12 +4445,15 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, json.JSONDecodeError) as exc:
         print(f"cannot read {args.page}: {exc}", file=sys.stderr)
         return 2
-    errors = validate(page)
+    errors, warnings = check_page(page)
+    for warning in warnings:
+        print(f"{args.page}: warning: {warning}", file=sys.stderr)
     if errors:
         _print_problems(args.page, errors)
         return 1
     if args.check:
-        print(f"{args.page}: valid")
+        kind = page.get("archetype")
+        print(f"{args.page}: valid" + (f" ({kind})" if kind else ""))
         return 0
     output = args.output or args.page.with_suffix(".md" if args.md else ".html")
     output.parent.mkdir(parents=True, exist_ok=True)
