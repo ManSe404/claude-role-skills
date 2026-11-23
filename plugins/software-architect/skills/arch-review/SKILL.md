@@ -59,6 +59,9 @@ this review did not cover (list). Stats on top: documents, parts, promises witho
 without a number, contradictions, open decisions. The verdict says in two sentences whether the design
 can be approved as it is, and what must be decided first.
 
+Page archetype: `review`. Write `"archetype": "review"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
 files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/arch-review-<YYYY-MM-DD>.*`. Write the
 page in the language of the request; Serbian pages in Latin script.

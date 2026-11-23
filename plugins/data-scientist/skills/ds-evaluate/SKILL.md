@@ -67,6 +67,9 @@ cuts it. Stats on top: rows, positive rate, the best model and its gain over the
 the models whose win is inside the noise. The verdict says
 which model is really better, by how much, and what stops it being used as it is.
 
+Page archetype: `decision`. Write `"archetype": "decision"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both files
 in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/ds-evaluate-<YYYY-MM-DD>.*`. Write the page in the
 language of the request; Serbian pages in Latin script.

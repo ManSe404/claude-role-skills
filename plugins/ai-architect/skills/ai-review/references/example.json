@@ -1,5 +1,6 @@
 {
  "skill": "ai-review",
+ "archetype": "review",
  "title": "acme-assist, AI review before handover",
  "subtitle": "Is this repository fit to hand to Acme Devices as the support assistant v2 from the brief of 14 October 2026?",
  "meta": {

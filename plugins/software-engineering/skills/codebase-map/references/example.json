@@ -1,5 +1,6 @@
 {
   "skill": "codebase-map",
+  "archetype": "map",
   "title": "acme-orders, mapped",
   "subtitle": "What acme-orders does, where it starts, where its data goes, and what to know before changing it, read from the code at f36ec1c.",
   "meta": {"repo": "acme-orders", "commit": "f36ec1c", "date": "2026-11-06"},

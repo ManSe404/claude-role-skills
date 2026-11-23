@@ -1,5 +1,6 @@
 {
   "skill": "arch-style",
+  "archetype": "decision",
   "title": "Fleet platform: what shape it should have",
   "subtitle": "The architecture style for the next Acme Logistics system, decided from the brief by eliminating options.",
   "meta": {"repo": "acme-logistics", "brief": "docs/briefs/fleet-platform.md", "date": "2026-11-10"},

@@ -1,5 +1,6 @@
 {
   "skill": "test-gap",
+  "archetype": "review",
   "title": "acme-orders: where a missing test hurts most",
   "subtitle": "Which code to test first, the cases no test covers with their expected results, and what the existing tests miss.",
   "meta": {"repo": "acme-orders", "commit": "f36ec1c", "date": "2026-11-06"},

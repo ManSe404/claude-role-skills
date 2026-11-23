@@ -52,6 +52,9 @@ not be read (table: kind, resource, file, what stays unknown), Open questions. S
 resources, stopped at a boundary, unresolved, drift. The verdict says in two sentences what this estate is and what the
 internet can reach that it should not.
 
+Page archetype: `map`. Write `"archetype": "map"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both files in
 `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/cloud-map-<YYYY-MM-DD>.*`. Write the page in the language of the
 request; Serbian pages in Latin script.

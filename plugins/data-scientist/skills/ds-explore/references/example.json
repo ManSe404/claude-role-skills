@@ -1,5 +1,6 @@
 {
  "skill": "ds-explore",
+ "archetype": "review",
  "title": "acme-churn: what relates to 60-day churn, and what to fix first",
  "subtitle": "Exploration of data/snapshots.csv before any split. Nothing in the repository was changed.",
  "meta": {

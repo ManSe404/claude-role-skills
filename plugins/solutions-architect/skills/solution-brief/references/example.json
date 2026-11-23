@@ -1,5 +1,6 @@
 {
  "skill": "solution-brief",
+ "archetype": "report",
  "title": "Claims platform for Acme Mutual: who runs, in what order",
  "subtitle": "One framing of the brief, the specialists it needs, and the shared facts each must start from.",
  "meta": {

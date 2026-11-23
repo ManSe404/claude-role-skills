@@ -1,5 +1,6 @@
 {
   "skill": "ds-dataset",
+  "archetype": "review",
   "title": "acme-churn training data, audited",
   "subtitle": "Can a model that predicts churned_60d be trusted on train.csv and test.csv, and what must change first?",
   "meta": {"repo": "acme-churn", "commit": "6ae5575", "date": "2026-11-10"},

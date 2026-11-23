@@ -55,6 +55,9 @@ and test, Health, Surprises (findings), Open questions. Stats on top: code lines
 commits, contributors, entry points. The verdict says in two sentences what the repo is and the
 one thing to know before changing it.
 
+Page archetype: `map`. Write `"archetype": "map"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
 files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/codebase-map-<YYYY-MM-DD>.*`.
 

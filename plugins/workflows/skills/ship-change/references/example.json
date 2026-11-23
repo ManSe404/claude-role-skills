@@ -1,5 +1,6 @@
 {
   "skill": "ship-change",
+  "archetype": "chain",
   "title": "acme-orders: ship a change",
   "subtitle": "The ship a change chain on acme-orders: each step's page, what it found, what is still open, and whether the chain is done.",
   "meta": {

@@ -51,6 +51,9 @@ facts (list), Next calls (code block, the exact calls in order), Unknown (list: 
 can answer it). Stats on top: specialists needed, specialists not needed, budget, regions. The verdict says who
 runs and why, in two sentences.
 
+Page archetype: `report`. Write `"archetype": "report"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --md -o PAGE.md` for the note, then
 the same command with `-o PAGE.html` for the page, all three files in
 `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/solution-brief-<YYYY-MM-DD>.*`, outside the repository. Write

@@ -1,5 +1,6 @@
 {
   "skill": "ai-pattern",
+  "archetype": "decision",
   "title": "Acme support assistant v2: what it should be",
   "subtitle": "The pattern decision for the Acme Devices brief of 14 October 2026, made before anything is built.",
   "meta": {

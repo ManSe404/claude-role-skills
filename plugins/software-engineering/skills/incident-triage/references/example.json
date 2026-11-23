@@ -1,5 +1,6 @@
 {
  "skill": "incident-triage",
+ "archetype": "incident",
  "title": "acme-orders nightly import, triaged",
  "subtitle": "The import has failed on 2 and 3 October; what the log shows, how bad it is, and what would stop it. Written on 3 October at 09:00.",
  "meta": {"repo": "acme-orders", "commit": "f36ec1c", "date": "2026-10-03", "log": "logs/acme-orders.log, 30 Sep to 3 Oct"},

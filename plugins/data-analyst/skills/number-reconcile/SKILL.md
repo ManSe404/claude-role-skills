@@ -65,6 +65,9 @@ amount and rows, and what would explain it). Stats on top: the gap, explained, u
 each bucket's biggest cause. The verdict says how much of the gap is explained, and the exact amount left, in
 one sentence.
 
+Page archetype: `report`. Write `"archetype": "report"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
 files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/number-reconcile-<YYYY-MM-DD>.*`. Write the
 page in the language of the request; Serbian pages in Latin script.

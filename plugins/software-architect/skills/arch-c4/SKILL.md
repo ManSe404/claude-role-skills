@@ -52,6 +52,9 @@ container: component, responsibility, file), Open questions.
 Stats on top: containers, outside systems, components drawn, guesses left. The verdict says in two
 sentences what this system is and where a change is most likely to hurt.
 
+Page archetype: `map`. Write `"archetype": "map"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
 files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/arch-c4-<YYYY-MM-DD>.*`. Write the
 page in the language of the request; Serbian pages in Latin script.

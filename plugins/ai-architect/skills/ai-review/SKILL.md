@@ -50,6 +50,9 @@ order (steps: what to fix first and why), Open questions. Stats on top: findings
 model calls without a timeout, tools with side effects, tracing and evals present or not. The
 verdict says in two sentences whether it is fit to release and the one fix that matters most.
 
+Page archetype: `review`. Write `"archetype": "review"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
 files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/ai-review-<YYYY-MM-DD>.*`. Write the page
 in the language of the request; Serbian pages in Latin script.

@@ -1,5 +1,6 @@
 {
   "skill": "arch-review",
+  "archetype": "review",
   "title": "Parcel booking v2, design review",
   "subtitle": "What in this design will make it fail or hard to change, and what to decide before approving it.",
   "meta": {"repo": "acme-design", "commit": "7c061c4", "date": "2026-11-10"},

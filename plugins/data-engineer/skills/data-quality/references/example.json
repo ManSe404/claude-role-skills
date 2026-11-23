@@ -1,5 +1,6 @@
 {
   "skill": "data-quality",
+  "archetype": "review",
   "title": "acme-pipeline: which tables to trust",
   "subtitle": "What the checks, the quarantine and the run records show for 5 Oct – 4 Nov 2026. The ops records end on 4 Nov; nothing after that was available.",
   "meta": {

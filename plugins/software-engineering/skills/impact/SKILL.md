@@ -54,6 +54,9 @@ Untested paths (findings), Safe order (steps). Stats on top: direct uses, indire
 boundaries, outside consumers, untested paths. The verdict says whether the change is safe as
 one step, and if not, how many steps it needs.
 
+Page archetype: `review`. Write `"archetype": "review"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
 files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/impact-<name>-<YYYY-MM-DD>.*`.
 

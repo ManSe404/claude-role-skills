@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -168,3 +169,16 @@ def test_every_skill_that_draws_a_page_ships_the_schema_and_the_archetypes() -> 
         if (skill / "scripts" / "render_page.py").exists():
             for name in ("page-schema.json", "page-archetypes.json"):
                 assert (skill / "references" / name).exists(), f"{skill.name} lacks references/{name}"
+
+
+@pytest.mark.parametrize("skill", ALL_SKILLS, ids=[s.name for s in ALL_SKILLS])
+def test_every_skill_names_its_archetype_and_its_example_is_one(skill: Path) -> None:
+    text = (skill / "SKILL.md").read_text(encoding="utf-8")
+    named = re.findall(r"^Page archetype: `([a-z]+)`", text, re.M)
+    assert len(named) == 1, "SKILL.md names its archetype once, in a line starting 'Page archetype:'"
+    assert named[0] in ARCHETYPES["archetypes"]
+    assert "PAGE.json --check" in text, "SKILL.md runs render_page.py --check before the page is done"
+    page = json.loads((skill / "references" / "example.json").read_text(encoding="utf-8"))
+    assert page.get("archetype") == named[0], "the example page declares the archetype SKILL.md names"
+    errors, _ = render.check_page(page)
+    assert errors == []

@@ -1,5 +1,6 @@
 {
  "skill": "arch-c4",
+ "archetype": "map",
  "title": "Acme Logistics, in three levels",
  "subtitle": "Who uses it, what runs, and what is inside the API.",
  "meta": {

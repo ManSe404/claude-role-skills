@@ -1,5 +1,6 @@
 {
  "skill": "cloud-map",
+ "archetype": "map",
  "title": "acme-cloud, mapped",
  "subtitle": "What runs for Acme Tickets, what the internet can reach, and where code and deployment differ.",
  "meta": {

@@ -52,6 +52,9 @@ What to leave alone (list), ADR drafts (code), Open questions. Stats on top: ste
 tables with two writers, the step where the main pain ends. The verdict says in two sentences whether
 to do this and how far to go.
 
+Page archetype: `decision`. Write `"archetype": "decision"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
 files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/arch-evolve-<YYYY-MM-DD>.*`. Write the
 page in the language of the request; Serbian pages in Latin script.

@@ -1,5 +1,6 @@
 {
  "skill": "ds-evaluate",
+ "archetype": "decision",
  "title": "Acme Stream churn: which model should build the retention list",
  "subtitle": "Three score columns compared on the same 3,000 rows, with a false positive at EUR 25 and a false negative at EUR 90.",
  "meta": {

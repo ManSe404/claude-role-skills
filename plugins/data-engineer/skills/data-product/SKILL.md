@@ -71,6 +71,9 @@ conflicts, personal columns. The verdict says in two sentences whether consumers
 table today, and what must change first. Fill `facts`: `data` for each personal column, `open` for
 each conflict that needs an owner.
 
+Page archetype: `map`. Write `"archetype": "map"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
 files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/data-product-<YYYY-MM-DD>.*`. Write the page
 in the language of the request; Serbian pages in Latin script.

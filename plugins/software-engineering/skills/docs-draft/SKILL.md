@@ -61,6 +61,9 @@ where in the code, where in the documents, status: undocumented, stale, fixed by
 says it). Stats on top: exposed items, documented before, documented by the draft, stale lines, guesses left.
 The verdict says in two sentences what the document is for and whether it can go out as it is.
 
+Page archetype: `report`. Write `"archetype": "report"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --md -o PAGE.md` for the note, then
 the same command with `-o PAGE.html` for the page, all three files in
 `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/docs-draft-<YYYY-MM-DD>.*`. Write the note, the page and the draft in

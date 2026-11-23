@@ -1,5 +1,6 @@
 {
   "skill": "bug-hunt",
+  "archetype": "review",
   "title": "acme-orders: the nightly import has failed since 2 October",
   "subtitle": "From the InvalidOperation in the cron log to the commit that caused it, with a reproduction, a regression test and two fix options.",
   "meta": {"repo": "acme-orders", "commit": "f36ec1c", "date": "2026-11-06"},

@@ -1,5 +1,6 @@
 {
   "skill": "new-solution",
+  "archetype": "chain",
   "title": "acme-solution: new solution",
   "subtitle": "The new solution chain on acme-solution: each step's page, what it found, what is still open, and whether the chain is done.",
   "meta": {

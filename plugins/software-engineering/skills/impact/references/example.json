@@ -1,5 +1,6 @@
 {
   "skill": "impact",
+  "archetype": "review",
   "title": "Impact: order_total takes the VAT rate from settings",
   "subtitle": "What changes when `pricing.order_total` stops using the `VAT_RATE` constant and takes `settings.vat_rate` (`ACME_VAT_RATE`) as a parameter, and the order to make it in.",
   "meta": {"repo": "acme-orders", "commit": "f36ec1c", "date": "2026-11-06"},

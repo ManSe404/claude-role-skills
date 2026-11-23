@@ -68,6 +68,9 @@ went well and poorly (two lists), Action items (table: action, factor, role, che
 block in Markdown). Stats on top: minutes to detect, to mitigate, to resolve, errors before detection,
 action items. The verdict names the cause in one sentence and the one change that matters most.
 
+Page archetype: `incident`. Write `"archetype": "incident"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --md -o PAGE.md` for the note, then
 the same command with `-o PAGE.html` for the page, all three files in
 `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo or service>/postmortem-<YYYY-MM-DD>.*`. Write the page in the

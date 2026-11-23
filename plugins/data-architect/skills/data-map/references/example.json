@@ -1,5 +1,6 @@
 {
   "skill": "data-map",
+  "archetype": "map",
   "title": "acme-data, mapped",
   "subtitle": "Where Acme Foods' sales data comes from, which layers it passes, who reads it, who owns it and where personal data goes. Read from the code only: no database was contacted.",
   "meta": {"repo": "acme-data", "commit": "0734a04", "date": "2026-11-09"},

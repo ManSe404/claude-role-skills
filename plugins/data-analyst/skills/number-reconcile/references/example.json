@@ -1,5 +1,6 @@
 {
   "skill": "number-reconcile",
+  "archetype": "report",
   "title": "ERP against the finance ledger, October 2026 net revenue",
   "subtitle": "Where the ERP and the ledger part, row by row, and how much of the gap each cause accounts for.",
   "meta": {

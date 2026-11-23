@@ -63,6 +63,9 @@ Guardrails (table: harm, margin, status), Peeking (the true false-positive rate 
 on top: units, split ratio p-value, primary effect, corrected p, the call. The verdict gives the call in
 one or two sentences with numbers.
 
+Page archetype: `decision`. Write `"archetype": "decision"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both files
 in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/ds-experiment-<YYYY-MM-DD>.*`. Write the page in the
 language of the request; Serbian pages in Latin script.

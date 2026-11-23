@@ -1,5 +1,6 @@
 {
  "skill": "change-review",
+ "archetype": "review",
  "title": "acme-orders, d22ee8f..f36ec1c reviewed",
  "subtitle": "Three commits after the last deploy: the amount parsing change, the adjustments file for the report, and a finance note. Every hunk read.",
  "meta": {"repo": "acme-orders", "commit": "f36ec1c", "range": "d22ee8f..f36ec1c", "date": "2026-11-10"},

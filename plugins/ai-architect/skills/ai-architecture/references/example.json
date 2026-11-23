@@ -1,5 +1,6 @@
 {
   "skill": "ai-architecture",
+  "archetype": "map",
   "title": "Acme support assistant v2: the architecture",
   "subtitle": "How a customer's question moves through the design, what each part does, and how far text from outside can reach. This is a design, and nothing on this page is built yet.",
   "meta": {

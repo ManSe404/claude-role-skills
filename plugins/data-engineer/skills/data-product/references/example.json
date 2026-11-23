@@ -1,5 +1,6 @@
 {
  "skill": "data-product",
+ "archetype": "map",
  "title": "gold.sales_daily: the consumer guide",
  "subtitle": "What a team that reads gold.sales_daily needs to know, checked against the SQL, a 29-day sample, the query log, the checks and the run records, and what its documents get wrong.",
  "meta": {

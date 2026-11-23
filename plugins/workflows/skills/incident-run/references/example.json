@@ -1,5 +1,6 @@
 {
   "skill": "incident-run",
+  "archetype": "chain",
   "title": "acme-orders: incident run",
   "subtitle": "The incident run chain on acme-orders: each step's page, what it found, what is still open, and whether the chain is done.",
   "meta": {

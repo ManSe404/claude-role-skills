@@ -1,5 +1,6 @@
 {
   "skill": "data-platform",
+  "archetype": "decision",
   "title": "Acme Foods: the next data platform",
   "subtitle": "Which platform the brief of 19 October 2026 calls for, and which options it rules out.",
   "meta": {"repo": "acme-data", "brief": "docs/briefs/new-platform.md", "date": "2026-11-09"},

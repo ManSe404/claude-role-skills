@@ -1,5 +1,6 @@
 {
   "skill": "ds-frame",
+  "archetype": "decision",
   "title": "Who gets a retention offer, framed",
   "subtitle": "What the churn prediction is for, which rung of the ladder it needs, and what it has to beat.",
   "meta": {"repo": "acme-churn", "commit": "6ae5575", "date": "2026-11-10", "brief": "docs/briefs/retention-offers.md"},

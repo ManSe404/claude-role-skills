@@ -1,5 +1,6 @@
 {
   "skill": "source-contract",
+  "archetype": "review",
   "title": "ERP orders contract, checked against the deliveries",
   "subtitle": "Does contracts/erp.yaml (v0.3) describe what the ERP team really sends, before sign-off?",
   "meta": {

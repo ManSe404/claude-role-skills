@@ -57,6 +57,9 @@ hypothesis, for, against, check, result), Root cause, Regression test (code), Sa
 elsewhere (findings), Fix options. Stats on top: first failure, failed runs, the commit that
 caused it, places with the same weakness. The verdict names the root cause in one sentence.
 
+Page archetype: `review`. Write `"archetype": "review"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --md -o PAGE.md` for the note, then
 the same command with `-o PAGE.html` for the page, all three files in
 `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/bug-hunt-<YYYY-MM-DD>.*`.

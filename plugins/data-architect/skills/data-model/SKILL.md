@@ -64,6 +64,9 @@ why), Personal data (table: column, class, masked where; columns and counts only
 Open questions. Stats on top: tables, facts, grains checked against data, personal columns. The
 verdict says the approach and the biggest data problem the model must absorb.
 
+Page archetype: `map`. Write `"archetype": "map"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
 files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<project>/data-model-<YYYY-MM-DD>.*`. Write the
 page in the language of the request; Serbian pages in Latin script.

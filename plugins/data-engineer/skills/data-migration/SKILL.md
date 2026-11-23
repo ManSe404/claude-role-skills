@@ -64,6 +64,9 @@ cover (list). Stats on top: jobs, dead, keep, rebuild, retire, waves. The verdic
 sentences how big the move really is and what must happen first. Fill `facts`: `components` for the
 outside hosts and file shares, `decisions` for the ratings, `open` for the questions.
 
+Page archetype: `decision`. Write `"archetype": "decision"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
 files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/data-migration-<YYYY-MM-DD>.*`. Write the
 page in the language of the request; Serbian pages in Latin script.

@@ -1,5 +1,6 @@
 {
   "skill": "source-profile",
+  "archetype": "review",
   "title": "Salaš CRM daily export, profiled",
   "subtitle": "What the CRM vendor really delivers in the 3 and 4 November 2026 exports, and where it differs from sources/crm/README-vendor.md.",
   "meta": {

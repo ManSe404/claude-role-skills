@@ -65,6 +65,9 @@ storage a month, savings found a month, savings as a share of the bill. The verd
 two sentences how much can be cut and which item is biggest. Fill `facts`: a `costs` line per cluster
 and storage, each with `as_of` and `source`, and `open` for every sign-off still needed.
 
+Page archetype: `review`. Write `"archetype": "review"` into the JSON, then run
+`python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json --check` and fix every problem it prints.
+
 Render: `python3 "${CLAUDE_SKILL_DIR}/scripts/render_page.py" PAGE.json -o PAGE.html`, with both
 files in `${CLAUDE_PAGES_DIR:-$HOME/claude-pages}/<repo>/data-cost-<YYYY-MM-DD>.*`. Write the page
 in the language of the request; Serbian pages in Latin script.

@@ -1,5 +1,6 @@
 {
   "skill": "cloud-design",
+  "archetype": "decision",
   "title": "Festival platform: Azure or AWS",
   "subtitle": "One decision on what the Acme Tickets platform should run on, mapped to each cloud, with the monthly cost side by side.",
   "meta": {
